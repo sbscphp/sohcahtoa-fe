@@ -113,7 +113,7 @@ export default function ListItem({
 
   if (cardStyle) {
     return (
-      <div className="border border-gray-200 rounded-lg bg-gray-50 p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         {content}
       </div>
     );
