@@ -3,6 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --primary-orange: #DD4F05;
+  --secondary-orange: #E36C2F;
+  --secondary-text: #818181;
+  --primary-text: #2D2D2D;
 }
 
 @theme inline {
