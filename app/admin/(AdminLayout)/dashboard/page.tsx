@@ -1,4 +1,4 @@
-import StatCard from "../../_components/reusable/StatCard";
+import StatCard from "../../_components/StatCard";
 import { Database } from "lucide-react";
 import { HiMiniUserGroup } from "react-icons/hi2";
 import { FaMoneyBillTransfer } from "react-icons/fa6";

@@ -5,10 +5,10 @@ import {
   Group,
   Text,
   Stack,
-  Badge,
 } from "@mantine/core";
 import { Notification } from "../../../_types/dashboard";
-import { ChevronRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import ListItem from "../../../_components/ListItem";
 
 export function TaskAndNotificationList({
   data,
@@ -19,41 +19,24 @@ export function TaskAndNotificationList({
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="sm">
         <Text fw={500}>Task List & Notification</Text>
-        <Text size="sm" c="orange">
-          View all →
-        </Text>
+        <div className="flex items-center">
+          <Text size="sm" c="orange">
+            View all
+          </Text>
+          <ArrowUpRight size={14} color="orange" />
+        </div>
       </Group>
 
       <Stack gap="md">
         {data.map((item) => (
-          <Group
+          <ListItem
             key={item.id}
-            justify="space-between"
-            align="flex-start"
-          >
-            <div>
-              <Group gap="xs">
-                <Text size="sm" fw={500}>
-                  {item.title}
-                </Text>
-                {item.unread && (
-                  <Badge color="orange" size="xs">
-                    Unread
-                  </Badge>
-                )}
-              </Group>
-
-              <Text size="xs" c="dimmed">
-                {item.description}
-              </Text>
-
-              <Text size="xs" c="dimmed">
-                {item.date} · {item.time}
-              </Text>
-            </div>
-
-            <ChevronRight size={16} />
-          </Group>
+            title={item.title}
+            description={item.description}
+            date={item.date}
+            time={item.time}
+            badge={item.unread ? { label: "Unread", color: "orange" } : undefined}
+          />
         ))}
       </Stack>
     </Card>
