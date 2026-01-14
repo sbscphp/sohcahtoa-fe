@@ -14,8 +14,8 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Transaction } from "../../types/dashboard";
-import { StatusBadge } from "../../components/reusable/StatusBadge";
+import { Transaction } from "../../_types/dashboard";
+import { StatusBadge } from "../../_components/reusable/StatusBadge";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 
 const columns: ColumnDef<Transaction>[] = [

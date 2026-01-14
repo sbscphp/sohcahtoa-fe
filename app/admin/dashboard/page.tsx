@@ -1,17 +1,17 @@
-import StatCard from "../components/reusable/StatCard";
+import StatCard from "../_components/reusable/StatCard";
 import { Database } from "lucide-react";
 import { HiMiniUserGroup } from "react-icons/hi2";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { SimpleGrid } from "@mantine/core";
-import { TransactionSummary } from "./dashboardComponent/TransactionSummary";
-import { TransactionsByType } from "./dashboardComponent/TransactionsByType";
-import { RecentTransactionsTable } from "./dashboardComponent/RecentTransactionsTable";
-import { TaskAndNotificationList } from "./dashboardComponent/TaskAndNotificationList";
-import { Transaction } from "../types/dashboard";
+import { TransactionSummary } from "./_dashboardComponents/TransactionSummary";
+import { TransactionsByType } from "./_dashboardComponents/TransactionsByType";
+import { RecentTransactionsTable } from "./_dashboardComponents/RecentTransactionsTable";
+import { TaskAndNotificationList } from "./_dashboardComponents/TaskAndNotificationList";
+import { Transaction, TransactionStatus } from "../_types/dashboard";
 // import { RecentTransactionsTable } from "../RecentTransactionsTable";
 // import { TaskAndNotificationList } from "@/components/TaskAndNotificationList";
 
-const transactions = [
+const transactions: Transaction[] = [
   {
     id: "GHA67AGHA",
     date: "Nov 16 2025",
@@ -52,6 +52,8 @@ const notifications = [
     date: "Nov 18 2025",
     time: "11:00 am",
     unread: true,
+    status: "Pending" as TransactionStatus,
+    type: "Transaction",
   },
   {
     id: "2",
@@ -60,6 +62,8 @@ const notifications = [
     date: "Nov 18 2025",
     time: "11:00 am",
     unread: true,
+    status: "Pending" as TransactionStatus,
+    type: "Transaction",
   },
 ];
 
@@ -106,7 +110,7 @@ export default function DashboardPage() {
       </div>
       <div className="my-5">
         <SimpleGrid cols={{ base: 1, lg: 2 }}>
-          <RecentTransactionsTable data={transactions} />
+          <RecentTransactionsTable data={transactions as Transaction[]} />
           <TaskAndNotificationList data={notifications} />
         </SimpleGrid>
       </div>

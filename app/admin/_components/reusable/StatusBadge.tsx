@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@mantine/core";
-import { TransactionStatus } from "../../types/dashboard";
+import { TransactionStatus } from "../../_types/dashboard";
 
 const statusColorMap: Record<TransactionStatus, string> = {
   Pending: "orange",

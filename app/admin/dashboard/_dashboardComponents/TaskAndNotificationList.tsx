@@ -7,7 +7,7 @@ import {
   Stack,
   Badge,
 } from "@mantine/core";
-import { Notification } from "../../types/dashboard";
+import { Notification } from "../../_types/dashboard";
 import { ChevronRight } from "lucide-react";
 
 export function TaskAndNotificationList({

@@ -9,8 +9,8 @@ export default function Providers({
 }) {
   return (
     <MantineProvider
-      withGlobalStyles
-      withNormalizeCSS
+      defaultColorScheme="light"
+      theme={{}}
     >
       {children}
     </MantineProvider>
