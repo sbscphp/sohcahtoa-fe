@@ -9,7 +9,6 @@ function TableContainer({ headers, children }: Props) {
   return (
     <div className="w-full overflow-x-auto">
       <Table
-        striped
         verticalSpacing="sm"
         horizontalSpacing="md"
         highlightOnHover
@@ -21,7 +20,7 @@ function TableContainer({ headers, children }: Props) {
             {headers.map((item) => (
               <Table.Th
                 key={item}
-                className="capitalize text-base text-primary-text! tracking-wide! whitespace-nowrap"
+                className="text-sm! font-semibold text-[#7C8496]! whitespace-nowrap bg-[#F8F9FB]"
               >
                 {item}
               </Table.Th>
