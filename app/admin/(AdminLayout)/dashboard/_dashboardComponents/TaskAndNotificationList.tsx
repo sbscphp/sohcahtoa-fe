@@ -8,7 +8,7 @@ import {
 } from "@mantine/core";
 import { Notification } from "../../../_types/dashboard";
 import { ArrowUpRight } from "lucide-react";
-import ListItem from "../../../_components/ListItem";
+import ListItem from "./ListItem";
 
 export function TaskAndNotificationList({
   data,
@@ -36,6 +36,8 @@ export function TaskAndNotificationList({
             date={item.date}
             time={item.time}
             badge={item.unread ? { label: "Unread", color: "orange" } : undefined}
+            showIcons={true}
+            cardStyle={true}
           />
         ))}
       </Stack>

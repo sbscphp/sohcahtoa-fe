@@ -109,10 +109,14 @@ export default function DashboardPage() {
         </SimpleGrid>
       </div>
       <div className="my-5">
-        <SimpleGrid cols={{ base: 1, lg: 2 }}>
-          <RecentTransactionsTable data={transactions as Transaction[]} />
-          <TaskAndNotificationList data={notifications} />
-        </SimpleGrid>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <RecentTransactionsTable data={transactions as Transaction[]} />
+          </div>
+          <div className="lg:col-span-2">
+            <TaskAndNotificationList data={notifications} />
+          </div>
+        </div>
       </div>
     </>
   );

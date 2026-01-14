@@ -1,22 +1,48 @@
 "use client";
 
 import { Badge } from "@mantine/core";
-import { TransactionStatus } from "../_types/dashboard";
 
-const statusColorMap: Record<TransactionStatus, string> = {
+const statusColorMap: Record<string, string> = {
   Pending: "orange",
   Completed: "green",
   Rejected: "red",
   "Request More Info": "violet",
+  Unread: "orange",
+  Read: "gray",
+  Active: "green",
+  Inactive: "gray",
+  Approved: "green",
+  Declined: "red",
 };
 
-export function StatusBadge({ status }: { status: TransactionStatus }) {
+interface StatusBadgeProps {
+  status: string;
+  color?: string;
+  variant?: "light" | "filled" | "outline" | "dot" | "gradient";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  radius?: "xs" | "sm" | "md" | "lg" | "xl";
+  defaultColor?: string;
+}
+
+export function StatusBadge({
+  status,
+  color,
+  variant = "light",
+  size = "sm",
+  radius = "xl",
+  defaultColor = "blue",
+}: StatusBadgeProps) {
+  // Determine the color to use
+  const badgeColor =
+    color || statusColorMap[status] || defaultColor;
+
   return (
     <Badge
-      color={statusColorMap[status]}
-      variant="light"
-      radius="xl"
-      size="sm"
+      color={badgeColor}
+      variant={variant}
+      className="capitalize!"
+      radius={radius}
+      size={size}
     >
       {status}
     </Badge>
