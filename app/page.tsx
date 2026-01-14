@@ -1,5 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function Home() {
-  return (
-    <h2 className="text-2xl font-bold text-red-500">Welcome to SOHCAHTOA</h2>
-  );
+  redirect("/dashboard");
 }
