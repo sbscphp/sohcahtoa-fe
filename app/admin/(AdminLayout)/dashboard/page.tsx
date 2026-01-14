@@ -1,4 +1,4 @@
-import StatCard from "../_components/reusable/StatCard";
+import StatCard from "../../_components/reusable/StatCard";
 import { Database } from "lucide-react";
 import { HiMiniUserGroup } from "react-icons/hi2";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
@@ -7,7 +7,7 @@ import { TransactionSummary } from "./_dashboardComponents/TransactionSummary";
 import { TransactionsByType } from "./_dashboardComponents/TransactionsByType";
 import { RecentTransactionsTable } from "./_dashboardComponents/RecentTransactionsTable";
 import { TaskAndNotificationList } from "./_dashboardComponents/TaskAndNotificationList";
-import { Transaction, TransactionStatus } from "../_types/dashboard";
+import { Transaction, TransactionStatus } from "../../_types/dashboard";
 // import { RecentTransactionsTable } from "../RecentTransactionsTable";
 // import { TaskAndNotificationList } from "@/components/TaskAndNotificationList";
 

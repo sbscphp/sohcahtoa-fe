@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
-export default function DashboardLayout({
+export default function AdminLayoutShell({
   children,
 }: {
   children: React.ReactNode;
