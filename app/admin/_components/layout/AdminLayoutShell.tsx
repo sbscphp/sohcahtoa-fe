@@ -11,39 +11,62 @@ export default function AdminLayoutShell({
 }: {
   children: React.ReactNode;
 }) {
-  const [collapsed, { toggle: toggleCollapsed, close: closeNavbar }] = useDisclosure(false);
+  const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // Auto-collapse sidebar on smaller screens
+  // Auto-close sidebar on mobile when screen size changes
   useEffect(() => {
     if (isMobile) {
-      closeNavbar();
+      closeMobile();
     }
-  }, [isMobile, closeNavbar]);
+  }, [isMobile, closeMobile]);
 
   return (
     <AppShell
-      layout="alt"
+      layout={isMobile ? undefined : "alt"}
       header={{ height: 64 }}
       navbar={{
-        width: collapsed ? 80 : 256,
+        width: isMobile ? 256 : (collapsed ? 80 : 256),
         breakpoint: 'sm',
-        collapsed: { mobile: !collapsed && isMobile },
+        collapsed: { mobile: !mobileOpened },
       }}
-      padding="md"
+      padding={0}
+      style={{
+        minHeight: '100vh',
+      }}
     >
       <AppShell.Navbar>
-        <Sidebar collapsed={collapsed} setCollapsed={toggleCollapsed} />
+        <Sidebar collapsed={isMobile ? false : collapsed} />
       </AppShell.Navbar>
 
-      <AppShell.Header>
-        <Header collapsed={collapsed} title='Dashboard' />
+      <AppShell.Header
+        style={{
+          marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
+          transition: 'margin-left 0.3s ease',
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          zIndex: 200,
+        }}
+      >
+        <Header 
+          collapsed={collapsed} 
+          title='Dashboard' 
+          setCollapsed={toggleCollapsed}
+          mobileOpened={mobileOpened}
+          toggleMobile={toggleMobile}
+        />
       </AppShell.Header>
 
       <AppShell.Main
         style={{
           backgroundColor: '#f9fafb',
-          minHeight: '100vh',
+          minHeight: 'calc(100vh - 64px)',
+          padding: '1rem',
+          marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
+          paddingTop: 'calc(64px + 1rem)',
+          transition: 'margin-left 0.3s ease',
         }}
       >
         {children}

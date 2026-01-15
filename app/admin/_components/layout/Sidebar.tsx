@@ -15,12 +15,10 @@ import {
   UserRoundCog,
   Ticket,
   Coins,
-  ChevronLeft,
 } from "lucide-react";
 
 type SidebarProps = {
   collapsed: boolean;
-  setCollapsed: () => void;
 };
 
 const menuItems = [
@@ -42,25 +40,14 @@ const menuItems2 = [
   { icon: UserStar, label: "Audit Trail", href: "/audit-trial" },
 ];
 
-export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
+export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
 
   return (
     <aside className="h-full bg-white shadow flex flex-col transition-all duration-300">
-      {/* Logo + Collapse Button */}
-      <div className="flex items-center justify-between p-4 mt-4">
+      {/* Logo */}
+      <div className="flex items-center justify-center p-4 mt-4">
         {!collapsed && <Image src={Logo} alt="Company Logo" />}
-
-        <button
-          onClick={setCollapsed}
-          className="rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] relative left-7"
-        >
-          <ChevronLeft
-            className={`w-5 h-5 transition-transform ${
-              collapsed ? "rotate-180" : ""
-            }`}
-          />
-        </button>
       </div>
 
       {/* Menu - Scrollable */}

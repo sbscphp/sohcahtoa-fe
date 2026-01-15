@@ -1,17 +1,44 @@
 'use client';
 
-import { Bell, Settings, CircleAlert } from "lucide-react"
+import { Bell, Settings, CircleAlert, ChevronLeft, Menu } from "lucide-react"
+import { useMediaQuery } from '@mantine/hooks';
 
 type HeaderProps = {
   title?: string;
   rightContent?: React.ReactNode;
   collapsed: boolean;
+  setCollapsed: () => void;
+  mobileOpened?: boolean;
+  toggleMobile?: () => void;
 }
 
-export default function Header({ title, rightContent, collapsed }: HeaderProps) {
+export default function Header({ title, rightContent, collapsed, setCollapsed, mobileOpened, toggleMobile }: HeaderProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   return (
     <header className="h-16 bg-white shadow px-6 flex items-center justify-between w-full">
-      <h1 className="text-lg font-semibold">{title}</h1>
+      <div className="flex items-center gap-4">
+        {isMobile && toggleMobile ? (
+          <button
+            onClick={toggleMobile}
+            className="rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors"
+          >
+            <Menu size={20} />
+          </button>
+        ) : (
+          <button
+            onClick={setCollapsed}
+            className="rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors"
+          >
+            <ChevronLeft
+              className={`w-5 h-5 transition-transform ${
+                collapsed ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        )}
+        <h1 className="text-lg font-semibold">{title}</h1>
+      </div>
 
       <div className="flex items-center gap-4">
         <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#F2F4F7] hover:bg-gray-50 transition-colors">
