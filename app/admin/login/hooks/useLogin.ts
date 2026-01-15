@@ -1,25 +1,12 @@
-// hooks/useLogin.ts
 import { useMutation } from "@tanstack/react-query";
+import { LoginFormValues } from "../_schemas/login.schema";
 
-type LoginPayload = {
-  email: string;
-  password: string;
-};
-
-export function useLogin() {
+export function useLogin(options?: any) {
   return useMutation({
-    mutationFn: async (payload: LoginPayload) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      return res.json();
+    mutationFn: async (payload: LoginFormValues) => {
+      await new Promise((r) => setTimeout(r, 1200)); // mock delay
+      return { requiresOtp: true };
     },
+    ...options,
   });
 }
