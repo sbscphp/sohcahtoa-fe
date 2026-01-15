@@ -54,7 +54,6 @@ export default function AdminLayoutShell({
           collapsed={collapsed} 
           title='Dashboard' 
           setCollapsed={toggleCollapsed}
-          mobileOpened={mobileOpened}
           toggleMobile={toggleMobile}
         />
       </AppShell.Header>

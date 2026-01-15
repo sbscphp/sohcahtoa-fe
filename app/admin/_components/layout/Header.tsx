@@ -8,15 +8,14 @@ type HeaderProps = {
   rightContent?: React.ReactNode;
   collapsed: boolean;
   setCollapsed: () => void;
-  mobileOpened?: boolean;
   toggleMobile?: () => void;
 }
 
-export default function Header({ title, rightContent, collapsed, setCollapsed, mobileOpened, toggleMobile }: HeaderProps) {
+export default function Header({ title, collapsed, setCollapsed, toggleMobile }: HeaderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   return (
-    <header className="h-16 bg-white shadow px-6 flex items-center justify-between w-full">
+    <header className="h-16 bg-white shadow px-6 flex items-center justify-between w-full relative">
       <div className="flex items-center gap-4">
         {isMobile && toggleMobile ? (
           <button
@@ -28,7 +27,7 @@ export default function Header({ title, rightContent, collapsed, setCollapsed, m
         ) : (
           <button
             onClick={setCollapsed}
-            className="rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors z-50 bg-white"
           >
             <ChevronLeft
               className={`w-5 h-5 transition-transform ${
