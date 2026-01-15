@@ -4,8 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Profile from "../assets/profile.png";
 import Logo from "../assets/logo.png";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname } from "next/navigation";  
 import {
   LayoutGrid,
   BanknoteIcon,
@@ -16,12 +15,10 @@ import {
   UserRoundCog,
   Ticket,
   Coins,
-  ChevronLeft,
 } from "lucide-react";
 
 type SidebarProps = {
   collapsed: boolean;
-  setCollapsed: (v: boolean) => void;
 };
 
 const menuItems = [
@@ -35,6 +32,7 @@ const menuItems = [
   { icon: Ticket, label: "Tickets", href: "/tickets" },
   { icon: Coins, label: "Rate Management", href: "/rate-management" },
 ];
+
 const menuItems2 = [
   { icon: LayoutGrid, label: "User Management", href: "/user-management" },
   { icon: BanknoteIcon, label: "Regulatory & Compliance", href: "/regulatory" },
@@ -42,36 +40,18 @@ const menuItems2 = [
   { icon: UserStar, label: "Audit Trail", href: "/audit-trial" },
 ];
 
-export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
+export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside
-      className={`
-    fixed left-0 top-0 h-screen
-    bg-white shadow
-    transition-all duration-300
-    ${collapsed ? "w-20" : "w-64"}
-  `}
-    >
-      {/* Logo + Collapse Button */}
-      <div className="flex items-center justify-between p-4">
+    <aside className="h-full bg-white shadow flex flex-col transition-all duration-300">
+      {/* Logo */}
+      <div className="flex items-center justify-center p-4 mt-4">
         {!collapsed && <Image src={Logo} alt="Company Logo" />}
-
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className=" rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] relative left-7 "
-        >
-          <ChevronLeft
-            className={`w-5 h-5 transition-transform ${
-              collapsed ? "rotate-180" : ""
-            }`}
-          />
-        </button>
       </div>
 
-      {/* Menu */}
-      <div className="h-[80%] overflow-y-auto">
+      {/* Menu - Scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <nav className="mt-6 space-y-1 px-3">
           {!collapsed && (
             <div>
@@ -92,7 +72,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                 transition-colors
                 ${
                   isActive
-                    ? "bg-[#FFF6F1] text-[#DD4F05]"
+                    ? "bg-[#FFF6F1] text-primary-orange"
                     : "text-gray-600 hover:bg-gray-100"
                 }
               `}
@@ -106,6 +86,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             );
           })}
         </nav>
+
         <nav className="mt-6 space-y-1 px-3">
           {!collapsed && (
             <div>
@@ -126,7 +107,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                 transition-colors
                 ${
                   isActive
-                    ? "bg-[#FFF6F1] text-[#DD4F05]"
+                    ? "bg-[#FFF6F1] text-primary-orange"
                     : "text-gray-600 hover:bg-gray-100"
                 }
               `}
@@ -140,21 +121,23 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             );
           })}
         </nav>
-        <div className="flex items-center mt-[30%] gap-3 pl-3">
-          <div className="w-10 h-10 rounded-full border border-[#6C6969] ">
-            <Image src={Profile} alt="profile picture" />
-          </div>
-          {!collapsed && (
-            <div>
-              <p className="font-medium text-xs text-[#323131] ">
-                Micheal Smith
-              </p>
-              <p className="text-[#6C6969] text-xs ">
-                michaelsmith12@gmail.com
-              </p>
-            </div>
-          )}
+      </div>
+
+      {/* Profile Section - Fixed at bottom */}
+      <div className="flex items-center gap-3 p-4 border-t border-gray-100">
+        <div className="w-10 h-10 rounded-full border border-[#6C6969] shrink-0">
+          <Image src={Profile} alt="profile picture" />
         </div>
+        {!collapsed && (
+          <div className="overflow-hidden">
+            <p className="font-medium text-xs text-[#323131] truncate">
+              Micheal Smith
+            </p>
+            <p className="text-[#6C6969] text-xs truncate">
+              michaelsmith12@gmail.com
+            </p>
+          </div>
+        )}
       </div>
     </aside>
   );
