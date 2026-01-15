@@ -4,7 +4,6 @@ import {
 } from "@mantine/core";
 import React from "react";
 import EmptySection from "./EmptySection";
-import TableContainer from "./TableContainer";
 import LoadingState from "./LoadingState";
 
 interface Header {
@@ -16,10 +15,6 @@ interface DynamicTableSectionProps<T> {
   headers: Header[];
   data: T[];
   loading?: boolean;
-  /**
-   * Single render function used for both table rows and cards.
-   * Receives each item and header list (so you can map fields easily).
-   */
   renderItems: (item: T, headers: Header[]) => React.ReactNode[];
   emptyMessage?: string;
   emptyTitle?: string;
@@ -44,17 +39,39 @@ export default function DynamicTableSection<T>({
     <>
       {/* Loading */}
       {loading && (
-        <LoadingState />
+        <LoadingState cols={headers.length} />
       )}
 
       {/* Table for larger screens */}
       {!loading && data?.length > 0 && (
         <div className="hidden! sm:block!">
-          <TableContainer headers={headers.map((h) => h.label)}>
-            {data.map((item, i) => (
-              <Table.Tr key={i}>{renderRowContent(item)}</Table.Tr>
-            ))}
-          </TableContainer>
+          <div className="w-full overflow-x-auto">
+            <Table
+              verticalSpacing="sm"
+              horizontalSpacing="md"
+              highlightOnHover
+              withTableBorder
+              className="min-w-[800px]"
+            >
+              <Table.Thead>
+                <Table.Tr>
+                  {headers.map((header) => (
+                    <Table.Th
+                      key={header.key || header.label}
+                      className="text-sm! font-semibold text-[#7C8496]! whitespace-nowrap bg-[#F8F9FB]"
+                    >
+                      {header.label}
+                    </Table.Th>
+                  ))}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.map((item, i) => (
+                  <Table.Tr key={i}>{renderRowContent(item)}</Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </div>
         </div>
       )}
 
