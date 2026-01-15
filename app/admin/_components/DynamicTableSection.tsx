@@ -15,10 +15,6 @@ interface DynamicTableSectionProps<T> {
   headers: Header[];
   data: T[];
   loading?: boolean;
-  /**
-   * Single render function used for both table rows and cards.
-   * Receives each item and header list (so you can map fields easily).
-   */
   renderItems: (item: T, headers: Header[]) => React.ReactNode[];
   emptyMessage?: string;
   emptyTitle?: string;
@@ -43,7 +39,7 @@ export default function DynamicTableSection<T>({
     <>
       {/* Loading */}
       {loading && (
-        <LoadingState />
+        <LoadingState cols={headers.length} />
       )}
 
       {/* Table for larger screens */}
