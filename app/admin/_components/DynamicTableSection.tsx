@@ -4,7 +4,6 @@ import {
 } from "@mantine/core";
 import React from "react";
 import EmptySection from "./EmptySection";
-import TableContainer from "./TableContainer";
 import LoadingState from "./LoadingState";
 
 interface Header {
@@ -50,11 +49,33 @@ export default function DynamicTableSection<T>({
       {/* Table for larger screens */}
       {!loading && data?.length > 0 && (
         <div className="hidden! sm:block!">
-          <TableContainer headers={headers.map((h) => h.label)}>
-            {data.map((item, i) => (
-              <Table.Tr key={i}>{renderRowContent(item)}</Table.Tr>
-            ))}
-          </TableContainer>
+          <div className="w-full overflow-x-auto">
+            <Table
+              verticalSpacing="sm"
+              horizontalSpacing="md"
+              highlightOnHover
+              withTableBorder
+              className="min-w-[800px]"
+            >
+              <Table.Thead>
+                <Table.Tr>
+                  {headers.map((header) => (
+                    <Table.Th
+                      key={header.key || header.label}
+                      className="text-sm! font-semibold text-[#7C8496]! whitespace-nowrap bg-[#F8F9FB]"
+                    >
+                      {header.label}
+                    </Table.Th>
+                  ))}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.map((item, i) => (
+                  <Table.Tr key={i}>{renderRowContent(item)}</Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </div>
         </div>
       )}
 
