@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { AppShell } from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
@@ -9,22 +11,43 @@ export default function AdminLayoutShell({
 }: {
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, { toggle: toggleCollapsed, close: closeNavbar }] = useDisclosure(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Auto-collapse sidebar on smaller screens
+  useEffect(() => {
+    if (isMobile) {
+      closeNavbar();
+    }
+  }, [isMobile, closeNavbar]);
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+    <AppShell
+      layout="alt"
+      header={{ height: 64 }}
+      navbar={{
+        width: collapsed ? 80 : 256,
+        breakpoint: 'sm',
+        collapsed: { mobile: !collapsed && isMobile },
+      }}
+      padding="md"
+    >
+      <AppShell.Navbar>
+        <Sidebar collapsed={collapsed} setCollapsed={toggleCollapsed} />
+      </AppShell.Navbar>
 
-      {/* Main area */}
-      <div
-        className={`flex flex-col flex-1 transition-all duration-300
-          ${collapsed ? 'ml-20' : 'ml-64'}
-        `}
-      >
+      <AppShell.Header>
         <Header collapsed={collapsed} title='Dashboard' />
-        <main className="p-6 bg-gray-50">{children}</main>
-      </div>
-    </div>
+      </AppShell.Header>
+
+      <AppShell.Main
+        style={{
+          backgroundColor: '#f9fafb',
+          minHeight: '100vh',
+        }}
+      >
+        {children}
+      </AppShell.Main>
+    </AppShell>
   );
 }
