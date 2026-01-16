@@ -1,14 +1,27 @@
 "use client";
 
-import { MantineProvider } from "@mantine/core";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { CacheProvider } from "@emotion/react";
-import createCache from "@emotion/cache";
-import { useState } from "react";
+import { MantineProvider, createTheme, MantineColorsTuple } from '@mantine/core';
 
-const emotionCache = createCache({
-  key: "mantine",
-  prepend: true, // VERY IMPORTANT for Next.js
+const myColor: MantineColorsTuple = [
+  '#fff0e4',
+  '#ffe0ce',
+  '#fdbe9e',
+  '#fb9b69',
+  '#f97d3c',
+  '#f96a20',
+  '#f96011',
+  '#dd4f05',
+  '#c64501',
+  '#ad3900'
+];
+
+
+const theme = createTheme({
+  colors: {
+    myColor,
+  },
+  primaryColor: 'myColor',
+  primaryShade: 4,
 });
 
 export default function Providers({
@@ -19,12 +32,11 @@ export default function Providers({
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <CacheProvider value={emotionCache}>
-      <QueryClientProvider client={queryClient}>
-        <MantineProvider defaultColorScheme="light">
-          {children}
-        </MantineProvider>
-      </QueryClientProvider>
-    </CacheProvider>
+    <MantineProvider
+      defaultColorScheme="light"
+      theme={theme}
+    >
+      {children}
+    </MantineProvider>
   );
 }

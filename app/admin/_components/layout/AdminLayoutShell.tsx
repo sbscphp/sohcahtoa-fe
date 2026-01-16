@@ -1,8 +1,8 @@
 'use client';
 
 import { AppShell } from '@mantine/core';
-import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { useEffect } from 'react';
+import { useDisclosure } from '@mantine/hooks';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
@@ -13,7 +13,22 @@ export default function AdminLayoutShell({
 }) {
   const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Use useLayoutEffect to check media query on client side before paint to prevent hydration mismatch
+  useLayoutEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    // This state update is necessary to prevent hydration mismatch between server and client
+    // eslint-disable-next-line -- necessary for hydration mismatch prevention
+    setIsMobile(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Auto-close sidebar on mobile when screen size changes
   useEffect(() => {
