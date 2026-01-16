@@ -30,7 +30,7 @@ export default function Header({ title, collapsed, setCollapsed, toggleMobile }:
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors z-50 bg-white"
           >
             <ChevronLeft
-              className={`w-5 h-5 transition-transform ${
+              className={`w-5 h-5 transition-transform duration-500 ease-in-out ${
                 collapsed ? "rotate-180" : ""
               }`}
             />
