@@ -22,22 +22,22 @@ type SidebarProps = {
 };
 
 const menuItems = [
-  { icon: LayoutGrid, label: "Dashboard", href: "/dashboard" },
-  { icon: BanknoteIcon, label: "Transactions", href: "/transactions" },
-  { icon: Database, label: "Settlement", href: "/settlement" },
-  { icon: UserStar, label: "Agent", href: "/agent" },
-  { icon: Store, label: "Outlet", href: "/outlet" },
-  { icon: Users, label: "Customer", href: "/customer" },
-  { icon: UserRoundCog, label: "Workflow", href: "/workflow" },
-  { icon: Ticket, label: "Tickets", href: "/tickets" },
-  { icon: Coins, label: "Rate Management", href: "/rate-management" },
+  { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard" },
+  { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions" },
+  { icon: Database, label: "Settlement", href: "/admin/settlement" },
+  { icon: UserStar, label: "Agent", href: "/admin/agent" },
+  { icon: Store, label: "Outlet", href: "/admin/outlet" },
+  { icon: Users, label: "Customer", href: "/admin/customer" },
+  { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow" },
+  { icon: Ticket, label: "Tickets", href: "/admin/tickets" },
+  { icon: Coins, label: "Rate Management", href: "/admin/rate-management" },
 ];
 
 const menuItems2 = [
-  { icon: LayoutGrid, label: "User Management", href: "/user-management" },
-  { icon: BanknoteIcon, label: "Regulatory & Compliance", href: "/regulatory" },
-  { icon: Database, label: "Report and Analytics", href: "/report" },
-  { icon: UserStar, label: "Audit Trail", href: "/audit-trial" },
+  { icon: LayoutGrid, label: "User Management", href: "/admin/user-management" },
+  { icon: BanknoteIcon, label: "Regulatory & Compliance", href: "/admin/regulatory" },
+  { icon: Database, label: "Report and Analytics", href: "/admin/report" },
+  { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trial" },
 ];
 
 export default function Sidebar({ collapsed }: SidebarProps) {
