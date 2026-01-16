@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function OtpVerification({
-  email,
+  // email,
   loading,
   onVerify,
   onResend,
@@ -37,11 +37,11 @@ export function OtpVerification({
 
   return (
     <Card radius="lg" p="xl" w={420}>
-      <Stack align="center">
-        <Title order={4}>Account Authorisation Access</Title>
+      <Stack align="left">
+        <Title order={3} className="ml-2!" >Account Authorisation Access</Title>
 
         <Text size="sm" c="dimmed" ta="center">
-          A six (6) digit OTP has been sent to your email — <b>{email}</b>
+          A six (6) digit OTP has been sent to your email linked to this account.  e*****sohcahtoa.com. Enter code to log in
         </Text>
 
         <PinInput
@@ -50,7 +50,9 @@ export function OtpVerification({
           value={otp}
           onChange={setOtp}
           oneTimeCode
+          className="font-bold text-4xl"
         />
+        <div className="flex flex-col gap-5 justify-center items-center">
 
         <Text size="xs" c="dimmed">
           OTP expires in{" "}
@@ -59,20 +61,21 @@ export function OtpVerification({
           </b>
         </Text>
 
-        <Text size="xs">
+        <Text size="xs" c={"#6C6969"}>
           Didn’t Receive Code?{" "}
           <span
             onClick={onResend}
-            className="text-orange-500 cursor-pointer"
+            className="text-red-500 cursor-pointer font-medium underline"
           >
             Resend OTP
           </span>
         </Text>
+        </div>
 
         <Button
           fullWidth
           radius="xl"
-          color="orange"
+          color="#DD4F05"
           loading={loading}
           disabled={otp.length !== 6}
           onClick={() => onVerify(otp)}

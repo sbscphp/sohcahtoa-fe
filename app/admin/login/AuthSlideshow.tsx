@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Box, Transition } from "@mantine/core";
 import Image from "next/image";
 import WrapDollar from "../_components/assets/WrapDollar.png";
-import Flags from "../_components/assets/logo.png";
+import Flags from "../_components/assets/Currency.png";
 
 const images = [WrapDollar, Flags];
 

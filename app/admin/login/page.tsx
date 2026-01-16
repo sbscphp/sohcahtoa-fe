@@ -22,12 +22,14 @@ import { useVerifyOtp } from "./hooks/useVerifyOtp";
 import { AuthSlideshow } from "./AuthSlideshow";
 import { OtpVerification } from "./OtpVerification";
 import { OtpSuccess } from "./OtpSuccess";
-
+import { useRouter } from "next/navigation";
 import Logo from "../_components/assets/logo.png";
 
 export default function LoginPage() {
   const [step, setStep] = useState<"login" | "otp" | "success">("login");
   const [emailForOtp, setEmailForOtp] = useState("");
+  const [successOpened, setSuccessOpened] = useState(false);
+  const router = useRouter();
 
   const loginMutation = useLogin({
     onSuccess: (data, variables) => {
@@ -40,6 +42,7 @@ export default function LoginPage() {
 
   const verifyOtp = useVerifyOtp({
     onSuccess: () => {
+      setSuccessOpened(true);
       setStep("success");
     },
   });
@@ -59,10 +62,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-full grid grid-cols-1 lg:grid-cols-[1.6fr_2fr] bg-white rounded-xl overflow-hidden shadow-lg">
-
+      <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_2fr] bg-white rounded-xl overflow-hidden shadow-lg">
         {/* LEFT SECTION */}
-        <div className="hidden lg:flex flex-col justify-between bg-[#F3F3F3] p-10">
+        <div className="hidden lg:flex flex-col justify-between bg-[#F3F3F3] py-10 pl-10 ">
           <div>
             <Image src={Logo} alt="Logo" className="h-8 mb-10" />
 
@@ -71,9 +73,8 @@ export default function LoginPage() {
             </Title>
 
             <Text c="dimmed" mt="sm" size="sm" maw={380}>
-              Your central workspace for settlement control, rate
-              configuration, and franchise oversight — all in one
-              dependable place.
+              Your central workspace for settlement control, rate configuration,
+              and franchise oversight — all in one dependable place.
             </Text>
           </div>
 
@@ -117,7 +118,7 @@ export default function LoginPage() {
                     type="submit"
                     size="md"
                     radius="xl"
-                    color="orange"
+                    color="#DD4F05"
                     fullWidth
                     loading={loginMutation.isPending}
                     disabled={!isValid || loginMutation.isPending}
@@ -138,7 +139,13 @@ export default function LoginPage() {
             />
           )}
 
-          {step === "success" && <OtpSuccess />}
+          <OtpSuccess
+            opened={successOpened}
+            onClose={() => {
+              setSuccessOpened(false);
+              router.push("/admin/dashboard"); // optional redirect
+            }}
+          />
         </div>
       </div>
     </div>
