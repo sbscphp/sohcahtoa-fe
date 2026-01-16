@@ -2,15 +2,29 @@
 
 import { MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
+import { useState } from "react";
 
-const queryClient = new QueryClient();
+const emotionCache = createCache({
+  key: "mantine",
+  prepend: true, // VERY IMPORTANT for Next.js
+});
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <MantineProvider defaultColorScheme="light" theme={{}}>
-        {children}
-      </MantineProvider>
-    </QueryClientProvider>
+    <CacheProvider value={emotionCache}>
+      <QueryClientProvider client={queryClient}>
+        <MantineProvider defaultColorScheme="light">
+          {children}
+        </MantineProvider>
+      </QueryClientProvider>
+    </CacheProvider>
   );
 }
