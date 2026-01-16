@@ -8,8 +8,6 @@ import { TransactionsByType } from "./_dashboardComponents/TransactionsByType";
 import { RecentTransactionsTable } from "./_dashboardComponents/RecentTransactionsTable";
 import { TaskAndNotificationList } from "./_dashboardComponents/TaskAndNotificationList";
 import { Transaction, TransactionStatus } from "../../_types/dashboard";
-// import { RecentTransactionsTable } from "../RecentTransactionsTable";
-// import { TaskAndNotificationList } from "@/components/TaskAndNotificationList";
 
 const transactions: Transaction[] = [
   {
