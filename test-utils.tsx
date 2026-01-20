@@ -1,10 +1,8 @@
 import { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
-import { MantineProvider, createTheme } from '@mantine/core'
+import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
-// Create a custom theme (you can customize this based on your app's theme)
-const theme = createTheme({})
+import { mantineTheme } from './app/(customer)/_lib/mantine-theme'
 
 // Create a test QueryClient with default options for testing
 function createTestQueryClient() {
@@ -31,7 +29,7 @@ function AllTheProviders({ children, queryClient }: AllTheProvidersProps) {
 
   return (
     <QueryClientProvider client={client}>
-      <MantineProvider theme={theme}>
+      <MantineProvider theme={mantineTheme}>
         {children}
       </MantineProvider>
     </QueryClientProvider>
