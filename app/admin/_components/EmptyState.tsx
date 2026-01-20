@@ -1,8 +1,9 @@
 "use client";
 
 import { Text } from "@mantine/core";
-import { SearchX } from "lucide-react";
 import { ReactNode } from "react";
+import Empty from "../_components/assets/EmptyState.png"
+import Image from "next/image";
 
 interface EmptyStateProps {
   title?: string;
@@ -19,7 +20,7 @@ export default function EmptyState({
     <div className="flex flex-col items-center justify-center py-12 px-4">
       {/* Icon */}
       <div className="mb-4 text-gray-300">
-        {icon || <SearchX size={64} strokeWidth={1.5} />}
+        {icon || <Image src={Empty} alt="Empty State" />}
       </div>
 
       {/* Title */}
