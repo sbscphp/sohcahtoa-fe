@@ -124,7 +124,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       </div>
 
       {/* Profile Section - Fixed at bottom */}
-      <div className="flex items-center gap-3 p-4 border-t border-gray-100">
+      <div className="flex items-center gap-3 p-4 border-t border-gray- ">
         <div className="w-10 h-10 rounded-full border border-[#6C6969] shrink-0">
           <Image src={Profile} alt="profile picture" />
         </div>

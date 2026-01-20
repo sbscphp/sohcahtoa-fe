@@ -29,7 +29,7 @@ function DetailItem({ label, value }: DetailItemProps) {
   );
 }
 
-export default function Settlement(isEmpty: boolean) {
+export default function Settlement({ isEmpty }: { isEmpty?: boolean }) {
     const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">

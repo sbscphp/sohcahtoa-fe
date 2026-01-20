@@ -1,12 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import { LoginFormValues } from "../_schemas/login.schema";
 
-export function useLogin(options?: any) {
+type LoginResponse = { requiresOtp: boolean };
+
+export function useLogin(
+  options?: Omit<
+    UseMutationOptions<LoginResponse, Error, LoginFormValues>,
+    "mutationFn"
+  >
+) {
   return useMutation({
     mutationFn: async (payload: LoginFormValues) => {
       await new Promise((r) => setTimeout(r, 1200)); // mock delay
-      return { requiresOtp: true };
+      return { requiresOtp: true } satisfies LoginResponse;
     },
     ...options,
   });

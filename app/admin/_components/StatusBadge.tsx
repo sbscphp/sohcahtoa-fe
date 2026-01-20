@@ -22,6 +22,7 @@ interface StatusBadgeProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   radius?: "xs" | "sm" | "md" | "lg" | "xl";
   defaultColor?: string;
+  bg?: string;
 }
 
 export function StatusBadge({
@@ -31,6 +32,7 @@ export function StatusBadge({
   size = "sm",
   radius = "xl",
   defaultColor = "blue",
+  bg,
 }: StatusBadgeProps) {
   // Determine the color to use
   const badgeColor =
@@ -43,6 +45,7 @@ export function StatusBadge({
       className="capitalize!"
       radius={radius}
       size={size}
+      bg={bg}
     >
       {status}
     </Badge>
