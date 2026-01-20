@@ -108,7 +108,7 @@ const transactions: Transaction[] = [
 /* --------------------------------------------
  Component
 --------------------------------------------- */
-export default function TransactionsTable(): JSX.Element {
+export default function TransactionsTable() {
   /* Pagination state */
   const [page, setPage] = useState(1);
   const pageSize = 5;

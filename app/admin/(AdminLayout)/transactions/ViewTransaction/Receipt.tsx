@@ -23,7 +23,7 @@ function DetailItem({ label, value }: DetailItemProps) {
   );
 }
 
-export default function Receipt(isEmpty: boolean) {
+export default function Receipt({ isEmpty }: { isEmpty?: boolean }) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">

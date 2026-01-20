@@ -32,7 +32,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const loginMutation = useLogin({
-    onSuccess: (data, variables) => {
+    onSuccess: (data: { requiresOtp: boolean }, variables: LoginFormValues) => {
       if (data.requiresOtp) {
         setEmailForOtp(variables.email);
         setStep("otp");
