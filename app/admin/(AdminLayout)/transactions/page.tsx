@@ -90,6 +90,7 @@ export default function TransactionPage () {
                 </div>
               </div>
               
+              
               <TransactionsTable />
               </>
     );
