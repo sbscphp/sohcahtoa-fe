@@ -1,29 +1,26 @@
-import "@mantine/charts/styles.css";
-import { MantineProvider } from "@mantine/core";
-import "@mantine/core/styles.css";
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { mantineTheme } from "./(customer)/_lib/mantine-theme";
-import "./globals.css";
-import QueryProvider from "./QueryProvider";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import Providers from './providers';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"]
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"]
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "SohCahToa Payout BDC",
-  description: "SohCahToa Payout BDC"
+  title: 'SohCahToa Payout BDC',
+  description: 'SohCahToa Payout BDC',
+  icons: '/favicon.png',
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
@@ -32,9 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MantineProvider theme={mantineTheme}>
-          <QueryProvider>{children}</QueryProvider>
-        </MantineProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
