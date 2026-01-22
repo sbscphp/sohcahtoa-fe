@@ -3,15 +3,18 @@
 import { Badge } from "@mantine/core";
 
 const statusColorMap: Record<string, string> = {
-  Pending: "orange",
-  Completed: "green",
+  Pending: "#B54708",
+  Completed: "#027A48",
+  Success: "#027A48",
+  Settled: "#027A48",
+  Posted: "#027A48",
   Rejected: "red",
   "Request More Info": "violet",
-  Unread: "orange",
+  Unread: "#B54708",
   Read: "gray",
-  Active: "green",
+  Active: "#027A48",
   Inactive: "gray",
-  Approved: "green",
+  Approved: "#027A48",
   Declined: "red",
 };
 
