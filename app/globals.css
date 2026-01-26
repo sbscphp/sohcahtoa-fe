@@ -463,3 +463,157 @@ body {
   color: var(--color-text-500);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
+
+/* Custom Stepper – design: circle, then line to next, repeat. Steps = user labels. */
+.custom-stepper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+/* One step: flex-grow 1 so width is equal for any number of steps; min-width auto so it never shrinks below content */
+.custom-stepper-step {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  flex: 1 1 0;
+}
+
+/* Row: [line left] [circle] [line right] */
+.custom-stepper-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  height: 16px;
+  flex: none;
+}
+
+/* Col for progress line – flex 1 so line stretches; first step left empty, last step right empty */
+.custom-stepper-line-col {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 16px;
+}
+
+.custom-stepper-line-col:first-child {
+  justify-content: flex-end;
+}
+
+.custom-stepper-line-col:last-child {
+  justify-content: flex-start;
+}
+
+.custom-stepper-progress-line {
+  width: 100%;
+  height: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.custom-stepper-progress-active {
+  background-color: #DD4F05;
+}
+
+.custom-stepper-progress-inactive {
+  background-color: #E0E0E7;
+}
+
+/* Col for circle only – 16px fixed */
+.custom-stepper-indicator-col {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.custom-stepper-indicator {
+  width: 16px;
+  height: 16px;
+  position: relative;
+  flex: none;
+  border-radius: 50%;
+}
+
+.custom-stepper-indicator-active {
+  background-color: #DD4F05;
+  border-radius: 50%;
+}
+
+.custom-stepper-indicator-active::after {
+  content: "";
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  top: 25%;
+  bottom: 25%;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+}
+
+.custom-stepper-indicator-inactive {
+  background-color: #FFFFFF;
+  border-radius: 50%;
+}
+
+.custom-stepper-indicator-inactive::after {
+  content: "";
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  top: 25%;
+  bottom: 25%;
+  background-color: #E0E0E7;
+  border-radius: 50%;
+}
+
+/* Label below row – design: padding 0 16px, center */
+.custom-stepper-placeholder {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0 16px;
+  flex: none;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.custom-stepper-label {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  flex: none;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.custom-stepper-label-active {
+  color: #DD4F05;
+}
+
+.custom-stepper-label-inactive {
+  color: #6C6969;
+}

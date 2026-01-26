@@ -6,9 +6,8 @@ import { formatCurrency } from "../../_lib/formatCurrency";
 import SectionCard from "./SectionCard";
 import SectionHeader from "./SectionHeader";
 import SeeAllButton from "./SeeAllButton";
-import OverviewTabs from "./OverviewTabs";
+import { FilterTabs } from "../common";
 import TransactionListItem from "./TransactionListItem";
-
 const FILTER_TABS = [
   { value: "all", label: "All" },
   { value: "fx", label: "FX" },
@@ -46,7 +45,7 @@ export default function FxTransactionsCard() {
         variant="pills"
       >
         <div className="mb-4">
-          <OverviewTabs items={FILTER_TABS} value={activeFilter} />
+          <FilterTabs items={FILTER_TABS} value={activeFilter} />
         </div>
         {FILTER_TABS.map((tab) => {
           const filtered =
@@ -54,8 +53,8 @@ export default function FxTransactionsCard() {
               ? MOCK_FX_TRANSACTIONS
               : MOCK_FX_TRANSACTIONS.filter((tx) => tx.category === tab.value);
           return (
-            <Tabs.Panel key={tab.value} value={tab.value}>
-              <div className="-mx-2">
+            <Tabs.Panel key={tab.value} value={tab.value} className="min-h-[300px]">
+              <div className="">
                 {filtered.length === 0 ? (
                   <p className="py-8 text-center text-sm text-gray-500">
                     {tab.value === "all" ? "No transactions" : `No ${tab.label.toLowerCase()} transactions`}

@@ -20,13 +20,11 @@ export default function PrepaidCard({
 
   return (
     <div
-      className="flex h-[156px] min-w-0 flex-1 flex-col justify-between overflow-hidden rounded-[20px] p-4 text-white filter-[drop-shadow(0_15px_25px_rgba(0,0,0,0.15))]"
+      className="flex h-[156px] min-w-0 flex-1 flex-col justify-between overflow-hidden rounded-[20px] p-4 text-white filter-[drop-shadow(0_15px_25px_rgba(0,0,0,0.15))] transition-transform duration-200 hover:scale-[1.02]"
       style={{ backgroundImage: `url(${bgSrc})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
-      {/* content: chip + "Prepaid card" on left; VISA on right */}
       <div className="flex flex-row items-start justify-between gap-2">
         <div className="flex flex-row items-start gap-2.5">
-          {/* chip: 44x32, chip_gold gradient, border 0.5px #A07400, rounded 5px */}
           <div
             className="h-8 w-11 shrink-0 rounded-[5px]"
             style={{
@@ -40,7 +38,6 @@ export default function PrepaidCard({
         <p className="text-sm font-bold tracking-wider text-[#FAFAFA]">VISA</p>
       </div>
 
-      {/* bottom: .... 7093, VALID THRU 08/27 | $3,048.00, Emmanuel Israel */}
       <div className="flex flex-row items-end justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <p className="font-mono text-base font-medium leading-[120%] text-[#FAFAFA]">.... {lastFour}</p>
