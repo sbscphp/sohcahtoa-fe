@@ -21,7 +21,7 @@ import { useVerifyOtp } from "./hooks/useVerifyOtp";
 
 import { AuthSlideshow } from "./AuthSlideshow";
 import { OtpVerification } from "./OtpVerification";
-import { OtpSuccess } from "./OtpSuccess";
+import { ModalConfirmed } from "./ModalConfirmed";
 import { useRouter } from "next/navigation";
 import Logo from "../_components/assets/logo.png";
 
@@ -64,7 +64,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_2fr] bg-white rounded-xl overflow-hidden shadow-lg">
         {/* LEFT SECTION */}
-        <div className="hidden lg:flex flex-col justify-between bg-[#F3F3F3] py-10 pl-10 ">
+        <div className="hidden lg:flex flex-col justify-between bg-bg-card-2 py-10 pl-10 ">
           <div>
             <Image src={Logo} alt="Logo" className="h-8 mb-10" />
 
@@ -139,11 +139,15 @@ export default function LoginPage() {
             />
           )}
 
-          <OtpSuccess
+          <ModalConfirmed
             opened={successOpened}
             onClose={() => {
               setSuccessOpened(false);
               router.push("/admin/dashboard"); // optional redirect
+            }}
+            props={{
+              title: "Login Successful",
+              description: "You have successfully logged in to your account.",
             }}
           />
         </div>

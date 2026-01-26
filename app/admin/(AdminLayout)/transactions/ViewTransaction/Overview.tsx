@@ -1,15 +1,12 @@
 "use client";
 
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import {
-  Card,
-  Group,
-  Text,
-  Title,
-  Button,
-} from "@mantine/core";
+import { Card, Group, Text, Title, Button } from "@mantine/core";
 import { useState } from "react";
 import TakeActionOverlay from "./TakeActionOverlay";
+import EmptyState from "@/app/admin/_components/EmptyState";
+import Empty from "../../../_components/assets/EmptyTrans.png";
+import Image from "next/image";
 
 interface DetailItemProps {
   label: string;
@@ -27,14 +24,19 @@ function DetailItem({ label, value }: DetailItemProps) {
   );
 }
 
-export default function Overview() {
-    const [opened, setOpened] = useState(false);
+export default function Overview(isEmpty?: { isEmpty?: boolean }) {
+  const [opened, setOpened] = useState(false);
+  const EmptyImg = <Image src={Empty} alt="No Details Available" />;
+
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">
       {/* Header */}
       <Group justify="space-between" align="flex-start" mb="xl">
         <div>
-          <Title order={4}><span className="font-medium text-[#8F8B8B] ">Buy FX:</span> Business Travel Allowance</Title>
+          <Title order={4}>
+            <span className="font-medium text-[#8F8B8B] ">Buy FX:</span>{" "}
+            Business Travel Allowance
+          </Title>
 
           <Group gap="xs" mt={4}>
             <Text size="xs" c="dimmed">
@@ -75,8 +77,6 @@ export default function Overview() {
         </div>
       </div>
 
-      
-
       {/* BTA Transaction Details */}
       <div className="space-y-6 mb-">
         <Text fw={600} c="#DD4F05">
@@ -95,11 +95,17 @@ export default function Overview() {
 
           <DetailItem label="Pick Up State" value="Lagos State" />
           <DetailItem label="Pick Up City" value="Lagos Island" />
-          <DetailItem
-            label="Pickup Location"
-            value="14B SBSC Office, Lagos."
-          />
+          <DetailItem label="Pickup Location" value="14B SBSC Office, Lagos." />
         </div>
+      </div>
+      <div className="space-y-6 mb-">
+        {!isEmpty && (
+          <EmptyState
+            title="Payment Pending"
+            description="So sorry, but transaction hasn’t received any payment from the customer/Transaction requestor"
+            icon={EmptyImg}
+          />
+        )}
       </div>
     </Card>
   );
