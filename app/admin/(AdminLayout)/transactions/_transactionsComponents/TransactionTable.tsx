@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import {
@@ -200,7 +200,7 @@ export default function TransactionsTable() {
       w={10}
       h={10}
       onClick={() =>
-        router.push(`/admin/transactions/ViewTransaction?id=${item.id}`)
+        router.push(`/admin/transactions/${item.id}`)
       }
     >
       <ChevronRight size={14} />

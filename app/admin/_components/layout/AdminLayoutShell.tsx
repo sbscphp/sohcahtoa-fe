@@ -3,17 +3,39 @@
 import { AppShell } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
+
+const HEADER_HEIGHT = 64;
 
 export default function AdminLayoutShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Get page title from route
+  const getPageTitle = () => {
+    if (pathname === '/admin/dashboard') return 'Dashboard';
+    if (pathname?.startsWith('/admin/transactions')) return 'Transactions';
+    if (pathname?.startsWith('/admin/settlement')) return 'Settlement';
+    if (pathname?.startsWith('/admin/agent')) return 'Agent';
+    if (pathname?.startsWith('/admin/outlet')) return 'Outlet';
+    if (pathname?.startsWith('/admin/customer')) return 'Customer';
+    if (pathname?.startsWith('/admin/workflow')) return 'Workflow';
+    if (pathname?.startsWith('/admin/tickets')) return 'Tickets';
+    if (pathname?.startsWith('/admin/rate-management')) return 'Rate Management';
+    if (pathname?.startsWith('/admin/user-management')) return 'User Management';
+    if (pathname?.startsWith('/admin/regulatory')) return 'Regulatory & Compliance';
+    if (pathname?.startsWith('/admin/report')) return 'Report and Analytics';
+    if (pathname?.startsWith('/admin/audit-trial')) return 'Audit Trail';
+    return 'Dashboard';
+  };
 
   // Use useLayoutEffect to check media query on client side before paint to prevent hydration mismatch
   useLayoutEffect(() => {
@@ -40,7 +62,7 @@ export default function AdminLayoutShell({
   return (
     <AppShell
       layout={isMobile ? undefined : "alt"}
-      header={{ height: 64 }}
+      header={{ height: HEADER_HEIGHT }}
       navbar={{
         width: isMobile ? 256 : (collapsed ? 80 : 256),
         breakpoint: 'sm',
@@ -52,7 +74,10 @@ export default function AdminLayoutShell({
       }}
     >
       <AppShell.Navbar>
-        <Sidebar collapsed={isMobile ? false : collapsed} />
+        <Sidebar 
+          collapsed={isMobile ? false : collapsed}
+          onCollapse={toggleCollapsed}
+        />
       </AppShell.Navbar>
 
       <AppShell.Header
@@ -67,7 +92,7 @@ export default function AdminLayoutShell({
       >
         <Header 
           collapsed={collapsed} 
-          title='Dashboard' 
+          title={getPageTitle()} 
           setCollapsed={toggleCollapsed}
           toggleMobile={toggleMobile}
         />
@@ -75,11 +100,11 @@ export default function AdminLayoutShell({
 
       <AppShell.Main
         style={{
-          backgroundColor: '#f9fafb',
-          minHeight: 'calc(100vh - 64px)',
-          padding: '1rem',
+          backgroundColor: '#F7F7F7',
+          minHeight: '100vh',
+          padding: '1.5rem',
           marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
-          paddingTop: 'calc(64px + 1rem)',
+          paddingTop: `calc(${HEADER_HEIGHT}px + 1.5rem)`,
           transition: 'margin-left 0.3s ease',
         }}
       >

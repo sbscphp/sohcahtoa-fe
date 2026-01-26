@@ -1,10 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import Profile from "../assets/profile.png";
-import Logo from "../assets/logo.png";
-import { usePathname } from "next/navigation";  
+import { collapsed_logo, logo } from "@/app/assets/asset";
+import { Avatar } from "@mantine/core";
 import {
   LayoutGrid,
   BanknoteIcon,
@@ -16,9 +13,13 @@ import {
   Ticket,
   Coins,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type SidebarProps = {
   collapsed: boolean;
+  onCollapse?: () => void;
 };
 
 const menuItems = [
@@ -40,45 +41,68 @@ const menuItems2 = [
   { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trial" },
 ];
 
-export default function Sidebar({ collapsed }: SidebarProps) {
+export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="h-full bg-white shadow flex flex-col transition-all duration-300">
-      {/* Logo */}
-      <div className="flex items-center justify-center p-4 mt-4">
-        {!collapsed && <Image src={Logo} alt="Company Logo" />}
+    <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
+     
+      <div className={`flex ${collapsed ? "px-2 py-4" : "p-4"}`}>
+        <div
+          className={`overflow-hidden transition-[width,height] duration-300 ease-in-out ${
+            collapsed ? "h-15 w-[64px]" : "h-12 w-[120px]"
+          }`}
+        >
+          <div className="relative h-12 w-[120px]">
+            <div
+              className={`absolute left-0 top-0 z-10 transition-opacity duration-300 ease-in-out ${
+                collapsed ? "opacity-0" : "opacity-100"
+              }`}
+              aria-hidden={collapsed}
+            >
+              <Image src={logo} alt="SohCahToa" width={120} height={50} />
+            </div>
+            <div
+              className={`absolute left-0 top-0 z-20 transition-opacity duration-300 ease-in-out ${
+                collapsed ? "opacity-100" : "opacity-0"
+              }`}
+              aria-hidden={!collapsed}
+            >
+              <Image src={collapsed_logo} alt="SohCahToa" width={50} height={20} />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Menu - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <nav className="mt-6 space-y-1 px-3">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3">
+        <nav className="mt-2 space-y-1">
           {!collapsed && (
             <div>
-              <h5 className="px-3 mb-3 text-xs text-[#B2AFAF] uppercase tracking-wider">
+              <h5 className="px-3 mb-3 text-xs text-body-text-100 uppercase tracking-wider">
                 MAIN MENU
               </h5>
             </div>
           )}
 
           {menuItems.map(({ icon: Icon, label, href }) => {
-            const isActive = pathname === href;
+            // Check if current path matches the href
+            const isActive = pathname === href || pathname?.startsWith(href + '/');
 
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-                transition-colors
-                ${
-                  isActive
-                    ? "bg-[#FFF6F1] text-primary-orange"
-                    : "text-gray-600 hover:bg-gray-100"
-                }
-              `}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                  transition-colors
+                  ${
+                    isActive
+                      ? "bg-primary-00 text-primary-400"
+                      : "text-body-text-300 hover:bg-white hover:text-body-heading-300"
+                  }
+                `}
               >
                 <Icon className="w-5 h-5 shrink-0" />
-
                 {!collapsed && (
                   <span className="whitespace-nowrap">{label}</span>
                 )}
@@ -87,33 +111,33 @@ export default function Sidebar({ collapsed }: SidebarProps) {
           })}
         </nav>
 
-        <nav className="mt-6 space-y-1 px-3">
+        <nav className="mt-6 space-y-1">
           {!collapsed && (
             <div>
-              <h5 className="px-3 mb-3 text-xs text-[#B2AFAF] uppercase tracking-wider">
+              <h5 className="px-3 mb-3 text-xs text-body-text-100 uppercase tracking-wider">
                 OTHERS
               </h5>
             </div>
           )}
 
           {menuItems2.map(({ icon: Icon, label, href }) => {
-            const isActive = pathname === href;
+            // Check if current path matches the href
+            const isActive = pathname === href || pathname?.startsWith(href + '/');
 
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-                transition-colors
-                ${
-                  isActive
-                    ? "bg-[#FFF6F1] text-primary-orange"
-                    : "text-gray-600 hover:bg-gray-100"
-                }
-              `}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                  transition-colors
+                  ${
+                    isActive
+                      ? "bg-primary-00 text-primary-400"
+                      : "text-body-text-300 hover:bg-white hover:text-body-heading-300"
+                  }
+                `}
               >
                 <Icon className="w-5 h-5 shrink-0" />
-
                 {!collapsed && (
                   <span className="whitespace-nowrap">{label}</span>
                 )}
@@ -123,22 +147,24 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         </nav>
       </div>
 
-      {/* Profile Section - Fixed at bottom */}
-      <div className="flex items-center gap-3 p-4 border-t border-gray- ">
-        <div className="w-10 h-10 rounded-full border border-[#6C6969] shrink-0">
-          <Image src={Profile} alt="profile picture" />
-        </div>
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <p className="font-medium text-xs text-[#323131] truncate">
-              Micheal Smith
-            </p>
-            <p className="text-[#6C6969] text-xs truncate">
-              michaelsmith12@gmail.com
-            </p>
+      {/* User Profile - Fixed at bottom */}
+      {!collapsed && (
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
+            </div>
+            <div className="overflow-hidden flex-1">
+              <p className="font-medium text-xs text-body-heading-300 truncate">
+                Michael Smith
+              </p>
+              <p className="text-body-text-100 text-xs truncate">
+                michaelsmith12@gmail.com
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   );
 }
