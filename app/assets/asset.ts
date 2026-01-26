@@ -10,7 +10,22 @@ import successGif from './gif/success.gif';
 import landingFig from './svg/landing_fig.svg';
 import cardBackground from './svg/card_background.svg';
 import collapsed_logo from './svg/collapsed_logo.svg';
+import empty from './png/empty.png';
 import emptyState from './svg/empty-state.svg';
 import underReview from './svg/under-review.svg';
 
-export { logo, cbnLogo, citizenIcon, touristIcon, expatriateIcon, phoneIcon, emailIcon, uploadIcon, successGif, landingFig, cardBackground, collapsed_logo, emptyState, underReview };
+export {
+  logo,
+  cbnLogo,
+  citizenIcon,
+  touristIcon,
+  expatriateIcon,
+  phoneIcon,
+  emailIcon,
+  uploadIcon,
+  successGif,
+  landingFig,
+  cardBackground,
+  collapsed_logo, emptyState, underReview,
+  empty,
+};
