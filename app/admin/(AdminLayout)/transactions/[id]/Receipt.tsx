@@ -2,7 +2,7 @@
 
 import EmptyState from "@/app/admin/_components/EmptyState";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { DetailItem } from "../_transactionsComponents/DetailItem";
+import { DetailItem } from "../../../_components/DetailItem";
 import { Card, Group, Text, Title } from "@mantine/core";
 import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import Empty from "../../../_components/assets/EmptyTrans.png";
@@ -25,7 +25,7 @@ export default function Receipt({ isEmpty }: { isEmpty?: boolean }) {
             <Text c="dimmed" className="text-body-text-200">
               Nov 17 2025 | 11:00am
             </Text>
-            <StatusBadge status="Pending" size="xs" />
+            <StatusBadge status="Pending" size="sm" />
           </Group>
         </div>
 

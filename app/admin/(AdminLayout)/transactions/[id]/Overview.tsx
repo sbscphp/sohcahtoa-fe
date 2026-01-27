@@ -1,7 +1,7 @@
 "use client";
 
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { DetailItem } from "../_transactionsComponents/DetailItem";
+import { DetailItem } from "../../../_components/DetailItem";
 import { Card, Group, Text, Title } from "@mantine/core";
 import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import EmptyState from "@/app/admin/_components/EmptyState";
