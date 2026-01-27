@@ -2,15 +2,13 @@
 
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "../_transactionsComponents/DetailItem";
-import { Card, Group, Text, Title, Button } from "@mantine/core";
-import { useState } from "react";
-import TakeActionOverlay from "./TakeActionOverlay";
+import { Card, Group, Text, Title } from "@mantine/core";
+import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import EmptyState from "@/app/admin/_components/EmptyState";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 
 export default function Overview({ isEmpty }: { isEmpty?: boolean }) {
-  const [opened, setOpened] = useState(false);
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
 
   return (
@@ -27,14 +25,11 @@ export default function Overview({ isEmpty }: { isEmpty?: boolean }) {
             <Text c="dimmed" className="text-body-text-200">
               Nov 17 2025 | 11:00am
             </Text>
-            <StatusBadge status="Pending" size="xs" />
+            <StatusBadge status="Pending" size="sm" />
           </Group>
         </div>
 
-        <Button color="#DD4F05" radius="xl" size="lg" onClick={() => setOpened(true)}>
-          Take Action
-        </Button>
-        <TakeActionOverlay opened={opened} onClose={() => setOpened(false)} />
+        <TakeActionButton />
       </Group>
 
       {/* Basic Details */}

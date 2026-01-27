@@ -10,7 +10,7 @@ export default function AdminTabButton({ value, children }: AdminTabButtonProps)
   return (
     <Tabs.Tab 
       value={value} 
-      className="pb-3! text-body-text-50! data-active:text-orange-500! font-medium!"
+      className="pb-4! text-body-text-50! data-active:text-orange-500! font-medium!"
     >
       {children}
     </Tabs.Tab>

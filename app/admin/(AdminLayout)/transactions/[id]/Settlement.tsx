@@ -3,7 +3,8 @@
 import EmptyState from "@/app/admin/_components/EmptyState";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "../_transactionsComponents/DetailItem";
-import { Card, Group, Text, Title, Button } from "@mantine/core";
+import { Card, Group, Text, Title } from "@mantine/core";
+import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 import { ArrowUpRight, File } from "lucide-react";
@@ -28,9 +29,7 @@ export default function Settlement({ isEmpty }: { isEmpty?: boolean }) {
           </Group>
         </div>
 
-        <Button color="#DD4F05" radius="xl" size="lg">
-          Take Action
-        </Button>
+        <TakeActionButton />
       </Group>
 
       {isEmpty && (
