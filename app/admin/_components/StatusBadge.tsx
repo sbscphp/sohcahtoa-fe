@@ -14,6 +14,7 @@ const statusColorMap: Record<string, string> = {
   Read: "gray",
   Active: "#027A48",
   Inactive: "gray",
+  Deactivated: "red",
   Approved: "#027A48",
   Declined: "red",
 };
