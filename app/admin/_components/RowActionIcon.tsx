@@ -22,30 +22,22 @@ interface RowActionIconProps {
 
 export default function RowActionIcon({
   onClick,
-  color = "orange",
   radius = "xl",
   variant = "filled",
-  w = 32,
-  h = 32,
+  w = 16,
+  h = 16,
   iconSize = 14,
 }: RowActionIconProps) {
   return (
     <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 6,
-        borderRadius: 16,
-        backgroundColor: "rgba(227, 108, 47, 0.08)", // soft peach square
-      }}
+      className="inline-flex items-center justify-center p-2 rounded-lg bg-primary-0 hover:bg-primary-25 transition-all duration-300"
     >
       <ActionIcon
         radius={radius}
         variant={variant}
-        color={color}
         w={w}
         h={h}
+        className="text-orange-500! bg-[#f1b393]!"
         onClick={onClick}
       >
         <ChevronRight size={iconSize} />

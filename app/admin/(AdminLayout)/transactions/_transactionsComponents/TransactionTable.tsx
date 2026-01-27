@@ -602,7 +602,7 @@ export default function TransactionsTable() {
   return (
     <div className="my-5 p-5 rounded-lg bg-white">
       <div>
-        <Group justify="space-between" mb="md" wrap="nowrap">
+        <Group justify="space-between" mb="md" wrap="wrap">
           <div className="flex items-center gap-4">
             <h2 className="font-semibold text-lg">All Transactions</h2>
             {/* Search */}

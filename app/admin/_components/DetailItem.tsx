@@ -13,7 +13,9 @@ export function DetailItem({ label, value }: DetailItemProps) {
       <Text size="xs" className="text-body-text-50!" mb={4}>
         {label}
       </Text>
-      <Text fw={500}>{value}</Text>
+      <Text fw={500} className="wrap-break-word">
+        {value}
+      </Text>
     </div>
   );
 }

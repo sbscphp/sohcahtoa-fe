@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  ActionIcon,
   Button,
   Divider,
   Group,
@@ -12,13 +11,19 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { useParams } from "next/navigation";
-import { Download, MoreVertical, Search } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Download, Search } from "lucide-react";
 import DynamicTableSection, {
   Header,
 } from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
+import FormModal, {
+  FormField,
+} from "@/app/admin/_components/FormModal";
+import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 
 type AgentStatus = "Active" | "Deactivated";
 
@@ -137,6 +142,7 @@ const MOCK_TRANSACTIONS: AgentTransaction[] = [
 ];
 
 export default function AgentDetailsPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const agentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
@@ -145,10 +151,24 @@ export default function AgentDetailsPage() {
     [agentId]
   );
 
+  const [currentStatus, setCurrentStatus] = useState<AgentStatus>(agent.status);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>("All");
   const [page, setPage] = useState(1);
   const pageSize = 6;
+  const [loading, setLoading] = useState(false);
+
+  const [editModalOpened, setEditModalOpened] = useState(false);
+  const [editConfirmOpened, setEditConfirmOpened] = useState(false);
+  const [editSuccessOpened, setEditSuccessOpened] = useState(false);
+
+  const [statusAction, setStatusAction] = useState<
+    "deactivate" | "reactivate" | null
+  >(null);
+  const [statusConfirmOpened, setStatusConfirmOpened] = useState(false);
+  const [statusSuccessOpened, setStatusSuccessOpened] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   const headers: Header[] = [
     { label: "Transaction ID", key: "transactionId" },
@@ -199,16 +219,110 @@ export default function AgentDetailsPage() {
       {formatNaira(tx.transactionValue)}
     </Text>,
     <StatusBadge key="actionEffect" status={tx.status} />,
-    <ActionIcon
+    <RowActionIcon
       key="action"
-      variant="subtle"
-      color="gray"
-      radius="xl"
-      aria-label="More actions"
-    >
-      <MoreVertical size={16} />
-    </ActionIcon>,
+      onClick={() => {
+        router.push(`/admin/agent/transactions/${tx.id}`);
+      }}
+    />,
   ];
+
+  const editAgentFields: FormField[] = useMemo(
+    () => [
+      {
+        name: "agentName",
+        label: "Agent Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter agent name",
+      },
+      {
+        name: "branch",
+        label: "Branch",
+        type: "select",
+        required: true,
+        placeholder: "Select branch",
+        options: [
+          { value: "Chevron Drive, Lekki", label: "Chevron Drive, Lekki" },
+          { value: "Victoria Island, Lagos", label: "Victoria Island, Lagos" },
+          { value: "Yaba", label: "Yaba" },
+        ],
+      },
+      {
+        name: "email",
+        label: "Email Address",
+        type: "email",
+        required: true,
+        placeholder: "example@email.com",
+      },
+      {
+        name: "phone",
+        label: "Phone Number 1",
+        type: "tel",
+        required: true,
+        placeholder: "+234 00 0000 0000",
+      },
+      {
+        name: "internationalPassport",
+        label: "International Passport",
+        type: "file",
+        required: true,
+        accept: ".pdf,.jpg,.jpeg,.png",
+        maxSize: 2,
+      },
+      {
+        name: "additionalDocument",
+        label: "Additional Document",
+        type: "file",
+        required: true,
+        accept: ".pdf,.jpg,.jpeg,.png",
+        maxSize: 2,
+      },
+    ],
+    []
+  );
+
+  const handleEditSubmit = () => {
+    // Here you could persist the edited values before confirming
+    // For now we just open the confirmation modal to simulate the flow
+    setEditConfirmOpened(true);
+  };
+
+  const performEditAgent = async () => {
+    try {
+      setLoading(true);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      setEditModalOpened(false);
+      setEditConfirmOpened(false);
+      setEditSuccessOpened(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isCurrentlyActive = currentStatus === "Active";
+
+  const performStatusChange = async () => {
+    if (!statusAction) return;
+
+    try {
+      setStatusLoading(true);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      setCurrentStatus(
+        statusAction === "deactivate" ? "Deactivated" : "Active"
+      );
+      setStatusConfirmOpened(false);
+      setStatusSuccessOpened(true);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -221,7 +335,7 @@ export default function AgentDetailsPage() {
               <Text size="xl" fw={600}>
                 {agent.name}
               </Text>
-              <StatusBadge status={agent.status} />
+              <StatusBadge status={currentStatus} />
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm text-[#6B7280]">
@@ -234,7 +348,7 @@ export default function AgentDetailsPage() {
               <span className="inline-flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 <span className="text-emerald-700 font-medium">
-                  {agent.status}
+                  {currentStatus}
                 </span>
               </span>
             </div>
@@ -253,9 +367,18 @@ export default function AgentDetailsPage() {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Item>Edit</Menu.Item>
+              <Menu.Item onClick={() => setEditModalOpened(true)}>
+                Edit
+              </Menu.Item>
               <Menu.Divider />
-              <Menu.Item>Deactivate</Menu.Item>
+              <Menu.Item
+                onClick={() => {
+                  setStatusAction(isCurrentlyActive ? "deactivate" : "reactivate");
+                  setStatusConfirmOpened(true);
+                }}
+              >
+                {isCurrentlyActive ? "Deactivate" : "Reactivate"}
+              </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         </div>
@@ -304,9 +427,104 @@ export default function AgentDetailsPage() {
         </div>
       </div>
 
+      {/* Edit Agent Modal Flow */}
+      <FormModal
+        opened={editModalOpened}
+        onClose={() => setEditModalOpened(false)}
+        title="Edit Agent Details"
+        description="View and manage agent details"
+        fields={editAgentFields}
+        submitLabel="Save Changes"
+        cancelLabel="Close"
+        loading={loading}
+        size="lg"
+        initialValues={{
+          agentName: agent.name,
+          branch: agent.branch,
+          email: agent.email,
+          phone: agent.phone,
+        }}
+        onSubmit={handleEditSubmit}
+      />
+
+      <ConfirmationModal
+        opened={editConfirmOpened}
+        onClose={() => setEditConfirmOpened(false)}
+        title="Save Changes ?"
+        message="Are you sure, save and update this changes? Kindly note that this new changes would override the existing data."
+        primaryButtonText="Yes, Save and Update Changes"
+        secondaryButtonText="No, Close"
+        loading={loading}
+        onPrimary={performEditAgent}
+        onSecondary={() => setEditConfirmOpened(false)}
+      />
+
+      <SuccessModal
+        opened={editSuccessOpened}
+        onClose={() => setEditSuccessOpened(false)}
+        title="New Changes Saved"
+        message="New changes has been successfully saved and updated."
+        primaryButtonText="Manage User"
+        secondaryButtonText="No, Close"
+        onPrimaryClick={() => {
+          setEditSuccessOpened(false);
+        }}
+        onSecondaryClick={() => {
+          setEditSuccessOpened(false);
+        }}
+      />
+
+      {/* Deactivate / Reactivate Flow */}
+      <ConfirmationModal
+        opened={statusConfirmOpened}
+        onClose={() => setStatusConfirmOpened(false)}
+        title={
+          statusAction === "deactivate"
+            ? "Deactivate Agent ?"
+            : "Reactivate Agent ?"
+        }
+        message={
+          statusAction === "deactivate"
+            ? "Are you sure, Deactivate this Agent? Kindly note that system access would be temporarily suspended, until the agent is reactivated"
+            : "Are you sure, Reactivate this agent user? Kindly note that system access would be restored therefore this agent would now be able to access the system according to their role and related permissions"
+        }
+        primaryButtonText={
+          statusAction === "deactivate"
+            ? "Yes, Deactivate Agent"
+            : "Yes, Reactivate Agent"
+        }
+        secondaryButtonText="No, Close"
+        loading={statusLoading}
+        onPrimary={performStatusChange}
+        onSecondary={() => setStatusConfirmOpened(false)}
+      />
+
+      <SuccessModal
+        opened={statusSuccessOpened}
+        onClose={() => setStatusSuccessOpened(false)}
+        title={
+          statusAction === "deactivate"
+            ? "Agent Deactivated"
+            : "Agent Reactivated"
+        }
+        message={
+          statusAction === "deactivate"
+            ? "Agent has been successfully deactivated"
+            : "Agent has been successfully Reactivated"
+        }
+        primaryButtonText="Manage Agent"
+        secondaryButtonText="No, Close"
+        onPrimaryClick={() => {
+          setStatusSuccessOpened(false);
+        }}
+        onSecondaryClick={() => {
+          setStatusSuccessOpened(false);
+        }}
+      />
+
       {/* Agent Transactions Table */}
       <div className="rounded-xl bg-white p-5 shadow-sm">
-        <Group justify="space-between" align="center" mb="md" wrap="wrap">
+        <Group justify="space-between" mb="md" wrap="wrap">
           <Text fw={600} size="md">
             Agent Transactions
           </Text>

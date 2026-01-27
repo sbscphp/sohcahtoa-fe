@@ -7,16 +7,16 @@ import FormModal, { FormField } from "@/app/admin/_components/FormModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import {
-  ActionIcon,
   Button,
   Group,
   Select,
   Text,
   TextInput,
 } from "@mantine/core";
-import { ChevronRight, ListFilter, Plus, Search, Upload } from "lucide-react";
+import { ListFilter, Plus, Search, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 
 /* --------------------------------------------
  Types
@@ -275,21 +275,18 @@ export default function AgentTable() {
     <StatusBadge key="status" status={item.status} />,
 
     // Action
-    <ActionIcon
+    <RowActionIcon
       key="action"
-      radius="xl"
-      variant="light"
-      color="orange"
-      onClick={() => router.push(`/admin/agent/${item.id}`)}
-    >
-      <ChevronRight size={14} />
-    </ActionIcon>,
+      onClick={() => {
+        router.push(`/admin/agent/${item.id}`);
+      }}
+    />,
   ];
 
   return (
     <div className="my-5 rounded-lg bg-white p-5">
       <div>
-        <Group justify="space-between" mb="md" wrap="nowrap">
+        <Group justify="space-between" mb="md" wrap="wrap">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-semibold">Agents</h2>
             <TextInput
