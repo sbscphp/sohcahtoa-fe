@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import FormModal, { FormField } from "@/app/admin/_components/FormModal";
 import {
   ActionIcon,
   Button,
@@ -13,6 +14,7 @@ import {
 } from "@mantine/core";
 import { ChevronRight, ListFilter, Plus, Search, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { notifications } from "@mantine/notifications";
 
 /* --------------------------------------------
  Types
@@ -107,6 +109,8 @@ export default function AgentTable() {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Filter By");
+  const [createModalOpened, setCreateModalOpened] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const allAgents = useMemo(() => generateAgents(), []);
 
@@ -141,6 +145,92 @@ export default function AgentTable() {
     { label: "Status", key: "status" },
     { label: "Action", key: "action" },
   ];
+
+  // Form fields for creating a new agent
+  const createAgentFields: FormField[] = useMemo(
+    () => [
+      {
+        name: "agentName",
+        label: "Agent Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter agent name",
+      },
+      {
+        name: "email",
+        label: "Email Address",
+        type: "email",
+        required: true,
+        placeholder: "example@email.com",
+      },
+      {
+        name: "branch",
+        label: "Branch",
+        type: "select",
+        required: true,
+        placeholder: "Select an Option",
+        options: [
+          { value: "lagos", label: "Lagos" },
+          { value: "abuja", label: "Abuja" },
+          { value: "port-harcourt", label: "Port Harcourt" },
+          { value: "kano", label: "Kano" },
+          { value: "ibadan", label: "Ibadan" },
+        ],
+      },
+      {
+        name: "phone",
+        label: "Phone Number",
+        type: "tel",
+        required: true,
+        placeholder: "+234 00 0000 0000",
+      },
+      {
+        name: "kycDocument",
+        label: "Additional Document",
+        type: "file",
+        required: true,
+        accept: ".pdf,.jpg,.jpeg,.png",
+        maxSize: 2,
+        description: "Upload KYC document (Max: 2 MB)",
+      },
+    ],
+    []
+  );
+
+  const handleCreateAgent = async (data: Record<string, any>) => {
+    try {
+      setLoading(true);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      console.log("Creating agent with data:", data);
+
+      // Here you would make the actual API call
+      // const response = await fetch("/api/agents", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+
+      notifications.show({
+        title: "Success!",
+        message: "Agent created successfully",
+        color: "green",
+      });
+
+      setCreateModalOpened(false);
+      // Optionally refresh the agents list
+    } catch (error) {
+      console.error("Error creating agent:", error);
+      notifications.show({
+        title: "Error",
+        message: "Failed to create agent. Please try again.",
+        color: "red",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderAgentRow = (item: Agent) => [
     // Agent
@@ -228,12 +318,25 @@ export default function AgentTable() {
               color="#DD4F05"
               radius="xl"
               leftSection={<Plus size={16} />}
+              onClick={() => setCreateModalOpened(true)}
             >
               Add New
             </Button>
           </Group>
         </Group>
       </div>
+
+      <FormModal
+        opened={createModalOpened}
+        size="lg"
+        onClose={() => setCreateModalOpened(false)}
+        title="Create New Agent"
+        description="Fill out the basic information of the agent"
+        fields={createAgentFields}
+        onSubmit={handleCreateAgent}
+        submitLabel="Create Agent"
+        loading={loading}
+      />
 
       <DynamicTableSection
         headers={agentHeaders}
