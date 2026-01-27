@@ -8,7 +8,7 @@ type SectionCardProps = {
 export default function SectionCard({ children, className = "" }: SectionCardProps) {
   return (
     <div
-      className={`rounded-xl bg-white p-6 shadow-xs ${className}`}
+      className={`rounded-xl bg-white p-4 shadow-xs ${className}`}
     >
       {children}
     </div>

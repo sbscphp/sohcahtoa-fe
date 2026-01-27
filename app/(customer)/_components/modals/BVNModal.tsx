@@ -42,7 +42,7 @@ export function BVNModal({ opened, onClose, onVerified }: BVNModalProps) {
         <div className="space-y-6">
           <div>
             <h2 className="text-heading-300 text-2xl font-bold mb-2">
-              Let's Get you Started.
+              Let&apos;s Get you Started.
             </h2>
             <p className="text-text-300 text-base">
               Please enter your BVN. This is required for identity verification and security. Your details are safe and will not be shared.
@@ -61,16 +61,16 @@ export function BVNModal({ opened, onClose, onVerified }: BVNModalProps) {
               maxLength={11}
             />
             <p className="text-text-300 text-sm">
-              If you can't remember, please dial <span className="font-semibold">*565*0#</span> with your registered SIM to get started.
+              If you can&apos;t remember, please dial <span className="font-semibold">*565*0#</span> with your registered SIM to get started.
             </p>
           </div>
 
           <Button
             onClick={handleVerify}
             disabled={bvn.length !== 11}
-            color="orange"
-            size="lg"
             fullWidth
+            radius="xl"
+            className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6"
             rightSection={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />

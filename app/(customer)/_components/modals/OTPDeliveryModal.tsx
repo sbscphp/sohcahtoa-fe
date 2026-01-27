@@ -66,10 +66,9 @@ export function OTPDeliveryModal({
           onClick={handleContinue}
           disabled={!selectedMethod}
           variant="filled"
-          size="lg"
-          className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
           fullWidth
           radius="xl"
+          className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6 disabled:bg-primary-100 disabled:text-white disabled:cursor-not-allowed"
           rightSection={<ArrowUpRight size={18} />}
         >
           Continue

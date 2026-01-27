@@ -11,8 +11,8 @@ import {
   Stack,
   Group,
 } from "@mantine/core";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@mantine/form";
+import { zod4Resolver } from "mantine-form-zod-resolver";
 import Image from "next/image";
 
 import { loginSchema, LoginFormValues } from "./_schemas/login.schema";
@@ -47,18 +47,19 @@ export default function LoginPage() {
     },
   });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isValid },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    mode: "onChange",
+  const form = useForm<LoginFormValues>({
+    mode: "uncontrolled",
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validate: zod4Resolver(loginSchema),
+    validateInputOnChange: true,
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
-  };
+  const onSubmit = form.onSubmit((values) => {
+    loginMutation.mutate(values);
+  });
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -85,7 +86,7 @@ export default function LoginPage() {
         <div className="flex items-center justify-center p-8">
           {step === "login" && (
             <Paper w="100%" maw={420} radius="md" p="xl">
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <form onSubmit={onSubmit}>
                 <Stack>
                   <div>
                     <Title order={3}>Log In</Title>
@@ -95,17 +96,17 @@ export default function LoginPage() {
                   </div>
 
                   <TextInput
+                    key={form.key("email")}
                     label="Email Address"
                     placeholder="Enter email address"
-                    error={errors.email?.message}
-                    {...register("email")}
+                    {...form.getInputProps("email")}
                   />
 
                   <PasswordInput
+                    key={form.key("password")}
                     label="Password"
                     placeholder="Enter password"
-                    error={errors.password?.message}
-                    {...register("password")}
+                    {...form.getInputProps("password")}
                   />
 
                   <Group justify="flex-end">
@@ -121,7 +122,7 @@ export default function LoginPage() {
                     color="#DD4F05"
                     fullWidth
                     loading={loginMutation.isPending}
-                    disabled={!isValid || loginMutation.isPending}
+                    disabled={!form.isValid() || loginMutation.isPending}
                   >
                     Log In →
                   </Button>

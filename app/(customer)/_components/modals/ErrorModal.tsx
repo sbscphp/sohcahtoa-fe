@@ -18,7 +18,7 @@ export function ErrorModal({
   onButtonClick
 }: ErrorModalProps) {
   return (
-    <Modal opened={opened} onClose={onClose} title="" centered>
+    <Modal opened={opened} onClose={onClose} title="" centered radius="lg" size="sm" withCloseButton={false}>
       <div className="text-center space-y-6">
         {/* Error Icon */}
         <div className="flex justify-center">
@@ -42,9 +42,9 @@ export function ErrorModal({
         {/* Button */}
         <Button
           onClick={onButtonClick || onClose}
-          color="red"
-          size="lg"
           fullWidth
+          radius="xl"
+          className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6"
         >
           {buttonText}
         </Button>

@@ -11,6 +11,8 @@ import landingFig from './svg/landing_fig.svg';
 import cardBackground from './svg/card_background.svg';
 import collapsed_logo from './svg/collapsed_logo.svg';
 import empty from './png/empty.png';
+import emptyState from './svg/empty-state.svg';
+import underReview from './svg/under-review.svg';
 
 export {
   logo,
@@ -24,6 +26,6 @@ export {
   successGif,
   landingFig,
   cardBackground,
-  collapsed_logo,
+  collapsed_logo, emptyState, underReview,
   empty,
 };
