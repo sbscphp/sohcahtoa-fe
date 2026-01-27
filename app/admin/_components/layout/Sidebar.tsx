@@ -2,6 +2,7 @@
 
 import { collapsed_logo, logo } from "@/app/assets/asset";
 import { Avatar } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   LayoutGrid,
   BanknoteIcon,
@@ -19,7 +20,7 @@ import { usePathname } from "next/navigation";
 
 type SidebarProps = {
   collapsed: boolean;
-  onCollapse?: () => void;
+  closeMobile?: () => void;
 };
 
 const menuItems = [
@@ -41,8 +42,15 @@ const menuItems2 = [
   { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trial" },
 ];
 
-export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
+export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
   const pathname = usePathname();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  const handleLinkClick = () => {
+    if (isMobile && closeMobile) {
+      closeMobile();
+    }
+  };
 
   return (
     <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
@@ -93,6 +101,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
+                onClick={handleLinkClick}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors
                   ${
@@ -128,6 +137,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
+                onClick={handleLinkClick}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors
                   ${

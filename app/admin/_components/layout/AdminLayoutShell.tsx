@@ -76,7 +76,7 @@ export default function AdminLayoutShell({
       <AppShell.Navbar>
         <Sidebar 
           collapsed={isMobile ? false : collapsed}
-          onCollapse={toggleCollapsed}
+          closeMobile={closeMobile}
         />
       </AppShell.Navbar>
 
