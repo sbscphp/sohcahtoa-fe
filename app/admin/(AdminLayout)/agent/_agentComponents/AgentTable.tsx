@@ -1,0 +1,256 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import {
+  ActionIcon,
+  Button,
+  Group,
+  Select,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { ChevronRight, ListFilter, Plus, Search, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+/* --------------------------------------------
+ Types
+--------------------------------------------- */
+interface Agent {
+  agentName: string;
+  id: string;
+  phone: string;
+  email: string;
+  totalTransactions: number;
+  transactionVolume: number;
+  status: "Active" | "Deactivated";
+}
+
+/* --------------------------------------------
+ Mock Data
+--------------------------------------------- */
+const generateAgents = (): Agent[] => [
+  {
+    agentName: "Tunde Bashorun",
+    id: "9023",
+    phone: "+234 90 2323 4545",
+    email: "tunde@eternalglobal.com",
+    totalTransactions: 209,
+    transactionVolume: 1250000,
+    status: "Active",
+  },
+  {
+    agentName: "Queen Omotola",
+    id: "9025",
+    phone: "+234 90 5858 3939",
+    email: "queen@kudimata.com",
+    totalTransactions: 9,
+    transactionVolume: 875000,
+    status: "Active",
+  },
+  {
+    agentName: "Samuel Olubanki",
+    id: "9026",
+    phone: "+234 91 2222 4545",
+    email: "olubankisamuel@gmail.com",
+    totalTransactions: 120,
+    transactionVolume: 930500,
+    status: "Active",
+  },
+  {
+    agentName: "Ibrahim Dantata",
+    id: "9024",
+    phone: "+234 90 5858 3939",
+    email: "ibrahim@sultan.com",
+    totalTransactions: 50,
+    transactionVolume: 1100000,
+    status: "Deactivated",
+  },
+  {
+    agentName: "Mfon Ubot",
+    id: "9027",
+    phone: "+234 90 2323 4545",
+    email: "mubot@greenfield.com",
+    totalTransactions: 60,
+    transactionVolume: 790000,
+    status: "Active",
+  },
+  {
+    agentName: "Sarik Sudan",
+    id: "9023",
+    phone: "+234 81 0000 3456",
+    email: "nagode@gmail.com",
+    totalTransactions: 98,
+    transactionVolume: 980000,
+    status: "Deactivated",
+  },
+];
+
+/* --------------------------------------------
+ Helpers
+--------------------------------------------- */
+const formatNaira = (amount: number): string =>
+  `₦ ${amount.toLocaleString("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+/* --------------------------------------------
+ Component
+--------------------------------------------- */
+export default function AgentTable() {
+  const router = useRouter();
+
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("Filter By");
+
+  const allAgents = useMemo(() => generateAgents(), []);
+
+  const filteredData = useMemo(() => {
+    return allAgents.filter((agent) => {
+      const matchesSearch =
+        agent.agentName.toLowerCase().includes(search.toLowerCase()) ||
+        agent.id.includes(search) ||
+        agent.email.toLowerCase().includes(search.toLowerCase()) ||
+        agent.phone.includes(search);
+
+      const matchesFilter =
+        filter === "Filter By" || filter === "All" || agent.status === filter;
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [search, filter, allAgents]);
+
+  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredData.slice(start, end);
+  }, [page, filteredData]);
+
+  const agentHeaders = [
+    { label: "Agent", key: "agent" },
+    { label: "Contact", key: "contact" },
+    { label: "Total Transactions", key: "totalTransactions" },
+    { label: "Transaction Volume", key: "transactionVolume" },
+    { label: "Status", key: "status" },
+    { label: "Action", key: "action" },
+  ];
+
+  const renderAgentRow = (item: Agent) => [
+    // Agent
+    <div key="agent">
+      <Text fw={500} size="sm">
+        {item.agentName}
+      </Text>
+      <Text size="xs" c="dimmed">
+        ID:{item.id}
+      </Text>
+    </div>,
+
+    // Contact
+    <div key="contact">
+      <Text fw={500} size="sm">
+        {item.phone}
+      </Text>
+      <Text size="xs" c="dimmed">
+        {item.email}
+      </Text>
+    </div>,
+
+    // Total Transactions
+    <Text key="totalTransactions" size="sm">
+      {item.totalTransactions}
+    </Text>,
+
+    // Transaction Volume
+    <Text key="transactionVolume" size="sm" fw={500}>
+      {formatNaira(item.transactionVolume)}
+    </Text>,
+
+    // Status
+    <StatusBadge key="status" status={item.status} />,
+
+    // Action
+    <ActionIcon
+      key="action"
+      radius="xl"
+      variant="light"
+      color="orange"
+      onClick={() => router.push(`/admin/agent/${item.id}`)}
+    >
+      <ChevronRight size={14} />
+    </ActionIcon>,
+  ];
+
+  return (
+    <div className="my-5 rounded-lg bg-white p-5">
+      <div>
+        <Group justify="space-between" mb="md" wrap="nowrap">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold">Agents</h2>
+            <TextInput
+              placeholder="Enter keyword"
+              leftSection={<Search size={16} color="#DD4F05" />}
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              w={320}
+              radius="xl"
+            />
+          </div>
+
+          <Group>
+            <Select
+              value={filter}
+              onChange={(value) => setFilter(value!)}
+              data={["Filter By", "All", "Active", "Deactivated"]}
+              radius="xl"
+              w={120}
+              rightSection={<ListFilter size={16} />}
+            />
+
+            <Button
+              variant="outline"
+              color="#E36C2F"
+              radius="xl"
+              rightSection={<Upload size={16} />}
+            >
+              Export
+            </Button>
+
+            <Button
+              variant="filled"
+              color="#DD4F05"
+              radius="xl"
+              leftSection={<Plus size={16} />}
+            >
+              Add New
+            </Button>
+          </Group>
+        </Group>
+      </div>
+
+      <DynamicTableSection
+        headers={agentHeaders}
+        data={paginatedData}
+        loading={false}
+        renderItems={renderAgentRow}
+        emptyTitle="No Agents Found"
+        emptyMessage="There are currently no agents to display. Agents will appear here once they are created."
+        pagination={{
+          page,
+          totalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+          onPageChange: setPage,
+        }}
+      />
+    </div>
+  );
+}
+

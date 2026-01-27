@@ -6,51 +6,6 @@ import blue from "../../_components/assets/icons/bluemoneys.png"
 import green from "../../_components/assets/icons/greenmoneys.png"
 import TransactionsTable from "./_transactionsComponents/TransactionTable";
 
-interface Transaction {
-  customerName: string;
-  id: string;
-  date: string;
-  type: string;
-  stage: string;
-  workflow: string;
-  amount: number;
-  status: "Pending" | "Settled" | "Rejected" | "More Info";
-}
-
-const transactions: Transaction[] = [
-  {
-    customerName: "Samuel Johnson",
-    id: "9023",
-    date: "Nov 19",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Review",
-    amount: 400,
-    status: "Pending",
-  },
-  {
-    customerName: "Michael Bennett",
-    id: "9025",
-    date: "Nov 21",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 500,
-    status: "Pending",
-  },
-  {
-    customerName: "Ava Thompson",
-    id: "9026",
-    date: "Nov 23",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 600,
-    status: "Settled",
-  },
-];
-
-
 export default function TransactionPage () {
     const Icon1 = <div><Image src={gold} alt="icon"/></div>;
     const Icon2 = <div><Image src={pink} alt="icon"/></div>;
