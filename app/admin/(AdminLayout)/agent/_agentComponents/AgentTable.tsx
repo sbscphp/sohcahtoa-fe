@@ -5,6 +5,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import FormModal, { FormField } from "@/app/admin/_components/FormModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import {
   ActionIcon,
   Button,
@@ -112,7 +113,10 @@ export default function AgentTable() {
   const [filter, setFilter] = useState("Filter By");
   const [createModalOpened, setCreateModalOpened] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirmModalOpened, setConfirmModalOpened] = useState(false);
   const [successModalOpened, setSuccessModalOpened] = useState(false);
+  const [pendingAgentData, setPendingAgentData] =
+    useState<Record<string, any> | null>(null);
 
   const allAgents = useMemo(() => generateAgents(), []);
 
@@ -199,7 +203,7 @@ export default function AgentTable() {
     []
   );
 
-  const handleCreateAgent = async (data: Record<string, any>) => {
+  const performCreateAgent = async (data: Record<string, any>) => {
     try {
       setLoading(true);
 
@@ -215,7 +219,9 @@ export default function AgentTable() {
       // });
 
       setCreateModalOpened(false);
+      setConfirmModalOpened(false);
       setSuccessModalOpened(true);
+      setPendingAgentData(null);
       // Optionally refresh the agents list
     } catch (error) {
       console.error("Error creating agent:", error);
@@ -227,6 +233,11 @@ export default function AgentTable() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenConfirm = (data: Record<string, any>) => {
+    setPendingAgentData(data);
+    setConfirmModalOpened(true);
   };
 
   const renderAgentRow = (item: Agent) => [
@@ -330,9 +341,24 @@ export default function AgentTable() {
         title="Create New Agent"
         description="Fill out the basic information of the agent"
         fields={createAgentFields}
-        onSubmit={handleCreateAgent}
+        onSubmit={handleOpenConfirm}
         submitLabel="Create Agent"
         loading={loading}
+      />
+
+      <ConfirmationModal
+        opened={confirmModalOpened}
+        onClose={() => setConfirmModalOpened(false)}
+        title="Create Agent ?"
+        message="Are you sure you want to create this agent? An invite will be sent to the agent’s email address."
+        primaryButtonText="Yes, Create"
+        secondaryButtonText="No, Close"
+        loading={loading}
+        onPrimary={async () => {
+          if (!pendingAgentData) return;
+          await performCreateAgent(pendingAgentData);
+        }}
+        onSecondary={() => setConfirmModalOpened(false)}
       />
 
       <SuccessModal

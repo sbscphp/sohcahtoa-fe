@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import {
   ActionIcon,
   Button,
+  Divider,
   Group,
+  Menu,
   Select,
   Stack,
   Text,
@@ -16,6 +18,7 @@ import DynamicTableSection, {
   Header,
 } from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { DetailItem } from "@/app/admin/_components/DetailItem";
 
 type AgentStatus = "Active" | "Deactivated";
 
@@ -209,109 +212,94 @@ export default function AgentDetailsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-        <Stack gap={4} className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <Text size="xl" fw={600}>
-              {agent.name}
-            </Text>
-            <StatusBadge status={agent.status} />
-          </div>
+      {/* Header + Agent Details Card */}
+      <div className="rounded-xl bg-white p-5 shadow-sm space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <Stack gap={4} className="flex-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Text size="xl" fw={600}>
+                {agent.name}
+              </Text>
+              <StatusBadge status={agent.status} />
+            </div>
 
-          <div className="flex flex-wrap gap-4 text-sm text-[#6B7280]">
-            <span>
-              <span className="font-medium text-[#111827]">Date Created:</span>{" "}
-              {agent.createdAt} | {agent.createdTime}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="text-emerald-700 font-medium">
-                {agent.status}
+            <div className="flex flex-wrap gap-4 text-sm text-[#6B7280]">
+              <span>
+                <span className="font-medium text-[#111827]">
+                  Date Created:
+                </span>{" "}
+                {agent.createdAt} | {agent.createdTime}
               </span>
-            </span>
-          </div>
-        </Stack>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="text-emerald-700 font-medium">
+                  {agent.status}
+                </span>
+              </span>
+            </div>
+          </Stack>
 
-        <Button
-          radius="xl"
-          size="md"
-          color="#DD4F05"
-          className="self-start md:self-auto"
-        >
-          Take Action
-        </Button>
-      </div>
+          <Menu position="bottom-end" shadow="md" width={160}>
+            <Menu.Target>
+              <Button
+                radius="xl"
+                size="md"
+                color="#DD4F05"
+                className="self-start md:self-auto"
+              >
+                Take Action
+              </Button>
+            </Menu.Target>
 
-      {/* Agent Details Summary */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <Text fw={600} className="mb-4">
-          Agent Details
-        </Text>
+            <Menu.Dropdown>
+              <Menu.Item>Edit</Menu.Item>
+              <Menu.Divider />
+              <Menu.Item>Deactivate</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </div>
 
-        <div className="grid gap-6 md:grid-cols-4">
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Agent ID
-            </Text>
-            <Text fw={500}>{agent.id}</Text>
-          </div>
+        <Divider />
 
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Email Address
-            </Text>
-            <Text fw={500}>{agent.email}</Text>
-          </div>
+        {/* Agent Details Summary */}
+        <div>
+          <Text fw={600} className="mb-4! text-orange-500!">
+            Agent Details
+          </Text>
 
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Phone Number
-            </Text>
-            <Text fw={500}>{agent.phone}</Text>
-          </div>
+          <div className="grid gap-6 md:grid-cols-4">
+            <DetailItem label="Agent ID" value={agent.id} />
+            <DetailItem label="Email Address" value={agent.email} />
+            <DetailItem label="Phone Number" value={agent.phone} />
+            <DetailItem label="Branch" value={agent.branch} />
+            <DetailItem
+              label="Total Transactions"
+              value={String(agent.totalTransactions)}
+            />
+            <DetailItem
+              label="Transaction Value"
+              value={formatNaira(agent.transactionValue)}
+            />
+            <DetailItem
+              label="Last Transaction"
+              value={agent.lastTransaction}
+            />
 
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Branch
-            </Text>
-            <Text fw={500}>{agent.branch}</Text>
-          </div>
-
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Total Transactions
-            </Text>
-            <Text fw={500}>{agent.totalTransactions}</Text>
-          </div>
-
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Transaction Value
-            </Text>
-            <Text fw={500}>{formatNaira(agent.transactionValue)}</Text>
-          </div>
-
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Last Transaction
-            </Text>
-            <Text fw={500}>{agent.lastTransaction}</Text>
-          </div>
-
-          <div className="space-y-1">
-            <Text size="xs" c="dimmed">
-              Doc
-            </Text>
-            <Button
-              variant="subtle"
-              color="orange"
-              size="xs"
-              leftSection={<Download size={14} />}
-              className="px-0"
-            >
-              {agent.documentLabel}
-            </Button>
+            <div className="space-y-1">
+              <Text size="xs" className="text-body-text-50!" mb={4}>
+                Doc
+              </Text>
+              <Button
+                variant="subtle"
+                color="orange"
+                size="xs"
+                leftSection={<Download size={14} />}
+                className="px-0"
+              >
+                {agent.documentLabel}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

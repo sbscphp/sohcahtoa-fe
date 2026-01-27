@@ -11,6 +11,7 @@ import landingFig from './svg/landing_fig.svg';
 import cardBackground from './svg/card_background.svg';
 import collapsed_logo from './svg/collapsed_logo.svg';
 import empty from './png/empty.png';
+import exclamation from './png/exclamation.png';
 
 export {
   logo,
@@ -26,4 +27,5 @@ export {
   cardBackground,
   collapsed_logo,
   empty,
+  exclamation,
 };

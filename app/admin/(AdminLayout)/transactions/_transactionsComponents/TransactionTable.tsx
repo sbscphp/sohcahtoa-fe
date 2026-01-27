@@ -3,15 +3,9 @@
 import { useState, useMemo } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import {
-  Text,
-  ActionIcon,
-  Group,
-  TextInput,
-  Select,
-  Button,
-} from "@mantine/core";
-import { ChevronRight, Search, Upload, ListFilter } from "lucide-react";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { Text, Group, TextInput, Select, Button } from "@mantine/core";
+import { Search, Upload, ListFilter } from "lucide-react";
 import { Tabs } from "@mantine/core";
 import { useRouter } from "next/navigation";
 
@@ -599,19 +593,10 @@ export default function TransactionsTable() {
     <StatusBadge key="status" status={item.status} />,
 
     // Action
-    <ActionIcon
+    <RowActionIcon
       key="action"
-      radius="xl"
-      variant="light"
-      color="orange"
-      w={10}
-      h={10}
-      onClick={() =>
-        router.push(`/admin/transactions/${item.id}`)
-      }
-    >
-      <ChevronRight size={14} />
-    </ActionIcon>,
+      onClick={() => router.push(`/admin/transactions/${item.id}`)}
+    />,
   ];
 
   return (
