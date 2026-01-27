@@ -10,7 +10,8 @@ A fully dynamic, reusable form modal component for the admin application. This c
 ✅ **Loading States**: Disable inputs and show loading spinner during submission  
 ✅ **Initial Values**: Support for edit forms with pre-filled data  
 ✅ **Fully Typed**: Complete TypeScript support  
-✅ **Responsive Design**: Works on all screen sizes  
+✅ **Responsive Grid Layout**: 2-column layout on larger screens, single column on mobile  
+✅ **Smart Field Sizing**: File and textarea inputs automatically span full width  
 ✅ **Brand Styling**: Matches admin app design system  
 
 ## Basic Usage
@@ -379,6 +380,42 @@ The FormModal uses Mantine components and follows the admin app design system:
 - **Border Radius**: `xl` (rounded)
 - **Centered Modal**: Opens in center of screen
 - **Responsive**: Adapts to different screen sizes
+
+## Responsive Grid Layout
+
+The form automatically arranges fields in a responsive grid:
+
+### Layout Behavior
+
+- **Large Screens (≥768px)**: Regular inputs (text, email, tel, number, select) display in **2 columns**
+- **Small Screens (<768px)**: All inputs stack in a **single column**
+- **File & Textarea Inputs**: Always span **full width** on all screen sizes
+
+### Example Layout
+
+```tsx
+const fields: FormField[] = [
+  { name: "firstName", type: "text" },     // Left column
+  { name: "lastName", type: "text" },      // Right column
+  { name: "email", type: "email" },        // Left column
+  { name: "phone", type: "tel" },          // Right column
+  { name: "document", type: "file" },      // Full width
+  { name: "notes", type: "textarea" },     // Full width
+];
+
+// Result on large screens:
+// [firstName] [lastName]
+// [email]     [phone]
+// [document - full width]
+// [notes - full width]
+```
+
+### Benefits
+
+- **Better Space Utilization**: Makes efficient use of modal width
+- **Improved UX**: Related fields appear side-by-side
+- **Mobile Optimized**: Automatically stacks on small screens
+- **Smart Sizing**: File uploads and long text areas get full width
 
 ## Tips
 

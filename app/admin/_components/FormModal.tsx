@@ -6,14 +6,15 @@ import {
   Button,
   TextInput,
   Select,
-  FileInput,
   Group,
   Text,
   LoadingOverlay,
   Textarea,
   NumberInput,
+  Grid,
 } from "@mantine/core";
-import { X, FileText } from "lucide-react";
+import { X } from "lucide-react";
+import FileUpload from "./FileUpload";
 
 /* --------------------------------------------
 | Types
@@ -74,7 +75,6 @@ export default function   FormModal({
 }: FormModalProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [fileNames, setFileNames] = useState<Record<string, string>>({});
 
   // Initialize form data with initial values
   useEffect(() => {
@@ -85,7 +85,6 @@ export default function   FormModal({
       });
       setFormData(initialData);
       setErrors({});
-      setFileNames({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
@@ -117,7 +116,6 @@ export default function   FormModal({
       }
 
       setFormData((prev) => ({ ...prev, [name]: file }));
-      setFileNames((prev) => ({ ...prev, [name]: file.name }));
       if (errors[name]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -127,11 +125,6 @@ export default function   FormModal({
       }
     } else {
       setFormData((prev) => ({ ...prev, [name]: null }));
-      setFileNames((prev) => {
-        const newNames = { ...prev };
-        delete newNames[name];
-        return newNames;
-      });
     }
   };
 
@@ -198,27 +191,30 @@ export default function   FormModal({
       disabled: field.disabled || loading,
       description: field.description,
       error: errors[field.name],
-      mb: "md",
     };
+
+    // File and textarea inputs take full width, others take half on larger screens
+    const colSpan = field.type === "file" || field.type === "textarea" ? 12 : { base: 12, sm: 6 };
+
+    let inputElement;
 
     switch (field.type) {
       case "text":
       case "email":
       case "tel":
-        return (
+        inputElement = (
           <TextInput
-            key={field.name}
             {...commonProps}
             type={field.type}
             value={formData[field.name] || ""}
             onChange={(e) => handleChange(field.name, e.currentTarget.value)}
           />
         );
+        break;
 
       case "number":
-        return (
+        inputElement = (
           <NumberInput
-            key={field.name}
             {...commonProps}
             value={formData[field.name] || ""}
             onChange={(value) => handleChange(field.name, value)}
@@ -226,11 +222,11 @@ export default function   FormModal({
             max={field.max}
           />
         );
+        break;
 
       case "textarea":
-        return (
+        inputElement = (
           <Textarea
-            key={field.name}
             {...commonProps}
             value={formData[field.name] || ""}
             onChange={(e) => handleChange(field.name, e.currentTarget.value)}
@@ -239,11 +235,11 @@ export default function   FormModal({
             autosize
           />
         );
+        break;
 
       case "select":
-        return (
+        inputElement = (
           <Select
-            key={field.name}
             {...commonProps}
             value={formData[field.name] || ""}
             onChange={(value) => handleChange(field.name, value)}
@@ -252,29 +248,32 @@ export default function   FormModal({
             clearable={!field.required}
           />
         );
+        break;
 
       case "file":
-        return (
-          <FileInput
-            key={field.name}
-            {...commonProps}
+        inputElement = (
+          <FileUpload
+            label={field.label}
             value={formData[field.name] || null}
             onChange={(file) => handleFileChange(field.name, file)}
             accept={field.accept}
-            leftSection={<FileText size={16} />}
-            placeholder={
-              fileNames[field.name] || `Click or drag to upload ${field.label}`
-            }
-            description={
-              field.description ||
-              `Max: ${field.maxSize || 2} MB${field.accept ? `, Accepted: ${field.accept}` : ""}`
-            }
+            maxSize={field.maxSize}
+            required={field.required}
+            disabled={field.disabled || loading}
+            error={errors[field.name]}
           />
         );
+        break;
 
       default:
         return null;
     }
+
+    return (
+      <Grid.Col key={field.name} span={colSpan}>
+        {inputElement}
+      </Grid.Col>
+    );
   };
 
   return (
@@ -283,11 +282,11 @@ export default function   FormModal({
       onClose={onClose}
       title={
         <div>
-          <Text fw={600} size="lg">
+          <Text className="text-body-heading-300! text-heading-xl! font-bold!">
             {title}
           </Text>
           {description && (
-            <Text size="sm" c="dimmed" mt={4}>
+            <Text className="text-body-text-50! text-sm!">
               {description}
             </Text>
           )}
@@ -296,16 +295,16 @@ export default function   FormModal({
       size={size}
       radius="md"
       closeButtonProps={{
-        icon: <X size={20} />,
+        icon: <X size={20} className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!" />,
       }}
       centered
     >
       <LoadingOverlay visible={loading} />
 
       <form onSubmit={handleSubmit}>
-        <div className="space-y-2">
+        <Grid gutter="md">
           {fields.map((field) => renderField(field))}
-        </div>
+        </Grid>
 
         <Group justify="flex-end" mt="xl" gap="sm">
           <Button
