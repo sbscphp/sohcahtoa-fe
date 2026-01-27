@@ -1,16 +1,25 @@
-import { Modal, Button } from '@mantine/core';
-import { ArrowUpRight } from 'lucide-react';
-import { successGif } from '@/app/assets/asset';
-import Image from 'next/image';
+import { Modal, Button } from "@mantine/core";
+import { successGif } from "@/app/assets/asset";
+import Image from "next/image";
+
 interface SuccessModalProps {
   opened: boolean;
   onClose: () => void;
   title: string;
   message: string;
-  buttonText: string;
-  onButtonClick: () => void;
+  /** Primary (usually orange) action button label. Omit to hide. */
+  primaryButtonText?: string;
+  /** Callback when primary button is clicked. Defaults to `onClose` if not provided. */
+  onPrimaryClick?: () => void;
+  /** Visual style for the primary button. Defaults to `"filled"`. */
+  primaryButtonVariant?: "filled" | "outline";
+  /** Secondary (subtle) action button label. Omit to hide. */
+  secondaryButtonText?: string;
+  /** Callback when secondary button is clicked. Defaults to `onClose` if not provided. */
+  onSecondaryClick?: () => void;
+  /** Visual style for the secondary button. Defaults to `"outline"`. */
+  secondaryButtonVariant?: "filled" | "outline";
   icon?: React.ReactNode;
-  buttonVariant?: 'filled' | 'outline';
 }
 
 export function SuccessModal({
@@ -18,45 +27,96 @@ export function SuccessModal({
   onClose,
   title,
   message,
-  buttonText,
-  onButtonClick,
+  primaryButtonText,
+  onPrimaryClick,
+  primaryButtonVariant = "filled",
+  secondaryButtonText,
+  onSecondaryClick,
+  secondaryButtonVariant = "outline",
   icon,
-  buttonVariant = 'filled'
 }: SuccessModalProps) {
+  const handlePrimaryClick = () => {
+    if (onPrimaryClick) {
+      onPrimaryClick();
+    } else {
+      onClose();
+    }
+  };
+
+  const handleSecondaryClick = () => {
+    if (onSecondaryClick) {
+      onSecondaryClick();
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <Modal opened={opened} onClose={onClose} title="" centered withCloseButton={false} radius="lg">
-      <div className="text-center space-y-5">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title=""
+      centered
+      withCloseButton={false}
+      radius="lg"
+    >
+      <div className="space-y-4 pb-5 text-center">
         {/* Success Icon */}
         <div className="flex justify-center">
           {icon || (
-            <div className="w-20 h-20 rounded-full bg-success-100 border-4 border-success-500 flex items-center justify-center relative">
-              <Image src={successGif} alt="Success" width={100} height={100} />
+            <div className="relative flex items-center justify-center">
+              <Image
+                src={successGif}
+                alt="Success"
+                width={100}
+                height={100}
+              />
             </div>
           )}
         </div>
 
         {/* Title */}
-        <h2 className="text-body-heading-300 text-xl font-semibold">
+        <h2 className="text-body-heading-300! text-heading-xl! font-bold!">
           {title}
         </h2>
 
         {/* Message */}
-        <p className="text-body-text-100 text-base">
+        <p className="text-body-text-100! text-sm! mb-6!">
           {message}
         </p>
 
-        {/* Button */}
-        <Button
-          onClick={onButtonClick}
-          variant={buttonVariant}
-          color={buttonVariant === 'filled' ? 'orange' : undefined}
-          size="lg"
-          radius="xl"
-          fullWidth
-          rightSection={buttonVariant === 'filled' ? <ArrowUpRight size={18} /> : undefined}
-        >
-          {buttonText}
-        </Button>
+        {/* Actions (optional) */}
+        {(primaryButtonText || secondaryButtonText) && (
+          <div className="space-y-4">
+            {primaryButtonText && (
+              <Button
+                onClick={handlePrimaryClick}
+                variant={primaryButtonVariant}
+                color={primaryButtonVariant === "filled" ? "orange" : "gray"}
+                radius="xl"
+                size="md"
+                fullWidth
+                className="font-medium! text-sm!"
+              >
+                {primaryButtonText}
+              </Button>
+            )}
+
+            {secondaryButtonText && (
+              <Button
+                onClick={handleSecondaryClick}
+                variant={secondaryButtonVariant}
+                color={secondaryButtonVariant === "filled" ? "orange" : "gray"}
+                radius="xl"
+                size="md"
+                className="border-text-50! border! font-semibold!"
+                fullWidth
+              >
+                {secondaryButtonText}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   );

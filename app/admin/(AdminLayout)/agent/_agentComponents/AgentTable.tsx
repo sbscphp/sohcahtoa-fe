@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import FormModal, { FormField } from "@/app/admin/_components/FormModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import {
   ActionIcon,
   Button,
@@ -111,6 +112,7 @@ export default function AgentTable() {
   const [filter, setFilter] = useState("Filter By");
   const [createModalOpened, setCreateModalOpened] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [successModalOpened, setSuccessModalOpened] = useState(false);
 
   const allAgents = useMemo(() => generateAgents(), []);
 
@@ -212,13 +214,8 @@ export default function AgentTable() {
       //   body: formData,
       // });
 
-      notifications.show({
-        title: "Success!",
-        message: "Agent created successfully",
-        color: "green",
-      });
-
       setCreateModalOpened(false);
+      setSuccessModalOpened(true);
       // Optionally refresh the agents list
     } catch (error) {
       console.error("Error creating agent:", error);
@@ -336,6 +333,17 @@ export default function AgentTable() {
         onSubmit={handleCreateAgent}
         submitLabel="Create Agent"
         loading={loading}
+      />
+
+      <SuccessModal
+        opened={successModalOpened}
+        onClose={() => setSuccessModalOpened(false)}
+        title="New Agent Created"
+        message="The new agent has been successfully created. You can now manage the agent or close this dialog."
+        primaryButtonText="Manage Agents"
+        onPrimaryClick={() => {
+          setSuccessModalOpened(false);
+        }}
       />
 
       <DynamicTableSection
