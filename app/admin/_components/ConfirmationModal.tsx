@@ -83,7 +83,7 @@ export function ConfirmationModal({
         </h2>
 
         {/* Message */}
-        <p className="px-4 text-sm text-body-text-100!">
+        <p className="px-4 text-body-text-100!">
           {message}
         </p>
 

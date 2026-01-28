@@ -8,6 +8,7 @@ import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
 import { Tabs } from "@mantine/core";
 import { useRouter } from "next/navigation";
+import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 
 /* --------------------------------------------
  Types
@@ -650,9 +651,9 @@ export default function TransactionsTable() {
         }}
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
-          <Tabs.Tab value="buy-fx" className="pb-3!">Buy FX</Tabs.Tab>
-          <Tabs.Tab value="sell-fx" className="pb-3!">Sell FX</Tabs.Tab>
-          <Tabs.Tab value="receive-fx" className="pb-3!">Receive FX</Tabs.Tab>
+          <AdminTabButton value="buy-fx">Buy FX</AdminTabButton>
+          <AdminTabButton value="sell-fx">Sell FX</AdminTabButton>
+          <AdminTabButton value="receive-fx">Receive FX</AdminTabButton>
         </Tabs.List>
 
         <Tabs.Panel value="buy-fx">

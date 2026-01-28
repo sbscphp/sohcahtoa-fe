@@ -76,12 +76,12 @@ export function SuccessModal({
         </div>
 
         {/* Title */}
-        <h2 className="text-body-heading-300! text-heading-xl! font-bold!">
+        <h2 className="text-body-heading-300! text-xl! font-bold!">
           {title}
         </h2>
 
         {/* Message */}
-        <p className="text-body-text-100! text-sm! mb-6!">
+        <p className="text-body-text-100! mb-6!">
           {message}
         </p>
 
