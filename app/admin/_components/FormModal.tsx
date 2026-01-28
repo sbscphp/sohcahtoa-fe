@@ -282,7 +282,7 @@ export default function   FormModal({
       onClose={onClose}
       title={
         <div>
-          <Text className="text-body-heading-300! text-heading-xl! font-bold!">
+          <Text className="text-body-heading-300! text-xl! font-bold! mb-1!">
             {title}
           </Text>
           {description && (

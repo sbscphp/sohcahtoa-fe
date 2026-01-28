@@ -5,14 +5,14 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import {
   Text,
-  ActionIcon,
   Group,
   TextInput,
   Select,
   Button,
 } from "@mantine/core";
-import { ChevronRight, Search, Upload, ListFilter } from "lucide-react";
+import { Search, Upload, ListFilter } from "lucide-react";
 import { useRouter } from "next/navigation";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 
 /* --------------------------------------------
  Types
@@ -263,15 +263,10 @@ export default function CustomerTable() {
     <StatusBadge key="status" status={item.status} />,
 
     // Action
-    <ActionIcon
+    <RowActionIcon
       key="action"
-      radius="xl"
-      variant="light"
-      color="orange"
       onClick={() => router.push(`/admin/customer/${item.id}`)}
-    >
-      <ChevronRight size={14} />
-    </ActionIcon>,
+    />
   ];
 
   return (
