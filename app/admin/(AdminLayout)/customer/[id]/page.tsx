@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Group, Text, Divider } from "@mantine/core";
+import { Group, Text, Divider } from "@mantine/core";
 import { useRouter, useParams } from "next/navigation";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import TransactionsTable from "../../transactions/_transactionsComponents/TransactionTable";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
 
 type CustomerStatus = "Active" | "Deactivated";
 
@@ -61,16 +62,12 @@ export default function CustomerDetailsPage() {
               </Group>
             </div>
 
-            <Button
-              radius="xl"
-              size="md"
-              color="#DD4F05"
-              variant={isCurrentlyActive ? "outline" : "filled"}
+            <CustomButton
+              buttonType={isCurrentlyActive ? "secondary" : "primary"}
               onClick={handleToggleClick}
-              className="self-start md:self-auto"
             >
               {isCurrentlyActive ? "Deactivate Customer" : "Reactivate Customer"}
-            </Button>
+            </CustomButton>
           </div>
 
           <Divider className="my-2" />
