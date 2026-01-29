@@ -26,10 +26,10 @@ export default function AdminLayoutShell({
     if (pathname?.startsWith('/admin/settlement')) return 'Settlement';
     if (pathname?.startsWith('/admin/agent')) return 'Agent';
     if (pathname?.startsWith('/admin/outlet')) return 'Outlet';
-    if (pathname?.startsWith('/admin/customer')) return 'Customer';
+    if (pathname?.startsWith('/admin/customer')) return 'Customer Management';
     if (pathname?.startsWith('/admin/workflow')) return 'Workflow';
     if (pathname?.startsWith('/admin/tickets')) return 'Tickets';
-    if (pathname?.startsWith('/admin/rate-management')) return 'Rate Management';
+    if (pathname?.startsWith('/admin/rate')) return 'Rate Management';
     if (pathname?.startsWith('/admin/user-management')) return 'User Management';
     if (pathname?.startsWith('/admin/regulatory')) return 'Regulatory & Compliance';
     if (pathname?.startsWith('/admin/report')) return 'Report and Analytics';

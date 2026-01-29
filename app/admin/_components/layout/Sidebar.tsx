@@ -32,7 +32,7 @@ const menuItems = [
   { icon: Users, label: "Customer", href: "/admin/customer" },
   { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow" },
   { icon: Ticket, label: "Tickets", href: "/admin/tickets" },
-  { icon: Coins, label: "Rate Management", href: "/admin/rate-management" },
+  { icon: Coins, label: "Rate Management", href: "/admin/rate" },
 ];
 
 const menuItems2 = [

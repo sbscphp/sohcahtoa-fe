@@ -1,8 +1,7 @@
 "use client";
 
-import { Bell, Settings, CircleAlert, ChevronLeft, Menu, ChevronDown } from "lucide-react";
+import { ChevronLeft, Menu } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
-import { Avatar } from "@mantine/core";
 
 type HeaderProps = {
   title?: string;
@@ -48,18 +47,17 @@ export default function Header({
           </div>}
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Settings */}
+      {/* <div className="flex items-center gap-3">
         <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-gray-50 hover:bg-gray-50 transition-colors">
           <Settings size={16} className="text-body-text-300" />
         </button>
         
-        {/* Alerts */}
+        
         <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-gray-50 hover:bg-gray-50 transition-colors">
           <CircleAlert size={16} className="text-body-text-300" />
         </button>
 
-        {/* Notifications */}
+
         <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-gray-50 hover:bg-gray-50 transition-colors">
           <Bell size={16} className="text-body-text-300" />
           <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-medium px-1 py-px rounded-full min-w-[14px] text-center leading-tight">
@@ -67,14 +65,14 @@ export default function Header({
           </span>
         </button>
 
-        {/* User Avatar */}
+
         <button className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors">
           <Avatar name="Michael Smith" color="initials" size={40} radius="xl" />
           {!collapsed &&
             !isMobile &&
             <ChevronDown size={16} className="text-primary-400" />}
         </button>
-      </div>
+      </div> */}
     </header>
   );
 }
