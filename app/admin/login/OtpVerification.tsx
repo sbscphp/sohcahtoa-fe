@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  Button,
-  Card,
-  Text,
-  Title,
-  Stack,
-  PinInput,
-} from "@mantine/core";
+import { Card, Text, Title, Stack, PinInput } from "@mantine/core";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -72,8 +66,10 @@ export function OtpVerification({
         </Text>
         </div>
 
-        <Button
+        <CustomButton
+          buttonType="primary"
           fullWidth
+          size="lg"
           radius="xl"
           color="#DD4F05"
           loading={loading}
@@ -81,7 +77,7 @@ export function OtpVerification({
           onClick={() => onVerify(otp)}
         >
           Validate →
-        </Button>
+        </CustomButton>
       </Stack>
     </Card>
   );
