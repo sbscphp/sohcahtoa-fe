@@ -8,7 +8,7 @@ import { formatCurrency } from "../../_lib/formatCurrency";
 import SectionCard from "./SectionCard";
 import CurrencySelector from "./CurrencySelector";
 import FxActionButton from "./FxActionButton";
-import OverviewTabs from "./OverviewTabs";
+import { FilterTabs } from "../common";
 
 const FX_TABS = [
   { value: "bought", label: "FX bought" },
@@ -86,7 +86,7 @@ export default function FxOverviewCard() {
       >
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-5">
-            <OverviewTabs items={FX_TABS} value={activeTab} />
+            <FilterTabs items={FX_TABS} value={activeTab} />
             <CurrencySelector />
           </div>
 

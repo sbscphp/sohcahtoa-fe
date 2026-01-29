@@ -1,7 +1,6 @@
 "use client";
 
 import { formatCurrency } from "../../_lib/formatCurrency";
-import SectionCard from "./SectionCard";
 import SectionHeader from "./SectionHeader";
 
 type FlowRowProps = {
@@ -12,18 +11,21 @@ type FlowRowProps = {
 };
 
 function FlowRow({ label, value, barFillPercent, barColor }: FlowRowProps) {
-  const barBg = barColor === "green" ? "bg-green-500" : "bg-primary-400";
+  const fillColor = barColor === "green" ? "#2F7D01" : "#DD4F05";
+  const pct = Math.min(100, Math.max(0, barFillPercent));
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-[#6C6969]">{label}</span>
-        <span className="font-semibold text-[#4D4B4B]">{value}</span>
+    <div className="flex min-h-[80px] w-full flex-col justify-center gap-2.5 self-stretch rounded-[10px] bg-white px-5 py-[25px]">
+      <div className="flex w-full flex-row items-center justify-between gap-5">
+        <span className="text-xs font-normal leading-[120%] text-[#232323]">{label}</span>
+        <span className="text-xs font-normal leading-[120%] text-[#232323]">{value}</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-        <div
-          className={`h-full rounded-full ${barBg} transition-all`}
-          style={{ width: `${Math.min(100, Math.max(0, barFillPercent))}%` }}
-        />
+      <div className="isolate flex w-full flex-col items-start">
+        <div className="relative h-1.5 w-full overflow-hidden rounded-[8px] bg-[#E7EBE5]">
+          <div
+            className="absolute inset-y-0 left-0 rounded-[8px] transition-all"
+            style={{ width: `${pct}%`, background: fillColor }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -34,20 +36,25 @@ export default function CardTransactionFlowsCard() {
   const moneyOut = 1046;
   const total = 3048;
   const max = Math.max(moneyIn, moneyOut);
-  const inPercent = max > 0 ? (moneyIn / max) * 100 : 0;
-  const outPercent = max > 0 ? (moneyOut / max) * 100 : 0;
-
+  const inPercent = max > 0 ? moneyIn / max * 100 : 0;
+  const outPercent = max > 0 ? moneyOut / max * 100 : 0;
+  const { symbol, value } = formatCurrency(total, "USD");
+  const actualValue = value.split(".")[0];
   return (
-    <SectionCard>
+    <div className="flex flex-col rounded-2xl bg-[#FAFAFA] p-2 shadow-sm">
       <SectionHeader
         title="Card transaction flows"
         action={
-          <span className="text-lg font-semibold text-[#4D4B4B]">
-            +{formatCurrency(total, "USD").formatted}
+          <span className="text-lg font-semibold text-black">
+            +{symbol}
+            {actualValue}
+            <span className="text-xs text-black">
+              .{value.split(".")[1]}
+            </span>
           </span>
         }
       />
-      <div className="space-y-5">
+      <div className="flex flex-col gap-2.5">
         <FlowRow
           label="Money in"
           value={formatCurrency(moneyIn, "USD").formatted}
@@ -61,6 +68,6 @@ export default function CardTransactionFlowsCard() {
           barColor="orange"
         />
       </div>
-    </SectionCard>
+    </div>
   );
 }

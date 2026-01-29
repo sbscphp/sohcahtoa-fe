@@ -5,6 +5,7 @@ import CardsSection from "../../_components/dashboard/CardsSection";
 import CardTransactionsCard from "../../_components/dashboard/CardTransactionsCard";
 import CardTransactionFlowsCard from "../../_components/dashboard/CardTransactionFlowsCard";
 import FxOverviewCard from "../../_components/dashboard/FxOverviewCard";
+import SectionCard from "../../_components/dashboard/SectionCard";
 
 export default function DashboardPage() {
   return (
@@ -16,11 +17,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Right column: 40% */}
-      <div className="flex flex-col gap-6">
+      <SectionCard className="space-y-4">
         <CardsSection />
         <CardTransactionsCard />
         <CardTransactionFlowsCard />
-      </div>
+      </SectionCard>
     </div>
   );
 }
