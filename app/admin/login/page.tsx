@@ -1,34 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Modal,
-  PasswordInput,
-  TextInput,
-  Anchor,
-} from "@mantine/core";
+import { PasswordInput, TextInput, Anchor } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { useRouter } from "next/navigation";
 
 import { AuthLayout } from "@/app/admin/_components/auth/AuthLayout";
+import { OtpModal } from "@/app/admin/_components/OtpModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { loginSchema, LoginFormValues } from "./_schemas/login.schema";
 import { useLogin } from "./hooks/useLogin";
 import { useVerifyOtp } from "./hooks/useVerifyOtp";
-import { OtpVerification } from "./OtpVerification";
-import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomButton } from "../_components/CustomButton";
 
 export default function LoginPage() {
-  const [emailForOtp, setEmailForOtp] = useState("");
   const [otpModalOpened, setOtpModalOpened] = useState(false);
   const [successOpened, setSuccessOpened] = useState(false);
   const router = useRouter();
 
   const loginMutation = useLogin({
-    onSuccess: (data: { requiresOtp: boolean }, variables: LoginFormValues) => {
+    onSuccess: (data: { requiresOtp: boolean }) => {
       if (data.requiresOtp) {
-        setEmailForOtp(variables.email);
         setOtpModalOpened(true);
       }
     },
@@ -117,22 +110,16 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <Modal
+      <OtpModal
         opened={otpModalOpened}
         onClose={() => setOtpModalOpened(false)}
-        centered
-        p={0}
-        withCloseButton={false}
-        radius="lg"
-        size="md"
-      >
-        <OtpVerification
-          email={emailForOtp}
-          loading={verifyOtp.isPending}
-          onVerify={(otp) => verifyOtp.mutate(otp)}
-          onResend={() => console.log("Resend OTP")}
-        />
-      </Modal>
+        title="Account Authorisation Access"
+        description="A six (6) digit OTP has been sent to your email linked to this account. Enter the code to log in."
+        length={6}
+        loading={verifyOtp.isPending}
+        onSubmit={(otp) => verifyOtp.mutate(otp)}
+        onResend={() => console.log("Resend OTP")}
+      />
 
       <SuccessModal
         opened={successOpened}
