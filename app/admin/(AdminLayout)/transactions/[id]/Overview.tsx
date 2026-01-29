@@ -1,58 +1,40 @@
 "use client";
 
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import {
-  Card,
-  Group,
-  Text,
-  Title,
-  Button,
-} from "@mantine/core";
-import { useState } from "react";
-import TakeActionOverlay from "./TakeActionOverlay";
+import { DetailItem } from "../../../_components/DetailItem";
+import { Card, Group, Text, Title } from "@mantine/core";
+import TakeActionButton from "@/app/admin/_components/TakeActionButton";
+import EmptyState from "@/app/admin/_components/EmptyState";
+import Empty from "../../../_components/assets/EmptyTrans.png";
+import Image from "next/image";
 
-interface DetailItemProps {
-  label: string;
-  value: string;
-}
+export default function Overview({ isEmpty }: { isEmpty?: boolean }) {
+  const EmptyImg = <Image src={Empty} alt="No Details Available" />;
 
-function DetailItem({ label, value }: DetailItemProps) {
-  return (
-    <div className="space-y-1">
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-      <Text fw={500}>{value}</Text>
-    </div>
-  );
-}
-
-export default function Overview() {
-    const [opened, setOpened] = useState(false);
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">
       {/* Header */}
       <Group justify="space-between" align="flex-start" mb="xl">
         <div>
-          <Title order={4}><span className="font-medium text-[#8F8B8B] ">Buy FX:</span> Business Travel Allowance</Title>
+          <Title order={4} className="text-body-heading-300 font-medium! text-2xl!">
+            <span className="font-medium text-body-text-50 ">Buy FX:</span>{" "}
+            Business Travel Allowance
+          </Title>
 
           <Group gap="xs" mt={4}>
-            <Text size="xs" c="dimmed">
+            <Text c="dimmed" className="text-body-text-200">
               Nov 17 2025 | 11:00am
             </Text>
-            <StatusBadge status="Pending" size="xs" />
+            <StatusBadge status="Pending" size="sm" />
           </Group>
         </div>
 
-        <Button color="#DD4F05" radius="xl" onClick={() => setOpened(true)}>
-          Take Action
-        </Button>
-        <TakeActionOverlay opened={opened} onClose={() => setOpened(false)} />
+        <TakeActionButton />
       </Group>
 
       {/* Basic Details */}
       <div className="space-y-6">
-        <Text fw={600} c="#DD4F05">
+        <Text fw={600} c="orange" mb={"lg"} className="font-medium! text-lg!">
           Basic Details
         </Text>
 
@@ -75,11 +57,9 @@ export default function Overview() {
         </div>
       </div>
 
-      
-
       {/* BTA Transaction Details */}
-      <div className="space-y-6 mb-">
-        <Text fw={600} c="#DD4F05">
+      <div className="space-y-6">
+        <Text fw={600} c="orange" mb={"lg"} className="font-medium! text-lg!">
           BTA Transaction Details
         </Text>
 
@@ -95,11 +75,17 @@ export default function Overview() {
 
           <DetailItem label="Pick Up State" value="Lagos State" />
           <DetailItem label="Pick Up City" value="Lagos Island" />
-          <DetailItem
-            label="Pickup Location"
-            value="14B SBSC Office, Lagos."
-          />
+          <DetailItem label="Pickup Location" value="14B SBSC Office, Lagos." />
         </div>
+      </div>
+      <div className="space-y-6">
+        {!isEmpty && (
+          <EmptyState
+            title="Payment Pending"
+            description="So sorry, but transaction hasn’t received any payment from the customer/Transaction requestor"
+            icon={EmptyImg}
+          />
+        )}
       </div>
     </Card>
   );
