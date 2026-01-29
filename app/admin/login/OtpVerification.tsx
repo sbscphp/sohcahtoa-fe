@@ -30,11 +30,11 @@ export function OtpVerification({
   const seconds = timeLeft % 60;
 
   return (
-    <Card radius="lg" p="xl" w={420}>
+    <Card radius="lg" p="md" w={420}>
       <Stack align="left">
-        <Title order={3} className="ml-2!" >Account Authorisation Access</Title>
+        <Title order={3} >Account Authorization Access</Title>
 
-        <Text size="sm" c="dimmed" ta="center">
+        <Text className="text-body-text-100! text-sm! mb-4!">
           A six (6) digit OTP has been sent to your email linked to this account.  e*****sohcahtoa.com. Enter code to log in
         </Text>
 
@@ -48,18 +48,18 @@ export function OtpVerification({
         />
         <div className="flex flex-col gap-5 justify-center items-center">
 
-        <Text size="xs" c="dimmed">
+        <Text className="text-body-text-100! text-sm!">
           OTP expires in{" "}
-          <b className="text-red-500">
+          <b className="text-error-600">
             {minutes}:{seconds.toString().padStart(2, "0")}
           </b>
         </Text>
 
-        <Text size="xs" c={"#6C6969"}>
+        <Text className="text-body-text-100! text-sm!">
           Didn’t Receive Code?{" "}
           <span
             onClick={onResend}
-            className="text-red-500 cursor-pointer font-medium underline"
+            className="text-error-600 cursor-pointer font-medium underline"
           >
             Resend OTP
           </span>
@@ -71,7 +71,6 @@ export function OtpVerification({
           fullWidth
           size="lg"
           radius="xl"
-          color="#DD4F05"
           loading={loading}
           disabled={otp.length !== 6}
           onClick={() => onVerify(otp)}
