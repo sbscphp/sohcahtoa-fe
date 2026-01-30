@@ -251,7 +251,7 @@ export default function TransactionDetailPage() {
               radius="xl"
               size="md"
               className="border-[#E88A58] bg-[#FFF6F1] text-[#E36C2F] hover:bg-[#FFF6F1]/90 font-medium text-base"
-              style={{ fontFamily: "'Inter', sans-serif", padding: "14px 24px" }}
+              style={{ fontWeight: 500, fontSize: "14px" }}
               onClick={() => {}}
             >
               Download Receipt
@@ -262,7 +262,7 @@ export default function TransactionDetailPage() {
               radius="xl"
               size="md"
               className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
-              style={{ fontFamily: "'Inter', sans-serif", padding: "14px 24px" }}
+              style={{ fontWeight: 500, fontSize: "14px" }}
               onClick={() => setUpdatesSheetOpen(true)}
             >
               View Updates
