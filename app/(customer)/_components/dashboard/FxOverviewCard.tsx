@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Tabs } from "@mantine/core";
 import { IconWallet, IconWalletAdd, IconRecieve } from "@/components/icons";
 import { formatCurrency } from "../../_lib/formatCurrency";
+import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import SectionCard from "./SectionCard";
 import CurrencySelector from "./CurrencySelector";
 import FxActionButton from "./FxActionButton";
@@ -34,8 +35,9 @@ function FxOverviewPanelContent({
   amountVisible,
   onToggleVisible,
 }: FxOverviewPanelContentProps) {
+  const currencyCode = useSelectedCurrencyCode();
   const { title, amount } = MOCK_AMOUNTS[tabValue] ?? { title: "", amount: 0 };
-  const { symbol, value } = formatCurrency(amount, "USD");
+  const { symbol, value } = formatCurrency(amount, currencyCode);
   const displayValue = amountVisible ? value.split(".")[0] : "••••••••";
   const router = useRouter();
   return (
