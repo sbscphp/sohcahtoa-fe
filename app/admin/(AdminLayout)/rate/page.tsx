@@ -9,6 +9,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import RowActionIcon from "../../_components/RowActionIcon";
+import { useRouter } from "next/navigation";
 
 /* --------------------------------------------
 Types
@@ -94,7 +95,7 @@ export default function RateManagementPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const pageSize = 5;
-
+  const router = useRouter();
   // Get current data based on active tab
   const currentData = useMemo(() => {
     return activeTab === "active" ? activeRatesData : scheduleRatesData;
@@ -240,6 +241,7 @@ export default function RateManagementPage() {
 
             <CustomButton
               buttonType="primary"
+              onClick={() => router.push('/admin/rate/create')}
               rightSection={<Plus size={16} />}
             >
               Add New Rate
