@@ -2,13 +2,15 @@
 
 import { Menu } from "@mantine/core";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
 import { CURRENCIES } from "../../_lib/constants";
-import { getCurrencyFlagUrl } from "../../_lib/currency";
+import { getCurrencyByCode, getCurrencyFlagUrl } from "../../_lib/currency";
+import { useSelectedCurrencyCode, useSetSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import Image from "next/image";
 
 export default function CurrencySelector() {
-  const [selected, setSelected] = useState<(typeof CURRENCIES)[number]>(CURRENCIES[0]);
+  const selectedCode = useSelectedCurrencyCode();
+  const setSelectedCode = useSetSelectedCurrencyCode();
+  const selected = getCurrencyByCode(selectedCode) ?? CURRENCIES[0];
 
   return (
     <Menu position="bottom-end" width={220} closeOnItemClick>
@@ -30,7 +32,7 @@ export default function CurrencySelector() {
         {CURRENCIES.map(currency =>
           <Menu.Item
             key={currency.code}
-            onClick={() => setSelected(currency)}
+            onClick={() => setSelectedCode(currency.code)}
             className={
               selected.code === currency.code ? "bg-primary-25" : undefined
             }

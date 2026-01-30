@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
@@ -26,6 +27,7 @@ export default function CustomerHeader({
   transactionTitle,
 }: CustomerHeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
     <header className="h-16 bg-white border-b border-gray-50 px-6 flex items-center justify-between w-full relative">
@@ -63,10 +65,17 @@ export default function CustomerHeader({
 
       <div className="flex items-center gap-3">
         {/* Notifications */}
-        <Popover position="bottom-end" shadow="md" withArrow>
+        <Popover
+          position="bottom-end"
+          shadow="md"
+          withArrow
+          opened={notificationsOpen}
+          onClose={() => setNotificationsOpen(false)}
+        >
           <Popover.Target>
             <button
               type="button"
+              onClick={() => setNotificationsOpen((v) => !v)}
               className="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-50 transition-colors hover:bg-gray-50"
             >
               <Bell size={16} className="text-body-text-300" />
@@ -76,7 +85,10 @@ export default function CustomerHeader({
             </button>
           </Popover.Target>
           <Popover.Dropdown className="rounded-2xl border border-gray-100 p-0" p={0} m={0}>
-            <NotificationsPanel viewAllHref="/notifications" />
+            <NotificationsPanel
+              viewAllHref="/notifications"
+              onViewAllClick={() => setNotificationsOpen(false)}
+            />
           </Popover.Dropdown>
         </Popover>
 

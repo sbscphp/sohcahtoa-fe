@@ -3,13 +3,27 @@
 import { EmptyState } from "@/app/(customer)/_components/common";
 import { underReview } from "@/app/assets/asset";
 import type { DetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
+import ApprovedStatus from "./ApprovedStatus";
+import RejectedStatus from "./RejectedStatus";
 
 interface OverviewDetailProps {
   viewStatus: DetailViewStatus;
+  transactionId?: string;
+  date?: string;
+  time?: string;
+  adminMessage?: string;
+  onProceedToPayment?: () => void;
 }
 
 /** Overview tab content: status-based (under review, approved, rejected, awaiting disbursement, etc.). */
-export default function OverviewDetail({ viewStatus }: OverviewDetailProps) {
+export default function OverviewDetail({
+  viewStatus,
+  transactionId,
+  date,
+  time,
+  adminMessage,
+  onProceedToPayment,
+}: OverviewDetailProps) {
   if (viewStatus === "under_review") {
     return (
       <div className="flex flex-col items-center px-4 pt-6 pb-8">
@@ -22,6 +36,29 @@ export default function OverviewDetail({ viewStatus }: OverviewDetailProps) {
           />
         </div>
       </div>
+    );
+  }
+
+  if (viewStatus === "approved") {
+    return (
+      <ApprovedStatus
+        transactionId={transactionId}
+        date={date}
+        time={time}
+        adminMessage={adminMessage}
+        onProceedToPayment={onProceedToPayment}
+      />
+    );
+  }
+
+  if (viewStatus === "rejected") {
+    return (
+      <RejectedStatus
+        transactionId={transactionId}
+        date={date}
+        time={time}
+        adminMessage={adminMessage}
+      />
     );
   }
 

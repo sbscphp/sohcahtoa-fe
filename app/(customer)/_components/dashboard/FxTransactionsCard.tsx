@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Tabs } from "@mantine/core";
 import { formatCurrency } from "../../_lib/formatCurrency";
+import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import SectionCard from "./SectionCard";
 import SectionHeader from "./SectionHeader";
 import SeeAllButton from "./SeeAllButton";
 import { FilterTabs } from "../common";
 import TransactionListItem from "./TransactionListItem";
+import { useRouter } from "next/navigation";
 const FILTER_TABS = [
   { value: "all", label: "All" },
   { value: "fx", label: "FX" },
@@ -33,10 +35,11 @@ const MOCK_FX_TRANSACTIONS: {
 
 export default function FxTransactionsCard() {
   const [activeFilter, setActiveFilter] = useState("all");
-
+  const router = useRouter();
+  const currencyCode = useSelectedCurrencyCode();
   return (
     <SectionCard>
-      <SectionHeader title="FX transactions" action={<SeeAllButton />} />
+      <SectionHeader title="FX transactions" action={<SeeAllButton onClick={() => router.push("/transactions")} />} />
       <Tabs
         value={activeFilter}
         onChange={(v) => {
@@ -65,7 +68,7 @@ export default function FxTransactionsCard() {
                       key={`${tx.id}-${i}`}
                       primaryText={tx.id}
                       secondaryText={tx.date}
-                      amount={formatCurrency(tx.amount, "USD").formatted}
+                      amount={formatCurrency(tx.amount, currencyCode).formatted}
                     />
                   ))
                 )}

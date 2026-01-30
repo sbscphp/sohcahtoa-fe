@@ -29,8 +29,8 @@ export function SuccessModal({
         {/* Success Icon */}
         <div className="flex justify-center">
           {icon || (
-            <div className="w-20 h-20 rounded-full bg-success-100 border-4 border-success-500 flex items-center justify-center relative">
-              <Image src={successGif} alt="Success" width={100} height={100} />
+            <div className="w-30 h-30 rounded-full flex items-center justify-center relative">
+              <Image src={successGif} alt="Success" fill />
             </div>
           )}
         </div>
