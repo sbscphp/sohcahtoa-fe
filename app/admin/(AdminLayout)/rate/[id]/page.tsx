@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
     Stack,
     Text,
@@ -18,20 +18,24 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import CurrencySelector from "@/app/admin/_components/CurrencySelector";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { cbnLogo } from "@/app/assets/asset";
+import Image from "next/image";
 
 const SECTION_TITLE_CLASS = "text-lg! font-semibold! text-orange-500!";
 const SECTION_DESC_CLASS = "text-base! text-body-text-100! mb-4!";
 
 const MAX_JUSTIFICATION_WORDS = 32;
 
-export default function CreateRatePage() {
+export default function RateDetailPage() {
     const router = useRouter();
+    const params = useParams<{ id: string }>();
+    const rateId = params?.id;
 
     const [buyCurrency, setBuyCurrency] = useState<string | null>("USD");
-    const [buyValue, setBuyValue] = useState("");
+    const [buyValue, setBuyValue] = useState("1450");
 
     const [sellCurrency, setSellCurrency] = useState<string | null>("USD");
-    const [sellValue, setSellValue] = useState("");
+    const [sellValue, setSellValue] = useState("1750");
 
     const [startDate, setStartDate] = useState<string | null>(null);
     const [startTime, setStartTime] = useState("");
@@ -67,10 +71,10 @@ export default function CreateRatePage() {
         setIsConfirmOpen(true);
     };
 
-    const handleConfirmCreate = () => {
+    const handleConfirmUpdate = () => {
+        if (!rateId) return;
         setIsSaving(true);
-        // TODO: Submit to API – on success:
-        // Simulate API call for now
+        // TODO: Submit update to API (e.g. PATCH /rate/:id) – on success:
         setTimeout(() => {
             setIsSaving(false);
             setIsConfirmOpen(false);
@@ -154,6 +158,20 @@ export default function CreateRatePage() {
                                 />
                             </div>
                         </div>
+                        {/* CBN Rate info – below Exchange: BUY */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl! bg-primary-0 border border-primary-400 p-4">
+                            <div className="flex items-center gap-3">
+                                <Image src={cbnLogo} alt="CBN" width={48} height={48} className="shrink-0" />
+                                <div>
+                                    <p className="text-primary-400 font-bold">API: CBN Rate (€)</p>
+                                    <p className="italic text-body-text-100">
+                                        <span className="text-pink-600">Kindly note:</span>{" "}
+                                        Your buy rate can exceed 2.0% of CBN recommended rate
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="shrink-0 text-right text-xl font-bold text-heading-300">1 $ = ₦1,800</p>
+                        </div>
 
                         {/* Exchange: SELL */}
                         <div className="p-4 rounded-xl! bg-gray-25">
@@ -161,26 +179,23 @@ export default function CreateRatePage() {
                                 Exchange: <span className="font-bold!">SELL</span>
                             </Text>
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                            <CurrencySelector />
-                                        
+                                <CurrencySelector />
                                 <TextInput
                                     placeholder="$ Enter Value"
                                     value={sellValue}
                                     onChange={(e) => setSellValue(e.currentTarget.value)}
                                     radius="md"
                                     className="flex-1 min-w-[140px]"
-                                    classNames={
-                                        {
-                                            input: "text-xl! font-bold! text-start!",
-                                        }
-                                    }
+                                    classNames={{
+                                        input: "text-xl! font-bold! text-start!",
+                                    }}
                                     styles={{
                                         input: {
                                             background: "transparent",
                                             border: "none",
                                             boxShadow: "none",
                                             padding: 0,
-                                            height: "fit-content"
+                                            height: "fit-content",
                                         },
                                     }}
                                 />
@@ -201,22 +216,34 @@ export default function CreateRatePage() {
                                     onChange={(e) => setSellValue(e.currentTarget.value)}
                                     radius="md"
                                     className="flex-1 min-w-[140px]"
-                                    classNames={
-                                        {
-                                            input: "text-xl! font-bold! text-end!",
-                                        }
-                                    }
+                                    classNames={{
+                                        input: "text-xl! font-bold! text-end!",
+                                    }}
                                     styles={{
                                         input: {
                                             background: "transparent",
                                             border: "none",
                                             boxShadow: "none",
                                             padding: 0,
-                                            height: "fit-content"
+                                            height: "fit-content",
                                         },
                                     }}
                                 />
                             </div>
+                        </div>
+                        {/* CBN Rate info – below Exchange: SELL */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-primary-0 border border-primary-400 p-4">
+                            <div className="flex items-center gap-3">
+                                <Image src={cbnLogo} alt="CBN" width={48} height={48} className="shrink-0" />
+                                <div>
+                                    <p className="text-primary-400 font-bold">API: CBN Rate (€)</p>
+                                    <p className="italic text-body-text-100">
+                                        <span className="text-pink-600">Kindly note:</span>{" "}
+                                        Your buy rate can exceed 2.0% of CBN recommended rate
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="shrink-0 text-right text-xl font-bold text-heading-300">1 $ = ₦1,800</p>
                         </div>
                     </Stack>
                 </section>
@@ -233,7 +260,6 @@ export default function CreateRatePage() {
                     </Text>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8!">
-                        {/* Start Date & Time */}
                         <Stack gap="md">
                             <div>
                                 <DatePickerInput
@@ -265,7 +291,6 @@ export default function CreateRatePage() {
                             </div>
                         </Stack>
 
-                        {/* End Date & Time */}
                         <Stack gap="md">
                             <div>
                                 <DatePickerInput
@@ -347,25 +372,25 @@ export default function CreateRatePage() {
                 </Group>
             </div>
 
-            {/* Confirmation modal before creating rate */}
+            {/* Confirmation modal before saving changes */}
             <ConfirmationModal
                 opened={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
-                title="Create a new rate ?"
-                message="Are you sure you want to create a new currency rate? Please note that this rate will affect the system, especially FX transactions"
-                primaryButtonText="Yes, Create New Rate"
+                title="Save Changes ?"
+                message="Are you sure, save and update this changes? Kindly note that this new changes would override the existing data."
+                primaryButtonText="Yes, Save and Update Changes"
                 secondaryButtonText="No, Close"
-                onPrimary={handleConfirmCreate}
+                onPrimary={handleConfirmUpdate}
                 onSecondary={() => setIsConfirmOpen(false)}
                 loading={isSaving}
             />
 
-            {/* Success modal after rate is created */}
+            {/* Success modal after changes are saved */}
             <SuccessModal
                 opened={isSuccessOpen}
                 onClose={() => setIsSuccessOpen(false)}
-                title="New rate Created"
-                message="A new currency rate has been successfully Created"
+                title="New Changes Saved"
+                message="New Changes has been successfully Saved and Updated"
                 primaryButtonText="Manage Rate"
                 onPrimaryClick={handleSuccessManageRate}
                 secondaryButtonText="No, Close"
