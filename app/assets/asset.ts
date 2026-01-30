@@ -15,6 +15,7 @@ import emptyState from './svg/empty-state.svg';
 import underReview from './svg/under-review.svg';
 import moneyGram from './svg/money-gram.svg';
 import westernUnion from './svg/western-union.svg';
+import exclamation from './png/exclamation.png';
 
 export {
   logo,
@@ -32,4 +33,5 @@ export {
   empty,
   moneyGram,
   westernUnion,
+  exclamation,
 };
