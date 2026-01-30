@@ -3,7 +3,7 @@
  * Do not derive or map transaction type labels on the frontend.
  */
 
-export type DetailViewStatus = "under_review" | "awaiting_disbursement" | "transaction_settled";
+export type DetailViewStatus = "under_review" | "awaiting_disbursement" | "transaction_settled" | "approved" | "rejected";
 
 /**
  * Derives which detail view to show from stage/status.
@@ -17,10 +17,18 @@ export function getDetailViewStatus(
 ): DetailViewStatus {
   const stageLower = stage.trim().toLowerCase();
   const statusLower = status.trim().toLowerCase();
+  
+  // Check for explicit admin actions first
+  if (statusLower === "rejected" || statusLower.includes("reject")) {
+    return "rejected";
+  }
+  if (statusLower === "approved" && !stageLower.includes("settlement")) {
+    return "approved";
+  }
+  
   if (
     stageLower.includes("settlement") ||
-    statusLower === "completed" ||
-    statusLower === "approved"
+    statusLower === "completed"
   ) {
     return "transaction_settled";
   }
@@ -37,6 +45,8 @@ const DETAIL_VIEW_STATUS_LABELS: Record<DetailViewStatus, string> = {
   under_review: "Under Review",
   awaiting_disbursement: "Awaiting Disbursement",
   transaction_settled: "Transaction Settled",
+  approved: "Request Approved",
+  rejected: "Request Rejected",
 };
 
 export function getDetailViewStatusLabel(viewStatus: DetailViewStatus): string {

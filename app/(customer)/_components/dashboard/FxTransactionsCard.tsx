@@ -8,6 +8,7 @@ import SectionHeader from "./SectionHeader";
 import SeeAllButton from "./SeeAllButton";
 import { FilterTabs } from "../common";
 import TransactionListItem from "./TransactionListItem";
+import { useRouter } from "next/navigation";
 const FILTER_TABS = [
   { value: "all", label: "All" },
   { value: "fx", label: "FX" },
@@ -33,10 +34,10 @@ const MOCK_FX_TRANSACTIONS: {
 
 export default function FxTransactionsCard() {
   const [activeFilter, setActiveFilter] = useState("all");
-
+  const router = useRouter();
   return (
     <SectionCard>
-      <SectionHeader title="FX transactions" action={<SeeAllButton />} />
+      <SectionHeader title="FX transactions" action={<SeeAllButton onClick={() => router.push("/transactions")} />} />
       <Tabs
         value={activeFilter}
         onChange={(v) => {

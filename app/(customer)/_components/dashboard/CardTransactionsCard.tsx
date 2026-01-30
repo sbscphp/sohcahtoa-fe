@@ -6,7 +6,7 @@ import { formatCurrency } from "../../_lib/formatCurrency";
 import SectionHeader from "./SectionHeader";
 import SeeAllButton from "./SeeAllButton";
 import TransactionListItem from "./TransactionListItem";
-
+import { useRouter } from "next/navigation";
 type IconVariant = "orange" | "grey" | "green";
 
 const MOCK_CARD_TRANSACTIONS = [
@@ -37,9 +37,10 @@ const MOCK_CARD_TRANSACTIONS = [
 ];
 
 export default function CardTransactionsCard() {
+  const router = useRouter();
   return (
     <div className="flex flex-col rounded-2xl bg-[#FAFAFA] p-2 shadow-sm">
-      <SectionHeader title="Card transactions" action={<SeeAllButton />} />
+      <SectionHeader title="Card transactions" action={<SeeAllButton onClick={() => router.push("/transactions")} />} />
       <div className="">
         {MOCK_CARD_TRANSACTIONS.map((tx, i) => (
           <TransactionListItem

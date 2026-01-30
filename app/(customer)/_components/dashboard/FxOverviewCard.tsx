@@ -9,6 +9,7 @@ import SectionCard from "./SectionCard";
 import CurrencySelector from "./CurrencySelector";
 import FxActionButton from "./FxActionButton";
 import { FilterTabs } from "../common";
+import { useRouter } from "next/navigation";
 
 const FX_TABS = [
   { value: "bought", label: "FX bought" },
@@ -36,6 +37,7 @@ function FxOverviewPanelContent({
   const { title, amount } = MOCK_AMOUNTS[tabValue] ?? { title: "", amount: 0 };
   const { symbol, value } = formatCurrency(amount, "USD");
   const displayValue = amountVisible ? value.split(".")[0] : "••••••••";
+  const router = useRouter();
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col justify-center gap-2.5">
@@ -63,9 +65,9 @@ function FxOverviewPanelContent({
         </div>
       </div>
       <div className="flex flex-wrap gap-5">
-        <FxActionButton icon={<IconWallet className="size-5 text-gray-900" />} label="Buy FX" />
-        <FxActionButton icon={<IconWalletAdd className="size-5 text-gray-900" />} label="Sell FX" />
-        <FxActionButton icon={<IconRecieve className="size-5 text-gray-900" />} label="Receive money" />
+        <FxActionButton icon={<IconWallet className="size-5 text-gray-900" />} label="Buy FX"  onClick={() => router.push("/transactions/new/buy")}/>
+        <FxActionButton icon={<IconWalletAdd className="size-5 text-gray-900" />} label="Sell FX"  onClick={() => router.push("/transactions/new/sell")}/>
+        <FxActionButton icon={<IconRecieve className="size-5 text-gray-900" />} label="Receive money"  onClick={() => router.push("/transactions/receive/imto")}/>
       </div>
     </div>
   );

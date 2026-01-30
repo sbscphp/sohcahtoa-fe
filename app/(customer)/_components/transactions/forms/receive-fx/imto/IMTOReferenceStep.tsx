@@ -1,14 +1,15 @@
 "use client";
 
+import SelectableOptionCard from "@/app/(customer)/_components/forms/SelectableOptionCard";
+import { ArrowMoveDownRightIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Button, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Button, TextInput } from "@mantine/core";
-import SelectableOptionCard from "@/app/(customer)/_components/forms/SelectableOptionCard";
+import { MONEYGRAM_LOGO, WESTERN_UNION_LOGO } from "./helper";
 import { IMTOAlert } from "./IMTOAlert";
 import type { IMTOProvider } from "./IMTOSelectStep";
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowMoveDownRightIcon } from "@hugeicons/core-free-icons";
 
 const schema = z.object({
   referenceNumber: z.string().min(1, "Reference number is required"),
@@ -24,16 +25,6 @@ interface IMTOReferenceStepProps {
   onBack?: () => void;
 }
 
-const MONEYGRAM_LOGO = (
-  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 font-bold text-lg">
-    G
-  </div>
-);
-const WESTERN_UNION_LOGO = (
-  <div className="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-700 font-bold text-lg">
-    W
-  </div>
-);
 
 export default function IMTOReferenceStep({
   provider,

@@ -119,11 +119,27 @@ function getMockTransactionDetail(id: string): TransactionDetailPayload | null {
     transactionTypeLabel: "Business Travel Allowance (BTA)",
   };
 
+  const approved: TransactionDetailPayload = {
+    ...base,
+    date: "2025-11-16T11:00:00",
+    stage: "Documentation",
+    status: "Approved",
+  };
+
+  const rejected: TransactionDetailPayload = {
+    ...base,
+    date: "2025-11-16T11:00:00",
+    stage: "Documentation",
+    status: "Rejected",
+  };
+
   const map: Record<string, TransactionDetailPayload> = {
     GHA67AGHA1: underReview,
     GHA67AGHA2: settled,
     GHA67AGHA3: awaiting,
     GHA67AGHA8: btaSettled,
+    approved: approved,
+    rejected: rejected,
   };
   return map[id] ?? settled;
 }
@@ -156,6 +172,24 @@ export default function TransactionDetailPage() {
       hour12: true,
     });
     return `${date} | ${time}`;
+  };
+
+  const formatSheetDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatSheetTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   if (!payload) {
@@ -241,6 +275,22 @@ export default function TransactionDetailPage() {
         opened={updatesSheetOpen}
         onClose={() => setUpdatesSheetOpen(false)}
         viewStatus={viewStatus}
+        transactionTypeLabel={payload.transactionTypeLabel}
+        transactionId={payload.id}
+        date={formatSheetDate(payload.date)}
+        time={formatSheetTime(payload.date)}
+        adminMessage={
+          viewStatus === "approved"
+            ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point"
+            : viewStatus === "rejected"
+            ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all"
+            : undefined
+        }
+        onProceedToPayment={() => {
+          console.log("Proceed to payment");
+          // Navigate to payment page or open payment modal
+        }}
+        onViewTransaction={() => setUpdatesSheetOpen(false)}
       />
 
       {/* Sections */}

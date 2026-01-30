@@ -1,8 +1,9 @@
 "use client";
 
-import { Button } from "@mantine/core";
 import SelectableOptionCard from "@/app/(customer)/_components/forms/SelectableOptionCard";
+import { Button } from "@mantine/core";
 import { IMTOAlert } from "./IMTOAlert";
+import { MONEYGRAM_LOGO, WESTERN_UNION_LOGO } from "./helper";
 
 export type IMTOProvider = "moneygram" | "western-union";
 
@@ -13,22 +14,11 @@ interface IMTOSelectStepProps {
   onBack?: () => void;
 }
 
-const MONEYGRAM_LOGO = (
-  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 font-bold text-lg">
-    G
-  </div>
-);
-const WESTERN_UNION_LOGO = (
-  <div className="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-700 font-bold text-lg">
-    W
-  </div>
-);
-
 export default function IMTOSelectStep({
   selectedImto,
   onSelect,
   onSubmit,
-  onBack,
+  onBack
 }: IMTOSelectStepProps) {
   return (
     <div className="space-y-4">
@@ -36,14 +26,12 @@ export default function IMTOSelectStep({
         <h2 className="text-[#4D4B4B] text-2xl font-semibold leading-7">
           Select IMTO Options
         </h2>
-        <p className="text-[#6C6969]">
-          Select your preferred option
-        </p>
+        <p className="text-[#6C6969]">Select your preferred option</p>
       </div>
 
-    <div className="flex items-center justify-center">
-    <IMTOAlert />
-    </div>
+      <div className="flex items-center justify-center">
+        <IMTOAlert />
+      </div>
 
       <div className="flex flex-col gap-3">
         <SelectableOptionCard
@@ -61,7 +49,7 @@ export default function IMTOSelectStep({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-        {onBack && (
+        {onBack &&
           <Button
             type="button"
             variant="outline"
@@ -70,8 +58,7 @@ export default function IMTOSelectStep({
             onClick={onBack}
           >
             Back
-          </Button>
-        )}
+          </Button>}
         <Button
           type="button"
           size="md"
