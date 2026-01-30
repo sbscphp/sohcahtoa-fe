@@ -16,6 +16,8 @@ import { TimeInput } from "@mantine/dates";
 import { Calendar, Clock, ArrowLeftRight } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import CurrencySelector from "@/app/admin/_components/CurrencySelector";
+import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 
 const SECTION_TITLE_CLASS = "text-lg! font-semibold! text-orange-500!";
 const SECTION_DESC_CLASS = "text-base! text-body-text-100! mb-4!";
@@ -42,6 +44,10 @@ export default function CreateRatePage() {
         : 0;
     const justificationOverLimit = justificationWordCount > MAX_JUSTIFICATION_WORDS;
 
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleSwapConversion = () => {
         setBuyCurrency(sellCurrency);
         setSellCurrency(buyCurrency);
@@ -57,8 +63,23 @@ export default function CreateRatePage() {
         router.push("/admin/rate");
     };
 
-    const handleSave = () => {
-        // TODO: Submit to API
+    const handleSaveClick = () => {
+        setIsConfirmOpen(true);
+    };
+
+    const handleConfirmCreate = () => {
+        setIsSaving(true);
+        // TODO: Submit to API – on success:
+        // Simulate API call for now
+        setTimeout(() => {
+            setIsSaving(false);
+            setIsConfirmOpen(false);
+            setIsSuccessOpen(true);
+        }, 500);
+    };
+
+    const handleSuccessManageRate = () => {
+        setIsSuccessOpen(false);
         router.push("/admin/rate");
     };
 
@@ -316,15 +337,40 @@ export default function CreateRatePage() {
                 </section>
 
                 {/* Action Buttons */}
-                <Group justify="flex-end" gap="sm" mt="xl">
-                    <CustomButton buttonType="secondary" onClick={handleCancel}>
+                <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
+                    <CustomButton fullWidth size="lg" buttonType="secondary" onClick={handleCancel}>
                         Cancel
                     </CustomButton>
-                    <CustomButton buttonType="primary" onClick={handleSave}>
+                    <CustomButton fullWidth size="lg" buttonType="primary" onClick={handleSaveClick}>
                         Save
                     </CustomButton>
                 </Group>
             </div>
+
+            {/* Confirmation modal before creating rate */}
+            <ConfirmationModal
+                opened={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                title="Create a new rate ?"
+                message="Are you sure you want to create a new currency rate? Please note that this rate will affect the system, especially FX transactions"
+                primaryButtonText="Yes, Create New Rate"
+                secondaryButtonText="No, Close"
+                onPrimary={handleConfirmCreate}
+                onSecondary={() => setIsConfirmOpen(false)}
+                loading={isSaving}
+            />
+
+            {/* Success modal after rate is created */}
+            <SuccessModal
+                opened={isSuccessOpen}
+                onClose={() => setIsSuccessOpen(false)}
+                title="New rate Created"
+                message="A new currency rate has been successfully Created"
+                primaryButtonText="Manage Rate"
+                onPrimaryClick={handleSuccessManageRate}
+                secondaryButtonText="No, Close"
+                onSecondaryClick={() => setIsSuccessOpen(false)}
+            />
         </div>
     );
 }
