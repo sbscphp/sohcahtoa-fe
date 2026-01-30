@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 Types
 --------------------------------------------- */
 interface RateItem {
+  id: string;
   dateTime: string;
   currencyPair: string;
   buyAt: string;
@@ -27,6 +28,7 @@ Mock Data
 --------------------------------------------- */
 const activeRatesData: RateItem[] = [
   {
+    id: "1",
     dateTime: "2025-09-15\n9.00 AM",
     currencyPair: "USD- NGN",
     buyAt: "₦1450",
@@ -34,6 +36,7 @@ const activeRatesData: RateItem[] = [
     lastUpdated: "2025-09-25\n9.00 AM",
   },
   {
+    id: "2",
     dateTime: "2025-09-15\n9.00 AM",
     currencyPair: "GPB-NGN",
     buyAt: "₦1750",
@@ -41,6 +44,7 @@ const activeRatesData: RateItem[] = [
     lastUpdated: "2025-09-19\n4.00 PM",
   },
   {
+    id: "3",
     dateTime: "2025-09-15\n9.00 AM",
     currencyPair: "JPY-NGN",
     buyAt: "₦1900",
@@ -48,6 +52,7 @@ const activeRatesData: RateItem[] = [
     lastUpdated: "2025-09-15\n9.00 AM",
   },
   {
+    id: "4",
     dateTime: "2025-09-15\n9.00 AM",
     currencyPair: "CAD-NGN",
     buyAt: "₦1200",
@@ -55,6 +60,7 @@ const activeRatesData: RateItem[] = [
     lastUpdated: "2025-09-20\n10.00 AM",
   },
   {
+    id: "5",
     dateTime: "2025-09-15\n9.00 AM",
     currencyPair: "CNY-NGN",
     buyAt: "₦200",
@@ -62,6 +68,7 @@ const activeRatesData: RateItem[] = [
     lastUpdated: "2025-09-18\n2.00 PM",
   },
   {
+    id: "6",
     dateTime: "2025-09-15\n9.00 AM",
     currencyPair: "ZAR-NGN",
     buyAt: "₦80",
@@ -72,6 +79,7 @@ const activeRatesData: RateItem[] = [
 
 const scheduleRatesData: RateItem[] = [
   {
+    id: "7",
     dateTime: "2025-09-20\n10.00 AM",
     currencyPair: "EUR-NGN",
     buyAt: "₦1600",
@@ -79,6 +87,7 @@ const scheduleRatesData: RateItem[] = [
     lastUpdated: "2025-09-20\n10.00 AM",
   },
   {
+    id: "8",
     dateTime: "2025-09-25\n2.00 PM",
     currencyPair: "AUD-NGN",
     buyAt: "₦950",
@@ -169,7 +178,7 @@ export default function RateManagementPage() {
       key="action"
       onClick={() => {
         // Handle action click
-        console.log("View rate details:", item);
+        router.push(`/admin/rate/${item.id}`);
       }}
     />
     
