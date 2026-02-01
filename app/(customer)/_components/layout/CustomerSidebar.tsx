@@ -2,30 +2,28 @@
 
 import { collapsed_logo, logo } from "@/app/assets/asset";
 import { Avatar, UnstyledButton } from "@mantine/core";
-import {
-  ArrowUpRight,
-  BanknoteIcon,
-  Calculator,
-  LayoutGrid
-} from "lucide-react";
+import { ArrowUpRight, BanknoteIcon, Calculator, LayoutGrid } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type CustomerSidebarProps = {
   collapsed: boolean;
   onCollapse?: () => void;
+  onNavigate?: () => void;
 };
 
 const menuItems = [
   { icon: LayoutGrid, label: "Overview", href: "/dashboard" },
   { icon: BanknoteIcon, label: "Transactions", href: "/transactions" },
   { icon: Calculator, label: "Rate Calculator", href: "/rate-calculator" },
+  // { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
-export default function CustomerSidebar({ collapsed, onCollapse }: CustomerSidebarProps) {
+export default function CustomerSidebar({ collapsed, onCollapse, onNavigate }: CustomerSidebarProps) {
   const pathname = usePathname();
-
+  const router = useRouter();
   return (
     <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
      
@@ -68,6 +66,7 @@ export default function CustomerSidebar({ collapsed, onCollapse }: CustomerSideb
               <Link
                 key={href}
                 href={href}
+                onClick={onNavigate}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors
                   ${
@@ -97,26 +96,36 @@ export default function CustomerSidebar({ collapsed, onCollapse }: CustomerSideb
             </p>
             <UnstyledButton
               className="w-full flex items-center gap-5 h-8 rounded-lg hover:bg-primary-25! transition-colors"
+              onClick={() => {
+                router.push('/support');
+                onNavigate?.();
+              }}
             >
               <span className="text-primary-400 text-sm">Contact Support</span>
               <ArrowUpRight size={16} className="text-primary-400" />
             </UnstyledButton>
           </div>
 
-          {/* User Profile */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-             <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
+          {/* User Profile - click goes to Settings */}
+          <UnstyledButton
+            className="flex w-full items-center gap-3 rounded-lg py-1 cursor-pointer pr-2 transition-colors hover:bg-white/50"
+            onClick={() => {
+              router.push('/settings');
+              onNavigate?.();
+            }}
+          >
+            <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
+              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
             </div>
-            <div className="overflow-hidden flex-1">
-              <p className="font-medium text-xs text-body-heading-300 truncate">
+            <div className="min-w-0 flex-1 overflow-hidden text-left">
+              <p className="truncate text-xs font-medium text-body-heading-300">
                 Michael Smith
               </p>
-              <p className="text-body-text-100 text-xs truncate">
+              <p className="truncate text-xs text-body-text-100">
                 michaelsmith12@gmail.com
               </p>
             </div>
-          </div>
+          </UnstyledButton>
         </div>
       )}
     </aside>

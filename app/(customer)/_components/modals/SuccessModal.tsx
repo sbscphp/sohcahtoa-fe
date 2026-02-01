@@ -24,13 +24,13 @@ export function SuccessModal({
   buttonVariant = 'filled'
 }: SuccessModalProps) {
   return (
-    <Modal opened={opened} onClose={onClose} title="" centered withCloseButton={false} radius="lg">
+    <Modal opened={opened} onClose={onClose} title="" centered withCloseButton={false} radius="lg" size="sm">
       <div className="text-center space-y-5">
         {/* Success Icon */}
         <div className="flex justify-center">
           {icon || (
-            <div className="w-20 h-20 rounded-full bg-success-100 border-4 border-success-500 flex items-center justify-center relative">
-              <Image src={successGif} alt="Success" width={100} height={100} />
+            <div className="w-30 h-30 rounded-full flex items-center justify-center relative">
+              <Image src={successGif} alt="Success" fill />
             </div>
           )}
         </div>
@@ -49,10 +49,13 @@ export function SuccessModal({
         <Button
           onClick={onButtonClick}
           variant={buttonVariant}
-          color={buttonVariant === 'filled' ? 'orange' : undefined}
-          size="lg"
-          radius="xl"
           fullWidth
+          radius="xl"
+          className={
+            buttonVariant === 'filled'
+              ? 'h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6'
+              : 'h-[52px] min-h-[52px] py-3.5 px-6 bg-white border border-[#CCCACA] text-[#4D4B4B] font-medium text-base leading-6 hover:bg-gray-50'
+          }
           rightSection={buttonVariant === 'filled' ? <ArrowUpRight size={18} /> : undefined}
         >
           {buttonText}

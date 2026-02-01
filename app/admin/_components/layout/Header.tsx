@@ -1,58 +1,78 @@
-'use client';
+"use client";
 
-import { Bell, Settings, CircleAlert, ChevronLeft, Menu } from "lucide-react"
-import { useMediaQuery } from '@mantine/hooks';
+import { ChevronLeft, Menu } from "lucide-react";
+import { useMediaQuery } from "@mantine/hooks";
 
 type HeaderProps = {
   title?: string;
-  rightContent?: React.ReactNode;
   collapsed: boolean;
   setCollapsed: () => void;
   toggleMobile?: () => void;
-}
+};
 
-export default function Header({ title, collapsed, setCollapsed, toggleMobile }: HeaderProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+export default function Header({
+  title,
+  collapsed,
+  setCollapsed,
+  toggleMobile
+}: HeaderProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
-    <header className="h-16 bg-white shadow px-6 flex items-center justify-between w-full relative">
+    <header className="h-16 bg-white border-b border-gray-50 px-6 flex items-center justify-between w-full relative">
       <div className="flex items-center gap-4">
-        {isMobile && toggleMobile ? (
-          <button
-            onClick={toggleMobile}
-            className="rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors"
-          >
-            <Menu size={20} />
-          </button>
-        ) : (
-          <button
-            onClick={setCollapsed}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full w-8 h-8 border-[0.5px] border-[#F2F4F7] flex items-center justify-center hover:bg-gray-100 drop-shadow shadow-sm shadow-[#0002057A] transition-colors z-50 bg-white"
-          >
-            <ChevronLeft
-              className={`w-5 h-5 transition-transform duration-500 ease-in-out ${
-                collapsed ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-        )}
-        <h1 className="text-lg font-semibold">{title}</h1>
+        {isMobile && toggleMobile
+          ? <button
+              onClick={toggleMobile}
+              className="rounded-full w-8 h-8 border border-gray-50 flex items-center justify-center hover:bg-gray-50 transition-colors"
+            >
+              <Menu size={20} className="text-body-text-300" />
+            </button>
+          : <button
+              onClick={setCollapsed}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full w-8 h-8 border border-gray-50 flex items-center justify-center hover:bg-gray-50 drop-shadow shadow-sm transition-colors z-50 bg-white"
+            >
+              <ChevronLeft
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out text-body-text-300 ${collapsed
+                  ? "rotate-180"
+                  : ""}`}
+              />
+            </button>}
+        {/* Page Title */}
+        {title &&
+          <div className="flex items-center gap-2 ml-4">
+            <h1 className="text-body-heading-300 text-lg font-semibold">
+              {title}
+            </h1>
+          </div>}
       </div>
 
-      <div className="flex items-center gap-4">
-        <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#F2F4F7] hover:bg-gray-50 transition-colors">
-          <Bell size={20} />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1 rounded-full">
+      {/* <div className="flex items-center gap-3">
+        <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-gray-50 hover:bg-gray-50 transition-colors">
+          <Settings size={16} className="text-body-text-300" />
+        </button>
+        
+        
+        <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-gray-50 hover:bg-gray-50 transition-colors">
+          <CircleAlert size={16} className="text-body-text-300" />
+        </button>
+
+
+        <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-gray-50 hover:bg-gray-50 transition-colors">
+          <Bell size={16} className="text-body-text-300" />
+          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-medium px-1 py-px rounded-full min-w-[14px] text-center leading-tight">
             2
           </span>
         </button>
-        <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#F2F4F7] hover:bg-gray-50 transition-colors">
-          <Settings size={20} />
+
+
+        <button className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors">
+          <Avatar name="Michael Smith" color="initials" size={40} radius="xl" />
+          {!collapsed &&
+            !isMobile &&
+            <ChevronDown size={16} className="text-primary-400" />}
         </button>
-        <button className="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#F2F4F7] hover:bg-gray-50 transition-colors">
-          <CircleAlert size={20} />
-        </button>
-      </div>
+      </div> */}
     </header>
   );
 }

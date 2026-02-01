@@ -64,11 +64,10 @@ export function VerifyBVNModal({ opened, onClose, onVerify, bvn, deliveryMethod 
             onClick={handleContinue}
             disabled={!isComplete}
             variant="filled"
-            size="lg"
             fullWidth
             radius="xl"
             rightSection={<ArrowUpRight size={18} />}
-            className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
+            className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6 disabled:bg-primary-100 disabled:text-white disabled:cursor-not-allowed"
           >
             Continue
           </Button>

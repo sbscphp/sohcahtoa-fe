@@ -50,9 +50,9 @@ export function VerifyEmailModal({ opened, onClose, onVerify, email }: VerifyEma
         <Button
           onClick={handleVerify}
           disabled={!isComplete}
-          color="orange"
-          size="lg"
           fullWidth
+          radius="xl"
+          className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6"
           rightSection={
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />

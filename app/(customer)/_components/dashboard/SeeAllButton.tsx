@@ -1,24 +1,26 @@
 "use client";
 
+import { Button } from "@mantine/core";
+
 type SeeAllButtonProps = {
   href?: string;
   onClick?: () => void;
 };
 
-export default function SeeAllButton({ href, onClick }: SeeAllButtonProps) {
-  const className =
-    "rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-[#6C6969] transition-colors hover:bg-gray-200";
+const buttonClass =
+  "flex flex-row items-center justify-center gap-[5px] h-[27px] w-fit px-2.5 py-[5px] bg-white! border border-[#E4E4E7]! shadow-[0px_2px_2px_rgba(35,35,35,0.05)] rounded-[20px] font-medium text-sm leading-[120%] text-center text-[#232323] transition-colors hover:bg-gray-50! hover:border-gray-300! cursor-pointer";
 
+export default function SeeAllButton({ href, onClick }: SeeAllButtonProps) {
   if (href) {
     return (
-      <a href={href} className={className}>
+      <Button component="a" href={href} unstyled className={buttonClass}>
         See all
-      </a>
+      </Button>
     );
   }
   return (
-    <button type="button" onClick={onClick} className={className}>
+    <Button type="button" onClick={onClick} unstyled className={buttonClass}>
       See all
-    </button>
+    </Button>
   );
 }

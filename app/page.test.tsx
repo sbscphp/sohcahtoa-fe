@@ -16,6 +16,6 @@ describe("Home Page", () => {
     const heading = screen.getByRole("heading", {
       name: /welcome to sohcahtoa/i,
     });
-    expect(heading).toHaveClass("text-2xl", "font-bold", "text-red-500");
+    expect(heading).toHaveClass("text-2xl", "font-bold", "text-primary-orange");
   });
 });

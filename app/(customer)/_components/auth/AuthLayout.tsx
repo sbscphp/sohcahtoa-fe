@@ -29,7 +29,7 @@ const testimonials: TestimonialContent[] = [
       "Sohcahtoa has changed my fx trading in Nigeria. It's easy to use, with excellent tools and real-time market updates. The community support is invaluable. I highly recommend it for anyone visiting Nigeria!",
     name: "Daphne Park",
     role: "Traveller",
-    image: "https://via.placeholder.com/150"
+    image: "https://placehold.co/60x60/teal/white?text=DP"
   },
   {
     headline: "Exchange Money the Right Way",
@@ -39,7 +39,7 @@ const testimonials: TestimonialContent[] = [
       "SohCahToa makes managing my small FX needs simple. The rates are fair, the process is quick, and I never worry about delays. It's the most reliable platform I've used",
     name: "Adekunle, Ibrahim",
     role: "Student",
-    image: "https://via.placeholder.com/150"
+    image: "https://placehold.co/60x60/grey/white?text=AI"
   }
 ];
 

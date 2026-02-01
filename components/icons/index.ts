@@ -8,3 +8,5 @@ export { IconWallet } from "./IconWallet";
 export { IconWalletAdd } from "./IconWalletAdd";
 export { IconRecieve } from "./IconRecieve";
 export { IconRecurring } from "./IconRecurring";
+export { IconRepeat } from "./IconRepeat";
+export { IconTransfer } from "./IconTransfer";

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useMutation } from "@tanstack/react-query";
 
 export function useVerifyOtp(options?: any) {
