@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { OTPInput } from "@/app/(customer)/_components/auth/OTPInput";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
@@ -63,7 +62,7 @@ export default function VerifyOTPPage() {
   }
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
@@ -106,6 +105,6 @@ export default function VerifyOTPPage() {
         onButtonClick={handleOTPValidatedContinue}
         buttonVariant="outline"
       />
-    </AuthLayout>
+    </>
   );
 }

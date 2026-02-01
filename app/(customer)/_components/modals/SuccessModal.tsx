@@ -30,7 +30,7 @@ export function SuccessModal({
         <div className="flex justify-center">
           {icon || (
             <div className="w-30 h-30 rounded-full flex items-center justify-center relative">
-              <Image src={successGif} alt="Success" fill />
+              <Image src={successGif} alt="Success" fill unoptimized />
             </div>
           )}
         </div>

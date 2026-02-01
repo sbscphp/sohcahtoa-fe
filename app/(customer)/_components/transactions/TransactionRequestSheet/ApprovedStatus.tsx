@@ -17,27 +17,40 @@ export default function ApprovedStatus({
   date = "16 Nov 2025",
   time = "11:00 am",
   adminMessage = "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point",
-  onProceedToPayment,
+  onProceedToPayment
 }: ApprovedStatusProps) {
   return (
-    <div className="flex flex-col items-center px-4 pt-6 pb-8">
-      <div className="w-full max-w-[568px] flex flex-col items-center gap-4 p-3 bg-[#D1FADF] rounded-lg">
+    <div className="flex flex-col items-center py-5">
+      <div className="w-full min-h-[500px] ">
+      <div className="w-full flex flex-col items-center gap-4 p-3 bg-success-100 rounded-lg">
         {/* Top section: Title, ID, Date/Time */}
-        <div className="w-full flex flex-col gap-2">
-          <div className="w-full flex flex-row justify-between items-center gap-2">
+        <div className="flex flex-col gap-2 w-full">
+          <div className="space-y-1">
             <h3 className="font-medium text-base leading-6 text-[#323131]">
               Request Approved
             </h3>
-          </div>
-          <div className="w-full flex flex-row items-center gap-2 flex-wrap">
-            <span className="text-xs leading-4 text-[#4D4B4B]">ID:{transactionId}</span>
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#4D4B4B]" />
-              <span className="text-xs leading-4 text-[#4D4B4B]">{date}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-[#4D4B4B]" />
-              <span className="text-xs leading-4 text-[#4D4B4B]">{time}</span>
+            <span className="text-xs leading-4 text-[#4D4B4B]">
+              ID:{transactionId}
+            </span>
+            <div className="flex flex-row flex-wrap gap-2 items-center w-full">
+              <div className="flex gap-1 items-center">
+                <Calendar
+                  className="w-3.5 h-3.5 text-success-300"
+                  strokeWidth={2}
+                />
+                <span className="text-xs leading-4 text-body-text-300">
+                  {date}
+                </span>
+              </div>
+              <div className="flex gap-1 items-center">
+                <Clock
+                  className="w-3.5 h-3.5 text-success-300"
+                  strokeWidth={2}
+                />
+                <span className="text-xs leading-4 text-body-text-300">
+                  {time}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -49,15 +62,17 @@ export default function ApprovedStatus({
           </p>
         </div>
       </div>
+      </div>
 
       {/* Proceed to Payment button */}
-      <div className="w-full max-w-[568px] mt-4">
+      <div className="w-full mt-4">
         <Button
           variant="filled"
-          radius="md"
+          fullWidth
+          radius="xl"
           size="md"
-          className="w-full bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium"
-          rightSection={<ArrowUpRight className="w-4 h-4" />}
+          className="mt-4 bg-primary-400 hover:bg-primary-500 text-white font-medium! text-sm! leading-6"
+          rightSection={<ArrowUpRight size={18} />}
           onClick={onProceedToPayment}
         >
           Proceed to Payment

@@ -45,7 +45,6 @@ export default function TransactionRequestSheet({
       classNames={{
         content: "border-l border-gray-100",
       }}
-      zIndex={1000}
       overlayProps={{ opacity: 0.55, blur: 2 }}
       styles={{
         body: {

@@ -1,8 +1,12 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Button } from "@mantine/core";
 import { MessageSquare } from "lucide-react";
+import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Message01Icon } from "@hugeicons/core-free-icons";
 
 const MOCK_DETAIL: Record<
   string,
@@ -80,15 +84,26 @@ function DetailRow({
   label,
   value,
   valueClassName,
+  valueStyle,
+  align = "left",
 }: {
   label: string;
   value: string;
   valueClassName?: string;
+  /** Inline style for the value (e.g. from getStatusBadge for status pills). */
+  valueStyle?: CSSProperties;
+  align?: "left" | "right";
 }) {
+  const isRight = align === "right";
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 py-2">
+    <div
+      className={`flex flex-col w-full gap-1 py-2 ${isRight ? "items-end text-right" : "items-start"}`}
+    >
       <span className="text-[#6C6969] text-sm font-normal">{label}</span>
-      <span className={`text-[#4D4B4B] text-sm font-medium ${valueClassName ?? ""}`}>
+      <span
+        className={`text-sm font-medium ${!valueStyle ? "text-[#4D4B4B]" : ""} ${valueClassName ?? ""}`}
+        style={valueStyle}
+      >
         {value}
       </span>
     </div>
@@ -114,12 +129,13 @@ export default function ViewSupportDetail({ id }: { id: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
           <DetailRow label="Category" value={data.categoryDescription} />
           <DetailRow
+            align="right"
             label="Status"
             value={data.status}
-            valueClassName="text-primary-400"
+            valueStyle={getStatusBadge(data.status)}
           />
           <DetailRow label="Date & Time" value={data.date} />
-          <DetailRow label="Email" value={data.email} />
+          <DetailRow label="Email" value={data.email} align="right" />
         </div>
         <div className="pt-2">
           <p className="text-[#4D4B4B] text-sm font-normal leading-6 whitespace-pre-wrap">
@@ -131,8 +147,8 @@ export default function ViewSupportDetail({ id }: { id: string }) {
 
         {/* Support reply */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="flex items-center justify-center w-8 h-8 rounded bg-primary-100 text-primary-400">
-            <MessageSquare size={18} />
+          <span className="flex items-center justify-center w-8 h-8 rounded bg-[#FDF5F2] text-primary-400">
+          <HugeiconsIcon icon={Message01Icon}  size={18}/>
           </span>
           <span className="text-[#4D4B4B] font-semibold text-sm">Message</span>
         </div>
@@ -141,10 +157,11 @@ export default function ViewSupportDetail({ id }: { id: string }) {
           <DetailRow
             label="Status"
             value={data.status}
-            valueClassName="text-primary-400"
+            valueStyle={getStatusBadge(data.status)}
+            align="right"
           />
           <DetailRow label="Date & Time" value={data.supportDate} />
-          <DetailRow label="Email" value={data.email} />
+          <DetailRow label="Email" value={data.email} align="right"/>
         </div>
         <div className="pt-2">
           <p className="text-[#4D4B4B] text-sm font-normal leading-6 whitespace-pre-wrap">

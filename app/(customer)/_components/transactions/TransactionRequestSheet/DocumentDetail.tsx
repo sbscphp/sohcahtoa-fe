@@ -75,17 +75,18 @@ export default function DocumentDetail({
 
   return (
     <div className="flex flex-col px-4 pt-4 pb-8">
-      {/* 4 Documents header with chevron */}
-      <button
+ <div className="flex flex-col gap-4 max-h-[550px] overflow-y-auto">
+       {/* 4 Documents header with chevron */}
+       <button
         type="button"
         onClick={() => setSectionCollapsed((c) => !c)}
-        className="flex items-center gap-2 w-full text-left py-2"
+        className="flex items-center justify-between gap-2 w-full text-left bg-[#FFF6F1] p-2 rounded-lg my-2"
       >
-        <span className="font-medium text-sm leading-5 text-[#DD4F05]">
+        <span className="font-medium text-sm leading-5 text-primary-400">
           {documents.length} Documents
         </span>
         <ChevronUp
-          className={`w-4 h-4 text-[#8F8B8B] transition-transform ${sectionCollapsed ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-gray-900 transition-transform ${sectionCollapsed ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -93,7 +94,7 @@ export default function DocumentDetail({
         <div className="flex flex-col gap-6">
           {documents.map((doc) => (
             <div key={doc.id} className="flex flex-col gap-2">
-              <div className="flex flex-row items-start justify-between gap-2">
+              <div className="flex flex-row items-start justify-between gap-2 border-b border-gray-100 pb-2">
                 <div>
                   <p className="font-medium text-base leading-6 text-[#323131]">{doc.name}</p>
                   <p className="text-xs leading-4 text-[#8F8B8B]">{doc.size}</p>
@@ -101,13 +102,13 @@ export default function DocumentDetail({
                     <div className="flex items-center gap-2 mt-1 text-xs text-[#4D4B4B]">
                       {doc.lastUploadDate && (
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
+                          <Calendar className="w-3.5 h-3.5 text-purple-400" strokeWidth={2} />
                           {doc.lastUploadDate}
                         </span>
                       )}
                       {doc.lastUploadTime && (
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
+                          <Clock className="w-3.5 h-3.5 text-purple-400" strokeWidth={2} />
                           {doc.lastUploadTime}
                         </span>
                       )}
@@ -125,7 +126,7 @@ export default function DocumentDetail({
               </div>
 
               {doc.status === "Resubmit Document" && (
-                <div className="mt-2">
+                <div className="mt-2 bg-bg-card-2 p-2 rounded-lg">
                   <FileUploadInput
                     label="Re-upload Document"
                     value={reuploadFiles[doc.id] ?? null}
@@ -139,20 +140,23 @@ export default function DocumentDetail({
             </div>
           ))}
 
-          {hasResubmit && (
+        </div>
+      )}
+
+ </div>
+      
+{hasResubmit && (
             <Button
               variant="filled"
               fullWidth
               radius="xl"
               size="md"
-              className="mt-4 bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium"
+              className="mt-4 bg-primary-400 hover:bg-primary-500 text-white font-medium"
               onClick={handleResubmit}
             >
               Resubmit
             </Button>
           )}
-        </div>
-      )}
 
       <ResubmitSuccessModal
         opened={successModalOpen}

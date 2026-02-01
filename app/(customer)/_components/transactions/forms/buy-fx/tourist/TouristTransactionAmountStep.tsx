@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -8,6 +9,9 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
+import { isAmountOver10k } from "../../amount-step-utils";
+import ProofOfFundPrompt from "../../ProofOfFundPrompt";
+import ProofOfFundModal from "../../../../modals/ProofOfFundModal";
 
 const transactionAmountSchema = z.object({
   receiveAmount: z.string().min(1, "Amount is required"),
@@ -32,6 +36,7 @@ export default function TouristTransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: TouristTransactionAmountStepProps) {
+  const [proofModalOpen, setProofModalOpen] = useState(false);
   const form = useForm<TouristTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -69,7 +74,7 @@ export default function TouristTransactionAmountStep({
       </div>
 
       <div className="w-full flex flex-col items-stretch">
-        <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-3xl">
+        <div className="flex flex-col items-start p-6 gap-3 w-full bg-[#F9F9F9] rounded-3xl">
           <CurrencyAmountInput
             label="You Get Exactly"
             value={form.values.receiveAmount}
@@ -80,7 +85,17 @@ export default function TouristTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
+          <ProofOfFundPrompt
+            show={isAmountOver10k(
+              form.values.receiveAmount,
+              form.values.receiveCurrency,
+              form.values.sendAmount,
+              form.values.sendCurrency
+            )}
+            onUploadClick={() => setProofModalOpen(true)}
+          />
         </div>
+
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
@@ -135,6 +150,16 @@ export default function TouristTransactionAmountStep({
           Next
         </Button>
       </div>
+
+
+      <ProofOfFundModal
+          opened={proofModalOpen}
+          onClose={() => setProofModalOpen(false)}
+          onAttach={(files: File[]) => {
+            console.log("Proof of fund attached", files);
+            setProofModalOpen(false);
+          }}
+        />
     </form>
   );
 }

@@ -199,8 +199,18 @@ export const mantineTheme = createTheme({
     deg: 45,
   },
 
-  // Component-specific styling
+  // Z-index scale – drawer above header, modal above drawer (use CSS vars: --z-header, --z-drawer, --z-modal)
   components: {
+    Modal: {
+      defaultProps: {
+        zIndex: 300,
+      },
+    },
+    Drawer: {
+      defaultProps: {
+        zIndex: 200,
+      },
+    },
     TextInput: {
       defaultProps: {
         styles: {

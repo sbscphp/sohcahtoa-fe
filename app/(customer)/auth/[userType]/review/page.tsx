@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { OTPSentModal } from "@/app/(customer)/_components/modals/OTPSentModal";
 import { Button, Alert } from "@mantine/core";
@@ -58,7 +57,7 @@ export default function ReviewPage() {
   const verificationSource = userType === "citizen" ? "BVN" : "passport";
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
@@ -134,6 +133,6 @@ export default function ReviewPage() {
         onGoToEmail={handleGoToEmail}
         email={userData.email}
       />
-    </AuthLayout>
+    </>
   );
 }
