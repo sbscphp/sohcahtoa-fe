@@ -13,7 +13,7 @@ export default function OutletPage() {
       <div className="flex items-center gap-6 px-6">
         <button
           onClick={() => setActiveTab("franchise")}
-          className={`relative px-1 pb-3 text-sm font-medium transition-colors ${
+          className={`relative px-1 pb-3 cursor-pointer hover:text-primary-500 text-sm font-medium transition-colors ${
             activeTab === "franchise"
               ? "text-primary-500"
               : "text-gray-500 hover:text-gray-700"
@@ -26,7 +26,7 @@ export default function OutletPage() {
         </button>
         <button
           onClick={() => setActiveTab("branches")}
-          className={`relative px-1 pb-3 text-sm font-medium transition-colors ${
+          className={`relative px-1 pb-3 cursor-pointer hover:text-primary-500 text-sm font-medium transition-colors ${
             activeTab === "branches"
               ? "text-primary-500"
               : "text-gray-500 hover:text-gray-700"
