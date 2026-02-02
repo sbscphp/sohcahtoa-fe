@@ -98,6 +98,16 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Franchise Transaction Detail: /admin/outlet/franchise/:id/transactions
+  if (/^\/admin\/outlet\/franchise\/[^/]+\/transactions$/.test(pathname)) {
+    const franchiseId = pathname.split('/')[4];
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Franchise Details', url: adminRoutes.adminOutletFranchiseDetails(franchiseId) },
+      { label: 'Transaction Details' },
+    ];
+  }
+
   // Branch Create: /admin/outlet/branch/create
   if (pathname === '/admin/outlet/branch/create') {
     return [
@@ -111,6 +121,16 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     return [
       { label: 'Outlet', url: adminRoutes.adminOutlet() },
       { label: 'Branch Details' },
+    ];
+  }
+
+  // Branch Transaction Detail: /admin/outlet/branch/:id/transactions
+  if (/^\/admin\/outlet\/branch\/[^/]+\/transactions$/.test(pathname)) {
+    const branchId = pathname.split('/')[4];
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Branch Details', url: adminRoutes.adminOutletBranchDetails(branchId) },
+      { label: 'Transaction Details' },
     ];
   }
 

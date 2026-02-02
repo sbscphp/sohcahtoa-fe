@@ -35,8 +35,12 @@ const adminAuditTrail = () => `${admin()}/audit-trial`;
 const adminOutlet = () => `${admin()}/outlet`;
 const adminOutletFranchiseCreate = () => `${adminOutlet()}/franchise/create`;
 const adminOutletFranchiseDetails = (id: string | number = ':id') => `${adminOutlet()}/franchise/${id}`;
+const adminOutletFranchiseTransactionDetail = (franchiseId: string | number, txId: string) =>
+  `${adminOutletFranchiseDetails(franchiseId)}/transactions?tx=${encodeURIComponent(txId)}`;
 const adminOutletBranchCreate = () => `${adminOutlet()}/branch/create`;
 const adminOutletBranchDetails = (id: string | number = ':id') => `${adminOutlet()}/branch/${id}`;
+const adminOutletBranchTransactionDetail = (branchId: string | number, txId: string) =>
+  `${adminOutletBranchDetails(branchId)}/transactions?tx=${encodeURIComponent(txId)}`;
 
 export const adminRoutes = {
   // Base
@@ -76,6 +80,8 @@ export const adminRoutes = {
   adminOutlet,
   adminOutletFranchiseCreate,
   adminOutletFranchiseDetails,
+  adminOutletFranchiseTransactionDetail,
   adminOutletBranchCreate,
   adminOutletBranchDetails,
+  adminOutletBranchTransactionDetail,
 };
