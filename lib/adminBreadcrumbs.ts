@@ -5,6 +5,10 @@ export type Breadcrumb = {
   url?: string;
 };
 
+// Header height constants
+export const BASE_HEADER_HEIGHT = 64; // h-16 = 64px
+export const BREADCRUMB_HEIGHT = 48; // py-3 + text content ~48px
+
 /**
  * Generate breadcrumbs for admin routes based on the current pathname
  * Base routes (e.g., /admin/dashboard, /admin/transactions) return empty array
@@ -78,4 +82,14 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
 
   // Default: no breadcrumbs
   return [];
+}
+
+/**
+ * Calculate total header height based on whether breadcrumbs are present
+ */
+export function getHeaderHeight(pathname: string): number {
+  const breadcrumbs = getBreadcrumbs(pathname);
+  return breadcrumbs.length > 0 
+    ? BASE_HEADER_HEIGHT + BREADCRUMB_HEIGHT 
+    : BASE_HEADER_HEIGHT;
 }

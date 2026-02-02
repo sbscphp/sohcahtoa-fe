@@ -6,8 +6,7 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
-
-const HEADER_HEIGHT = 64;
+import { getHeaderHeight } from '@/lib/adminBreadcrumbs';
 
 export default function AdminLayoutShell({
   children,
@@ -59,10 +58,13 @@ export default function AdminLayoutShell({
     }
   }, [isMobile, closeMobile]);
 
+  // Calculate dynamic header height based on current pathname (for breadcrumbs)
+  const headerHeight = getHeaderHeight(pathname);
+
   return (
     <AppShell
       layout={isMobile ? undefined : "alt"}
-      header={{ height: HEADER_HEIGHT }}
+      header={{ height: headerHeight }}
       navbar={{
         width: isMobile ? 256 : (collapsed ? 80 : 256),
         breakpoint: 'sm',
@@ -104,7 +106,7 @@ export default function AdminLayoutShell({
           minHeight: '100vh',
           padding: '1.5rem',
           marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
-          paddingTop: `calc(${HEADER_HEIGHT}px + 1.5rem)`,
+          paddingTop: `calc(${headerHeight}px + 1.5rem)`,
           transition: 'margin-left 0.3s ease',
         }}
       >
