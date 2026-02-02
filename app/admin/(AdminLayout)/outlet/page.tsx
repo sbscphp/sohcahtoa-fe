@@ -2,42 +2,25 @@
 
 import { useState, useMemo } from "react";
 import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
+import { HeaderTabs } from "../../_components/HeaderTabs";
 import FranchiseSection from "./_outletComponents/FranchiseSection";
 import BranchSection from "./_outletComponents/BranchSection";
+
+const OUTLET_TABS = [
+  { value: "franchise", label: "Franchise" },
+  { value: "branches", label: "Branches" },
+] as const;
 
 export default function OutletPage() {
   const [activeTab, setActiveTab] = useState<"franchise" | "branches">("franchise");
 
   const headerContent = useMemo(
     () => (
-      <div className="flex items-center gap-6 px-6">
-        <button
-          onClick={() => setActiveTab("franchise")}
-          className={`relative px-1 pb-3 cursor-pointer hover:text-primary-500 text-sm font-medium transition-colors ${
-            activeTab === "franchise"
-              ? "text-primary-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          Franchise
-          {activeTab === "franchise" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("branches")}
-          className={`relative px-1 pb-3 cursor-pointer hover:text-primary-500 text-sm font-medium transition-colors ${
-            activeTab === "branches"
-              ? "text-primary-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          Branches
-          {activeTab === "branches" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-          )}
-        </button>
-      </div>
+      <HeaderTabs
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as "franchise" | "branches")}
+        tabs={[...OUTLET_TABS]}
+      />
     ),
     [activeTab]
   );

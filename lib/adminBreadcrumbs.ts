@@ -8,7 +8,7 @@ export type Breadcrumb = {
 // Header height constants
 export const BASE_HEADER_HEIGHT = 64; // h-16 = 64px
 export const BREADCRUMB_HEIGHT = 48; // py-3 + text content ~48px
-export const DYNAMIC_CONTENT_HEIGHT = 48; // Estimated height for dynamic header content
+export const DYNAMIC_CONTENT_HEIGHT = 40; // Estimated height for dynamic header content
 
 /**
  * Generate breadcrumbs for admin routes based on the current pathname

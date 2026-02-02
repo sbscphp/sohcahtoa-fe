@@ -202,7 +202,7 @@ export default function CreateBranchPage() {
             <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
               <CustomButton
                 fullWidth
-                size="lg"
+                size="md"
                 buttonType="secondary"
                 onClick={handleCancel}
               >
@@ -210,7 +210,7 @@ export default function CreateBranchPage() {
               </CustomButton>
               <CustomButton
                 fullWidth
-                size="lg"
+                size="md"
                 buttonType="primary"
                 onClick={handleNext}
               >
@@ -263,7 +263,7 @@ export default function CreateBranchPage() {
             <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
               <CustomButton
                 fullWidth
-                size="lg"
+                size="md"
                 buttonType="secondary"
                 onClick={handleBack}
               >
@@ -271,7 +271,7 @@ export default function CreateBranchPage() {
               </CustomButton>
               <CustomButton
                 fullWidth
-                size="lg"
+                size="md"
                 buttonType="primary"
                 onClick={handleCreateBranchClick}
               >
