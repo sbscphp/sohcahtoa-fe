@@ -91,7 +91,7 @@ export default function Header({
           )}
           {/* Dynamic Header Content */}
           {content && (
-            <div className="w-full bg-white">
+            <div className="w-full bg-white mt-2">
               {content}
             </div>
           )}
