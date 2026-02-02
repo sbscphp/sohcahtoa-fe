@@ -5,6 +5,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getBreadcrumbs } from "@/lib/adminBreadcrumbs";
+import { useHeaderContent } from "../../_contexts/HeaderContentContext";
 
 type HeaderProps = {
   title?: string;
@@ -22,6 +23,7 @@ export default function Header({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const pathname = usePathname();
   const breadcrumbs = getBreadcrumbs(pathname);
+  const { content } = useHeaderContent();
 
   // Use last breadcrumb as title if breadcrumbs exist, otherwise use provided title
   const displayTitle = breadcrumbs.length > 0
@@ -85,6 +87,12 @@ export default function Header({
                   </div>
                 );
               })}
+            </div>
+          )}
+          {/* Dynamic Header Content */}
+          {content && (
+            <div className="w-full bg-white">
+              {content}
             </div>
           )}
         </div>

@@ -8,6 +8,7 @@ export type Breadcrumb = {
 // Header height constants
 export const BASE_HEADER_HEIGHT = 64; // h-16 = 64px
 export const BREADCRUMB_HEIGHT = 48; // py-3 + text content ~48px
+export const DYNAMIC_CONTENT_HEIGHT = 48; // Estimated height for dynamic header content
 
 /**
  * Generate breadcrumbs for admin routes based on the current pathname
@@ -25,6 +26,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/rate',
     '/admin/report',
     '/admin/audit-trial',
+    '/admin/outlet',
     '/admin/login',
   ];
 
@@ -80,16 +82,56 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Franchise Create: /admin/outlet/franchise/create
+  if (pathname === '/admin/outlet/franchise/create') {
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Create Franchise' },
+    ];
+  }
+
+  // Franchise Details: /admin/outlet/franchise/:id
+  if (/^\/admin\/outlet\/franchise\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Franchise Details' },
+    ];
+  }
+
+  // Branch Create: /admin/outlet/branch/create
+  if (pathname === '/admin/outlet/branch/create') {
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Create Branch' },
+    ];
+  }
+
+  // Branch Details: /admin/outlet/branch/:id
+  if (/^\/admin\/outlet\/branch\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Branch Details' },
+    ];
+  }
+
   // Default: no breadcrumbs
   return [];
 }
 
 /**
- * Calculate total header height based on whether breadcrumbs are present
+ * Calculate total header height based on breadcrumbs and dynamic content
  */
-export function getHeaderHeight(pathname: string): number {
+export function getHeaderHeight(pathname: string, hasDynamicContent: boolean = false): number {
   const breadcrumbs = getBreadcrumbs(pathname);
-  return breadcrumbs.length > 0 
-    ? BASE_HEADER_HEIGHT + BREADCRUMB_HEIGHT 
-    : BASE_HEADER_HEIGHT;
+  let height = BASE_HEADER_HEIGHT;
+  
+  if (breadcrumbs.length > 0) {
+    height += BREADCRUMB_HEIGHT;
+  }
+  
+  if (hasDynamicContent) {
+    height += DYNAMIC_CONTENT_HEIGHT;
+  }
+  
+  return height;
 }

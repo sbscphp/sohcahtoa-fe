@@ -2,13 +2,14 @@
 
 import { AppShell } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { getHeaderHeight } from '@/lib/adminBreadcrumbs';
+import { HeaderContentProvider, useHeaderContent } from '../../_contexts/HeaderContentContext';
 
-export default function AdminLayoutShell({
+function AdminLayoutShellContent({
   children,
 }: {
   children: React.ReactNode;
@@ -17,6 +18,13 @@ export default function AdminLayoutShell({
   const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { content } = useHeaderContent();
+  
+  // Calculate header height based on pathname and dynamic content presence
+  const headerHeight = useMemo(() => {
+    const hasDynamicContent = content !== null;
+    return getHeaderHeight(pathname, hasDynamicContent);
+  }, [pathname, content]);
 
   // Get page title from route
   const getPageTitle = () => {
@@ -58,60 +66,69 @@ export default function AdminLayoutShell({
     }
   }, [isMobile, closeMobile]);
 
-  // Calculate dynamic header height based on current pathname (for breadcrumbs)
-  const headerHeight = getHeaderHeight(pathname);
-
   return (
     <AppShell
-      layout={isMobile ? undefined : "alt"}
-      header={{ height: headerHeight }}
-      navbar={{
-        width: isMobile ? 256 : (collapsed ? 80 : 256),
-        breakpoint: 'sm',
-        collapsed: { mobile: !mobileOpened },
-      }}
-      padding={0}
-      style={{
-        minHeight: '100vh',
-      }}
-    >
-      <AppShell.Navbar>
-        <Sidebar 
-          collapsed={isMobile ? false : collapsed}
-          closeMobile={closeMobile}
-        />
-      </AppShell.Navbar>
-
-      <AppShell.Header
-        style={{
-          marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
-          transition: 'margin-left 0.3s ease',
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          zIndex: 200,
+        layout={isMobile ? undefined : "alt"}
+        header={{ height: headerHeight }}
+        navbar={{
+          width: isMobile ? 256 : (collapsed ? 80 : 256),
+          breakpoint: 'sm',
+          collapsed: { mobile: !mobileOpened },
         }}
-      >
-        <Header 
-          collapsed={collapsed} 
-          title={getPageTitle()} 
-          setCollapsed={toggleCollapsed}
-          toggleMobile={toggleMobile}
-        />
-      </AppShell.Header>
-
-      <AppShell.Main
+        padding={0}
         style={{
-          backgroundColor: '#F7F7F7',
           minHeight: '100vh',
-          padding: '1.5rem',
-          marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
-          paddingTop: `calc(${headerHeight}px + 1.5rem)`,
-          transition: 'margin-left 0.3s ease',
         }}
       >
-        {children}
-      </AppShell.Main>
-    </AppShell>
+        <AppShell.Navbar>
+          <Sidebar 
+            collapsed={isMobile ? false : collapsed}
+            closeMobile={closeMobile}
+          />
+        </AppShell.Navbar>
+
+        <AppShell.Header
+          style={{
+            marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
+            transition: 'margin-left 0.3s ease',
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            zIndex: 200,
+          }}
+        >
+          <Header 
+            collapsed={collapsed} 
+            title={getPageTitle()} 
+            setCollapsed={toggleCollapsed}
+            toggleMobile={toggleMobile}
+          />
+        </AppShell.Header>
+
+        <AppShell.Main
+          style={{
+            backgroundColor: '#F7F7F7',
+            minHeight: '100vh',
+            padding: '1.5rem',
+            marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
+            paddingTop: `calc(${headerHeight}px + 1.5rem)`,
+            transition: 'margin-left 0.3s ease',
+          }}
+        >
+          {children}
+        </AppShell.Main>
+      </AppShell>
+  );
+}
+
+export default function AdminLayoutShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <HeaderContentProvider>
+      <AdminLayoutShellContent>{children}</AdminLayoutShellContent>
+    </HeaderContentProvider>
   );
 }
