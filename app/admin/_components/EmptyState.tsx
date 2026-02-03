@@ -2,7 +2,7 @@
 
 import { Text } from "@mantine/core";
 import { ReactNode } from "react";
-import Empty from "../_components/assets/EmptyState.png"
+import Empty from "../_components/assets/EmptyState.png";
 import Image from "next/image";
 
 interface EmptyStateProps {

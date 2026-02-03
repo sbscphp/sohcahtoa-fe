@@ -3,6 +3,7 @@ import StatCard from "../../_components/StatCard";
 import gold from "../../_components/assets/icons/users-orange.png"
 import green from "../../_components/assets/icons/users-green.png"
 import pink from "../../_components/assets/icons/users-pink.png"
+import UsersTable from "./UsersTable";
 
 export default function UserManagement() {
     const Icon1 = <div><Image src={gold} alt="icon"/></div>;
@@ -35,6 +36,7 @@ export default function UserManagement() {
                   
                 </div>
               </div>
+              <UsersTable />
               
         </>
     )
