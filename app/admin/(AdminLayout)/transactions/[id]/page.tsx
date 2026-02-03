@@ -1,30 +1,41 @@
 "use client";
-import { Tabs } from "@mantine/core";
+
+import { useState, useMemo } from "react";
+import { useSetHeaderContent } from "../../../_hooks/useSetHeaderContent";
+import { HeaderTabs } from "../../../_components/HeaderTabs";
 import Overview from "./Overview";
 import Receipt from "./Receipt";
 import Settlement from "./Settlement";
-import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 
-export default function ViewTransactionPage () {
+const TRANSACTION_TABS = [
+  { value: "overview", label: "Overview" },
+  { value: "receipt", label: "Receipt of Payment" },
+  { value: "transaction-settlement", label: "Transaction Settlement" },
+] as const;
+
+type TransactionTabValue = (typeof TRANSACTION_TABS)[number]["value"];
+
+export default function ViewTransactionPage() {
+  const [activeTab, setActiveTab] = useState<TransactionTabValue>("overview");
+
+  const headerContent = useMemo(
+    () => (
+      <HeaderTabs
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as TransactionTabValue)}
+        tabs={[...TRANSACTION_TABS]}
+      />
+    ),
+    [activeTab]
+  );
+
+  useSetHeaderContent(headerContent);
+
   return (
     <div>
-        <h2 className="font-semibold text-heading-300">View Transaction</h2>
-        <Tabs color="orange" defaultValue="overview" className="mt-3!">
-        <Tabs.List className="mb-3 border-0! before:content-none!">
-          <AdminTabButton value="overview">Overview</AdminTabButton>
-          <AdminTabButton value="receipt">Receipt of Payment</AdminTabButton>
-          <AdminTabButton value="transaction-settlement">Transaction Settlement</AdminTabButton>
-        </Tabs.List>
-
-        <Tabs.Panel value="overview">
-          <Overview />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="receipt"><Receipt /></Tabs.Panel>
-
-        <Tabs.Panel value="transaction-settlement"><Settlement /></Tabs.Panel>
-      </Tabs>
+      {activeTab === "overview" && <Overview />}
+      {activeTab === "receipt" && <Receipt />}
+      {activeTab === "transaction-settlement" && <Settlement />}
     </div>
-  )
-};
-
+  );
+}

@@ -17,6 +17,11 @@ const statusColorMap: Record<string, string> = {
   Deactivated: "red",
   Approved: "#027A48",
   Declined: "red",
+  "Payment Received": "#027A48",
+  Resolved: "#027A48",
+  Open: "#2563EB",
+  "In progress": "#B54708",
+  Closed: "#6B7280",
 };
 
 interface StatusBadgeProps {
