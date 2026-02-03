@@ -27,6 +27,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/report',
     '/admin/audit-trial',
     '/admin/outlet',
+    '/admin/tickets',
     '/admin/login',
   ];
 
@@ -131,6 +132,22 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
       { label: 'Outlet', url: adminRoutes.adminOutlet() },
       { label: 'Branch Details', url: adminRoutes.adminOutletBranchDetails(branchId) },
       { label: 'Transaction Details' },
+    ];
+  }
+
+  // Ticket Create: /admin/tickets/create
+  if (pathname === '/admin/tickets/create') {
+    return [
+      { label: 'Ticket Management', url: adminRoutes.adminTickets() },
+      { label: 'Create Incident' },
+    ];
+  }
+
+  // Ticket Details: /admin/tickets/:id
+  if (/^\/admin\/tickets\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'Ticket Management', url: adminRoutes.adminTickets() },
+      { label: 'Ticket Details' },
     ];
   }
 
