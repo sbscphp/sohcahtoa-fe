@@ -6,6 +6,7 @@ import { Card, Group, Text, Title, Button, Menu, Divider } from "@mantine/core";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import IncidentUpdatesOverlay from "@/app/admin/_components/IncidentUpdatesOverlay";
+import Communication from "@/app/admin/_components/Communication";
 import AssignIncidentModal from "../_ticketsComponents/AssignIncidentModal";
 import ChangeStatusModal, { type TicketStatusOption } from "../_ticketsComponents/ChangeStatusModal";
 import { adminRoutes } from "@/lib/adminRoutes";
@@ -152,6 +153,8 @@ export default function ViewTicketPage() {
           </Text>
         </section>
       </Card>
+
+      <Communication entityId={id} />
 
       <IncidentUpdatesOverlay
         opened={updatesOverlayOpen}
