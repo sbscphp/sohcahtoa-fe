@@ -1,10 +1,5 @@
-import { Button } from "@mantine/core";
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <>
-    <h2 className="text-2xl font-bold text-primary-orange">Welcome to SOHCAHTOA</h2>
-    <Button>Click me</Button>
-    </>
-  );
+  redirect('/auth/login');
 }

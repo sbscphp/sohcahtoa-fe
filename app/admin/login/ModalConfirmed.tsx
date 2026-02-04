@@ -8,9 +8,14 @@ import { useEffect } from "react";
 interface OtpSuccessModalProps {
   opened: boolean;
   onClose: () => void;
+  props: {
+    title?: string;
+    description?: string;
+    image?: any;
+  };
 }
 
-export function OtpSuccess({ opened, onClose }: OtpSuccessModalProps) {
+export function ModalConfirmed({ opened, onClose, props }: OtpSuccessModalProps) {
 
   useEffect(() => {
   if (opened) {
@@ -30,12 +35,11 @@ export function OtpSuccess({ opened, onClose }: OtpSuccessModalProps) {
       size="sm"
     >
       <Stack align="center" gap="sm">
-        <Image src={Success} alt="Success" width={120} height={120} priority />
+        <Image src={props.image || Success} alt="Success" width={120} height={120} priority />
 
-        <Title order={4}>Validation successful</Title>
-
+        <Title order={4}>{props.title || "Validation successful"}</Title>
         <Text size="sm" c="dimmed" ta="center">
-          You have successfully logged in to your account.
+          {props.description || "You have successfully logged in to your account."}
         </Text>
       </Stack>
     </Modal>

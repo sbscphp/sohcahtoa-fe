@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+While creating designs and styling, when poassible, use tailwind classes using already existing tokens from my globals.css file
