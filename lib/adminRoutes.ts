@@ -35,6 +35,7 @@ const adminAuditTrail = () => `${admin()}/audit-trial`;
 const adminTickets = () => `${admin()}/tickets`;
 const adminTicketCreate = () => `${adminTickets()}/create`;
 const adminTicketDetails = (id: string | number = ':id') => `${adminTickets()}/${id}`;
+const adminTicketUpdate = (id: string | number = ':id') => `${adminTickets()}/did/${id}`;
 
 // Outlet routes
 const adminOutlet = () => `${admin()}/outlet`;
@@ -85,6 +86,7 @@ export const adminRoutes = {
   adminTickets,
   adminTicketCreate,
   adminTicketDetails,
+  adminTicketUpdate,
   
   // Outlet
   adminOutlet,

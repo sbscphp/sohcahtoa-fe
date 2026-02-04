@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stack, Text, Select, Group, Textarea } from "@mantine/core";
+import { useForm } from "@mantine/form";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -26,72 +27,58 @@ const PRIORITY_OPTIONS = [
 
 const FILE_INPUT_ID = "file-input-Attachment";
 
+type TicketFormValues = {
+  customer: CustomerOption | null;
+  caseType: string;
+  priorityLevel: string;
+  description: string;
+  attachment: File | null;
+};
+
 export default function CreateTicketPage() {
   const router = useRouter();
 
-  const [customer, setCustomer] = useState<CustomerOption | null>(null);
-  const [caseType, setCaseType] = useState<string | null>(null);
-  const [priorityLevel, setPriorityLevel] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
-
-  const [customerError, setCustomerError] = useState("");
-  const [caseTypeError, setCaseTypeError] = useState("");
-  const [priorityError, setPriorityError] = useState("");
-  const [descriptionError, setDescriptionError] = useState("");
-  const [attachmentError, setAttachmentError] = useState("");
+  const form = useForm<TicketFormValues>({
+    initialValues: {
+      customer: null,
+      caseType: "",
+      priorityLevel: "",
+      description: "",
+      attachment: null,
+    },
+    validate: {
+      customer: (value) =>
+        value ? null : "Customer is required",
+      caseType: (value) =>
+        value ? null : "Case type is required",
+      priorityLevel: (value) =>
+        value ? null : "Priority level is required",
+      description: (value) =>
+        value.trim().length > 0
+          ? null
+          : "Description is required",
+      attachment: (value) =>
+        value ? null : "Attachment is required",
+    },
+  });
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  const clearErrors = () => {
-    setCustomerError("");
-    setCaseTypeError("");
-    setPriorityError("");
-    setDescriptionError("");
-    setAttachmentError("");
-  };
-
-  const validate = (): boolean => {
-    clearErrors();
-    let valid = true;
-    if (!customer) {
-      setCustomerError("Customer is required");
-      valid = false;
-    }
-    if (!caseType) {
-      setCaseTypeError("Case type is required");
-      valid = false;
-    }
-    if (!priorityLevel) {
-      setPriorityError("Priority level is required");
-      valid = false;
-    }
-    if (!description.trim()) {
-      setDescriptionError("Description is required");
-      valid = false;
-    }
-    if (!attachment) {
-      setAttachmentError("Attachment is required");
-      valid = false;
-    }
-    return valid;
-  };
 
   const handleCancel = () => {
     router.push(adminRoutes.adminTickets());
   };
 
   const handleCreateIncidentClick = () => {
+    const result = form.validate();
+    if (result.hasErrors) {
+      return;
+    }
     setIsConfirmOpen(true);
   };
 
   const handleConfirmCreate = async () => {
-    if (!validate()) {
-      setIsConfirmOpen(false);
-      return;
-    }
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
     setIsSaving(false);
@@ -122,9 +109,14 @@ export default function CreateTicketPage() {
 
         <Stack gap="lg">
           <CustomerSelectModal
-            value={customer}
-            onChange={setCustomer}
-            error={customerError || undefined}
+            value={form.values.customer}
+            onChange={(value) =>
+              form.setFieldValue("customer", value)
+            }
+            error={
+              (form.errors.customer as string | undefined) ||
+              undefined
+            }
             required
           />
 
@@ -133,9 +125,11 @@ export default function CreateTicketPage() {
               label="Case Type"
               placeholder="Select an Option"
               data={CASE_TYPE_OPTIONS}
-              value={caseType}
-              onChange={setCaseType}
-              error={caseTypeError || undefined}
+              value={form.values.caseType}
+              onChange={(value) =>
+                form.setFieldValue("caseType", value || "")
+              }
+              error={form.errors.caseType}
               required
               radius="md"
             />
@@ -143,9 +137,11 @@ export default function CreateTicketPage() {
               label="Priority Level"
               placeholder="Select an Option"
               data={PRIORITY_OPTIONS}
-              value={priorityLevel}
-              onChange={setPriorityLevel}
-              error={priorityError || undefined}
+              value={form.values.priorityLevel}
+              onChange={(value) =>
+                form.setFieldValue("priorityLevel", value || "")
+              }
+              error={form.errors.priorityLevel}
               required
               radius="md"
             />
@@ -154,9 +150,14 @@ export default function CreateTicketPage() {
           <Textarea
             label="Description"
             placeholder="Write here"
-            value={description}
-            onChange={(e) => setDescription(e.currentTarget.value)}
-            error={descriptionError || undefined}
+            value={form.values.description}
+            onChange={(e) =>
+              form.setFieldValue(
+                "description",
+                e.currentTarget.value
+              )
+            }
+            error={form.errors.description}
             required
             radius="md"
             minRows={4}
@@ -165,10 +166,16 @@ export default function CreateTicketPage() {
           <div>
             <FileUpload
               label="Attachment"
-              value={attachment}
-              onChange={setAttachment}
+              value={form.values.attachment}
+              onChange={(file) =>
+                form.setFieldValue("attachment", file)
+              }
               required
-              error={attachmentError || undefined}
+              error={
+                typeof form.errors.attachment === "string"
+                  ? form.errors.attachment
+                  : undefined
+              }
             />
             <button
               type="button"
