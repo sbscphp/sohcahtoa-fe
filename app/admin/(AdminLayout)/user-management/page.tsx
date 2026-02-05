@@ -1,6 +1,8 @@
 "use client";
 import { Tabs } from "@mantine/core";
 import  UserManagement  from "./UserManagement";
+import DepartmentPage from "./_departments/page";
+import UserRoles from "./role/UserRoles";
 
 export default function UserManagementPage() {
   return (
@@ -16,9 +18,9 @@ export default function UserManagementPage() {
           <UserManagement />
         </Tabs.Panel>
 
-        <Tabs.Panel value="roles">Messages tab content</Tabs.Panel>
+        <Tabs.Panel value="roles"><UserRoles /></Tabs.Panel>
 
-        <Tabs.Panel value="departments">Settings tab content</Tabs.Panel>
+        <Tabs.Panel value="departments"><DepartmentPage /></Tabs.Panel>
       </Tabs>
     </>
   );

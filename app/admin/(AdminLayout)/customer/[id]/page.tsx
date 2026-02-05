@@ -10,7 +10,7 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import TransactionsTable from "../../transactions/_transactionsComponents/TransactionTable";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 
-type CustomerStatus = "Active" | "Deactivated";
+export type CustomerStatus = "Active" | "Deactivated";
 
 export default function CustomerDetailsPage() {
   const router = useRouter();
