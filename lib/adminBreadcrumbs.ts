@@ -143,6 +143,17 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Ticket Update: /admin/tickets/did/:id
+  const ticketDidMatch = pathname.match(/^\/admin\/tickets\/did\/([^/]+)$/);
+  if (ticketDidMatch) {
+    const ticketId = ticketDidMatch[1];
+    return [
+      { label: 'Ticket Management', url: adminRoutes.adminTickets() },
+      { label: 'Ticket Details', url: adminRoutes.adminTicketDetails(ticketId) },
+      { label: 'Update Incident' },
+    ];
+  }
+
   // Ticket Details: /admin/tickets/:id
   if (/^\/admin\/tickets\/[^/]+$/.test(pathname)) {
     return [
