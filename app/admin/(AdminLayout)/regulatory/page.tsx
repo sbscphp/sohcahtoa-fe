@@ -1,6 +1,8 @@
 "use client";
 import { Tabs } from "@mantine/core";
 import OverviewPage from "./_components/overview/page";
+import SubmissionPage from "./_components/submission/page";
+import CBNReportsPage from "./_components/reports/page";
 
 
 export default function UserManagementPage() {
@@ -18,9 +20,9 @@ export default function UserManagementPage() {
           <OverviewPage />
         </Tabs.Panel>
 
-        <Tabs.Panel value="roles">TRMS Submissions</Tabs.Panel>
+        <Tabs.Panel value="roles"><SubmissionPage /></Tabs.Panel>
 
-        <Tabs.Panel value="departments">FX winow and CBN reporting</Tabs.Panel>
+        <Tabs.Panel value="departments"><CBNReportsPage /></Tabs.Panel>
         <Tabs.Panel value="audit">Audit and regulatory logs</Tabs.Panel>
       </Tabs>
     </>

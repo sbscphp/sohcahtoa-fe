@@ -13,6 +13,7 @@ import {
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useRouter } from "next/navigation";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { ReportSummaryModal } from "./[id]/page";
 
 /* --------------------------------------------
  Types
@@ -24,7 +25,7 @@ interface compliance {
   time: string;
   file: string;
   channel: string;
-  status: "Active" | "Deactivated";
+  status: "Submitted" | "Rejected" | "Pending";
 }
 
 /* --------------------------------------------
@@ -38,7 +39,7 @@ const generateCompliance = (): compliance[] => [
     time: "7:00am",
     file: "XML",
     channel: "FN window",
-    status: "Active",
+    status: "Submitted",
   },
   {
     report: "Weekly FX Allocation summary",
@@ -47,7 +48,7 @@ const generateCompliance = (): compliance[] => [
     time: "14:00pm",
     file: "CSV",
     channel: "Manual upload",
-    status: "Active",
+    status: "Submitted",
   },
   {
     report: "Sanctions Screening summary",
@@ -56,7 +57,7 @@ const generateCompliance = (): compliance[] => [
     time: "19:00pm",
     file: "PDF",
     channel: "System",
-    status: "Deactivated",
+    status: "Pending",
   },
   {
     report: "Monthly BDC XML Export",
@@ -65,7 +66,7 @@ const generateCompliance = (): compliance[] => [
     time: "15:30pm",
     file: "XML",
     channel: "CBN portal",
-    status: "Active",
+    status: "Rejected",
   },
   {
     report: "FX utilization Report",
@@ -74,7 +75,7 @@ const generateCompliance = (): compliance[] => [
     time: "18:00pm",
     file: "PDF",
     channel: "System",
-    status: "Active",
+    status: "Submitted",
   },
   {
     report: "Suspicion transaction log",
@@ -83,7 +84,7 @@ const generateCompliance = (): compliance[] => [
     time: "10:00am",
     file: "CSV",
     channel: "Manual upload",
-    status: "Deactivated",
+    status: "Rejected",
   },
   {
     report: "Sophia Martinez",
@@ -92,7 +93,7 @@ const generateCompliance = (): compliance[] => [
     time: "12:00pm",
     file: "PDF",
     channel: "System",
-    status: "Active",
+    status: "Submitted",
   },
   {
     report: "James Wilson",
@@ -101,7 +102,7 @@ const generateCompliance = (): compliance[] => [
     time: "10:30am",
     file: "CSV",
     channel: "Manual upload",
-    status: "Active",
+    status: "Pending",
   },
   {
     report: "Isabella Brown",
@@ -110,7 +111,7 @@ const generateCompliance = (): compliance[] => [
     time: "11:00am",
     file: "PDF",
     channel: "System",
-    status: "Deactivated",
+    status: "Rejected",
   },
   {
     report: "William Davis",
@@ -119,7 +120,7 @@ const generateCompliance = (): compliance[] => [
     time: "10:00am",
     file: "XML",
     channel: "FN window",
-    status: "Active",
+    status: "Submitted",
   },
   {
     report: "Charlotte Taylor",
@@ -128,7 +129,7 @@ const generateCompliance = (): compliance[] => [
     time: "12:30pm",
     file: "PDF",
     channel: "System",
-    status: "Active",
+    status: "Pending",
   },
   {
     report: "Benjamin Anderson",
@@ -137,7 +138,7 @@ const generateCompliance = (): compliance[] => [
     time: "11:00am",
     file: "CSV",
     channel: "Manual upload",
-    status: "Deactivated",
+    status: "Rejected",
   },
   {
     report: "Amelia White",
@@ -146,7 +147,7 @@ const generateCompliance = (): compliance[] => [
     time: "12:30pm",
     file: "PDF",
     channel: "System",
-    status: "Active",
+    status: "Submitted",
   },
   {
     report: "Lucas Harris",
@@ -155,7 +156,7 @@ const generateCompliance = (): compliance[] => [
     time: "15:00pm",
     file: "CSV",
     channel: "FN window",
-    status: "Deactivated",
+    status: "Rejected",
   },
   {
     report: "Mia Clark",
@@ -164,19 +165,11 @@ const generateCompliance = (): compliance[] => [
     time: "09:30am",
     file: "PDF",
     channel: "System",
-    status: "Active",
+    status: "Submitted",
   },
 ];
 
-/* --------------------------------------------
- Format Currency Helper
---------------------------------------------- */
-const formatNaira = (amount: number): string => {
-  return `₦ ${amount.toLocaleString("en-NG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-};
+
 
 /* --------------------------------------------
  Component
@@ -185,10 +178,9 @@ export default function ComplianceTable() {
   /* Pagination state */
   const [page, setPage] = useState(1);
   const pageSize = 5;
-
+  const [ isOpen, setIsOpen ] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Filter By");
-  const router = useRouter();
 
   const allCompliances = useMemo(() => generateCompliance(), []);
 
@@ -264,7 +256,7 @@ export default function ComplianceTable() {
     // Action
     <RowActionIcon
       key="action"
-      onClick={() => router.push(`/admin/compliance/${item.id}`)}
+      onClick={() => setIsOpen(true)}
     />
   ];
 
@@ -273,7 +265,7 @@ export default function ComplianceTable() {
       <div>
         <Group justify="space-between" mb="md" wrap="nowrap">
           <div className="flex items-center gap-4">
-            <h2 className="font-semibold text-lg">Compliances Reports</h2>
+            <h2 className="font-semibold text-lg">Compliance Reports</h2>
             {/* Search */}
             <TextInput
               placeholder="Enter keyword"
@@ -290,7 +282,7 @@ export default function ComplianceTable() {
             <Select
               value={filter}
               onChange={(value) => setFilter(value!)}
-              data={["Filter By", "All", "Active", "Deactivated"]}
+              data={["Filter By", "All", "Submitted", "Rejected"]}
               radius="xl"
               w={120}
               rightSection={<ListFilter size={16} />}
@@ -324,6 +316,7 @@ export default function ComplianceTable() {
           onPageChange: setPage,
         }}
       />
+      <ReportSummaryModal opened={isOpen} onClose={() => setIsOpen(false)} />
     </div>
   );
 }
