@@ -3,6 +3,7 @@ import { Tabs } from "@mantine/core";
 import OverviewPage from "./_components/overview/page";
 import SubmissionPage from "./_components/submission/page";
 import CBNReportsPage from "./_components/reports/page";
+import AuditRegulatoryPage from "./_components/audit/page";
 
 
 export default function UserManagementPage() {
@@ -23,7 +24,7 @@ export default function UserManagementPage() {
         <Tabs.Panel value="roles"><SubmissionPage /></Tabs.Panel>
 
         <Tabs.Panel value="departments"><CBNReportsPage /></Tabs.Panel>
-        <Tabs.Panel value="audit">Audit and regulatory logs</Tabs.Panel>
+        <Tabs.Panel value="audit"><AuditRegulatoryPage /></Tabs.Panel>
       </Tabs>
     </>
   );

@@ -7,7 +7,7 @@ import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useRouter } from "next/navigation";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { ReportsDetailModal } from "./ReportsDetailModal";
+import { ReportsDetailModal } from "./ReportDetailModal";
 
 /* --------------------------------------------
  Types
