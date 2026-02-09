@@ -17,6 +17,7 @@ import { CustomerStatus } from "../../customer/[id]/page";
 import { CreateRoleModal } from "./CreateRoleModal";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 /* --------------------------------------------
  Types
@@ -170,7 +171,7 @@ export default function RolesTable() {
     </div>,
 
 
-        <RowActionIcon key="action" onClick={() => router.push(`/admin/user-management/role/${role.id}`)} />,
+        <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser())} />,
 
   ];
 

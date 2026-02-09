@@ -1,27 +1,44 @@
+
+
 "use client";
-import { Tabs } from "@mantine/core";
+
+import { useState, useMemo } from "react";
+import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
+import { HeaderTabs } from "../../_components/HeaderTabs";
 import  UserManagement  from "./UserManagement";
 import DepartmentPage from "./_departments/page";
 import UserRoles from "./role/UserRoles";
 
+const USER_TABS = [
+  { value: "user", label: "Users" },
+  { value: "roles", label: "Roles" },
+  { value: "department", label: "Departments" },
+] as const;
+
+export type UserTabValue = (typeof USER_TABS)[number]["value"];
+
 export default function UserManagementPage() {
-  return (
-    <>
-      <Tabs color="orange" defaultValue="users">
-        <Tabs.List className="mb-3">
-          <Tabs.Tab value="users">Users</Tabs.Tab>
-          <Tabs.Tab value="roles">Roles</Tabs.Tab>
-          <Tabs.Tab value="departments">Departments</Tabs.Tab>
-        </Tabs.List>
+  const [activeTab, setActiveTab] = useState<UserTabValue>("user");
 
-        <Tabs.Panel value="users">
-          <UserManagement />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="roles"><UserRoles /></Tabs.Panel>
-
-        <Tabs.Panel value="departments"><DepartmentPage /></Tabs.Panel>
-      </Tabs>
-    </>
+  const headerContent = useMemo(
+    () => (
+      <HeaderTabs
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as UserTabValue)}
+        tabs={[...USER_TABS]}
+      />
+    ),
+    [activeTab]
   );
-}
+
+  useSetHeaderContent(headerContent);
+
+  return (
+    <div className="space-y-4">
+     
+      {activeTab === "user" && <UserManagement />}
+      {activeTab === "roles" && <UserRoles />}
+      {activeTab === "department" && <DepartmentPage />}
+    </div>
+  );}
+

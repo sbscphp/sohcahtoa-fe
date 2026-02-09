@@ -10,6 +10,7 @@ import { AddUserModal } from "./AddUserModal";
 import { CreateAdminRoleModal } from "./CreateAdminRoleModal";
 import { AdminRoleCreatedModal } from "./AdminRoleCreatedModal";
 import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 /* --------------------------------------------
  Types
@@ -161,7 +162,7 @@ export default function UsersTable() {
 
     <StatusBadge key="status" status={user.status} />,
 
-    <RowActionIcon key="action" onClick={() => router.push(`/admin/user-management/user/${user.userId}`)} />,
+    <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser())} />,
   ];
 
   return (
