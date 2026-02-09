@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, Button, Avatar, Text, ScrollArea, ActionIcon } from "@mantine/core";
+import { Select, Avatar, Text, TextInput, ScrollArea, ActionIcon } from "@mantine/core";
 import { ChevronDown, ChevronUp, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { AssignableUser, AssignableRole } from "./AssignToModal";
 
@@ -97,27 +97,23 @@ export default function WorkflowLineItem({
               />
 
               {/* Escalation Protocol */}
-              <div>
-                <Text size="sm" fw={500} className="text-gray-900 mb-1">
-                  Escalation protocol <span className="text-red-500">*</span>
-                </Text>
-                <Button
-                  variant="outline"
-                  color="gray"
-                  radius="md"
-                  fullWidth
-                  onClick={() => onOpenEscalationModal(line.id)}
-                  className="justify-start font-normal text-left"
-                >
-                  {line.escalateToUser ? (
-                    <span className="text-gray-900">
-                      {line.escalationPeriod} mins | {line.escalateToUser.name}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">00 mins | Escalate To</span>
-                  )}
-                </Button>
-              </div>
+              <TextInput
+                label="Escalation protocol"
+                placeholder="00 mins | Escalate To"
+                value={
+                  line.escalateToUser
+                    ? `${line.escalationPeriod} mins | ${line.escalateToUser.name}`
+                    : ""
+                }
+                readOnly
+                required
+                radius="md"
+                onClick={() => onOpenEscalationModal(line.id)}
+                classNames={{
+                  label: "text-sm font-medium text-gray-900 mb-1",
+                  input: "cursor-pointer",
+                }}
+              />
             </div>
 
             {/* Select Admin Users Section */}
