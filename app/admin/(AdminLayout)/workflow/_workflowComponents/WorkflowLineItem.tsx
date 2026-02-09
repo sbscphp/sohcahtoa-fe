@@ -122,11 +122,7 @@ export default function WorkflowLineItem({
 
             {/* Select Admin Users Section */}
             <div className="rounded-lg border border-gray-200 p-3">
-              <button
-                type="button"
-                onClick={() => onToggleExpanded(line.id)}
-                className="flex w-full items-center justify-between"
-              >
+              <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Text size="sm" fw={500} className="text-gray-900">
                     Select Admin users ({String(totalAssigned).padStart(2, "0")})
@@ -135,10 +131,7 @@ export default function WorkflowLineItem({
                     size="sm"
                     variant="subtle"
                     color="orange"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenAssignModal(line.id);
-                    }}
+                    onClick={() => onOpenAssignModal(line.id)}
                   >
                     <Plus size={16} />
                   </ActionIcon>
@@ -150,10 +143,7 @@ export default function WorkflowLineItem({
                       size="sm"
                       variant="subtle"
                       color="orange"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveUp(line.id);
-                      }}
+                      onClick={() => onMoveUp(line.id)}
                     >
                       <ArrowUp size={16} />
                     </ActionIcon>
@@ -163,10 +153,7 @@ export default function WorkflowLineItem({
                       size="sm"
                       variant="subtle"
                       color="orange"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveDown(line.id);
-                      }}
+                      onClick={() => onMoveDown(line.id)}
                     >
                       <ArrowDown size={16} />
                     </ActionIcon>
@@ -176,19 +163,21 @@ export default function WorkflowLineItem({
                       size="sm"
                       variant="subtle"
                       color="red"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(line.id);
-                      }}
+                      onClick={() => onDelete(line.id)}
                     >
                       <Trash2 size={16} />
                     </ActionIcon>
                   )}
-                  <ActionIcon size="sm" variant="subtle" color="gray">
+                  <ActionIcon 
+                    size="sm" 
+                    variant="subtle" 
+                    color="gray"
+                    onClick={() => onToggleExpanded(line.id)}
+                  >
                     {line.expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </ActionIcon>
                 </div>
-              </button>
+              </div>
 
               {/* Expanded Content */}
               {line.expanded && (totalAssigned > 0) && (

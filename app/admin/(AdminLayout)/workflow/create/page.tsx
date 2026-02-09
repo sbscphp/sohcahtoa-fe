@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Textarea, Radio, Group } from "@mantine/core";
+import { useForm } from "@mantine/form";
 import { Check } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
@@ -77,26 +78,40 @@ export default function CreateWorkflowPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
 
-  // Step 1: Basic Workflow Information
-  const [workflowName, setWorkflowName] = useState("");
-  const [workflowDescription, setWorkflowDescription] = useState("");
-  const [workflowAction, setWorkflowAction] = useState("");
-  const [branchApplicable, setBranchApplicable] = useState<string | null>(null);
-  const [departmentApplicable, setDepartmentApplicable] = useState<string | null>(null);
-  const [workflowType, setWorkflowType] = useState<"rigid" | "flexible">("rigid");
-
-  // Step 2: Personnel Process Flow
-  const [workflowLines, setWorkflowLines] = useState<WorkflowLine[]>([
-    {
-      id: "line-1",
-      workflowType: "",
-      escalationPeriod: 0,
-      escalateToUser: undefined,
-      selectedUsers: [],
-      selectedRoles: [],
-      expanded: false,
+  // Form Management with Mantine useForm
+  const form = useForm({
+    initialValues: {
+      workflowName: "",
+      workflowDescription: "",
+      workflowAction: "",
+      branchApplicable: "",
+      departmentApplicable: "",
+      workflowType: "rigid" as "rigid" | "flexible",
+      workflowLines: [
+        {
+          id: "line-1",
+          workflowType: "",
+          escalationPeriod: 0,
+          escalateToUser: undefined,
+          selectedUsers: [],
+          selectedRoles: [],
+          expanded: false,
+        },
+      ] as WorkflowLine[],
     },
-  ]);
+    validate: {
+      workflowName: (value) => (value.trim() ? null : "Workflow name is required"),
+      workflowDescription: (value) => {
+        if (!value.trim()) return "Workflow description is required";
+        const wordCount = value.trim().split(/\s+/).filter(Boolean).length;
+        if (wordCount > 24) return "Description must not exceed 24 words";
+        return null;
+      },
+      workflowAction: (value) => (value ? null : "Workflow action is required"),
+      branchApplicable: (value) => (value ? null : "Branch is required"),
+      departmentApplicable: (value) => (value ? null : "Department is required"),
+    },
+  });
 
   // Modals
   const [isWorkflowActionModalOpen, setIsWorkflowActionModalOpen] = useState(false);
@@ -122,82 +137,79 @@ export default function CreateWorkflowPage() {
   };
 
   const handleWorkflowActionSelect = (action: string) => {
-    setWorkflowAction(action);
+    form.setFieldValue("workflowAction", action);
   };
 
   const handleEscalationSave = (escalateToId: string, escalateToName: string, minutes: number) => {
     if (!activeLineId) return;
-    setWorkflowLines((prev) =>
-      prev.map((line) =>
-        line.id === activeLineId
-          ? {
-              ...line,
-              escalationPeriod: minutes,
-              escalateToUser: { id: escalateToId, name: escalateToName },
-            }
-          : line
-      )
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === activeLineId
+        ? {
+            ...line,
+            escalationPeriod: minutes,
+            escalateToUser: { id: escalateToId, name: escalateToName },
+          }
+        : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleAssignUsers = (users: AssignableUser[]) => {
     if (!activeLineId) return;
-    setWorkflowLines((prev) =>
-      prev.map((line) =>
-        line.id === activeLineId
-          ? {
-              ...line,
-              selectedUsers: [...line.selectedUsers, ...users.filter(u => !line.selectedUsers.find(su => su.id === u.id))],
-            }
-          : line
-      )
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === activeLineId
+        ? {
+            ...line,
+            selectedUsers: [...line.selectedUsers, ...users.filter(u => !line.selectedUsers.find(su => su.id === u.id))],
+          }
+        : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleAssignRoles = (roles: AssignableRole[]) => {
     if (!activeLineId) return;
-    setWorkflowLines((prev) =>
-      prev.map((line) =>
-        line.id === activeLineId
-          ? {
-              ...line,
-              selectedRoles: [...line.selectedRoles, ...roles.filter(r => !line.selectedRoles.find(sr => sr.id === r.id))],
-            }
-          : line
-      )
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === activeLineId
+        ? {
+            ...line,
+            selectedRoles: [...line.selectedRoles, ...roles.filter(r => !line.selectedRoles.find(sr => sr.id === r.id))],
+          }
+        : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleUpdateWorkflowType = (id: string, type: string) => {
-    setWorkflowLines((prev) =>
-      prev.map((line) => (line.id === id ? { ...line, workflowType: type } : line))
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === id ? { ...line, workflowType: type } : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleToggleExpanded = (id: string) => {
-    setWorkflowLines((prev) =>
-      prev.map((line) => (line.id === id ? { ...line, expanded: !line.expanded } : line))
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === id ? { ...line, expanded: !line.expanded } : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleRemoveUser = (lineId: string, userId: string) => {
-    setWorkflowLines((prev) =>
-      prev.map((line) =>
-        line.id === lineId
-          ? { ...line, selectedUsers: line.selectedUsers.filter((u) => u.id !== userId) }
-          : line
-      )
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === lineId
+        ? { ...line, selectedUsers: line.selectedUsers.filter((u) => u.id !== userId) }
+        : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleRemoveRole = (lineId: string, roleId: string) => {
-    setWorkflowLines((prev) =>
-      prev.map((line) =>
-        line.id === lineId
-          ? { ...line, selectedRoles: line.selectedRoles.filter((r) => r.id !== roleId) }
-          : line
-      )
+    const updatedLines = form.values.workflowLines.map((line) =>
+      line.id === lineId
+        ? { ...line, selectedRoles: line.selectedRoles.filter((r) => r.id !== roleId) }
+        : line
     );
+    form.setFieldValue("workflowLines", updatedLines);
   };
 
   const handleAddWorkflowLine = () => {
@@ -210,30 +222,33 @@ export default function CreateWorkflowPage() {
       selectedRoles: [],
       expanded: false,
     };
-    setWorkflowLines((prev) => [...prev, newLine]);
+    form.setFieldValue("workflowLines", [...form.values.workflowLines, newLine]);
   };
 
   const handleMoveUp = (id: string) => {
-    const index = workflowLines.findIndex((line) => line.id === id);
+    const index = form.values.workflowLines.findIndex((line) => line.id === id);
     if (index > 0) {
-      const newLines = [...workflowLines];
+      const newLines = [...form.values.workflowLines];
       [newLines[index - 1], newLines[index]] = [newLines[index], newLines[index - 1]];
-      setWorkflowLines(newLines);
+      form.setFieldValue("workflowLines", newLines);
     }
   };
 
   const handleMoveDown = (id: string) => {
-    const index = workflowLines.findIndex((line) => line.id === id);
-    if (index < workflowLines.length - 1) {
-      const newLines = [...workflowLines];
+    const index = form.values.workflowLines.findIndex((line) => line.id === id);
+    if (index < form.values.workflowLines.length - 1) {
+      const newLines = [...form.values.workflowLines];
       [newLines[index], newLines[index + 1]] = [newLines[index + 1], newLines[index]];
-      setWorkflowLines(newLines);
+      form.setFieldValue("workflowLines", newLines);
     }
   };
 
   const handleDeleteLine = (id: string) => {
-    if (workflowLines.length > 1) {
-      setWorkflowLines((prev) => prev.filter((line) => line.id !== id));
+    if (form.values.workflowLines.length > 1) {
+      form.setFieldValue(
+        "workflowLines",
+        form.values.workflowLines.filter((line) => line.id !== id)
+      );
     }
   };
 
@@ -315,8 +330,7 @@ export default function CreateWorkflowPage() {
             <TextInput
               label="Workflow Name"
               placeholder="Enter Workflow Name"
-              value={workflowName}
-              onChange={(e) => setWorkflowName(e.currentTarget.value)}
+              {...form.getInputProps("workflowName")}
               required
               radius="md"
               classNames={{
@@ -328,8 +342,7 @@ export default function CreateWorkflowPage() {
               <Textarea
                 label="Workflow Description"
                 placeholder="Short description of workflow"
-                value={workflowDescription}
-                onChange={(e) => setWorkflowDescription(e.currentTarget.value)}
+                {...form.getInputProps("workflowDescription")}
                 required
                 radius="md"
                 minRows={3}
@@ -342,27 +355,27 @@ export default function CreateWorkflowPage() {
               </Text>
             </div>
 
-            <div>
-              <Text size="sm" fw={500} className="text-gray-900 mb-1">
-                Workflow Action <span className="text-red-500">*</span>
-              </Text>
-              <CustomButton
-                buttonType="secondary"
-                fullWidth
-                onClick={() => setIsWorkflowActionModalOpen(true)}
-                className="justify-start font-normal text-left"
-              >
-                {workflowAction || "Select an Option"}
-              </CustomButton>
-            </div>
+            <TextInput
+              label="Workflow Action"
+              placeholder="Select an Option"
+              value={form.values.workflowAction}
+              readOnly
+              required
+              radius="md"
+              onClick={() => setIsWorkflowActionModalOpen(true)}
+              classNames={{
+                label: "text-sm font-medium text-gray-900 mb-1",
+                input: "cursor-pointer",
+              }}
+              error={form.errors.workflowAction}
+            />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Select
                 label="Branch Applicable"
                 placeholder="Select an Option"
                 data={BRANCHES}
-                value={branchApplicable}
-                onChange={setBranchApplicable}
+                {...form.getInputProps("branchApplicable")}
                 required
                 searchable
                 radius="md"
@@ -376,8 +389,7 @@ export default function CreateWorkflowPage() {
                   label="Department Applicable"
                   placeholder="Select an Option"
                   data={DEPARTMENTS}
-                  value={departmentApplicable}
-                  onChange={setDepartmentApplicable}
+                  {...form.getInputProps("departmentApplicable")}
                   required
                   searchable
                   radius="md"
@@ -398,7 +410,10 @@ export default function CreateWorkflowPage() {
               <Text size="sm" c="dimmed" mb={12}>
                 Select a preferred Workflow Type
               </Text>
-              <Radio.Group value={workflowType} onChange={(val) => setWorkflowType(val as "rigid" | "flexible")}>
+              <Radio.Group
+                value={form.values.workflowType}
+                onChange={(val) => form.setFieldValue("workflowType", val as "rigid" | "flexible")}
+              >
                 <Stack gap="md">
                   <div className="rounded-lg border-2 border-gray-200 p-4 hover:border-orange-300 transition-colors">
                     <Radio
@@ -460,12 +475,12 @@ export default function CreateWorkflowPage() {
 
             {/* Workflow Lines */}
             <div className="space-y-4">
-              {workflowLines.map((line, index) => (
+              {form.values.workflowLines.map((line, index) => (
                 <WorkflowLineItem
                   key={line.id}
                   line={line}
                   index={index}
-                  totalLines={workflowLines.length}
+                  totalLines={form.values.workflowLines.length}
                   onUpdateWorkflowType={handleUpdateWorkflowType}
                   onOpenEscalationModal={(id) => {
                     setActiveLineId(id);
