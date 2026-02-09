@@ -48,6 +48,10 @@ const adminOutletBranchDetails = (id: string | number = ':id') => `${adminOutlet
 const adminOutletBranchTransactionDetail = (branchId: string | number, txId: string) =>
   `${adminOutletBranchDetails(branchId)}/transactions?tx=${encodeURIComponent(txId)}`;
 
+// Workflow routes
+const adminWorkflow = () => `${admin()}/workflow`;
+const adminWorkflowCreate = () => `${adminWorkflow()}/create`;
+
 export const adminRoutes = {
   // Base
   admin,
@@ -96,4 +100,8 @@ export const adminRoutes = {
   adminOutletBranchCreate,
   adminOutletBranchDetails,
   adminOutletBranchTransactionDetail,
+  
+  // Workflow
+  adminWorkflow,
+  adminWorkflowCreate,
 };
