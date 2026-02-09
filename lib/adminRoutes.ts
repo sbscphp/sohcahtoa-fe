@@ -53,6 +53,9 @@ const adminUserManagement = () => `${admin()}/user-management`;
 const adminUserManagementUser = (id: string | number = ':id') => `${adminUserManagement()}/user/${id}`;
 const adminUserManagementRole = (id: string | number = ':id') => `${adminUserManagement()}/role/${id}`;
 
+//settings routes
+const adminSettings = () => `${admin()}/settings`;
+
 
 
 export const adminRoutes = {
@@ -108,4 +111,7 @@ export const adminRoutes = {
   adminUserManagement,
   adminUserManagementUser,
   adminUserManagementRole,
+
+  // Settings
+  adminSettings,
 };
