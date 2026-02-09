@@ -7,6 +7,8 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Group, TextInput, Select, Button, Text } from "@mantine/core";
 import { ListFilter, Plus, Search, Upload, Workflow, CheckCircle, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 type WorkflowStatus = "Active" | "Deactivated";
 type WorkflowType = "Rigid Linear" | "Flexible Workflow";
@@ -124,6 +126,7 @@ const workflowHeaders = [
 ];
 
 export default function WorkflowManagementSection() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Filter By");
@@ -181,10 +184,7 @@ export default function WorkflowManagementSection() {
     </div>,
     <RowActionIcon
       key="action"
-      onClick={() => {
-        // Navigate to workflow details
-        console.log("View workflow:", item.id);
-      }}
+      onClick={() => router.push(adminRoutes.adminWorkflowDetails(item.id))}
     />,
   ];
 
@@ -257,10 +257,7 @@ export default function WorkflowManagementSection() {
               color="#DD4F05"
               radius="xl"
               leftSection={<Plus size={16} />}
-              onClick={() => {
-                // Navigate to create workflow page
-                console.log("Add new workflow");
-              }}
+              onClick={() => router.push(adminRoutes.adminWorkflowCreate())}
             >
               Add New +
             </Button>

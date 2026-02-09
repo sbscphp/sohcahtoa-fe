@@ -28,6 +28,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/audit-trial',
     '/admin/outlet',
     '/admin/tickets',
+    '/admin/workflow',
     '/admin/login',
   ];
 
@@ -159,6 +160,32 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     return [
       { label: 'Ticket Management', url: adminRoutes.adminTickets() },
       { label: 'Ticket Details' },
+    ];
+  }
+
+  // Workflow Create: /admin/workflow/create
+  if (pathname === '/admin/workflow/create') {
+    return [
+      { label: 'Workflow', url: adminRoutes.adminWorkflow() },
+      { label: 'Create Workflow' },
+    ];
+  }
+
+  // Workflow Edit: /admin/workflow/:id/edit
+  if (/^\/admin\/workflow\/[^/]+\/edit$/.test(pathname)) {
+    const workflowId = pathname.split('/')[3];
+    return [
+      { label: 'Workflow', url: adminRoutes.adminWorkflow() },
+      { label: 'Workflow Details', url: adminRoutes.adminWorkflowDetails(workflowId) },
+      { label: 'Edit Workflow' },
+    ];
+  }
+
+  // Workflow Details: /admin/workflow/:id
+  if (/^\/admin\/workflow\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'Workflow', url: adminRoutes.adminWorkflow() },
+      { label: 'Workflow Details' },
     ];
   }
 
