@@ -162,7 +162,7 @@ export default function UsersTable() {
 
     <StatusBadge key="status" status={user.status} />,
 
-    <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser())} />,
+    <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(user.userId))} />,
   ];
 
   return (
