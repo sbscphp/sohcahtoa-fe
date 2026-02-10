@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PasswordInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
@@ -20,6 +21,8 @@ export function CreatePasswordForm({
   onSubmit,
   isLoading = false,
 }: CreatePasswordFormProps) {
+  const [currentPassword, setCurrentPassword] = useState("");
+
   const form = useForm<CreatePasswordFormValues>({
     mode: "uncontrolled",
     initialValues: {
@@ -32,8 +35,7 @@ export function CreatePasswordForm({
 
   const handleSubmit = form.onSubmit(onSubmit);
 
-  // Get password for validation indicators
-  const currentPassword = form.getValues().password || "";
+  // Get password requirements for validation indicators
   const passwordRequirements = checkPasswordRequirements(currentPassword);
 
   return (
@@ -58,6 +60,10 @@ export function CreatePasswordForm({
             placeholder="Enter password"
             size="lg"
             {...form.getInputProps("password")}
+            onChange={(e) => {
+              setCurrentPassword(e.target.value);
+              form.getInputProps("password").onChange(e);
+            }}
           />
 
           {/* Password requirements indicators */}
