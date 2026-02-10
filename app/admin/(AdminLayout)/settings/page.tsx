@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../_components/HeaderTabs";
-import PasswordTab from "./PasswordTab"
-import AccountInformationTab from "./AccountInformationTab"
+import PasswordTab from "./PasswordTab";
+import AccountInformationTab from "./AccountInformationTab";
 import NotificationSettingsTab from "./NotificationSettingsTab";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 const SETTING_TABS = [
   { value: "account", label: "Account Information" },
@@ -17,35 +19,36 @@ const SETTING_TABS = [
 export type TabId = (typeof SETTING_TABS)[number]["value"];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("account")
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabId>("account");
 
   const headerContent = useMemo(
     () => (
       <HeaderTabs
         value={activeTab}
-        onChange={(v) => setActiveTab(v as TabId)}
+        onChange={(v) => {
+          const tab = v as TabId;
+
+          if (tab === "workflow") {
+            router.push(adminRoutes.adminWorkflowDetails("item.id"));
+            return; // ❗ prevent tab switch
+          }
+
+          setActiveTab(tab);
+        }}
         tabs={[...SETTING_TABS]}
       />
     ),
-    [activeTab]
+    [activeTab, router]
   );
 
   useSetHeaderContent(headerContent);
 
   return (
     <div className="space-y-4">
-     
       {activeTab === "account" && <AccountInformationTab />}
-          {activeTab === "password" && <PasswordTab />}
-          {activeTab === "workflow" && (
-            <div className="mx-auto w-full max-w-3xl py-8">
-              <h2 className="text-xl font-semibold text-foreground">Workflow Configuration</h2>
-              <p className="mt-1 text-sm text-foreground/50">
-                Configure your workflow approval settings
-              </p>
-            </div>
-          )}
-          {activeTab === "notifications" && <NotificationSettingsTab />}
+      {activeTab === "password" && <PasswordTab />}
+      {activeTab === "notifications" && <NotificationSettingsTab />}
     </div>
-  );}
-
+  );
+}
