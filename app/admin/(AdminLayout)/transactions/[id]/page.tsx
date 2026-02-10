@@ -7,13 +7,13 @@ import Overview from "./Overview";
 import Receipt from "./Receipt";
 import Settlement from "./Settlement";
 
-const TRANSACTION_TABS = [
+export const TRANSACTION_TABS = [
   { value: "overview", label: "Overview" },
   { value: "receipt", label: "Receipt of Payment" },
   { value: "transaction-settlement", label: "Transaction Settlement" },
 ] as const;
 
-type TransactionTabValue = (typeof TRANSACTION_TABS)[number]["value"];
+export type TransactionTabValue = (typeof TRANSACTION_TABS)[number]["value"];
 
 export default function ViewTransactionPage() {
   const [activeTab, setActiveTab] = useState<TransactionTabValue>("overview");

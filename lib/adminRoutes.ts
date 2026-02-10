@@ -54,6 +54,16 @@ const adminWorkflowCreate = () => `${adminWorkflow()}/create`;
 const adminWorkflowDetails = (id: string | number = ':id') => `${adminWorkflow()}/${id}`;
 const adminWorkflowEdit = (id: string | number = ':id') => `${adminWorkflowDetails(id)}/edit`;
 
+//User-Management routes
+const adminUserManagement = () => `${admin()}/user-management`;
+const adminUserManagementUser = (id: string | number = ':id') => `${adminUserManagement()}/user/${id}`;
+const adminUserManagementRole = (id: string | number = ':id') => `${adminUserManagement()}/role/${id}`;
+
+//settings routes
+const adminSettings = () => `${admin()}/settings`;
+
+
+
 export const adminRoutes = {
   // Base
   admin,
@@ -108,4 +118,12 @@ export const adminRoutes = {
   adminWorkflowCreate,
   adminWorkflowDetails,
   adminWorkflowEdit,
+
+  // User Management
+  adminUserManagement,
+  adminUserManagementUser,
+  adminUserManagementRole,
+
+  // Settings
+  adminSettings,
 };

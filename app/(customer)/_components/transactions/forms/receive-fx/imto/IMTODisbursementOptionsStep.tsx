@@ -108,7 +108,7 @@ export default function IMTODisbursementOptionsStep({
           type="button"
           size="md"
           radius="xl"
-          className="w-full sm:!w-[140px] !min-h-[44px] !font-medium !text-base !bg-primary-400 hover:!bg-primary-500"
+          className="w-full sm:!w-[140px] !min-h-[44px] !font-medium !text-base text-white! !bg-primary-400 hover:!bg-primary-500"
           onClick={onSubmit}
           disabled={!selectedOption}
         >

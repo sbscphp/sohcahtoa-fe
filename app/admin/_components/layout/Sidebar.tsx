@@ -1,6 +1,7 @@
 "use client";
 
 import { collapsed_logo, logo } from "@/app/assets/asset";
+import { adminRoutes } from "@/lib/adminRoutes";
 import { Avatar } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -43,6 +44,7 @@ const menuItems2 = [
 ];
 
 export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -162,7 +164,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
         <div className="p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
+              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" onClick={() => router.push(adminRoutes.adminSettings())} />
             </div>
             <div className="overflow-hidden flex-1">
               <p className="font-medium text-xs text-body-heading-300 truncate">

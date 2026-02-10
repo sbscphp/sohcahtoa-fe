@@ -18,6 +18,7 @@ interface RowActionIconProps {
   h?: number;
   /** Size of the chevron icon - defaults to 14 */
   iconSize?: number;
+  icon?: React.ReactNode;
 }
 
 export default function RowActionIcon({
@@ -27,6 +28,7 @@ export default function RowActionIcon({
   w = 16,
   h = 16,
   iconSize = 14,
+  icon= <ChevronRight size={iconSize} />
 }: RowActionIconProps) {
   return (
     <div
@@ -40,7 +42,7 @@ export default function RowActionIcon({
         className="text-orange-500! bg-[#f1b393]!"
         onClick={onClick}
       >
-        <ChevronRight size={iconSize} />
+        {icon}
       </ActionIcon>
     </div>
   );

@@ -161,7 +161,22 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
       { label: 'Ticket Management', url: adminRoutes.adminTickets() },
       { label: 'Ticket Details' },
     ];
-  }
+  } 
+
+  // Ticket Details: /admin/user-management/user/:id
+  if (/^\/admin\/user-management\/user\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'User Management', url: adminRoutes.adminUserManagement() },
+      { label: 'User Details' },
+    ];
+  } 
+  // Ticket Details: /admin/user-management/role/:id
+  if (/^\/admin\/user-management\/role\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'User Management', url: adminRoutes.adminUserManagement() },
+      { label: 'Role Details' },
+    ];
+  } 
 
   // Workflow Create: /admin/workflow/create
   if (pathname === '/admin/workflow/create') {

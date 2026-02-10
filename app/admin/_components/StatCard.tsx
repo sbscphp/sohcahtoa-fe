@@ -6,12 +6,14 @@ interface StatCardProps {
   icon: ReactNode;
   iconBg: string;
   isEmpty?: boolean;
+  size?: string;
 }
 
 export default function StatCard({
   title,
   value,
   icon,
+  size = "text-xs",
   iconBg,
   isEmpty = false,
 }: StatCardProps) {
@@ -26,7 +28,7 @@ export default function StatCard({
       </div>
 
       <div>
-        <p className="text-sm text-gray-500">{title}</p>
+        <p className={`text-sm text-gray-500 ${size}`}>{title}</p>
 
         {isEmpty ? (
           <p className="text-sm text-gray-400 italic">0</p>

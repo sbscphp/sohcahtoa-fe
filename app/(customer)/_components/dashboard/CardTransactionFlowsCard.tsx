@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency } from "../../_lib/formatCurrency";
+import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import SectionHeader from "./SectionHeader";
 
 type FlowRowProps = {
@@ -32,13 +33,14 @@ function FlowRow({ label, value, barFillPercent, barColor }: FlowRowProps) {
 }
 
 export default function CardTransactionFlowsCard() {
+  const currencyCode = useSelectedCurrencyCode();
   const moneyIn = 4046;
   const moneyOut = 1046;
   const total = 3048;
   const max = Math.max(moneyIn, moneyOut);
   const inPercent = max > 0 ? moneyIn / max * 100 : 0;
   const outPercent = max > 0 ? moneyOut / max * 100 : 0;
-  const { symbol, value } = formatCurrency(total, "USD");
+  const { symbol, value } = formatCurrency(total, currencyCode);
   const actualValue = value.split(".")[0];
   return (
     <div className="flex flex-col rounded-2xl bg-[#FAFAFA] p-2 shadow-sm">
@@ -57,13 +59,13 @@ export default function CardTransactionFlowsCard() {
       <div className="flex flex-col gap-2.5">
         <FlowRow
           label="Money in"
-          value={formatCurrency(moneyIn, "USD").formatted}
+          value={formatCurrency(moneyIn, currencyCode).formatted}
           barFillPercent={inPercent}
           barColor="green"
         />
         <FlowRow
           label="Money out"
-          value={formatCurrency(moneyOut, "USD").formatted}
+          value={formatCurrency(moneyOut, currencyCode).formatted}
           barFillPercent={outPercent}
           barColor="orange"
         />

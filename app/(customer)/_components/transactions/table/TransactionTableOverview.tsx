@@ -6,6 +6,7 @@ import { Button } from "@mantine/core";
 import Link from "next/link";
 import { TableWrapper, type PaginatedTableColumn, type FilterTabOption } from "../../common";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { IconArrowRight } from "@/components/icons/IconArrowRight";
 
 export interface Transaction {
   id: string;
@@ -178,7 +179,7 @@ export default function TransactionTableOverview({
           }}
           aria-label="View transaction details"
         >
-          <HugeiconsIcon icon={CircleArrowRight01Icon} className="w-5 h-5 text-primary-300!" />
+          <IconArrowRight className="w-8 h-8 "/>
         </ActionIcon>
       ),
     },

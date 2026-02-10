@@ -2,6 +2,7 @@
 
 import { cardBackground } from "@/app/assets/asset";
 import { formatCurrency } from "../../_lib/formatCurrency";
+import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 
 type PrepaidCardProps = {
   lastFour?: string;
@@ -16,6 +17,7 @@ export default function PrepaidCard({
   balance = 3048,
   cardholderName = "Emmanuel Israel",
 }: PrepaidCardProps) {
+  const currencyCode = useSelectedCurrencyCode();
   const bgSrc = typeof cardBackground === "string" ? cardBackground : (cardBackground as { src: string }).src;
 
   return (
@@ -47,7 +49,7 @@ export default function PrepaidCard({
           </div>
         </div>
         <div className="flex flex-col items-end gap-0.5">
-          <p className="text-base font-medium leading-[120%] text-[#FAFAFA]">{formatCurrency(balance, "USD").formatted}</p>
+          <p className="text-base font-medium leading-[120%] text-[#FAFAFA]">{formatCurrency(balance, currencyCode).formatted}</p>
           <p className="text-xs font-medium leading-[120%] text-[#FAFAFA]">{cardholderName}</p>
         </div>
       </div>

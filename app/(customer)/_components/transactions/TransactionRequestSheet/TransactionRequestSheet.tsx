@@ -2,19 +2,38 @@
 
 import { Drawer, Tabs } from "@mantine/core";
 import OverviewDetail from "./OverviewDetail";
-import DocumentDetail from "./DocumentDetail";
+import DocumentDetail, { type TransactionDocumentItem } from "./DocumentDetail";
 import type { DetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
 
 interface TransactionRequestSheetProps {
   opened: boolean;
   onClose: () => void;
   viewStatus: DetailViewStatus;
+  /** Transaction type label (e.g. "BTA", "Personal Travel Allowance (PTA)") – used in resubmit success modal title */
+  transactionTypeLabel?: string;
+  transactionId?: string;
+  date?: string;
+  time?: string;
+  adminMessage?: string;
+  onProceedToPayment?: () => void;
+  /** Documents for Documentation tab (name, size, status, re-upload). */
+  documents?: TransactionDocumentItem[];
+  /** Called when user clicks "View Transaction" in resubmit success modal (e.g. close sheet). */
+  onViewTransaction?: () => void;
 }
 
 export default function TransactionRequestSheet({
   opened,
   onClose,
   viewStatus,
+  transactionTypeLabel,
+  transactionId,
+  date,
+  time,
+  adminMessage,
+  onProceedToPayment,
+  documents,
+  onViewTransaction,
 }: TransactionRequestSheetProps) {
   return (
     <Drawer
@@ -26,6 +45,7 @@ export default function TransactionRequestSheet({
       classNames={{
         content: "border-l border-gray-100",
       }}
+      zIndex={1000}
       overlayProps={{ opacity: 0.55, blur: 2 }}
       styles={{
         body: {
@@ -75,11 +95,22 @@ export default function TransactionRequestSheet({
           </Tabs.List>
 
           <Tabs.Panel value="overview">
-            <OverviewDetail viewStatus={viewStatus} />
+            <OverviewDetail
+              viewStatus={viewStatus}
+              transactionId={transactionId}
+              date={date}
+              time={time}
+              adminMessage={adminMessage}
+              onProceedToPayment={onProceedToPayment}
+            />
           </Tabs.Panel>
 
           <Tabs.Panel value="documentation">
-            <DocumentDetail />
+            <DocumentDetail
+              transactionTypeLabel={transactionTypeLabel}
+              documents={documents}
+              onViewTransaction={onViewTransaction ?? onClose}
+            />
           </Tabs.Panel>
         </Tabs>
       </div>

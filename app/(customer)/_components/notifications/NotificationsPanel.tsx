@@ -39,11 +39,13 @@ const MOCK_NOTIFICATIONS: NotificationItemProps[] = [
 type NotificationsPanelProps = {
   items?: NotificationItemProps[];
   viewAllHref?: string;
+  onViewAllClick?: () => void;
 };
 
 export default function NotificationsPanel({
   items = MOCK_NOTIFICATIONS,
   viewAllHref = "#",
+  onViewAllClick,
 }: NotificationsPanelProps) {
   return (
     <div className="flex w-[408px] max-w-[calc(100vw-2rem)] flex-col gap-4 px-4 py-3">
@@ -53,6 +55,7 @@ export default function NotificationsPanel({
         </h2>
         <Link
           href={viewAllHref}
+          onClick={onViewAllClick}
           className="flex items-center gap-1 text-sm font-medium leading-5 text-primary-400 transition-opacity hover:opacity-80"
         >
           View all
