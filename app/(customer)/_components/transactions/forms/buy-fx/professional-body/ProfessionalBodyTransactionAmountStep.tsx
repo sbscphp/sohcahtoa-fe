@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -8,6 +9,9 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
+import { isAmountOver10k } from "../../amount-step-utils";
+import ProofOfFundPrompt from "../../ProofOfFundPrompt";
+import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 
 const transactionAmountSchema = z.object({
   receiveAmount: z.string().min(1, "Amount is required"),
@@ -32,6 +36,7 @@ export default function ProfessionalBodyTransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: ProfessionalBodyTransactionAmountStepProps) {
+  const [proofModalOpen, setProofModalOpen] = useState(false);
   const form = useForm<ProfessionalBodyTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -80,7 +85,27 @@ export default function ProfessionalBodyTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
+          <div className="w-full">
+            <ProofOfFundPrompt
+              show={isAmountOver10k(
+                form.values.receiveAmount,
+                form.values.receiveCurrency,
+                form.values.sendAmount,
+                form.values.sendCurrency
+              )}
+              onUploadClick={() => setProofModalOpen(true)}
+            />
+          </div>
         </div>
+
+        <ProofOfFundModal
+          opened={proofModalOpen}
+          onClose={() => setProofModalOpen(false)}
+          onAttach={(files: File[]) => {
+            console.log("Proof of fund attached", files);
+            setProofModalOpen(false);
+          }}
+        />
 
         <div className="flex justify-center -my-4 relative z-10">
           <button

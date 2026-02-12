@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { PasswordInput } from "@/app/(customer)/_components/auth/PasswordInput";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
@@ -83,7 +82,7 @@ export default function CreatePasswordPage() {
   }
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold mb-2">
@@ -169,6 +168,6 @@ export default function CreatePasswordPage() {
         buttonText="Continue To Log In"
         onButtonClick={handleSuccessContinue}
       />
-    </AuthLayout>
+    </>
   );
 }

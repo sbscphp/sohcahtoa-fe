@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthLayout } from '@/app/(customer)/_components/auth/AuthLayout';
 import { SecurityBadges } from '@/app/(customer)/_components/auth/SecurityBadges';
 import { PasswordInput } from '@/app/(customer)/_components/auth/PasswordInput';
 import { TextInput, Button, Anchor } from '@mantine/core';
@@ -26,7 +25,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout variant="login">
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-200 text-3xl font-semibold mb-2">
@@ -62,7 +61,19 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between gap-2 items-center">
+            <span className="text-body-text-100 text-sm">
+              Don&apos;t have an account?{" "}
+              <Anchor
+                component="button"
+                type="button"
+                onClick={() => router.push('/auth/onboarding')}
+                size="sm"
+                underline="always"
+              >
+                Get Started
+              </Anchor>
+            </span>
             <Anchor
               component="button"
               type="button"
@@ -91,6 +102,6 @@ export default function LoginPage() {
 
         <SecurityBadges />
       </div>
-    </AuthLayout>
+    </>
   );
 }

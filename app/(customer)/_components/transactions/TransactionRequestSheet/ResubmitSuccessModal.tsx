@@ -18,9 +18,11 @@ export default function ResubmitSuccessModal({
   opened,
   onClose,
   transactionTypeLabel,
-  onViewTransaction,
+  onViewTransaction
 }: ResubmitSuccessModalProps) {
-  const shortLabel = transactionTypeLabel.replace(/\s*\([^)]*\)\s*$/, "").trim() || transactionTypeLabel;
+  const shortLabel =
+    transactionTypeLabel.replace(/\s*\([^)]*\)\s*$/, "").trim() ||
+    transactionTypeLabel;
 
   return (
     <Modal
@@ -34,8 +36,14 @@ export default function ResubmitSuccessModal({
     >
       <div className="text-center space-y-5">
         <div className="flex justify-center">
-          <div className="w-20 h-20 rounded-full bg-[#ECFDF3] border-4 border-[#027A48] flex items-center justify-center relative overflow-hidden">
-            <Image src={successGif} alt="Success" width={80} height={80} className="object-contain" />
+          <div className="w-30 h-30 rounded-full flex items-center justify-center relative">
+            <Image
+              src={successGif}
+              alt="Success"
+              fill
+              className="object-contain"
+              unoptimized
+            />
           </div>
         </div>
 
@@ -44,7 +52,8 @@ export default function ResubmitSuccessModal({
         </h2>
 
         <p className="text-[#6C6969] text-base leading-6">
-          You have successfully resubmitted your {shortLabel}. Your documents have been received and currently awaiting approval.
+          You have successfully resubmitted your {shortLabel}. Your documents
+          have been received and currently awaiting approval.
         </p>
 
         <div className="flex flex-col gap-3">
@@ -53,7 +62,7 @@ export default function ResubmitSuccessModal({
             variant="filled"
             fullWidth
             radius="xl"
-            className="h-12 bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
+            className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6"
             rightSection={<ArrowUpRight size={18} />}
           >
             View Transaction
@@ -63,7 +72,7 @@ export default function ResubmitSuccessModal({
             variant="outline"
             fullWidth
             radius="xl"
-            className="h-12 bg-white border border-gray-300 text-[#4D4B4B] font-medium text-base hover:bg-gray-50"
+            className="h-[52px] min-h-[52px] py-3.5 px-6 bg-white border text-[#4D4B4B] font-medium text-base leading-6 hover:bg-gray-50"
           >
             No, Close
           </Button>

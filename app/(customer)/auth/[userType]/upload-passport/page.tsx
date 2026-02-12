@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { Button, Text } from "@mantine/core";
 import { Dropzone, FileWithPath } from "@mantine/dropzone";
@@ -63,7 +62,7 @@ export default function UploadPassportPage() {
   }
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
@@ -136,6 +135,6 @@ export default function UploadPassportPage() {
 
         <SecurityBadges />
       </div>
-    </AuthLayout>
+    </>
   );
 }

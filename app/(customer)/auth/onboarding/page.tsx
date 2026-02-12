@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { UserTypeCard } from "@/app/(customer)/_components/auth/UserTypeCard";
 import { citizenIcon, expatriateIcon, touristIcon } from "@/app/assets/asset";
@@ -24,7 +23,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
@@ -77,6 +76,6 @@ export default function OnboardingPage() {
 
         <SecurityBadges />
       </div>
-    </AuthLayout>
+    </>
   );
 }
