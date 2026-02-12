@@ -13,6 +13,9 @@ import collapsed_logo from './svg/collapsed_logo.svg';
 import empty from './png/empty.png';
 import emptyState from './svg/empty-state.svg';
 import underReview from './svg/under-review.svg';
+import moneyGram from './svg/money-gram.svg';
+import westernUnion from './svg/western-union.svg';
+import exclamation from './png/exclamation.png';
 
 export {
   logo,
@@ -28,4 +31,7 @@ export {
   cardBackground,
   collapsed_logo, emptyState, underReview,
   empty,
+  moneyGram,
+  westernUnion,
+  exclamation,
 };

@@ -17,6 +17,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   awaiting_disbursement: { bg: "#1D4ED8", textColor: "#FFFFFF" },
   transaction_settled: { bg: "#D1FADF", textColor: "#027A48" },
   settled: { bg: "#D1FADF", textColor: "#027A48" },
+  resubmit_document: { bg: "#F4E8FF", textColor: "#7C3AED" },
 };
 
 function normalizeStatus(status: string): string {

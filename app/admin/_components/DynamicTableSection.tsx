@@ -92,7 +92,7 @@ export default function DynamicTableSection<T>({
             horizontalSpacing="md"
             highlightOnHover
             withTableBorder
-            className="min-w-[800px]"
+            className="min-w-200"
           >
             <Table.Thead>
               <Table.Tr>

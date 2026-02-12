@@ -3,10 +3,11 @@
 import { IconRecieve, IconRepeat, IconTransfer } from "@/components/icons";
 import { LucideIcon } from "lucide-react";
 import { formatCurrency } from "../../_lib/formatCurrency";
+import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import SectionHeader from "./SectionHeader";
 import SeeAllButton from "./SeeAllButton";
 import TransactionListItem from "./TransactionListItem";
-
+import { useRouter } from "next/navigation";
 type IconVariant = "orange" | "grey" | "green";
 
 const MOCK_CARD_TRANSACTIONS = [
@@ -37,9 +38,11 @@ const MOCK_CARD_TRANSACTIONS = [
 ];
 
 export default function CardTransactionsCard() {
+  const router = useRouter();
+  const currencyCode = useSelectedCurrencyCode();
   return (
     <div className="flex flex-col rounded-2xl bg-[#FAFAFA] p-2 shadow-sm">
-      <SectionHeader title="Card transactions" action={<SeeAllButton />} />
+      <SectionHeader title="Card transactions" action={<SeeAllButton onClick={() => router.push("/transactions")} />} />
       <div className="">
         {MOCK_CARD_TRANSACTIONS.map((tx, i) => (
           <TransactionListItem
@@ -50,8 +53,8 @@ export default function CardTransactionsCard() {
             secondaryText={tx.secondaryText}
             amount={
               tx.amountVariant === "debit"
-                ? `-${formatCurrency(Math.abs(tx.amount), "USD").formatted}`
-                : formatCurrency(tx.amount, "USD").formatted
+                ? `-${formatCurrency(Math.abs(tx.amount), currencyCode).formatted}`
+                : formatCurrency(tx.amount, currencyCode).formatted
             }
             amountVariant={tx.amountVariant}
           />

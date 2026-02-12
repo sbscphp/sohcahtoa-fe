@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Tabs } from "@mantine/core";
+import { Button, Group, Tabs } from "@mantine/core";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, UploadIcon } from "@hugeicons/core-free-icons";
 import { ReactNode } from "react";
@@ -66,7 +66,7 @@ export default function TableWrapper<T>({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 ml-auto">
+          <Group gap="xs" justify="end">
             {onFilterClick && (
               <Button
                 variant="outline"
@@ -93,7 +93,7 @@ export default function TableWrapper<T>({
               </Button>
             )}
             {actionButton}
-          </div>
+          </Group>
         </div>
       </div>
 
