@@ -5,6 +5,7 @@ import { Badge } from "@mantine/core";
 const statusColorMap: Record<string, string> = {
   Pending: "#B54708",
   Completed: "#027A48",
+  Submitted: "#027A48",
   Success: "#027A48",
   Settled: "#027A48",
   Posted: "#027A48",
@@ -17,6 +18,13 @@ const statusColorMap: Record<string, string> = {
   Deactivated: "red",
   Approved: "#027A48",
   Declined: "red",
+  "Payment Received": "#027A48",
+  Resolved: "#027A48",
+  Open: "#2563EB",
+  "In progress": "#B54708",
+  "In-progress": "#B54708",
+  Closed: "#6B7280",
+  "Re-opened": "#2563EB",
 };
 
 interface StatusBadgeProps {

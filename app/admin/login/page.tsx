@@ -90,6 +90,7 @@ export default function LoginPage() {
               c="red"
               size="sm"
               underline="always"
+              onClick={() => router.push("/admin/forgot-password")}
             >
               Forgot Password?
             </Anchor>
