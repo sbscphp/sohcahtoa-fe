@@ -134,7 +134,7 @@ export function AuthLayout({ children, variant = "default" }: AuthLayoutProps) {
 
       {/* Right Column - Form Content */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-xl">{children}</div>
+        <div className="w-full md:max-w-lg">{children}</div>
       </div>
     </div>
   );

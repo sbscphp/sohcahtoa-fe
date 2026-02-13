@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  /* Z-index scale – navbar < header < drawer < modal */
+  --z-navbar: 50;
+  --z-header: 100;
+  --z-drawer: 200;
+  --z-modal: 300;
+
   /* Primary Colors */
   --color-primary-00: #FFF6F1;
   --color-primary-25: #F8DCCD;

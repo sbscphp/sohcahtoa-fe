@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { OTPInput } from "@/app/(customer)/_components/auth/OTPInput";
 import { Button } from "@mantine/core";
@@ -51,7 +50,7 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
@@ -93,6 +92,6 @@ export default function VerifyEmailPage() {
         buttonText="Continue"
         onButtonClick={handleVerify}
       />
-    </AuthLayout>
+    </>
   );
 }

@@ -172,8 +172,8 @@ export default function CustomerLayoutShell({
         minHeight: '100vh',
       }}
     >
-      <AppShell.Navbar>
-<CustomerSidebar
+      <AppShell.Navbar style={{ zIndex: 50 }}>
+        <CustomerSidebar
           collapsed={isMobile ? false : collapsed}
           onCollapse={toggleCollapsed}
           onNavigate={closeMobile}
@@ -187,7 +187,7 @@ export default function CustomerLayoutShell({
           position: 'fixed',
           top: 0,
           right: 0,
-          zIndex: 200,
+          zIndex: 100,
         }}
       >
         <CustomerHeader 

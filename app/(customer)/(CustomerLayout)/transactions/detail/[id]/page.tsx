@@ -1,14 +1,17 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Button } from "@mantine/core";
+import { ChevronLeft } from "lucide-react";
 import {
   getDetailViewStatus,
   getDetailViewStatusLabel,
   type DetailViewStatus,
 } from "@/app/(customer)/_lib/transaction-details";
+import { getTransactionById, getTransactionTypeLabel } from "@/app/(customer)/_lib/mock-transactions";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import {
@@ -40,19 +43,24 @@ export interface TransactionDetailPayload {
   settlement?: TransactionSettlementData;
 }
 
-// Simulated API response – full shape; transaction type label comes from backend.
-function getMockTransactionDetail(id: string): TransactionDetailPayload | null {
-  const base = {
-    id,
-    date: "2025-11-17T13:00:00",
-    type: "PTA",
-    transactionTypeLabel: "Personal Travel Allowance (PTA)",
+/** Build detail payload from the same table row so overview and documentation match. */
+function buildDetailPayloadFromRow(row: NonNullable<ReturnType<typeof getTransactionById>>): TransactionDetailPayload {
+  const viewStatus = getDetailViewStatus(row.stage, row.status);
+  const transactionTypeLabel = getTransactionTypeLabel(row.type);
+
+  const payload: TransactionDetailPayload = {
+    id: row.id,
+    date: row.date,
+    type: row.type,
+    transactionTypeLabel,
+    stage: row.stage,
+    status: row.status,
     currencyCode: "USD",
     transactionDetails: {
-      transactionId: "2223334355",
+      transactionId: row.id,
       amount: { code: "NGN", formatted: "400,000.00" },
       equivalentAmount: { code: "USD", formatted: "400" },
-      dateInitiated: "25 Jun 2025",
+      dateInitiated: new Date(row.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
       pickupAddress: "3, Adeola Odeku, VI, Lagos",
     },
     requiredDocuments: {
@@ -66,82 +74,30 @@ function getMockTransactionDetail(id: string): TransactionDetailPayload | null {
     },
   };
 
-  // First two IDs: settled (all sections). Rest: under_review then awaiting_disbursement.
-  const settled: TransactionDetailPayload = {
-    ...base,
-    stage: "Transaction Settlement",
-    status: "Completed",
-    paymentDetails: {
+  if (viewStatus === "awaiting_disbursement" || viewStatus === "transaction_settled") {
+    payload.paymentDetails = {
       transactionId: "783383AXSH",
-      transactionDate: "15 Nov 2025",
-      transactionTime: "11:00 am",
+      transactionDate: new Date(row.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      transactionTime: new Date(row.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       transactionReceipt: { filename: "payment-receipt.pdf" },
       paidTo: "SohCahToa BSC\nAccess Bank\n0069000592",
-    },
-    settlement: {
+    };
+  }
+
+  if (viewStatus === "transaction_settled") {
+    payload.settlement = {
       settlementId: "278338233AC",
-      settlementDate: "17 Nov 2025",
-      settlementTime: "1:00 pm",
+      settlementDate: new Date(row.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      settlementTime: new Date(row.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       settlementReceipt: { filename: "settlement-receipt.pdf" },
       settlementStructureCash: "25% ~ $375",
       settlementStructurePrepaidCard: "75% ~ $1,125",
       paidInto: "GTB Bank Card\n11 ******** 6773",
       settlementStatus: "Completed",
-    },
-  };
+    };
+  }
 
-  const awaiting: TransactionDetailPayload = {
-    ...base,
-    date: "2025-11-15T11:00:00",
-    type: "Medical",
-    transactionTypeLabel: "Medical",
-    stage: "Awaiting Disbursement",
-    status: "Approved",
-    paymentDetails: {
-      transactionId: "783383AXSH",
-      transactionDate: "15 Nov 2025",
-      transactionTime: "11:00 am",
-      transactionReceipt: { filename: "payment-receipt.pdf" },
-      paidTo: "SohCahToa BSC\nAccess Bank\n0069000592",
-    },
-  };
-
-  const underReview: TransactionDetailPayload = {
-    ...base,
-    date: "2025-01-24T11:00:00",
-    stage: "Documentation",
-    status: "Pending",
-  };
-
-  const btaSettled: TransactionDetailPayload = {
-    ...settled,
-    type: "BTA",
-    transactionTypeLabel: "Business Travel Allowance (BTA)",
-  };
-
-  const approved: TransactionDetailPayload = {
-    ...base,
-    date: "2025-11-16T11:00:00",
-    stage: "Documentation",
-    status: "Approved",
-  };
-
-  const rejected: TransactionDetailPayload = {
-    ...base,
-    date: "2025-11-16T11:00:00",
-    stage: "Documentation",
-    status: "Rejected",
-  };
-
-  const map: Record<string, TransactionDetailPayload> = {
-    GHA67AGHA1: underReview,
-    GHA67AGHA2: settled,
-    GHA67AGHA3: awaiting,
-    GHA67AGHA8: btaSettled,
-    approved: approved,
-    rejected: rejected,
-  };
-  return map[id] ?? settled;
+  return payload;
 }
 
 export default function TransactionDetailPage() {
@@ -150,7 +106,8 @@ export default function TransactionDetailPage() {
   const id = typeof params.id === "string" ? params.id : "";
 
   const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
-  const payload = useMemo(() => getMockTransactionDetail(id), [id]);
+  const row = useMemo(() => getTransactionById(id), [id]);
+  const payload = useMemo(() => (row ? buildDetailPayloadFromRow(row) : null), [row]);
   const viewStatus: DetailViewStatus = useMemo(
     () =>
       payload
@@ -211,10 +168,18 @@ export default function TransactionDetailPage() {
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
 
   return (
-    <div
-      className="flex flex-col rounded-2xl border border-[#F2F4F7] bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
-      style={{ maxWidth: 1142 }}
-    >
+    <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
+      <Link
+        href="/transactions"
+        className="inline-flex items-center gap-1 text-body-text-100 text-sm font-medium hover:text-heading-200 transition-colors w-fit"
+      >
+        <ChevronLeft className="w-4 h-4 shrink-0" aria-hidden />
+        Back to Transactions
+      </Link>
+
+      <div
+        className="flex flex-col rounded-2xl border border-[#F2F4F7] bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
+      >
       {/* Header */}
       <div className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-[#F2F4F7] px-8 pt-8 pb-6">
         <div className="flex flex-col gap-3 flex-1 min-w-0">
@@ -314,6 +279,7 @@ export default function TransactionDetailPage() {
             onDownloadReceipt={() => {}}
           />
         )}
+      </div>
       </div>
     </div>
   );
