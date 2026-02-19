@@ -4,29 +4,12 @@
 
 import { apiClient, type ApiResponse } from "@/app/_lib/api/client";
 import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
+import type { AdminUser } from "@/app/admin/_lib/atoms/admin-auth-atom";
 
 // ==================== Response Data Types ====================
 
 interface LoginResponseData {
   message: string;
-}
-
-interface AuthUser {
-  id: string
-  email: string
-  fullName: string
-  phoneNumber: string
-  altPhoneNumber: any
-  position: any
-  branch: string
-  roleId: string
-  departmentId: string
-  permissions: any
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  accessToken: string
-  refreshToken: string
 }
 
 export const adminApi = {
@@ -40,7 +23,7 @@ export const adminApi = {
       ),
 
     verifyLogin: (data: { otp: string; email: string }) =>
-      apiClient.post<ApiResponse<AuthUser>>(
+      apiClient.post<ApiResponse<AdminUser>>(
         API_ENDPOINTS.admin.auth.verifyLogin,
         data,
         { skipAuth: true }
@@ -59,6 +42,9 @@ export const adminApi = {
         data,
         { skipAuth: true }
       ),
+
+    logout: () =>
+      apiClient.post<ApiResponse<null>>(API_ENDPOINTS.admin.auth.logout),
   },
 
   // ==================== Dashboard ====================
