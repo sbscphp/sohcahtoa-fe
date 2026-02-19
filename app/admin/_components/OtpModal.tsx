@@ -67,6 +67,7 @@ function OtpModalContent({
         length={length}
         size="lg"
         value={otp}
+        type="number"
         onChange={setOtp}
         oneTimeCode
         className="font-bold text-4xl"

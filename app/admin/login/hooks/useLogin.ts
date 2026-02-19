@@ -1,19 +1,10 @@
-import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
-import { LoginFormValues } from "../_schemas/login.schema";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
 
-type LoginResponse = { requiresOtp: boolean };
+export function useLogin(options?: Parameters<typeof useCreateData>[1]) {
+  return useCreateData(adminApi.auth.login, options);
+}
 
-export function useLogin(
-  options?: Omit<
-    UseMutationOptions<LoginResponse, Error, LoginFormValues>,
-    "mutationFn"
-  >
-) {
-  return useMutation({
-    mutationFn: async (payload: LoginFormValues) => {
-      await new Promise((r) => setTimeout(r, 1200)); // mock delay
-      return { requiresOtp: true } satisfies LoginResponse;
-    },
-    ...options,
-  });
+export function useVerifyOtp(options?: Parameters<typeof useCreateData>[1]) {
+  return useCreateData(adminApi.auth.verifyLogin, options);
 }
