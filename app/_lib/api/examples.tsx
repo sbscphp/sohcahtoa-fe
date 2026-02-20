@@ -55,7 +55,7 @@ export function ExampleAdminCustomersList() {
     true
   );
 
-  const customerResponse = query?.data as unknown[];
+  const customerResponse = query?.data?.data as unknown[];
   const isLoading = query.isLoading;
   const isFetching = query.isFetching;
 
@@ -217,7 +217,7 @@ interface DashboardStatsResponse {
 export function ExampleAdminDashboardStats() {
   const query = useFetchData<DashboardStatsResponse>(
     [...adminKeys.dashboard.stats()],
-    () => adminApi.dashboard.getStats() as Promise<DashboardStatsResponse>,
+    () => adminApi.dashboard.getStats() as unknown as Promise<DashboardStatsResponse>,
     true
   );
 
