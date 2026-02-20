@@ -13,6 +13,7 @@ import { handleApiError } from '@/app/_lib/api/error-handler';
 import { authTokensAtom, userProfileAtom } from '@/app/_lib/atoms/auth-atom';
 import type { UserProfile } from '@/app/_lib/api/types';
 import { normalizeProfile, setProfileInStorage } from '@/app/(customer)/_utils/auth-profile';
+import { apiClient } from '@/app/_lib/api/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,13 +37,18 @@ export default function LoginPage() {
       {
         onSuccess: async (response) => {
           if (response.success && response.data) {
+            const { accessToken, refreshToken } = response.data;
+            
             // Store tokens first so the profile request is authenticated
             setAuthTokens({
-              accessToken: response.data.accessToken,
-              refreshToken: response.data.refreshToken,
+              accessToken,
+              refreshToken,
             });
-            sessionStorage.setItem('accessToken', response.data.accessToken);
-            sessionStorage.setItem('refreshToken', response.data.refreshToken);
+            sessionStorage.setItem('accessToken', accessToken);
+            sessionStorage.setItem('refreshToken', refreshToken);
+
+            // Update API client token getter immediately so profile request has the token
+            apiClient.setAuthTokenGetter(() => accessToken);
 
             // Fetch full profile from GET /api/auth/profile (source of truth for user)
             try {

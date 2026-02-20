@@ -32,8 +32,15 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
   const pathname = usePathname();
   const router = useRouter();
   const [, setAuthTokens] = useAtom(authTokensAtom);
-  const [, setUserProfile] = useAtom(userProfileAtom);
+  const [userProfile, setUserProfile] = useAtom(userProfileAtom);
   const [logoutModalOpened, { open: openLogoutModal, close: closeLogoutModal }] = useDisclosure(false);
+
+  const displayName = userProfile?.profile?.fullName || 
+    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
+    userProfile?.email?.split('@')[0] ||
+    'User';
+  const displayEmail = userProfile?.email || '';
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
 
   const handleLogout = async () => {
     try {
@@ -144,14 +151,14 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
             }}
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
-              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
+              <Avatar src={avatarUrl} name={displayName} color="initials"/>
             </div>
             <div className="min-w-0 flex-1 overflow-hidden text-left">
               <p className="truncate text-xs font-medium text-body-heading-300">
-                Michael Smith
+                {displayName}
               </p>
               <p className="truncate text-xs text-body-text-100">
-                michaelsmith12@gmail.com
+                {displayEmail}
               </p>
             </div>
           </UnstyledButton>

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { Avatar, Popover } from "@mantine/core";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { NotificationsPanel } from "../notifications";
 import TransactionHeader from "../transactions/TransactionHeader";
 import type { BreadcrumbItem } from "@/app/(customer)/_utils/transaction-flow";
@@ -28,6 +30,15 @@ export default function CustomerHeader({
 }: CustomerHeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const userProfile = useAtomValue(userProfileAtom);
+
+  // Get user display info from profile
+  const displayName = userProfile?.profile?.fullName || 
+    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
+    userProfile?.email?.split('@')[0] ||
+    'User';
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
+  const initials = userProfile?.profile?.firstName?.[0] || userProfile?.profile?.lastName?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U';
 
   return (
     <header className="h-16 bg-white border-b border-gray-50 px-6 flex items-center justify-between w-full relative">
@@ -97,7 +108,9 @@ export default function CustomerHeader({
           href="/settings"
           className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50"
         >
-          <Avatar name="Michael Smith" color="initials" size={40} radius="xl" />
+          <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl">
+            {initials}
+          </Avatar>
           {!collapsed &&
             !isMobile &&
             <ChevronDown size={16} className="text-primary-400" />}
