@@ -59,3 +59,46 @@ export function validateUserType(
   }
   return null;
 }
+
+/**
+ * Clear onboarding-related sessionStorage data
+ */
+export function clearOnboardingSessionStorage() {
+  if (typeof window === "undefined") return;
+  
+  const keysToRemove = [
+    "verificationToken",
+    "validationToken",
+    "bvn",
+    "passportNumber",
+    "passportFileName",
+    "email",
+    "fullName",
+    "firstName",
+    "lastName",
+    "phoneNumber",
+    "address",
+    "nationality",
+    "otpDeliveryMethod",
+    "userType",
+  ];
+  
+  keysToRemove.forEach((key) => {
+    sessionStorage.removeItem(key);
+  });
+}
+
+/**
+ * Check if userType has changed and clear sessionStorage if needed
+ */
+export function checkAndClearSessionIfUserTypeChanged(currentUserType: UserType | null) {
+  if (typeof window === "undefined" || !currentUserType) return;
+  
+  const storedUserType = sessionStorage.getItem("userType");
+  
+  if (storedUserType && storedUserType !== currentUserType) {
+    clearOnboardingSessionStorage();
+  }
+  
+  sessionStorage.setItem("userType", currentUserType);
+}

@@ -4,13 +4,23 @@
 
 ### 1. Environment Variables
 
-Create `.env.local` in your project root:
+Create `.env.local` in your project root (or use `.env`):
 
 ```env
-NEXT_PUBLIC_API_URL=http://104.45.229.69:3000
+NEXT_PUBLIC_API_URL=https://sohcahtoa-dev.clocksurewise.com
 ```
 
-### 2. Auth Token Management
+**API documentation (Swagger):**  
+[https://sohcahtoa-dev.clocksurewise.com/api-docs](https://sohcahtoa-dev.clocksurewise.com/api-docs)
+
+### 2. Document-related endpoints (base: `NEXT_PUBLIC_API_URL`)
+
+| Purpose | Method | Path | Usage in app |
+|--------|--------|------|----------------|
+| Get transaction (incl. documents) | `GET` | `/api/transactions/:id` | `customerApi.transactions.getById(id)` – use this to **check** docs / transaction detail |
+| Upload documents | `POST` | `/api/transactions/:id/documents` | `customerApi.transactions.uploadDocuments(id, formData)` |
+
+### 3. Auth Token Management
 
 The API client automatically reads auth tokens from Jotai atoms. Set tokens after login:
 
@@ -33,7 +43,7 @@ function LoginComponent() {
 }
 ```
 
-### 3. Using Hooks in Components
+### 4. Using Hooks in Components
 
 ```tsx
 import { useFetchData, useCreateData } from '@/app/_lib/api/hooks';

@@ -268,6 +268,7 @@ default:
               ? "Are you sure you want to initiate this expatriate sell transaction?"
               : "Are you sure you want to initiate this sell transaction?"
         }
+        requireInfoConfirmation
         confirmLabel="View Transaction"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}

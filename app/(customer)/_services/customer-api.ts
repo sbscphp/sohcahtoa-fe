@@ -10,13 +10,22 @@ import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type {
   LoginRequest,
   LoginResponse,
+  LoginResponseData,
   SignupRequest,
   VerifyBvnRequest,
   VerifyBvnResponse,
+  VerifyPassportResponse,
   SendOtpRequest,
+  SendOtpRequestNigerian,
+  SendOtpRequestTourist,
   SendOtpResponse,
   ValidateOtpRequest,
+  ValidateOtpRequestNigerian,
+  ValidateOtpRequestTourist,
   ValidateOtpResponse,
+  SendEmailOtpRequestNigerian,
+  ValidateEmailOtpRequestNigerian,
+  ValidateEmailOtpResponse,
   CreateNigerianAccountRequest,
   CreateTouristAccountRequest,
   RefreshTokenRequest,
@@ -37,7 +46,11 @@ import type {
   DepositConfirmRequest,
   VerifyKycRequest,
   PassportStatusResponse,
+  UploadPassportResponse,
   PaginationParams,
+  TransactionListParams,
+  ApiResponseWrapper,
+  ProfileResponse,
 } from "@/app/_lib/api/types";
 
 export const customerApi = {
@@ -56,15 +69,30 @@ export const customerApi = {
       apiClient.post<RefreshTokenResponse>(API_ENDPOINTS.auth.refresh, data, { skipAuth: true }),
 
     profile: () =>
-      apiClient.get<LoginResponse["user"]>(API_ENDPOINTS.auth.profile),
+      apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile),
 
     // Nigerian signup flow
     nigerian: {
       verifyBvn: (data: VerifyBvnRequest) =>
         apiClient.post<VerifyBvnResponse>(API_ENDPOINTS.auth.nigerian.verifyBvn, data, { skipAuth: true }),
 
-      sendOtp: (data: SendOtpRequest) =>
+      sendOtp: (data: SendOtpRequestNigerian) =>
         apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.sendOtp, data, { skipAuth: true }),
+
+      resendOtp: (data: SendOtpRequestNigerian) =>
+        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.resendOtp, data, { skipAuth: true }),
+
+      validateOtp: (data: ValidateOtpRequestNigerian) =>
+        apiClient.post<ValidateOtpResponse>(API_ENDPOINTS.auth.nigerian.validateOtp, data, { skipAuth: true }),
+
+      sendEmailOtp: (data: SendEmailOtpRequestNigerian) =>
+        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.sendEmailOtp, data, { skipAuth: true }),
+
+      resendEmailOtp: (data: SendEmailOtpRequestNigerian) =>
+        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.resendEmailOtp, data, { skipAuth: true }),
+
+      validateEmailOtp: (data: ValidateEmailOtpRequestNigerian) =>
+        apiClient.post<ValidateEmailOtpResponse>(API_ENDPOINTS.auth.nigerian.validateEmailOtp, data, { skipAuth: true }),
 
       createAccount: (data: CreateNigerianAccountRequest) =>
         apiClient.post<LoginResponse>(API_ENDPOINTS.auth.nigerian.createAccount, data, { skipAuth: true }),
@@ -72,11 +100,17 @@ export const customerApi = {
 
     // Tourist signup flow
     tourist: {
-      verifyPassport: (data: { passportDocumentUrl: string }) =>
-        apiClient.post<VerifyBvnResponse>(API_ENDPOINTS.auth.tourist.verifyPassport, data, { skipAuth: true }),
+      verifyPassport: (data: { passportNumber: string; passportDocumentUrl?: string }) =>
+        apiClient.post<VerifyPassportResponse>(API_ENDPOINTS.auth.tourist.verifyPassport, data, { skipAuth: true }),
 
-      sendOtp: (data: SendOtpRequest) =>
+      sendOtp: (data: SendOtpRequestTourist) =>
         apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.tourist.sendOtp, data, { skipAuth: true }),
+
+      resendOtp: (data: SendOtpRequestTourist) =>
+        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.tourist.resendOtp, data, { skipAuth: true }),
+
+      validateOtp: (data: ValidateOtpRequestTourist) =>
+        apiClient.post<ValidateOtpResponse>(API_ENDPOINTS.auth.tourist.validateOtp, data, { skipAuth: true }),
 
       createAccount: (data: CreateTouristAccountRequest) =>
         apiClient.post<LoginResponse>(API_ENDPOINTS.auth.tourist.createAccount, data, { skipAuth: true }),
@@ -98,7 +132,7 @@ export const customerApi = {
 
       passport: {
         upload: (data: FormData) =>
-          apiClient.post<void>(API_ENDPOINTS.auth.kyc.passport.upload, data),
+          apiClient.post<UploadPassportResponse>(API_ENDPOINTS.auth.kyc.passport.upload, data, { skipAuth: true }),
 
         getStatus: () =>
           apiClient.get<PassportStatusResponse>(API_ENDPOINTS.auth.kyc.passport.status),
@@ -108,7 +142,7 @@ export const customerApi = {
 
   // ==================== Transactions ====================
   transactions: {
-    list: (params?: PaginationParams & { status?: string }) =>
+    list: (params?: TransactionListParams) =>
       apiClient.get<TransactionsListResponse>(API_ENDPOINTS.transactions.list, {
         params: params as ApiRequestConfig["params"],
       }),
