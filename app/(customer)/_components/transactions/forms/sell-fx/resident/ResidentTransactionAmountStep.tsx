@@ -12,6 +12,8 @@ import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import { isAmountOver10k } from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
+import SourceOfFundsDeclaration from "./SourceOfFundsDeclaration";
+import type { FileWithPath } from "@mantine/dropzone";
 
 const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
@@ -21,7 +23,11 @@ const transactionAmountSchema = z.object({
   exchangeRate: z.string().optional(),
 });
 
-export type ResidentTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
+export type ResidentTransactionAmountFormData = z.infer<typeof transactionAmountSchema> & {
+  sourceOfFundsSignatureMode?: "initials" | "upload";
+  sourceOfFundsInitials?: string;
+  sourceOfFundsSignatureFile?: FileWithPath | null;
+};
 
 interface ResidentTransactionAmountStepProps {
   initialValues?: Partial<ResidentTransactionAmountFormData>;
@@ -37,6 +43,13 @@ export default function ResidentTransactionAmountStep({
   exchangeRate = "USD1 - NGN1500",
 }: ResidentTransactionAmountStepProps) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">("initials");
+  const [sourceOfFundsInitials, setSourceOfFundsInitials] = useState(initialValues?.sourceOfFundsInitials ?? "");
+  const [sourceOfFundsSignatureFile, setSourceOfFundsSignatureFile] = useState<FileWithPath | null>(
+    initialValues?.sourceOfFundsSignatureFile ?? null
+  );
+  const [sourceOfFundsError, setSourceOfFundsError] = useState<string | null>(null);
+
   const form = useForm<ResidentTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -49,8 +62,33 @@ export default function ResidentTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const over10k = isAmountOver10k(
+    form.values.receiveAmount,
+    form.values.receiveCurrency,
+    form.values.sendAmount,
+    form.values.sendCurrency
+  );
+
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values);
+    setSourceOfFundsError(null);
+    if (over10k) {
+      const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
+      const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
+      if (!hasInitials && !hasSignature) {
+        setSourceOfFundsError(
+          sourceOfFundsMode === "initials"
+            ? "Please enter your initials for the source of funds declaration"
+            : "Please upload your signature for the source of funds declaration"
+        );
+        return;
+      }
+    }
+    onSubmit({
+      ...values,
+      sourceOfFundsSignatureMode: over10k ? sourceOfFundsMode : undefined,
+      sourceOfFundsInitials: over10k && sourceOfFundsMode === "initials" ? sourceOfFundsInitials.trim() : undefined,
+      sourceOfFundsSignatureFile: over10k && sourceOfFundsMode === "upload" ? sourceOfFundsSignatureFile : undefined,
+    });
   });
 
   const handleSwap = () => {
@@ -90,16 +128,24 @@ export default function ResidentTransactionAmountStep({
           />
           <div className="w-full">
             <ProofOfFundPrompt
-              show={isAmountOver10k(
-                form.values.receiveAmount,
-                form.values.receiveCurrency,
-                form.values.sendAmount,
-                form.values.sendCurrency
-              )}
+              show={over10k}
               onUploadClick={() => setProofModalOpen(true)}
             />
           </div>
         </div>
+
+        {over10k && (
+          <SourceOfFundsDeclaration
+            signatureMode={sourceOfFundsMode}
+            onSignatureModeChange={setSourceOfFundsMode}
+            initialsValue={sourceOfFundsInitials}
+            onInitialsChange={setSourceOfFundsInitials}
+            initialsError={sourceOfFundsMode === "initials" ? (sourceOfFundsError ?? undefined) : undefined}
+            signatureFile={sourceOfFundsSignatureFile}
+            onSignatureFileChange={setSourceOfFundsSignatureFile}
+            signatureFileError={sourceOfFundsMode === "upload" ? (sourceOfFundsError ?? undefined) : undefined}
+          />
+        )}
 
         <ProofOfFundModal
           opened={proofModalOpen}

@@ -422,6 +422,7 @@ export default function TransactionCreationPage() {
         confirmLabel="View Transaction"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
+        requireInfoConfirmation
       />
     </div>
   );

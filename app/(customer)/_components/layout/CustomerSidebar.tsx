@@ -1,12 +1,19 @@
 "use client";
 
+import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import { authTokensAtom, userProfileAtom, USER_PROFILE_STORAGE_KEY } from "@/app/_lib/atoms/auth-atom";
 import { collapsed_logo, logo } from "@/app/assets/asset";
+import { Logout01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from '@hugeicons/react';
 import { Avatar, UnstyledButton } from "@mantine/core";
-import { ArrowUpRight, BanknoteIcon, Calculator, LayoutGrid } from "lucide-react";
+import { useDisclosure } from "@mantine/hooks";
+import { useAtom } from "jotai";
+import { ArrowUpRight, BanknoteIcon, Calculator, LayoutGrid, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type CustomerSidebarProps = {
   collapsed: boolean;
@@ -21,9 +28,31 @@ const menuItems = [
   // { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
-export default function CustomerSidebar({ collapsed, onCollapse, onNavigate }: CustomerSidebarProps) {
+export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [, setAuthTokens] = useAtom(authTokensAtom);
+  const [, setUserProfile] = useAtom(userProfileAtom);
+  const [logoutModalOpened, { open: openLogoutModal, close: closeLogoutModal }] = useDisclosure(false);
+
+  const handleLogout = async () => {
+    try {
+      await customerApi.auth.logout();
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setAuthTokens({ accessToken: null, refreshToken: null });
+      setUserProfile(null);
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('userInfo');
+      sessionStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+
+      closeLogoutModal();
+      router.push('/auth/login');
+    }
+  };
+
   return (
     <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
      
@@ -126,8 +155,45 @@ export default function CustomerSidebar({ collapsed, onCollapse, onNavigate }: C
               </p>
             </div>
           </UnstyledButton>
+
+          {/* Logout Button */}
+          <UnstyledButton
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-body-text-300 hover:bg-white hover:text-body-heading-300 transition-colors"
+            onClick={() => {
+              openLogoutModal();
+              onNavigate?.();
+            }}
+          >
+            <HugeiconsIcon icon={Logout01Icon} className="w-5 h-5 shrink-0" />
+            <span className="whitespace-nowrap text-body-text-300 font-medium">Logout</span>
+          </UnstyledButton>
         </div>
       )}
+
+      {/* Logout button when collapsed */}
+      {collapsed && (
+        <div className="p-3 border-t border-gray-100">
+          <UnstyledButton
+            className="flex w-full items-center justify-center rounded-lg px-3 py-2.5 text-sm font-medium text-body-text-300 hover:bg-white hover:text-body-heading-300 transition-colors"
+            onClick={openLogoutModal}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+          </UnstyledButton>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        opened={logoutModalOpened}
+        onClose={closeLogoutModal}
+        title="Are you sure you want to logout?"
+        description="You will need to log in again to access your account."
+        confirmLabel="Yes, Logout"
+        cancelLabel="No, Cancel"
+        onConfirm={handleLogout}
+        variant="warning"
+      />
     </aside>
   );
 }

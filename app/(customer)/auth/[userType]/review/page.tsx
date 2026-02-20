@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { OTPSentModal } from "@/app/(customer)/_components/modals/OTPSentModal";
 import { Button, Alert } from "@mantine/core";
-import { ArrowUpRight, InfoIcon } from "lucide-react";
+import { ArrowUpRight, ArrowLeft, InfoIcon } from "lucide-react";
 import {
   validateUserType,
-  getNextStep
+  getNextStep,
+  checkAndClearSessionIfUserTypeChanged
 } from "@/app/(customer)/_utils/auth-flow";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { handleApiError } from "@/app/_lib/api/error-handler";
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -19,27 +23,110 @@ export default function ReviewPage() {
 
   const [otpSentOpened, { open: openOTPSent, close: closeOTPSent }] =
     useDisclosure(false);
+  const [isSendingOTP, setIsSendingOTP] = useState(false);
+  const [userData, setUserData] = useState(() => {
+    if (typeof window === "undefined") {
+      return { fullName: "", phoneNumber: "", email: "", address: "", nationality: "" };
+    }
+    return {
+      fullName: sessionStorage.getItem("fullName") || "",
+      phoneNumber: sessionStorage.getItem("phoneNumber") || "",
+      email: sessionStorage.getItem("email") || "",
+      address: sessionStorage.getItem("address") || "",
+      nationality: sessionStorage.getItem("nationality") || ""
+    };
+  });
 
   useEffect(() => {
     if (!userType) {
       router.push("/auth/onboarding");
+      return;
+    }
+
+    checkAndClearSessionIfUserTypeChanged(userType);
+
+    const verificationToken = sessionStorage.getItem("verificationToken");
+    if (!verificationToken) {
+      router.push(userType === "citizen" ? `/auth/${userType}/bvn` : `/auth/${userType}/upload-passport`);
+      return;
     }
   }, [userType, router]);
 
-  // Mock data - in real app, this would come from API after BVN/passport verification
-  const userData = {
-    fullName: "Fiyinfolwa Fajuyi Keme",
-    phoneNumber: "+234 90 **** ** 91",
-    email: "fiy************@gmail.com",
-    address: "No 14A, Karimu Kotun Street, V.I Lagos"
-  };
+  const sendEmailOtpNigerianMutation = useCreateData(customerApi.auth.nigerian.sendEmailOtp);
+  const sendOtpTouristMutation = useCreateData(customerApi.auth.tourist.sendOtp);
 
   const handleSendOTP = () => {
-    if (userType) {
-      // Store email in sessionStorage for the verify email page
-      sessionStorage.setItem("email", userData.email);
-      sessionStorage.setItem("userType", userType);
-      openOTPSent();
+    if (userType && !isSendingOTP) {
+      setIsSendingOTP(true);
+      const onSuccess = (response: { success: boolean; error?: { message?: string } }) => {
+        if (response.success) {
+          setIsSendingOTP(false);
+          sessionStorage.setItem("userType", userType);
+          openOTPSent();
+        } else {
+          setIsSendingOTP(false);
+          handleApiError(
+            { message: response.error?.message || "Failed to send OTP", status: 400 },
+            { customMessage: response.error?.message || "Failed to send OTP. Please try again." }
+          );
+        }
+      };
+
+      const onError = (error: unknown) => {
+        setIsSendingOTP(false);
+        handleApiError(error, { customMessage: "Failed to send OTP. Please try again." });
+      };
+
+      if (userType === "citizen") {
+        const email = sessionStorage.getItem("email");
+        if (!email) {
+          setIsSendingOTP(false);
+          handleApiError(
+            { message: "Email required", status: 400 },
+            { customMessage: "Email not found. Please complete BVN verification first." }
+          );
+          return;
+        }
+        const validationToken = sessionStorage.getItem("validationToken");
+        if (!validationToken) {
+          setIsSendingOTP(false);
+          handleApiError(
+            { message: "Validation token required", status: 400 },
+            { customMessage: "Please complete OTP validation first." }
+          );
+          return;
+        }
+        sendEmailOtpNigerianMutation.mutate(
+          { email, verificationToken: validationToken },
+          { onSuccess, onError }
+        );
+        return;
+      }
+
+      const email = sessionStorage.getItem("email");
+      if (!email) {
+        setIsSendingOTP(false);
+        handleApiError(
+          { message: "Email required", status: 400 },
+          { customMessage: "Email not found. Please complete passport verification first." }
+        );
+        return;
+      }
+
+      const verificationToken = sessionStorage.getItem("verificationToken");
+      if (!verificationToken) {
+        setIsSendingOTP(false);
+        handleApiError(
+          { message: "Verification token not found", status: 400 },
+          { customMessage: "Please complete passport verification first." }
+        );
+        return;
+      }
+
+      sendOtpTouristMutation.mutate(
+        { email, verificationToken },
+        { onSuccess, onError }
+      );
     }
   };
 
@@ -59,6 +146,14 @@ export default function ReviewPage() {
   return (
     <>
       <div className="space-y-8">
+        <Button
+          variant="subtle"
+          leftSection={<ArrowLeft size={18} />}
+          onClick={() => router.push(userType === "citizen" ? `/auth/${userType}/bvn` : `/auth/${userType}/upload-passport`)}
+          className="text-body-text-200 hover:text-body-text-300 p-0 h-auto"
+        >
+          Back
+        </Button>
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
             Final Step Ahead.
@@ -93,13 +188,21 @@ export default function ReviewPage() {
             </span>
           </div>
 
-          {/* Address */}
-          <div className="flex justify-between items-start py-6">
-            <span className="text-text-300 text-base">Address</span>
-            <span className="text-heading-200 text-base font-medium">
-              {userData.address}
-            </span>
-          </div>
+          {userType === "expatriate" ? (
+            <div className="flex justify-between items-start py-6">
+              <span className="text-text-300 text-base">Nationality</span>
+              <span className="text-heading-200 text-base font-medium">
+                {userData.nationality}
+              </span>
+            </div>
+          ) : (
+            <div className="flex justify-between items-start py-6">
+              <span className="text-text-300 text-base">Address</span>
+              <span className="text-heading-200 text-base font-medium">
+                {userData.address}
+              </span>
+            </div>
+          )}
         </div>
 
         <Alert
@@ -115,13 +218,15 @@ export default function ReviewPage() {
 
         <Button
           onClick={handleSendOTP}
+          disabled={isSendingOTP}
+          loading={isSendingOTP}
           variant="filled"
           size="lg"
           radius="xl"
           fullWidth
-          rightSection={<ArrowUpRight size={18} />}
+          rightSection={!isSendingOTP && <ArrowUpRight size={18} />}
         >
-          Send OTP
+          {isSendingOTP ? "Sending OTP..." : "Send OTP"}
         </Button>
 
         <SecurityBadges />

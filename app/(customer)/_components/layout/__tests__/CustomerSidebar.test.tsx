@@ -4,6 +4,8 @@ import CustomerSidebar from "../CustomerSidebar";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  useParams: () => ({}),
 }));
 
 vi.mock("@/app/assets/asset", () => ({
@@ -19,7 +21,7 @@ vi.mock("next/image", () => ({
 
 describe("CustomerSidebar", () => {
   it("renders Overview, Transactions and Rate Calculator links", () => {
-    render(<CustomerSidebar collapsed={false} onCollapse={vi.fn()} />);
+    render(<CustomerSidebar collapsed={false} />);
     expect(screen.getByRole("link", { name: /Overview/i })).toHaveAttribute("href", "/dashboard");
     expect(screen.getByRole("link", { name: /Transactions/i })).toHaveAttribute("href", "/transactions");
     expect(screen.getByRole("link", { name: /Rate Calculator/i })).toHaveAttribute("href", "/rate-calculator");

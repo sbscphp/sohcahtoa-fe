@@ -4,6 +4,7 @@ import { AppShell } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { usePathname, useParams } from 'next/navigation';
+import { AuthProfileSync } from '@/app/(customer)/_components/auth/AuthProfileSync';
 import CustomerHeader from './CustomerHeader';
 import CustomerSidebar from './CustomerSidebar';
 import {
@@ -159,6 +160,8 @@ export default function CustomerLayoutShell({
   }, [isMobile, closeMobile]);
 
   return (
+    <>
+      <AuthProfileSync />
     <AppShell
       layout={isMobile ? undefined : "alt"}
       header={{ height: HEADER_HEIGHT }}
@@ -213,5 +216,6 @@ export default function CustomerLayoutShell({
         {children}
       </AppShell.Main>
     </AppShell>
+    </>
   );
 }

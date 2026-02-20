@@ -65,6 +65,7 @@ function buildDetailPayloadFromRow(row: NonNullable<ReturnType<typeof getTransac
     },
     requiredDocuments: {
       bvn: "2223334355",
+      nin: "12345678901",
       tin: "876r245623",
       formAId: "23456786543",
       formA: { filename: "Doc.pdf" },

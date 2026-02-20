@@ -27,17 +27,29 @@ const ERROR_MESSAGES: Record<number, string> = {
 export function handleApiError(error: unknown, options?: { showNotification?: boolean; customMessage?: string }) {
   const { showNotification = true, customMessage } = options || {};
 
-  let message = customMessage || "An unexpected error occurred.";
+  let message = "An unexpected error occurred.";
   let status = 0;
 
   if (error && typeof error === "object" && "status" in error) {
     const apiError = error as ApiError;
     status = apiError.status;
-    if (!customMessage) {
-      message = apiError.message || ERROR_MESSAGES[status] || message;
+    
+    if (apiError.message && apiError.message !== `HTTP ${status}`) {
+      message = apiError.message;
+    } else {
+      message = ERROR_MESSAGES[status] || message;
     }
-  } else if (error instanceof Error && !customMessage) {
+    
+    if (customMessage && !apiError.message) {
+      message = customMessage;
+    }
+  } else if (error instanceof Error) {
     message = error.message;
+    if (customMessage) {
+      message = customMessage;
+    }
+  } else if (customMessage) {
+    message = customMessage;
   }
 
   if (showNotification) {

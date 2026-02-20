@@ -71,8 +71,6 @@ class ApiClient {
   private buildHeaders(config: ApiRequestConfig): HeadersInit {
     const headers = new Headers(config.headers);
 
-    // Set Content-Type for JSON requests (unless multipart/form-data)
-    // if (!config.skipAuth && !headers.has("Content-Type")) {
     if (!headers.has("Content-Type")) {
       const contentType = config.body instanceof FormData 
         ? "multipart/form-data" 
@@ -82,7 +80,7 @@ class ApiClient {
       }
     }
 
-    // Add auth token
+    // Add auth token (only when skipAuth is false)
     if (!config.skipAuth && this.getAuthToken) {
       const token = this.getAuthToken();
       if (token) {
@@ -103,8 +101,15 @@ class ApiClient {
       errorData = await response.text();
     }
 
+    let errorMessage = `HTTP ${response.status}`;
+    
+    if (errorData && typeof errorData === "object") {
+      const data = errorData as { error?: { message?: string }; message?: string };
+      errorMessage = data.error?.message || data.message || errorMessage;
+    }
+
     const error: ApiError = {
-      message: (errorData as { message?: string })?.message || `HTTP ${response.status}`,
+      message: errorMessage,
       status: response.status,
       data: errorData,
     };
@@ -123,13 +128,19 @@ class ApiClient {
 
     // Prepare body
     let body = config.body;
-    if (body && !(body instanceof FormData) && typeof body === "object") {
-      body = JSON.stringify(body);
+    // Don't send body for GET/HEAD requests
+    if (config.method && !["GET", "HEAD"].includes(config.method) && body) {
+      if (!(body instanceof FormData) && typeof body === "object") {
+        body = JSON.stringify(body);
+      }
+    } else {
+      body = undefined;
     }
 
     try {
       const response = await fetch(fullUrl, {
         ...fetchConfig,
+        method: config.method || "GET",
         headers,
         body,
       });
