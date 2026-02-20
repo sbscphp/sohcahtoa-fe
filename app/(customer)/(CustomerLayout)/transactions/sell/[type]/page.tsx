@@ -246,7 +246,7 @@ default:
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-[800px] mx-auto">
+      <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-200 mx-auto">
         <CustomStepper steps={steps} activeStep={activeStepIndex} className="mb-6" />
         <div className="bg-white rounded-xl md:p-4 p-2">{renderStepContent()}</div>
       </div>

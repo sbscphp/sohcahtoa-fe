@@ -10,6 +10,14 @@ export interface ApiRequestConfig extends RequestInit {
   skipAuth?: boolean;
 }
 
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data: T;
+  errors?: string[];
+  metadata: Record<string, unknown> | null;
+}
+
 export interface ApiError {
   message: string;
   status: number;
@@ -23,7 +31,7 @@ class ApiClient {
   constructor() {
     // Use environment variable or default to production API
     this.baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://104.45.229.69:3000";
+      process.env.NEXT_PUBLIC_API_URL || "https://sohcahtoa-dev.clocksurewise.com";
   }
 
   /**
