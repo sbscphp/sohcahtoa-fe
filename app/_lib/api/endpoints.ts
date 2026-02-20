@@ -77,6 +77,10 @@ export const API_ENDPOINTS = {
       verifyLogin: "/api/admin/auth/verify-login",
       forgotPassword: "/api/admin/auth/forgot-password",
       resetPassword: "/api/admin/auth/reset-password",
+      logout: "/api/admin/auth/logout",
+      otp: {
+        validate: "/api/admin/auth/otp/validate",
+      },
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",

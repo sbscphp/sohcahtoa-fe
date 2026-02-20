@@ -10,6 +10,14 @@ export interface ApiRequestConfig extends RequestInit {
   skipAuth?: boolean;
 }
 
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data: T;
+  errors?: string[];
+  metadata: Record<string, unknown> | null;
+}
+
 export interface ApiError {
   message: string;
   status: number;
@@ -61,7 +69,8 @@ class ApiClient {
     const headers = new Headers(config.headers);
 
     // Set Content-Type for JSON requests (unless multipart/form-data)
-    if (!config.skipAuth && !headers.has("Content-Type")) {
+    // if (!config.skipAuth && !headers.has("Content-Type")) {
+    if (!headers.has("Content-Type")) {
       const contentType = config.body instanceof FormData 
         ? "multipart/form-data" 
         : "application/json";

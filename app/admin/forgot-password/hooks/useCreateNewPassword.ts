@@ -1,27 +1,21 @@
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
-import { CreatePasswordFormValues } from "../_schemas/forgotPassword.schema";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiResponse } from "@/app/_lib/api/client";
 
-type CreateNewPasswordResponse = { success: boolean };
+export interface ResetPasswordPayload {
+  resetToken: string;
+  password: string;
+}
 
 export function useCreateNewPassword(
   options?: Omit<
-    UseMutationOptions<CreateNewPasswordResponse, Error, CreatePasswordFormValues>,
+    UseMutationOptions<ApiResponse<null>, Error, ResetPasswordPayload>,
     "mutationFn"
   >
 ) {
   return useMutation({
-    mutationFn: async (payload: CreatePasswordFormValues) => {
-      // TODO: Replace with actual API call
-      // const response = await fetch("/api/admin/forgot-password/reset", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ password: payload.password }),
-      // });
-      // return response.json();
-      
-      await new Promise((r) => setTimeout(r, 1200)); // mock delay
-      return { success: true } satisfies CreateNewPasswordResponse;
-    },
+    mutationFn: (payload: ResetPasswordPayload) =>
+      adminApi.auth.resetPassword(payload),
     ...options,
   });
 }
