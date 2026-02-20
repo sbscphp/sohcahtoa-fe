@@ -16,7 +16,7 @@ import RowActionMenu from "@/app/admin/_components/RowActionMenu";
 import { ViewDepartmentModal } from "./ViewDepartmentModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomerStatus } from "../../customer/[id]/page";
+import { CustomerStatus } from "../../../customer/[id]/page";
 
 /* --------------------------------------------
  Types
