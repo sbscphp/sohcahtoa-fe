@@ -31,7 +31,7 @@ class ApiClient {
   constructor() {
     // Use environment variable or default to production API
     this.baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://104.45.229.69:3000";
+      process.env.NEXT_PUBLIC_API_URL || "https://sohcahtoa-dev.clocksurewise.com";
   }
 
   /**
