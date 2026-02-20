@@ -17,11 +17,6 @@ export const API_ENDPOINTS = {
     nigerian: {
       verifyBvn: "/api/auth/signup/nigerian/verify-bvn",
       sendOtp: "/api/auth/signup/nigerian/send-otp",
-      resendOtp: "/api/auth/signup/nigerian/resend-otp",
-      validateOtp: "/api/auth/signup/nigerian/validate-otp",
-      sendEmailOtp: "/api/auth/signup/nigerian/send-email-otp",
-      resendEmailOtp: "/api/auth/signup/nigerian/resend-email-otp",
-      validateEmailOtp: "/api/auth/signup/nigerian/validate-email-otp",
       createAccount: "/api/auth/signup/nigerian/create-account",
     },
     
@@ -29,8 +24,6 @@ export const API_ENDPOINTS = {
     tourist: {
       verifyPassport: "/api/auth/signup/tourist/verify-passport",
       sendOtp: "/api/auth/signup/tourist/send-otp",
-      resendOtp: "/api/auth/signup/tourist/resend-otp",
-      validateOtp: "/api/auth/signup/tourist/validate-otp",
       createAccount: "/api/auth/signup/tourist/create-account",
     },
     
@@ -75,33 +68,5 @@ export const API_ENDPOINTS = {
     },
     settlement: (transactionId: string) => `/api/payments/settlement/${transactionId}`,
     health: "/api/payments/health",
-  },
-  
-  // Admin (if needed)
-  admin: {
-    auth: {
-      login: "/api/admin/auth/login",
-      verifyLogin: "/api/admin/auth/verify-login",
-      forgotPassword: "/api/admin/auth/forgot-password",
-      resetPassword: "/api/admin/auth/reset-password",
-    },
-    dashboard: "/api/admin/dashboard",
-    pendingApprovals: "/api/admin/pending-approvals",
-    customers: {
-      list: "/api/admin/customers",
-      getById: (userId: string) => `/api/admin/customers/${userId}`,
-      flags: {
-        list: (userId: string) => `/api/admin/customers/${userId}/flags`,
-        create: (userId: string) => `/api/admin/customers/${userId}/flags`,
-        all: "/api/admin/customers/flags/all",
-        updateStatus: (flagId: string) => `/api/admin/customers/flags/${flagId}/status`,
-      },
-    },
-    transactions: {
-      review: (id: string) => `/api/admin/transactions/${id}/review`,
-      approve: (id: string) => `/api/admin/transactions/${id}/approve`,
-      reject: (id: string) => `/api/admin/transactions/${id}/reject`,
-      settle: (id: string) => `/api/admin/transactions/${id}/settle`,
-    },
   },
 } as const;

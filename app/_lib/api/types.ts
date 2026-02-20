@@ -3,22 +3,25 @@
  * These types match the API endpoints and payloads
  */
 
+export interface ApiResponseWrapper<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+  };
+  metadata: {
+    timestamp: string;
+    requestId: string;
+    version: string;
+  };
+}
+
 // ==================== Auth Types ====================
 
 export interface LoginRequest {
   email: string;
   password: string;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
 }
 
 export interface SignupRequest {
@@ -33,14 +36,40 @@ export interface VerifyBvnRequest {
   bvn: string;
 }
 
-export interface VerifyBvnResponse {
-  verified: boolean;
-  data?: {
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-    phoneNumber: string;
-  };
+export interface VerifyBvnResponseData {
+  verificationToken: string;
+  message: string;
+  email?: string;
+  fullName?: string;
+  phoneNumber?: string;
+  address?: string;
+}
+
+export type VerifyBvnResponse = ApiResponseWrapper<VerifyBvnResponseData>;
+
+export interface VerifyPassportResponseData {
+  verificationToken: string;
+  message: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+  email: string;
+  phoneNumber: string;
+  nationality?: string;
+  address?: string;
+}
+
+export type VerifyPassportResponse = ApiResponseWrapper<VerifyPassportResponseData>;
+
+// Nigerian signup: send-otp expects verificationToken and verificationType (phone or email)
+export interface SendOtpRequestNigerian {
+  verificationToken: string;
+  verificationType: "phone" | "email"; // Required - specifies where to send OTP
+}
+
+export interface SendOtpRequestTourist {
+  email: string;
+  verificationToken: string;
 }
 
 export interface SendOtpRequest {
@@ -51,9 +80,22 @@ export interface SendOtpRequest {
   email?: string;
 }
 
-export interface SendOtpResponse {
+export interface SendOtpResponseData {
   message: string;
-  expiresIn: number;
+  expiresIn?: number;
+}
+
+export type SendOtpResponse = ApiResponseWrapper<SendOtpResponseData>;
+
+export interface ValidateOtpRequestNigerian {
+  verificationToken: string;
+  otp: string;
+}
+
+export interface ValidateOtpRequestTourist {
+  email: string;
+  otp: string;
+  verificationToken: string;
 }
 
 export interface ValidateOtpRequest {
@@ -61,40 +103,136 @@ export interface ValidateOtpRequest {
   otp: string;
 }
 
-export interface ValidateOtpResponse {
-  verified: boolean;
-  token?: string;
-}
-
-export interface CreateNigerianAccountRequest {
-  bvn: string;
+export interface ValidateOtpResponseData {
+  message: string;
   firstName: string;
   lastName: string;
   email: string;
   phoneNumber: string;
-  dateOfBirth: string;
   address: string;
-  // ... other fields from BVN verification
+  // Note: validationToken may be present for next step, but not always in response
+  validationToken?: string; // Token to proceed to next step (email OTP for Nigerian, create-account for Tourist)
+}
+
+export type ValidateOtpResponse = ApiResponseWrapper<ValidateOtpResponseData>;
+
+// Nigerian email OTP flow (Step 3.5 and 3.6)
+export interface SendEmailOtpRequestNigerian {
+  email: string;
+  verificationToken: string; // From validate-otp step
+}
+
+export interface ValidateEmailOtpRequestNigerian {
+  email: string;
+  otp: string;
+  verificationToken: string; // From validate-otp step
+}
+
+export interface ValidateEmailOtpResponseData {
+  verified: boolean;
+  validationToken: string; // Token to proceed to create-account
+}
+
+export type ValidateEmailOtpResponse = ApiResponseWrapper<ValidateEmailOtpResponseData>;
+
+export interface CreateNigerianAccountRequest {
+  password: string;
+  validationToken: string; // From validate-email-otp step
 }
 
 export interface CreateTouristAccountRequest {
-  passportNumber: string;
-  passportDocumentUrl: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  // ... other fields
+  password: string;
+  validationToken: string; // From validate-otp step
 }
 
 export interface RefreshTokenRequest {
   refreshToken: string;
 }
 
-export interface RefreshTokenResponse {
+export interface RefreshTokenResponseData {
   accessToken: string;
   refreshToken: string;
 }
+
+export type RefreshTokenResponse = ApiResponseWrapper<RefreshTokenResponseData>;
+
+export interface LoginResponseData {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    role?: string;
+    customerType?: string;
+    kycStatus?: string;
+    isActive?: boolean;
+    createdAt?: string;
+  };
+}
+
+export type LoginResponse = ApiResponseWrapper<LoginResponseData>;
+
+export interface UserProfileProfile {
+  firstName: string;
+  lastName: string;
+  fullName?: string;
+  dateOfBirth?: string;
+  address?: string;
+  city?: string | null;
+  state?: string | null;
+  country?: string;
+  postalCode?: string | null;
+  avatar?: string | null;
+}
+
+export interface UserProfileKyc {
+  status: string;
+  bvn?: string | null;
+  tin?: string | null;
+  passportNumber?: string | null;
+  passportDocumentUrl?: string | null;
+  bvnVerified: boolean;
+  tinVerified: boolean;
+  passportVerified: boolean;
+  verifiedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+}
+
+export interface ActiveSession {
+  id: string;
+  userAgent: string;
+  ipAddress: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/**
+ * Full user profile from GET /api/auth/profile (roles, permissions, KYC, etc.).
+ * Use this as the source of truth for "current user" in the app.
+ */
+export interface UserProfile {
+  id: string;
+  email: string;
+  phoneNumber?: string;
+  role: string;
+  customerType?: string;
+  isActive: boolean;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  profile: UserProfileProfile;
+  kyc: UserProfileKyc;
+  permissions: string[];
+  activeSessions?: ActiveSession[];
+  fullName?: string;
+}
+
+export type ProfileResponse = ApiResponseWrapper<UserProfile>;
 
 // ==================== Transaction Types ====================
 
@@ -246,6 +384,12 @@ export interface UploadPassportRequest {
   passportFile: File;
 }
 
+export interface UploadPassportResponseData {
+  passportDocumentUrl: string;
+}
+
+export type UploadPassportResponse = ApiResponseWrapper<UploadPassportResponseData>;
+
 export interface PassportStatusResponse {
   status: "PENDING" | "VERIFIED" | "REJECTED";
   verifiedAt?: string;
@@ -257,6 +401,15 @@ export interface PassportStatusResponse {
 export interface PaginationParams {
   page?: number;
   limit?: number;
+}
+
+export interface TransactionListParams extends PaginationParams {
+  status?: string;
+  search?: string;
+  type?: string;
+  transactionType?: "Buy FX" | "Sell FX" | "Receive FX";
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface ApiResponse<T> {

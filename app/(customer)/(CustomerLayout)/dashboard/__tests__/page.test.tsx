@@ -1,6 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@/test-utils";
 import DashboardPage from "../page";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/dashboard",
+  useParams: () => ({}),
+}));
 
 describe("Dashboard page", () => {
   it("renders the dashboard layout with FX overview", () => {

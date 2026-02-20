@@ -4,6 +4,8 @@
  * Usage: customerKeys.profile(), adminKeys.transactions.list({ page: 1 })
  */
 
+import type { TransactionListParams } from "./types";
+
 // ==================== Customer Query Keys ====================
 
 export const customerKeys = {
@@ -17,7 +19,7 @@ export const customerKeys = {
   transactions: {
     all: ["customer", "transactions"] as const,
     lists: () => [...customerKeys.transactions.all, "list"] as const,
-    list: (filters?: { page?: number; limit?: number; status?: string }) =>
+    list: (filters?: TransactionListParams) =>
       [...customerKeys.transactions.lists(), filters] as const,
     details: () => [...customerKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...customerKeys.transactions.details(), id] as const,
