@@ -120,6 +120,7 @@ export default function LoginPage() {
         description="A six (6) digit OTP has been sent to your email linked to this account. Enter the code to log in."
         length={6}
         loading={verifyOtp.isPending}
+        isResending={loginMutation.isPending}
         onSubmit={(otp) =>
           verifyOtp.mutate({ otp, email: loginValues!.email })
         }

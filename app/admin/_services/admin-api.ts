@@ -12,6 +12,10 @@ interface LoginResponseData {
   message: string;
 }
 
+interface ValidateOtpResponseData {
+  resetToken: string;
+}
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -36,7 +40,14 @@ export const adminApi = {
         { skipAuth: true }
       ),
 
-    resetPassword: (data: { email: string; otp: string; newPassword: string }) =>
+    validateOtp: (data: { otp: string }) =>
+      apiClient.post<ApiResponse<ValidateOtpResponseData>>(
+        API_ENDPOINTS.admin.auth.otp.validate,
+        data,
+        { skipAuth: true }
+      ),
+
+    resetPassword: (data: { resetToken: string; password: string }) =>
       apiClient.post<ApiResponse<null>>(
         API_ENDPOINTS.admin.auth.resetPassword,
         data,
