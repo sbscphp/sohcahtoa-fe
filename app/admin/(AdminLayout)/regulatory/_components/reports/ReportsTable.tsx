@@ -5,7 +5,6 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
-import { useRouter } from "next/navigation";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { ReportsDetailModal } from "./ReportDetailModal";
 
@@ -129,7 +128,7 @@ export default function ReportsTable() {
         submission.submittedDate
           .toLowerCase()
           .includes(search.toLowerCase()) ||
-        submission.SubmittedTime.toLowerCase().includes(search.toLowerCase());
+        submission.submittedTime.toLowerCase().includes(search.toLowerCase());
 
       const matchesFilter =
         filter === "Filter By" ||
