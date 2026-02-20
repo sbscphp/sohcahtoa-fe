@@ -5,9 +5,9 @@
 import { useState, useMemo } from "react";
 import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../_components/HeaderTabs";
-import  UserManagement  from "./UserManagement";
-import DepartmentPage from "./_departments/page";
-import UserRoles from "./role/UserRoles";
+import UserManagement from "./_userManagementComponents/users/UserManagement";
+import Departments from "./_userManagementComponents/departments/Departments";
+import UserRoles from "./_userManagementComponents/roles/UserRoles";
 
 const USER_TABS = [
   { value: "user", label: "Users" },
@@ -38,7 +38,7 @@ export default function UserManagementPage() {
      
       {activeTab === "user" && <UserManagement />}
       {activeTab === "roles" && <UserRoles />}
-      {activeTab === "department" && <DepartmentPage />}
+      {activeTab === "department" && <Departments />}
     </div>
   );}
 
