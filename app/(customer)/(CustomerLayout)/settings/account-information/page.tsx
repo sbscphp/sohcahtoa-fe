@@ -7,7 +7,6 @@ import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { normalizeProfile, setProfileInStorage } from "@/app/(customer)/_utils/auth-profile";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
-import Loader from "@/components/loader";
 
 function formatDate(dateString?: string | null): string {
   if (!dateString) return "N/A";
@@ -38,7 +37,7 @@ function FieldGrid({ fields }: { fields: { label: string; value: string }[] }) {
           <span className="text-base font-normal leading-6 text-[#8F8B8B]">
             {label}
           </span>
-          <span className="text-base font-medium leading-6 text-[#4D4B4B] break-words break-all">
+          <span className="text-base font-medium leading-6 text-[#4D4B4B] wrap-break-word break-all">
             {value}
           </span>
         </div>
@@ -64,10 +63,11 @@ export default function AccountInformationPage() {
         .catch(() => {
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (!userProfile) {
-    return <Loader />;
+    return null;
   }
 
   const displayName = userProfile.profile?.fullName ||

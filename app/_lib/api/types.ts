@@ -3,6 +3,8 @@
  * These types match the API endpoints and payloads
  */
 
+import type { DocumentType } from "@/app/(customer)/_utils/transaction-document-requirements";
+
 export interface ApiResponseWrapper<T> {
   success: boolean;
   data?: T;
@@ -156,6 +158,42 @@ export interface RefreshTokenResponseData {
 
 export type RefreshTokenResponse = ApiResponseWrapper<RefreshTokenResponseData>;
 
+// ==================== Password Reset Types ====================
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponseData {
+  message: string;
+  otp?: string; // OTP returned in response (for testing/dev)
+}
+
+export type ForgotPasswordResponse = ApiResponseWrapper<ForgotPasswordResponseData>;
+
+export interface VerifyResetOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyResetOtpResponseData {
+  resetToken: string;
+  message: string;
+}
+
+export type VerifyResetOtpResponse = ApiResponseWrapper<VerifyResetOtpResponseData>;
+
+export interface ResetPasswordRequest {
+  resetToken: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponseData {
+  message: string;
+}
+
+export type ResetPasswordResponse = ApiResponseWrapper<ResetPasswordResponseData>;
+
 export interface LoginResponseData {
   accessToken: string;
   refreshToken: string;
@@ -236,12 +274,48 @@ export type ProfileResponse = ApiResponseWrapper<UserProfile>;
 
 // ==================== Transaction Types ====================
 
+export type TransactionTypeAPI =
+  | "PTA"
+  | "BTA"
+  | "SCHOOL_FEES"
+  | "MEDICAL"
+  | "PROFESSIONAL_BODY"
+  | "TOURIST_FX"
+  | "RESIDENT_FX"
+  | "EXPATRIATE_FX"
+  | "IMTO_REMITTANCE"
+  | "CASH_REMITTANCE";
+
+export type AdmissionType = "UNDERGRADUATE" | "POSTGRADUATE" | "OTHER";
+
+export interface TransactionDocument {
+  documentType: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+}
+
+export interface PickupLocation {
+  id: string;
+  name: string;
+  address: string;
+  recipientName: string;
+  recipientPhone: string;
+}
+
 export interface CreateTransactionRequest {
-  type: "PTA" | "BTA" | "Medical" | "School Fees" | "Professional Body Fee" | "Tourist" | "IMTO";
-  amount: number;
+  type: TransactionTypeAPI;
   currency: string;
+  amount: number;
   purpose: string;
-  beneficiaryDetails: Record<string, unknown>;
+  destinationCountry: string;
+  bvn?: string;
+  nin?: string;
+  formAId?: string;
+  admissionType?: AdmissionType;
+  beneficiaryDetails?: Record<string, unknown>;
+  pickupLocation?: PickupLocation;
+  documents?: TransactionDocument[];
 }
 
 export interface Transaction {
@@ -253,6 +327,57 @@ export interface Transaction {
   stage: string;
   date: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
+}
+
+export interface TransactionListDocument {
+  id: string;
+  documentType: string;
+  verificationStatus: string;
+  uploadedAt: string;
+}
+
+export interface TransactionListCashPickup {
+  pickupLocation: string;
+  status: string;
+}
+
+export interface TransactionListItem {
+  id: string;
+  referenceNumber: string;
+  type: string;
+  status: string;
+  currentStep: string;
+  purpose: string;
+  destinationCountry: string;
+  currency: string;
+  foreignAmount: string;
+  nairaEquivalent: string | null;
+  exchangeRate: string | null;
+  disbursementMethod: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  documents: TransactionListDocument[];
+  cashPickup: TransactionListCashPickup;
+  group: "BUY" | "SELL" | "REMITTANCE";
+}
+
+export interface TransactionsListApiResponse {
+  success: boolean;
+  data: TransactionListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  metadata?: {
+    timestamp?: string;
+    requestId?: string;
+    version?: string;
+  };
 }
 
 export interface TransactionDetail extends Transaction {
@@ -288,16 +413,6 @@ export interface TransactionDetail extends Transaction {
     utilityBill?: { filename: string };
     visa?: { filename: string };
     returnTicket?: { filename: string };
-  };
-}
-
-export interface TransactionsListResponse {
-  data: Transaction[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
   };
 }
 
@@ -404,12 +519,15 @@ export interface PaginationParams {
 }
 
 export interface TransactionListParams extends PaginationParams {
+  q?: string;
   status?: string;
-  search?: string;
   type?: string;
-  transactionType?: "Buy FX" | "Sell FX" | "Receive FX";
-  dateFrom?: string;
-  dateTo?: string;
+  group?: "BUY" | "SELL" | "REMITTANCE";
+  currency?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export interface ApiResponse<T> {
@@ -421,4 +539,161 @@ export interface ErrorResponse {
   message: string;
   errors?: Record<string, string[]>;
   statusCode: number;
+}
+
+// ==================== Notification Types ====================
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsListResponse {
+  success: true;
+  data: {
+    notifications: Notification[];
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+export interface UnreadCountResponse {
+  success: true;
+  data: {
+    count: number;
+  };
+}
+
+export interface NotificationPreferences {
+  id: string;
+  userId: string;
+  emailEnabled: boolean;
+  emailTransactional: boolean;
+  emailMarketing: boolean;
+  emailSecurity: boolean;
+  smsEnabled: boolean;
+  smsTransactional: boolean;
+  smsMarketing: boolean;
+  smsSecurity: boolean;
+  pushEnabled: boolean;
+  pushTransactional: boolean;
+  pushMarketing: boolean;
+  pushSecurity: boolean;
+  inAppEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationPreferencesResponse = ApiResponseWrapper<NotificationPreferences>;
+
+export interface UpdateNotificationPreferencesRequest {
+  emailEnabled?: boolean;
+  emailTransactional?: boolean;
+  emailMarketing?: boolean;
+  emailSecurity?: boolean;
+  smsEnabled?: boolean;
+  smsTransactional?: boolean;
+  smsMarketing?: boolean;
+  smsSecurity?: boolean;
+  pushEnabled?: boolean;
+  pushTransactional?: boolean;
+  pushMarketing?: boolean;
+  pushSecurity?: boolean;
+  inAppEnabled?: boolean;
+  quietHoursEnabled?: boolean;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+}
+
+export interface ReadAllNotificationsResponse {
+  success: true;
+  message: string;
+  data: {
+    count: number;
+  };
+}
+
+export interface RegisterDeviceRequest {
+  deviceToken: string;
+  platform: "web" | "ios" | "android";
+}
+
+export interface Device {
+  id: string;
+  userId: string;
+  deviceToken: string;
+  platform: string;
+  createdAt: string;
+}
+
+export interface DevicesListResponse {
+  success: true;
+  data: {
+    devices: Device[];
+    total: number;
+  };
+}
+
+// ==================== Document Types ====================
+
+export interface DocumentUploadResponse {
+  success: true;
+  data: {
+    id: string;
+    documentType: DocumentType;
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    verificationStatus: string;
+    uploadedAt: string;
+    metadata: Record<string, unknown>;
+  };
+}
+
+export interface Document {
+  id: string;
+  documentType: DocumentType;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  verificationStatus: string;
+  uploadedAt: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface DocumentsListResponse {
+  success: true;
+  data: {
+    data: Document[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface MultipleDocumentsUploadResponse {
+  success: true;
+  data: {
+    documents: Document[];
+    uploadedCount: number;
+  };
+}
+
+/** JSON body for document upload (e.g. documents as base64 strings) so request shows in DevTools as application/json */
+export interface UploadDocumentsJsonRequest {
+  userId: string;
+  documentTypes: string[];
+  documents: string[];
+  transactionId?: string;
 }

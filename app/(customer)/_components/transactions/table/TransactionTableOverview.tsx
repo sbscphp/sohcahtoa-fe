@@ -10,6 +10,7 @@ import { IconArrowRight } from "@/components/icons/IconArrowRight";
 
 export interface Transaction {
   id: string;
+  referenceNumber?: string;
   date: string;
   type: string;
   stage: string;
@@ -73,7 +74,7 @@ export default function TransactionTableOverview({
             color: "#4D4B4B",
           }}
         >
-          {transaction.id}
+          {transaction.referenceNumber ?? transaction.id}
         </Text>
       ),
     },
