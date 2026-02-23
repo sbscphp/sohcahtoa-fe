@@ -113,6 +113,7 @@ export const API_ENDPOINTS = {
         stats: "/api/admin/management/users/stats",
       },
       roles: {
+        list: "/api/admin/management/roles",
         stats: "/api/admin/management/roles/stats",
       },
     },

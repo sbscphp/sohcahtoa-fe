@@ -114,6 +114,12 @@ export const adminApi = {
     },
 
     roles: {
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.list,
+          { params }
+        ),
+
       getStats: () =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.stats
