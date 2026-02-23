@@ -47,7 +47,7 @@ class ApiClient {
    */
   private buildUrl(url: string, params?: Record<string, string | number | boolean | null | undefined>): string {
     const fullUrl = url.startsWith("http") ? url : `${this.baseUrl}${url}`;
-    
+
     if (!params || Object.keys(params).length === 0) {
       return fullUrl;
     }
@@ -70,8 +70,8 @@ class ApiClient {
     const headers = new Headers(config.headers);
 
     if (!headers.has("Content-Type")) {
-      const contentType = config.body instanceof FormData 
-        ? "multipart/form-data" 
+      const contentType = config.body instanceof FormData
+        ? "multipart/form-data"
         : "application/json";
       if (contentType !== "multipart/form-data") {
         headers.set("Content-Type", contentType);
@@ -100,7 +100,7 @@ class ApiClient {
     }
 
     let errorMessage = `HTTP ${response.status}`;
-    
+
     if (errorData && typeof errorData === "object") {
       const data = errorData as { error?: { message?: string }; message?: string };
       errorMessage = data.error?.message || data.message || errorMessage;
@@ -146,12 +146,12 @@ class ApiClient {
       // Handle non-OK responses
       if (!response.ok) {
         const error = await this.handleError(response);
-        
+
         // Handle 401 Unauthorized - log user out
         if (response.status === 401 && typeof window !== 'undefined') {
           performLogout();
         }
-        
+
         throw error;
       }
 
