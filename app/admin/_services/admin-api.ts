@@ -98,6 +98,22 @@ export const adminApi = {
     },
   },
 
+  // ==================== Management ====================
+  management: {
+    users: {
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.list,
+          { params }
+        ),
+
+      getStats: () =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.stats
+        ),
+    },
+  },
+
   // ==================== Transactions ====================
   transactions: {
     review: (id: string, data: { notes?: string }) =>

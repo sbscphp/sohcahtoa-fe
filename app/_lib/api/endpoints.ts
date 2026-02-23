@@ -107,5 +107,11 @@ export const API_ENDPOINTS = {
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },
+    management: {
+      users: {
+        list: "/api/admin/management/users",
+        stats: "/api/admin/management/users/stats",
+      },
+    },
   },
 } as const;

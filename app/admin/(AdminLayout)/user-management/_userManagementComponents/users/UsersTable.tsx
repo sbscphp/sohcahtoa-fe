@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Text, Group, TextInput, Button, Select } from "@mantine/core";
 import { Search, Plus, Upload, ListFilter } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
@@ -11,117 +11,27 @@ import { CreateAdminRoleModal } from "./CreateAdminRoleModal";
 import { AdminRoleCreatedModal } from "./AdminRoleCreatedModal";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useUsers, type AdminUserItem } from "../../hooks/useUsers";
+import { useDebouncedValue } from "@mantine/hooks";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface User {
-  name: string;
-  userId: string;
-  department: string;
-  departmentId: string;
-  email: string;
-  role: string;
-  roleId: string;
-  status: "Active" | "Deactivated";
-}
+const PAGE_SIZE = 10;
 
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const users: User[] = [
-  {
-    name: "Kunle Dairo",
-    userId: "9023",
-    department: "Finance & Accounting",
-    departmentId: "8933",
-    email: "kunle@socahao.com",
-    role: "Finance Role",
-    roleId: "7320",
-    status: "Active",
-  },
-  {
-    name: "Marcus Lee",
-    userId: "9025",
-    department: "Human Resources",
-    departmentId: "8935",
-    email: "john@creativespace.org",
-    role: "Product Manager",
-    roleId: "7322",
-    status: "Deactivated",
-  },
-  {
-    name: "Sofia Wang",
-    userId: "9026",
-    department: "Research & Development",
-    departmentId: "8936",
-    email: "lisa@innovators.com",
-    role: "UX Designer",
-    roleId: "7323",
-    status: "Active",
-  },
-  {
-    name: "Aisha Patel",
-    userId: "9024",
-    department: "Marketing & Sales",
-    departmentId: "8934",
-    email: "maria@designhub.com",
-    role: "Marketing Specialist",
-    roleId: "7321",
-    status: "Deactivated",
-  },
-  {
-    name: "Jamal Rivers",
-    userId: "9027",
-    department: "Customer Support",
-    departmentId: "8937",
-    email: "kunke@innovators.com",
-    role: "Software Designer",
-    roleId: "7324",
-    status: "Active",
-  },
-  {
-    name: "Aisha Patel",
-    userId: "9024",
-    department: "Marketing & Sales",
-    departmentId: "8934",
-    email: "maria@designhub.com",
-    role: "Marketing Specialist",
-    roleId: "7321",
-    status: "Deactivated",
-  },
-];
-
-/* --------------------------------------------
- Component
---------------------------------------------- */
 export default function UsersTable() {
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState("Filter By");
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [confirmRoleOpen, setConfirmRoleOpen] = useState(false);
   const [roleCreatedOpen, setRoleCreatedOpen] = useState(false);
   const router = useRouter();
 
-  /* Filter */
-  const filteredData = useMemo(() => {
-    return users.filter(
-      (user) =>
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.userId.includes(search),
-    );
-  }, [search]);
+  const { users, totalPages, isLoading } = useUsers({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
-
-  /* Headers */
   const headers = [
     { label: "Admin Name", key: "name" },
     { label: "Department", key: "department" },
@@ -131,22 +41,18 @@ export default function UsersTable() {
     { label: "Action", key: "action" },
   ];
 
-  /* Row renderer */
-  const renderRow = (user: User) => [
+  const renderRow = (user: AdminUserItem) => [
     <div key="name">
       <Text fw={500} size="sm">
-        {user.name}
+        {user.fullName}
       </Text>
       <Text size="xs" c="dimmed">
-        ID:{user.userId}
+        ID:{user.id}
       </Text>
     </div>,
 
     <div key="department">
-      <Text size="sm">{user.department}</Text>
-      <Text size="xs" c="dimmed">
-        ID:{user.departmentId}
-      </Text>
+      <Text size="sm">{user.departmentId ?? "—"}</Text>
     </div>,
 
     <Text key="email" size="sm">
@@ -154,20 +60,16 @@ export default function UsersTable() {
     </Text>,
 
     <div key="role">
-      <Text size="sm">{user.role}</Text>
-      <Text size="xs" c="dimmed">
-        ID:{user.roleId}
-      </Text>
+      <Text size="sm">{user.roleId ?? "—"}</Text>
     </div>,
 
-    <StatusBadge key="status" status={user.status} />,
+    <StatusBadge key="status" status={user.isActive ? "Active" : "Deactivated"} />,
 
-    <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(user.userId))} />,
+    <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(user.id))} />,
   ];
 
   return (
     <div className="p-5 bg-white rounded-lg">
-      {/* Header */}
       <Group justify="space-between" mb="md" wrap="wrap">
         <Group>
           <Text fw={600} size="lg">
@@ -178,14 +80,16 @@ export default function UsersTable() {
             placeholder="Enter keyword"
             leftSection={<Search size={16} color="#DD4F05" />}
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
             w={320}
             radius="xl"
           />
         </Group>
 
         <Group>
-          {/* Filter */}
           <Select
             value={filter}
             onChange={(value) => setFilter(value!)}
@@ -214,11 +118,10 @@ export default function UsersTable() {
         </Group>
       </Group>
 
-      {/* Table */}
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={users}
+        loading={isLoading}
         renderItems={renderRow}
         emptyTitle="No Users Found"
         emptyMessage="There are no users available yet."
