@@ -19,7 +19,7 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { CustomerStatus } from "../../../customer/[id]/page";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-import { PermissionRowProps } from "../RolePermissionModal";
+import { PermissionRowProps } from "../../_userManagementComponents/roles/RolePermissionModal";
 
 
 

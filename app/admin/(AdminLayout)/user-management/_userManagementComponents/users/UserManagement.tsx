@@ -1,11 +1,11 @@
 import Image from "next/image";
-import StatCard from "../../../_components/StatCard";
-import gold from "../../../_components/assets/icons/users-orange.png"
-import green from "../../../_components/assets/icons/users-green.png"
-import pink from "../../../_components/assets/icons/users-pink.png"
-import RolesTable from "./RolesTable";
+import StatCard from "../../../../_components/StatCard";
+import gold from "../../../../_components/assets/icons/users-orange.png"
+import green from "../../../../_components/assets/icons/users-green.png"
+import pink from "../../../../_components/assets/icons/users-pink.png"
+import UsersTable from "./UsersTable";
 
-export default function UserRoles() {
+export default function UserManagement() {
     const Icon1 = <div><Image src={gold} alt="icon"/></div>;
         const Icon2 = <div><Image src={green} alt="icon"/></div>;
         const Icon3 = <div><Image src={pink} alt="icon"/></div>;return(
@@ -36,8 +36,9 @@ export default function UserRoles() {
                   
                 </div>
               </div>
-              <div className="mt-6"><RolesTable /></div>
-              
+              <div className="mt-6">
+              <UsersTable />
+              </div>
               
         </>
     )

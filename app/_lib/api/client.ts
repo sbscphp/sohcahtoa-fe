@@ -12,7 +12,10 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data: T;
-  errors?: string[];
+  error?: {
+    code: string;
+    message: string;
+  };
   metadata: Record<string, unknown> | null;
 }
 
