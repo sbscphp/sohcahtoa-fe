@@ -112,6 +112,13 @@ export const adminApi = {
           API_ENDPOINTS.admin.management.users.stats
         ),
     },
+
+    roles: {
+      getStats: () =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.stats
+        ),
+    },
   },
 
   // ==================== Transactions ====================

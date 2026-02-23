@@ -18,6 +18,8 @@ export interface AdminUserItem {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  roleName: string | null;
+  departmentName: string | null;
 }
 
 interface UserListEntry {

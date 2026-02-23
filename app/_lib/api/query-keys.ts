@@ -90,6 +90,7 @@ export const adminKeys = {
     },
     roles: {
       all: () => [...adminKeys.management.all, "roles"] as const,
+      stats: () => [...adminKeys.management.roles.all(), "stats"] as const,
       list: () => [...adminKeys.management.roles.all(), "list"] as const,
       detail: (id: string) => [...adminKeys.management.roles.all(), "detail", id] as const,
     },

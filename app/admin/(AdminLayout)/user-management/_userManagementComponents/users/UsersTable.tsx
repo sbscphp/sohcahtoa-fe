@@ -52,7 +52,10 @@ export default function UsersTable() {
     </div>,
 
     <div key="department">
-      <Text size="sm">{user.departmentId ?? "—"}</Text>
+      <Text size="sm">{user.departmentName ?? "—"}</Text>
+      <Text size="xs" c="dimmed">
+        {user.departmentId ? `ID:${user.departmentId}` : ""}
+      </Text>
     </div>,
 
     <Text key="email" size="sm">
@@ -60,7 +63,10 @@ export default function UsersTable() {
     </Text>,
 
     <div key="role">
-      <Text size="sm">{user.roleId ?? "—"}</Text>
+      <Text size="sm">{user.roleName ?? "—"}</Text>
+      <Text size="xs" c="dimmed">
+        {user.roleId ? `ID:${user.roleId}` : ""}
+      </Text>
     </div>,
 
     <StatusBadge key="status" status={user.isActive ? "Active" : "Deactivated"} />,
