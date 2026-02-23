@@ -4,54 +4,70 @@
  * Usage: useCreateData(customerApi.tourist.createAccount)
  */
 
-import { apiClient } from "@/app/_lib/api/client";
 import type { ApiRequestConfig } from "@/app/_lib/api/client";
-import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
+import { apiClient } from "@/app/_lib/api/client";
 import type {
+  CheckTransactionLimitsRequest,
+  CheckTransactionLimitsResponse,
+  CreateNigerianAccountRequest,
+  CreateTouristAccountRequest,
+  CreateTransactionRequest,
+  DepositConfirmRequest,
+  DepositInitiateRequest,
+  DevicesListResponse,
+  ExchangeRateRequest,
+  ExchangeRateResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  InitializePaymentRequest,
+  InitializePaymentResponse,
   LoginRequest,
   LoginResponse,
-  LoginResponseData,
-  SignupRequest,
-  VerifyBvnRequest,
-  VerifyBvnResponse,
-  VerifyPassportResponse,
+  NotificationPreferencesResponse,
+  NotificationsListResponse,
+  PaginationParams,
+  PassportStatusResponse,
+  PaymentCallbackRequest,
+  ProfileResponse,
+  ReadAllNotificationsResponse,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
+  RegisterDeviceRequest,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+  SendEmailOtpRequestNigerian,
   SendOtpRequest,
   SendOtpRequestNigerian,
   SendOtpRequestTourist,
   SendOtpResponse,
+  SignupRequest,
+  Transaction,
+  TransactionDetail,
+  TransactionListParams,
+  TransactionsListApiResponse,
+  UnreadCountResponse,
+  UpdateNotificationPreferencesRequest,
+  UpdateTransactionRequest,
+  UploadPassportResponse,
+  ValidateEmailOtpRequestNigerian,
+  ValidateEmailOtpResponse,
   ValidateOtpRequest,
   ValidateOtpRequestNigerian,
   ValidateOtpRequestTourist,
   ValidateOtpResponse,
-  SendEmailOtpRequestNigerian,
-  ValidateEmailOtpRequestNigerian,
-  ValidateEmailOtpResponse,
-  CreateNigerianAccountRequest,
-  CreateTouristAccountRequest,
-  RefreshTokenRequest,
-  RefreshTokenResponse,
-  CreateTransactionRequest,
-  Transaction,
-  TransactionDetail,
-  TransactionsListResponse,
-  UpdateTransactionRequest,
-  CheckTransactionLimitsRequest,
-  CheckTransactionLimitsResponse,
-  InitializePaymentRequest,
-  InitializePaymentResponse,
-  PaymentCallbackRequest,
-  ExchangeRateRequest,
-  ExchangeRateResponse,
-  DepositInitiateRequest,
-  DepositConfirmRequest,
+  VerifyBvnRequest,
+  VerifyBvnResponse,
   VerifyKycRequest,
-  PassportStatusResponse,
-  UploadPassportResponse,
-  PaginationParams,
-  TransactionListParams,
-  ApiResponseWrapper,
-  ProfileResponse,
+  VerifyPassportResponse,
+  VerifyResetOtpRequest,
+  VerifyResetOtpResponse,
+  Document,
+  DocumentsListResponse,
+  DocumentUploadResponse,
+  MultipleDocumentsUploadResponse,
+  UploadDocumentsJsonRequest,
 } from "@/app/_lib/api/types";
+import { API_ENDPOINTS } from "./endpoints";
 
 export const customerApi = {
   // ==================== Auth ====================
@@ -70,6 +86,16 @@ export const customerApi = {
 
     profile: () =>
       apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile),
+
+    // Password reset flow
+    forgotPassword: (data: ForgotPasswordRequest) =>
+      apiClient.post<ForgotPasswordResponse>(API_ENDPOINTS.auth.forgotPassword, data, { skipAuth: true }),
+
+    verifyResetOtp: (data: VerifyResetOtpRequest) =>
+      apiClient.post<VerifyResetOtpResponse>(API_ENDPOINTS.auth.verifyResetOtp, data, { skipAuth: true }),
+
+    resetPassword: (data: ResetPasswordRequest) =>
+      apiClient.post<ResetPasswordResponse>(API_ENDPOINTS.auth.resetPassword, data, { skipAuth: true }),
 
     // Nigerian signup flow
     nigerian: {
@@ -143,7 +169,7 @@ export const customerApi = {
   // ==================== Transactions ====================
   transactions: {
     list: (params?: TransactionListParams) =>
-      apiClient.get<TransactionsListResponse>(API_ENDPOINTS.transactions.list, {
+      apiClient.get<TransactionsListApiResponse>(API_ENDPOINTS.transactions.list, {
         params: params as ApiRequestConfig["params"],
       }),
 
@@ -161,6 +187,71 @@ export const customerApi = {
 
     checkLimits: (data: CheckTransactionLimitsRequest) =>
       apiClient.post<CheckTransactionLimitsResponse>(API_ENDPOINTS.transactions.checkLimits, data),
+  },
+
+  // ==================== Notifications ====================
+  notifications: {
+    list: (params?: { limit?: number; offset?: number }) =>
+      apiClient.get<NotificationsListResponse>(API_ENDPOINTS.notifications.list, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    unreadCount: () =>
+      apiClient.get<UnreadCountResponse>(API_ENDPOINTS.notifications.unreadCount),
+
+    markAsRead: (id: string) =>
+      apiClient.post<void>(API_ENDPOINTS.notifications.markAsRead(id)),
+
+    markAllAsRead: () =>
+      apiClient.post<ReadAllNotificationsResponse>(API_ENDPOINTS.notifications.markAllAsRead),
+
+    preferences: {
+      get: () =>
+        apiClient.get<NotificationPreferencesResponse>(API_ENDPOINTS.notifications.preferences.get),
+
+      update: (data: UpdateNotificationPreferencesRequest) =>
+        apiClient.put<NotificationPreferencesResponse>(
+          API_ENDPOINTS.notifications.preferences.update,
+          data
+        ),
+    },
+
+    devices: {
+      list: () =>
+        apiClient.get<DevicesListResponse>(API_ENDPOINTS.notifications.devices.list),
+
+      register: (data: RegisterDeviceRequest) =>
+        apiClient.post<void>(API_ENDPOINTS.notifications.devices.register, data),
+
+      unregister: () =>
+        apiClient.delete<void>(API_ENDPOINTS.notifications.devices.unregister),
+    },
+  },
+
+  // ==================== Documents ====================
+  documents: {
+    upload: (formData: FormData) =>
+      apiClient.post<DocumentUploadResponse>(API_ENDPOINTS.documents.upload, formData),
+
+    uploadMultiple: (formData: FormData) =>
+      apiClient.post<MultipleDocumentsUploadResponse>(API_ENDPOINTS.documents.uploadMultiple, formData),
+
+    uploadMultipleJson: (data: UploadDocumentsJsonRequest) =>
+      apiClient.post<MultipleDocumentsUploadResponse>(API_ENDPOINTS.documents.uploadMultiple, data),
+
+    getById: (id: string) =>
+      apiClient.get<Document>(API_ENDPOINTS.documents.getById(id)),
+
+    delete: (id: string) =>
+      apiClient.delete<void>(API_ENDPOINTS.documents.delete(id)),
+
+    getByTransaction: (transactionId: string) =>
+      apiClient.get<DocumentsListResponse>(API_ENDPOINTS.documents.getByTransaction(transactionId)),
+
+    list: (params?: { userId: string; page?: number; limit?: number }) =>
+      apiClient.get<DocumentsListResponse>(API_ENDPOINTS.documents.list, {
+        params: params as ApiRequestConfig["params"],
+      }),
   },
 
   // ==================== Payments ====================

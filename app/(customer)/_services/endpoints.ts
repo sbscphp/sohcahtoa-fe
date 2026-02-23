@@ -1,10 +1,4 @@
-/**
- * API Endpoints - Centralized endpoint definitions
- * Based on Swagger/OpenAPI documentation
- */
-
 export const API_ENDPOINTS = {
-  // Auth
   auth: {
     signup: "/api/auth/signup",
     login: "/api/auth/login",
@@ -13,27 +7,34 @@ export const API_ENDPOINTS = {
     profile: "/api/auth/profile",
     health: "/api/auth/health",
     
-    // Nigerian signup flow
+    forgotPassword: "/api/auth/forgot-password",
+    verifyResetOtp: "/api/auth/verify-reset-otp",
+    resetPassword: "/api/auth/reset-password",
+    
     nigerian: {
       verifyBvn: "/api/auth/signup/nigerian/verify-bvn",
       sendOtp: "/api/auth/signup/nigerian/send-otp",
+      resendOtp: "/api/auth/signup/nigerian/resend-otp",
+      validateOtp: "/api/auth/signup/nigerian/validate-otp",
+      sendEmailOtp: "/api/auth/signup/nigerian/send-email-otp",
+      resendEmailOtp: "/api/auth/signup/nigerian/resend-email-otp",
+      validateEmailOtp: "/api/auth/signup/nigerian/validate-email-otp",
       createAccount: "/api/auth/signup/nigerian/create-account",
     },
     
-    // Tourist signup flow
     tourist: {
       verifyPassport: "/api/auth/signup/tourist/verify-passport",
       sendOtp: "/api/auth/signup/tourist/send-otp",
+      resendOtp: "/api/auth/signup/tourist/resend-otp",
+      validateOtp: "/api/auth/signup/tourist/validate-otp",
       createAccount: "/api/auth/signup/tourist/create-account",
     },
     
-    // OTP
     otp: {
       send: "/api/auth/otp/send",
       validate: "/api/auth/otp/validate",
     },
     
-    // KYC
     kyc: {
       verify: "/api/auth/kyc/verify",
       passport: {
@@ -45,13 +46,13 @@ export const API_ENDPOINTS = {
   
   // Transactions
   transactions: {
-    list: "/api/transactions",
-    create: "/api/transactions",
-    getById: (id: string) => `/api/transactions/${id}`,
-    update: (id: string) => `/api/transactions/${id}`,
-    uploadDocuments: (id: string) => `/api/transactions/${id}/documents`,
-    checkLimits: "/api/transactions/limits/check",
-    health: "/api/transactions/health",
+    list: "/api/customer/transactions",
+    create: "/api/customer/transactions",
+    getById: (id: string) => `/api/customer/transactions/${id}`,
+    update: (id: string) => `/api/customer/transactions/${id}`,
+    uploadDocuments: (id: string) => `/api/customer/transactions/${id}/documents`,
+    checkLimits: "/api/customer/transactions/limits/check",
+    health: "/api/customer/transactions/health",
   },
   
   // Payments
@@ -68,5 +69,32 @@ export const API_ENDPOINTS = {
     },
     settlement: (transactionId: string) => `/api/payments/settlement/${transactionId}`,
     health: "/api/payments/health",
+  },
+  
+  // Notifications
+  notifications: {
+    list: "/api/notifications",
+    unreadCount: "/api/notifications/unread/count",
+    markAsRead: (id: string) => `/api/notifications/${id}/read`,
+    markAllAsRead: "/api/notifications/read-all",
+    preferences: {
+      get: "/api/notifications/preferences",
+      update: "/api/notifications/preferences",
+    },
+    devices: {
+      list: "/api/notifications/devices",
+      register: "/api/notifications/devices",
+      unregister: "/api/notifications/devices",
+    },
+  },
+  
+  // Documents
+  documents: {
+    upload: "/api/documents/upload",
+    uploadMultiple: "/api/documents/upload/multiple",
+    getById: (id: string) => `/api/documents/${id}`,
+    delete: (id: string) => `/api/documents/${id}`,
+    getByTransaction: (transactionId: string) => `/api/documents/transaction/${transactionId}`,
+    list: "/api/documents",
   },
 } as const;

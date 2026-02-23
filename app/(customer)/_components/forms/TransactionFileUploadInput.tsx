@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { FileAddIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -30,22 +30,24 @@ export default function TransactionFileUploadInput({
   supportingText ="PDF, PNG, IMG, JPG Supported. Max. size: 5 MB",
 }: TransactionFileUploadInputProps) {
   const isImage = value?.type.startsWith("image/");
-  
-  const previewUrl = useMemo(() => {
-    if (value && isImage) {
-      return URL.createObjectURL(value);
-    }
-    return null;
-  }, [value, isImage]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Cleanup blob URL when component unmounts or value changes
+  // Create a fresh blob URL whenever we have a file (so preview works after going back)
   useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
+    if (!value || !isImage) {
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      return () => {};
+    }
+    const url = URL.createObjectURL(value);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
+    return () => URL.revokeObjectURL(url);
+  }, [value, isImage]);
 
   const handleFileDrop = (files: FileWithPath[]) => {
     if (files.length > 0) {

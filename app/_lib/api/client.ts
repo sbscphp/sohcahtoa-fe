@@ -1,6 +1,4 @@
-/**
- * Uses native fetch API (works in both client and server components)
- */
+import { performLogout } from './auth-logout';
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -145,6 +143,12 @@ class ApiClient {
       // Handle non-OK responses
       if (!response.ok) {
         const error = await this.handleError(response);
+        
+        // Handle 401 Unauthorized - log user out
+        if (response.status === 401 && typeof window !== 'undefined') {
+          performLogout();
+        }
+        
         throw error;
       }
 

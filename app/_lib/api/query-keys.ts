@@ -39,6 +39,27 @@ export const customerKeys = {
     all: ["customer", "kyc"] as const,
     passportStatus: () => [...customerKeys.kyc.all, "passport", "status"] as const,
   },
+  
+  notifications: {
+    all: ["customer", "notifications"] as const,
+    lists: () => [...customerKeys.notifications.all, "list"] as const,
+    list: (params?: { limit?: number; offset?: number }) =>
+      [...customerKeys.notifications.lists(), params] as const,
+    unreadCount: () => [...customerKeys.notifications.all, "unread-count"] as const,
+    preferences: () => [...customerKeys.notifications.all, "preferences"] as const,
+    devices: () => [...customerKeys.notifications.all, "devices"] as const,
+  },
+  
+  documents: {
+    all: ["customer", "documents"] as const,
+    lists: () => [...customerKeys.documents.all, "list"] as const,
+    list: (params?: { userId: string; page?: number; limit?: number }) =>
+      [...customerKeys.documents.lists(), params] as const,
+    details: () => [...customerKeys.documents.all, "detail"] as const,
+    detail: (id: string) => [...customerKeys.documents.details(), id] as const,
+    byTransaction: (transactionId: string) =>
+      [...customerKeys.documents.all, "transaction", transactionId] as const,
+  },
 } as const;
 
 // ==================== Admin Query Keys ====================

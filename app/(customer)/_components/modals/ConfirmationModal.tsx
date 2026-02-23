@@ -18,6 +18,8 @@ interface ConfirmationModalProps {
   variant?: "warning" | "info" | "danger";
   /** When true, user must check "I confirm that the information I have provided is correct" before continuing. */
   requireInfoConfirmation?: boolean;
+  /** Show loading state on confirm button */
+  loading?: boolean;
 }
 
 export function ConfirmationModal({
@@ -31,6 +33,7 @@ export function ConfirmationModal({
   onCancel,
   variant = "warning",
   requireInfoConfirmation = false,
+  loading = false,
 }: ConfirmationModalProps) {
   const [infoConfirmed, setInfoConfirmed] = useState(false);
 
@@ -108,7 +111,8 @@ export function ConfirmationModal({
             variant="filled"
             fullWidth
             radius="xl"
-            disabled={!canConfirm}
+            disabled={!canConfirm || loading}
+            loading={loading}
             className="h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6 disabled:opacity-50"
           >
             {confirmLabel}
@@ -118,6 +122,7 @@ export function ConfirmationModal({
             variant="outline"
             fullWidth
             radius="xl"
+            disabled={loading}
             className="h-[52px] min-h-[52px] py-3.5 px-6 bg-white border border-[#CCCACA] text-[#4D4B4B] font-medium text-base leading-6 hover:bg-gray-50"
           >
             {cancelLabel}
