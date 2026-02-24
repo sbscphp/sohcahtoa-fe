@@ -5,6 +5,11 @@ import Link from "next/link";
 import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { Avatar, Popover } from "@mantine/core";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { customerKeys } from "@/app/_lib/api/query-keys";
 import { NotificationsPanel } from "../notifications";
 import TransactionHeader from "../transactions/TransactionHeader";
 import type { BreadcrumbItem } from "@/app/(customer)/_utils/transaction-flow";
@@ -28,6 +33,23 @@ export default function CustomerHeader({
 }: CustomerHeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const userProfile = useAtomValue(userProfileAtom);
+
+  // Fetch unread notification count
+  const { data: unreadCountResponse } = useFetchData(
+    [...customerKeys.notifications.unreadCount()],
+    () => customerApi.notifications.unreadCount()
+  );
+
+  const unreadCount = unreadCountResponse?.data?.count as number || 0;
+
+  // Get user display info from profile
+  const displayName = userProfile?.profile?.fullName || 
+    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
+    userProfile?.email?.split('@')[0] ||
+    'User';
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
+
 
   return (
     <header className="h-16 bg-white border-b border-gray-50 px-6 flex items-center justify-between w-full relative">
@@ -79,9 +101,11 @@ export default function CustomerHeader({
               className="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-50 transition-colors hover:bg-gray-50"
             >
               <Bell size={16} className="text-body-text-300" />
-              <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
-                2
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
           </Popover.Target>
           <Popover.Dropdown className="rounded-2xl border border-gray-100 p-0" p={0} m={0}>
@@ -97,7 +121,7 @@ export default function CustomerHeader({
           href="/settings"
           className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50"
         >
-          <Avatar name="Michael Smith" color="initials" size={40} radius="xl" />
+          <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl"/>
           {!collapsed &&
             !isMobile &&
             <ChevronDown size={16} className="text-primary-400" />}

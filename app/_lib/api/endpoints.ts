@@ -48,6 +48,11 @@ export const API_ENDPOINTS = {
         status: "/api/auth/kyc/passport/status",
       },
     },
+    
+    // Password reset flow
+    forgotPassword: "/api/auth/forgot-password",
+    verifyResetOtp: "/api/auth/verify-reset-otp",
+    resetPassword: "/api/auth/reset-password",
   },
   
   // Transactions

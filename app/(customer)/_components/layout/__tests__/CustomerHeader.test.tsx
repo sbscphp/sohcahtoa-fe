@@ -1,13 +1,75 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, userEvent } from "@/test-utils";
 import CustomerHeader from "../CustomerHeader";
 
+// Mock the API hooks
+vi.mock("@/app/_lib/api/hooks", () => ({
+  useFetchData: vi.fn(),
+}));
+
+// Mock jotai
+vi.mock("jotai", () => ({
+  useAtomValue: vi.fn(() => ({
+    profile: {
+      firstName: "Test",
+      lastName: "User",
+      email: "test@example.com",
+    },
+    email: "test@example.com",
+  })),
+}));
+
+// Mock Mantine hooks
+vi.mock("@mantine/hooks", () => ({
+  useMediaQuery: vi.fn(() => false),
+}));
+
+import { useFetchData } from "@/app/_lib/api/hooks";
+
 describe("CustomerHeader", () => {
-  it("renders notification badge and avatar", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default mock: no unread notifications
+    vi.mocked(useFetchData).mockReturnValue({
+      data: { data: { count: 0 } },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+  });
+
+  it("renders notification badge when there are unread notifications", () => {
+    vi.mocked(useFetchData).mockReturnValue({
+      data: { data: { count: 2 } },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+
     render(
       <CustomerHeader collapsed={false} setCollapsed={vi.fn()} />
     );
     expect(screen.getByText("2")).toBeInTheDocument();
+  });
+
+  it("does not render notification badge when there are no unread notifications", () => {
+    vi.mocked(useFetchData).mockReturnValue({
+      data: { data: { count: 0 } },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+
+    render(
+      <CustomerHeader collapsed={false} setCollapsed={vi.fn()} />
+    );
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 
   it("renders title when provided", () => {

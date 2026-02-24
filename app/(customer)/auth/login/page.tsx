@@ -10,14 +10,13 @@ import { ArrowUpRight } from 'lucide-react';
 import { useCreateData } from '@/app/_lib/api/hooks';
 import { customerApi } from '@/app/(customer)/_services/customer-api';
 import { handleApiError } from '@/app/_lib/api/error-handler';
-import { authTokensAtom, userProfileAtom } from '@/app/_lib/atoms/auth-atom';
-import type { UserProfile } from '@/app/_lib/api/types';
-import { normalizeProfile, setProfileInStorage } from '@/app/(customer)/_utils/auth-profile';
+import { authTokensAtom } from '@/app/_lib/atoms/auth-atom';
+import { apiClient } from '@/app/_lib/api/client';
+import { clearTemporaryAuthData } from '@/app/(customer)/_utils/auth-flow';
 
 export default function LoginPage() {
   const router = useRouter();
   const [, setAuthTokens] = useAtom(authTokensAtom);
-  const [, setUserProfile] = useAtom(userProfileAtom);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,80 +35,23 @@ export default function LoginPage() {
       {
         onSuccess: async (response) => {
           if (response.success && response.data) {
+            const { accessToken, refreshToken } = response.data;
+            
             // Store tokens first so the profile request is authenticated
             setAuthTokens({
-              accessToken: response.data.accessToken,
-              refreshToken: response.data.refreshToken,
+              accessToken,
+              refreshToken,
             });
-            sessionStorage.setItem('accessToken', response.data.accessToken);
-            sessionStorage.setItem('refreshToken', response.data.refreshToken);
+            sessionStorage.setItem('accessToken', accessToken);
+            sessionStorage.setItem('refreshToken', refreshToken);
 
-            // Fetch full profile from GET /api/auth/profile (source of truth for user)
-            try {
-              const profileRes = await customerApi.auth.profile();
-              if (profileRes.success && profileRes.data) {
-                const profile = normalizeProfile(profileRes.data);
-                setUserProfile(profile);
-                setProfileInStorage(profile);
-              } else {
-                // Fallback: use login user so UI still has something
-                const loginUser = response.data.user;
-                const fallback: UserProfile = {
-                  id: loginUser.id,
-                  email: loginUser.email,
-                  phoneNumber: loginUser.phoneNumber,
-                  role: loginUser.role || 'CUSTOMER',
-                  customerType: loginUser.customerType,
-                  isActive: loginUser.isActive ?? true,
-                  emailVerified: false,
-                  phoneVerified: false,
-                  createdAt: loginUser.createdAt || new Date().toISOString(),
-                  updatedAt: loginUser.createdAt || new Date().toISOString(),
-                  profile: {
-                    firstName: loginUser.firstName,
-                    lastName: loginUser.lastName,
-                  },
-                  kyc: {
-                    status: loginUser.kycStatus || 'PENDING',
-                    bvnVerified: false,
-                    tinVerified: false,
-                    passportVerified: false,
-                  },
-                  permissions: [],
-                };
-                setUserProfile(fallback);
-                setProfileInStorage(fallback);
-              }
-            } catch {
-              // Fallback to login user if profile request fails
-              const loginUser = response.data.user;
-              const fallback: UserProfile = {
-                id: loginUser.id,
-                email: loginUser.email,
-                phoneNumber: loginUser.phoneNumber,
-                role: loginUser.role || 'CUSTOMER',
-                customerType: loginUser.customerType,
-                isActive: loginUser.isActive ?? true,
-                emailVerified: false,
-                phoneVerified: false,
-                createdAt: loginUser.createdAt || new Date().toISOString(),
-                updatedAt: loginUser.createdAt || new Date().toISOString(),
-                profile: {
-                  firstName: loginUser.firstName,
-                  lastName: loginUser.lastName,
-                },
-                kyc: {
-                  status: loginUser.kycStatus || 'PENDING',
-                  bvnVerified: false,
-                  tinVerified: false,
-                  passportVerified: false,
-                },
-                permissions: [],
-              };
-              setUserProfile(fallback);
-              setProfileInStorage(fallback);
-            }
+            // Update API client token getter immediately
+            apiClient.setAuthTokenGetter(() => accessToken);
 
+            // Clear any leftover onboarding/reset password data since user is now authenticated
+            clearTemporaryAuthData();
+
+            // Redirect to dashboard - AuthProfileSync will fetch profile automatically
             router.push('/dashboard');
           } else {
             handleApiError(

@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
-import { authTokensAtom, userProfileAtom, USER_PROFILE_STORAGE_KEY } from "@/app/_lib/atoms/auth-atom";
+import { authTokensAtom, userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { performLogout } from "@/app/_lib/api/auth-logout";
 import { collapsed_logo, logo } from "@/app/assets/asset";
 import { Logout01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -31,26 +33,33 @@ const menuItems = [
 export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [, setAuthTokens] = useAtom(authTokensAtom);
-  const [, setUserProfile] = useAtom(userProfileAtom);
+  const [userProfile] = useAtom(userProfileAtom);
   const [logoutModalOpened, { open: openLogoutModal, close: closeLogoutModal }] = useDisclosure(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const displayName = userProfile?.profile?.fullName || 
+    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
+    userProfile?.email?.split('@')[0] ||
+    'User';
+  const displayEmail = userProfile?.email || '';
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
+
+  const handlePerformLogout = useCallback(() => {
+    closeLogoutModal();
+    performLogout(router);
+  }, [router, closeLogoutModal]);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await customerApi.auth.logout();
     } catch (error) {
       handleApiError(error);
-    } finally {
-      setAuthTokens({ accessToken: null, refreshToken: null });
-      setUserProfile(null);
-      sessionStorage.removeItem('accessToken');
-      sessionStorage.removeItem('refreshToken');
-      sessionStorage.removeItem('userInfo');
-      sessionStorage.removeItem(USER_PROFILE_STORAGE_KEY);
-
-      closeLogoutModal();
-      router.push('/auth/login');
+      setIsLoggingOut(false);
+      return;
     }
+    
+    handlePerformLogout();
   };
 
   return (
@@ -144,14 +153,14 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
             }}
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
-              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
+              <Avatar src={avatarUrl} name={displayName} color="initials"/>
             </div>
             <div className="min-w-0 flex-1 overflow-hidden text-left">
               <p className="truncate text-xs font-medium text-body-heading-300">
-                Michael Smith
+                {displayName}
               </p>
               <p className="truncate text-xs text-body-text-100">
-                michaelsmith12@gmail.com
+                {displayEmail}
               </p>
             </div>
           </UnstyledButton>
@@ -193,6 +202,7 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
         cancelLabel="No, Cancel"
         onConfirm={handleLogout}
         variant="warning"
+        loading={isLoggingOut}
       />
     </aside>
   );
