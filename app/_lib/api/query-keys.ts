@@ -106,6 +106,10 @@ export const adminKeys = {
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,
       stats: () => [...adminKeys.management.users.all(), "stats"] as const,
+      details: () => [...adminKeys.management.users.all(), "detail"] as const,
+      detail: (id: string) => [...adminKeys.management.users.details(), id] as const,
+      activities: (id: string, params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.users.all(), "activities", id, params] as const,
       list: (params?: { page?: number; limit?: number; search?: string }) =>
         [...adminKeys.management.users.all(), "list", params] as const,
     },

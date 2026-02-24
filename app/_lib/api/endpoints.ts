@@ -116,6 +116,8 @@ export const API_ENDPOINTS = {
       users: {
         list: "/api/admin/management/users",
         stats: "/api/admin/management/users/stats",
+        getById: (id: string) => `/api/admin/management/users/${id}`,
+        activities: (id: string) => `/api/admin/management/users/${id}/activities`,
       },
       roles: {
         list: "/api/admin/management/roles",

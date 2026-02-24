@@ -10,6 +10,7 @@ import {
   Divider,
   Button,
 } from "@mantine/core";
+import { X } from "lucide-react";
 import { useState } from "react";
 
 interface AddUserModalProps {
@@ -47,21 +48,25 @@ export function AddUserModal({
       opened={opened}
       onClose={onClose}
       centered
-      size="lg"
+      size="xl"
       radius="md"
-      withCloseButton={false}
+      title={
+        <Text className="text-body-heading-300! text-xl! font-bold! leading-tight!">
+          Add a New User
+        </Text>
+      }
+      closeButtonProps={{
+        icon: (
+          <X
+            size={20}
+            className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!"
+          />
+        ),
+      }}
     >
-      {/* Header */}
-      <Group justify="space-between">
-        <Text fw={600}>Add a New User</Text>
-        <Button variant="subtle" onClick={onClose}>
-          ✕
-        </Button>
-      </Group>
+      <Divider my="xs" />
 
-      <Divider my="sm" />
-
-      <Stack gap="md">
+      <Stack gap="md" mt="lg">
         <Group grow>
           <TextInput
             label="Full Name"
@@ -110,48 +115,53 @@ export function AddUserModal({
             label="Branch"
             placeholder="Select an Option"
             required
-            data={["Lagos Branch", "Abuja Branch", "Port Harcourt Branch", "Lagos State Branch"]}
+            data={[
+              "Lagos Branch",
+              "Abuja Branch",
+              "Port Harcourt Branch",
+              "Lagos State Branch",
+            ]}
             value={form.branch}
             onChange={(value) =>
               setForm({ ...form, branch: value! })
             }
           />
 
-          <Select
-            label="Department"
-            placeholder="Select an Option"
-            required
-            data={[
-              "Finance & Accounting",
-              "Audit",
-              "Technology",
-              "Sales & Marketing",
-            ]}
-            value={form.department}
-            onChange={(value) =>
-              setForm({ ...form, department: value! })
-            }
-          />
+          <Stack gap={4}>
+            <Select
+              label="Department"
+              placeholder="Select an Option"
+              required
+              data={[
+                "Finance & Accounting",
+                "Audit",
+                "Technology",
+                "Sales & Marketing",
+              ]}
+              value={form.department}
+              onChange={(value) =>
+                setForm({ ...form, department: value! })
+              }
+            />
+            <Text size="xs" c="dimmed">
+              A corresponding department within a branch
+            </Text>
+          </Stack>
         </Group>
 
-        <TextInput
-          label="Position"
-          placeholder="Enter position name"
-          value={form.position}
-          onChange={(e) =>
-            setForm({ ...form, position: e.target.value })
-          }
-        />
-        
-
-        <Text
-          size="xs"
-          c="orange"
-          className="cursor-pointer"
-          onClick={onCreateRole}
-        >
-          + Create Admin Role
-        </Text>
+        <Stack gap={4}>
+          <TextInput
+            label="Position"
+            placeholder="Enter position name"
+            value={form.position}
+            onChange={(e) =>
+              setForm({ ...form, position: e.target.value })
+            }
+          />
+          <Text size="xs" c="dimmed">
+            Position user hold in the company
+          </Text>
+        </Stack>
 
         <Select
           label="Admin Role"
@@ -172,7 +182,6 @@ export function AddUserModal({
 
       <Divider my="lg" />
 
-      {/* Footer */}
       <Group justify="flex-end">
         <Button variant="outline" radius="xl" onClick={onClose}>
           Close
@@ -183,6 +192,11 @@ export function AddUserModal({
           radius="xl"
           disabled={!isValid}
           onClick={onCreateRole}
+          styles={{
+            root: {
+              minWidth: 120,
+            },
+          }}
         >
           Add User
         </Button>

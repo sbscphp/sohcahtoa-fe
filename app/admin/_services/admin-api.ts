@@ -107,6 +107,17 @@ export const adminApi = {
           { params }
         ),
 
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.getById(id)
+        ),
+
+      getActivities: (id: string, params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.activities(id),
+          { params }
+        ),
+
       getStats: () =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.stats
