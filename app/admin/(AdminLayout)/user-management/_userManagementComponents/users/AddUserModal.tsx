@@ -11,42 +11,104 @@ import {
   Button,
 } from "@mantine/core";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useForm } from "@mantine/form";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import {
+  adminApi,
+  type CreateAdminUserPayload,
+} from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { useManagementLookups } from "../../hooks/useManagementLookups";
 
 interface AddUserModalProps {
   opened: boolean;
   onClose: () => void;
-  onCreateRole: () => void;
 }
 
-export function AddUserModal({
-  opened,
-  onClose,
-  onCreateRole,
-}: AddUserModalProps) {
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    phone1: "",
-    phone2: "",
-    branch: "",
-    department: "",
-    position: "",
-    role: "",
+const initialValues = {
+  fullName: "",
+  email: "",
+  phoneNumber: "",
+  altPhoneNumber: "",
+  branch: "",
+  departmentId: "",
+  position: "",
+  roleId: "",
+};
+
+export function AddUserModal({ opened, onClose }: AddUserModalProps) {
+  const queryClient = useQueryClient();
+  const { options: roleOptions, isLoading: rolesLoading } = useManagementLookups("role");
+  const { options: departmentOptions, isLoading: departmentsLoading } =
+    useManagementLookups("department");
+  const form = useForm({
+    initialValues,
+    validate: {
+      fullName: (value) => (value.trim().length ? null : "Full Name is required"),
+      email: (value) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+          ? null
+          : "Valid email is required",
+      phoneNumber: (value) =>
+        value.trim().length ? null : "Phone Number 1 is required",
+      branch: (value) => (value ? null : "Branch is required"),
+      departmentId: (value) => (value ? null : "Department is required"),
+      roleId: (value) => (value ? null : "Admin Role is required"),
+    },
   });
 
-  const isValid =
-    form.fullName &&
-    form.email &&
-    form.phone1 &&
-    form.branch &&
-    form.department &&
-    form.role;
+  const createUserMutation = useCreateData(adminApi.management.users.create, {
+    onSuccess: async () => {
+      notifications.show({
+        title: "User Created",
+        message: "Admin user has been created successfully.",
+        color: "green",
+      });
+      form.reset();
+      onClose();
+      await queryClient.invalidateQueries({
+        queryKey: [...adminKeys.management.users.all()],
+      });
+    },
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+      notifications.show({
+        title: "Create User Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create admin user. Please try again.",
+        color: "red",
+      });
+    },
+  });
+
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
+
+  const handleSubmit = (values: typeof initialValues) => {
+    const payload: CreateAdminUserPayload = {
+      fullName: values.fullName.trim(),
+      email: values.email.trim(),
+      phoneNumber: values.phoneNumber.trim(),
+      altPhoneNumber: values.altPhoneNumber.trim() || null,
+      position: values.position.trim() || null,
+      branch: values.branch,
+      departmentId: values.departmentId,
+      roleId: values.roleId,
+    };
+    createUserMutation.mutate(payload);
+  };
 
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={handleClose}
       centered
       size="xl"
       radius="md"
@@ -66,141 +128,127 @@ export function AddUserModal({
     >
       <Divider my="xs" />
 
-      <Stack gap="md" mt="lg">
-        <Group grow>
-          <TextInput
-            label="Full Name"
-            placeholder="Enter Full Name"
-            required
-            value={form.fullName}
-            onChange={(e) =>
-              setForm({ ...form, fullName: e.target.value })
-            }
-          />
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md" mt="lg">
+          <Group grow>
+            <TextInput
+              label="Full Name"
+              placeholder="Enter Full Name"
+              required
+              {...form.getInputProps("fullName")}
+            />
 
-          <TextInput
-            label="Email Address"
-            placeholder="example@email.com"
-            required
-            value={form.email}
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
-          />
-        </Group>
+            <TextInput
+              label="Email Address"
+              placeholder="example@email.com"
+              required
+              {...form.getInputProps("email")}
+            />
+          </Group>
 
-        <Group grow>
-          <TextInput
-            label="Phone Number 1"
-            placeholder="+234 00 0000 0000"
-            required
-            value={form.phone1}
-            onChange={(e) =>
-              setForm({ ...form, phone1: e.target.value })
-            }
-          />
+          <Group grow>
+            <TextInput
+              label="Phone Number 1"
+              placeholder="+234 00 0000 0000"
+              required
+              {...form.getInputProps("phoneNumber")}
+            />
 
-          <TextInput
-            label="Phone Number 2 (optional)"
-            placeholder="+234 00 0000 0000"
-            value={form.phone2}
-            onChange={(e) =>
-              setForm({ ...form, phone2: e.target.value })
-            }
-          />
-        </Group>
+            <TextInput
+              label="Phone Number 2 (optional)"
+              placeholder="+234 00 0000 0000"
+              {...form.getInputProps("altPhoneNumber")}
+            />
+          </Group>
 
-        <Group grow>
-          <Select
-            label="Branch"
-            placeholder="Select an Option"
-            required
-            data={[
-              "Lagos Branch",
-              "Abuja Branch",
-              "Port Harcourt Branch",
-              "Lagos State Branch",
-            ]}
-            value={form.branch}
-            onChange={(value) =>
-              setForm({ ...form, branch: value! })
-            }
-          />
-
-          <Stack gap={4}>
+          <Group grow>
             <Select
-              label="Department"
+              label="Branch"
               placeholder="Select an Option"
               required
               data={[
-                "Finance & Accounting",
-                "Audit",
-                "Technology",
-                "Sales & Marketing",
+                "Lagos Branch",
+                "Abuja Branch",
+                "Port Harcourt Branch",
+                "Lagos State Branch",
               ]}
-              value={form.department}
-              onChange={(value) =>
-                setForm({ ...form, department: value! })
-              }
+              value={form.values.branch}
+              onChange={(value) => form.setFieldValue("branch", value ?? "")}
+              error={form.errors.branch}
+            />
+
+            <Stack gap={4}>
+              <Select
+                label="Department"
+                placeholder="Select an Option"
+                required
+                data={departmentOptions}
+                disabled={departmentsLoading}
+                searchable
+                value={form.values.departmentId}
+                onChange={(value) =>
+                  form.setFieldValue("departmentId", value ?? "")
+                }
+                error={form.errors.departmentId}
+              />
+              <Text size="xs" c="dimmed">
+                A corresponding department within a branch
+              </Text>
+            </Stack>
+          </Group>
+
+          <Stack gap={4}>
+            <TextInput
+              label="Position"
+              placeholder="Enter position name"
+              {...form.getInputProps("position")}
             />
             <Text size="xs" c="dimmed">
-              A corresponding department within a branch
+              Position user hold in the company
             </Text>
           </Stack>
-        </Group>
 
-        <Stack gap={4}>
-          <TextInput
-            label="Position"
-            placeholder="Enter position name"
-            value={form.position}
-            onChange={(e) =>
-              setForm({ ...form, position: e.target.value })
-            }
+          <Select
+            label="Admin Role"
+            placeholder="Search or select option"
+            required
+          data={roleOptions}
+          disabled={rolesLoading}
+          searchable
+            value={form.values.roleId}
+            onChange={(value) => form.setFieldValue("roleId", value ?? "")}
+            error={form.errors.roleId}
           />
-          <Text size="xs" c="dimmed">
-            Position user hold in the company
-          </Text>
         </Stack>
 
-        <Select
-          label="Admin Role"
-          placeholder="Search or select option"
-          required
-          data={[
-            "Management Role",
-            "Audit and Internal Control Role",
-            "Sales Role",
-            "Marketing Role",
-          ]}
-          value={form.role}
-          onChange={(value) =>
-            setForm({ ...form, role: value! })
-          }
-        />
-      </Stack>
+        <Divider my="lg" />
 
-      <Divider my="lg" />
+        <Group justify="flex-end">
+          <Button
+            variant="outline"
+            radius="xl"
+            onClick={handleClose}
+            disabled={createUserMutation.isPending}
+          >
+            Close
+          </Button>
 
-      <Group justify="flex-end">
-        <Button variant="outline" radius="xl" onClick={onClose}>
-          Close
-        </Button>
-
-        <Button
-          color="orange"
-          radius="xl"
-          disabled={!isValid}
-          onClick={onCreateRole}
-          styles={{
-            root: {
-              minWidth: 120,
-            },
-          }}
-        >
-          Add User
-        </Button>
-      </Group>
+          <Button
+            type="submit"
+            color="orange"
+            radius="xl"
+            disabled={!form.isValid()}
+            loading={createUserMutation.isPending}
+            styles={{
+              root: {
+                minWidth: 120,
+              },
+            }}
+          >
+            Add User
+          </Button>
+        </Group>
+      </form>
     </Modal>
   );
 }

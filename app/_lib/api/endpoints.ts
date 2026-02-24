@@ -113,6 +113,7 @@ export const API_ENDPOINTS = {
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },
     management: {
+      lookups: "/api/admin/management/lookups",
       users: {
         list: "/api/admin/management/users",
         stats: "/api/admin/management/users/stats",

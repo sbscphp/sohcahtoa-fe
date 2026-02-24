@@ -7,8 +7,6 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { AddUserModal } from "./AddUserModal";
-import { CreateAdminRoleModal } from "./CreateAdminRoleModal";
-import { AdminRoleCreatedModal } from "./AdminRoleCreatedModal";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useUsers, type AdminUserItem } from "../../hooks/useUsers";
@@ -22,8 +20,6 @@ export default function UsersTable() {
   const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState("Filter By");
   const [addUserOpen, setAddUserOpen] = useState(false);
-  const [confirmRoleOpen, setConfirmRoleOpen] = useState(false);
-  const [roleCreatedOpen, setRoleCreatedOpen] = useState(false);
   const router = useRouter();
 
   const { users, totalPages, isLoading } = useUsers({
@@ -143,24 +139,6 @@ export default function UsersTable() {
       <AddUserModal
         opened={addUserOpen}
         onClose={() => setAddUserOpen(false)}
-        onCreateRole={() => {
-          setAddUserOpen(false);
-          setConfirmRoleOpen(true);
-        }}
-      />
-
-      <CreateAdminRoleModal
-        opened={confirmRoleOpen}
-        onClose={() => setConfirmRoleOpen(false)}
-        onConfirm={() => {
-          setConfirmRoleOpen(false);
-          setRoleCreatedOpen(true);
-        }}
-      />
-
-      <AdminRoleCreatedModal
-        opened={roleCreatedOpen}
-        onClose={() => setRoleCreatedOpen(false)}
       />
     </div>
   );
