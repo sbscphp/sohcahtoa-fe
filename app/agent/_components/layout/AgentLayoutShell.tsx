@@ -6,6 +6,12 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AgentHeader from "./AgentHeader";
 import AgentSidebar from "./AgentSidebar";
+import TransactionHeader from "@/app/(customer)/_components/transactions/TransactionHeader";
+
+type BreadcrumbItem = {
+  label: string;
+  href?: string;
+};
 
 const HEADER_HEIGHT = 64;
 
@@ -56,8 +62,72 @@ function AgentLayoutShellContent({
       return "Support";
     }
     if (pathname?.startsWith("/agent/rate-calculator")) return "Rate Calculator";
-    if (pathname?.startsWith("/agent/settings")) return "Settings";
+    if (pathname?.startsWith("/agent/settings")) {
+      if (pathname === "/agent/settings") return "Setting";
+      if (pathname.includes("/account-information")) return "Setting: Account Information";
+      if (pathname.includes("/change-password")) return "Setting: Change Password";
+      if (pathname.includes("/notifications")) {
+        if (pathname.includes("/notifications/settings")) return "Setting: Notifications settings";
+        return "Setting: Notification";
+      }
+      if (pathname.includes("/account-security")) {
+        if (pathname.includes("/set-security-question")) return "Setting: Set Security Question";
+        if (pathname.includes("/verify-security-question")) return "Setting: Security Verification";
+        return "Setting: Account Security";
+      }
+      return "Setting";
+    }
     return "Dashboard";
+  };
+
+  const getBreadcrumbs = () => {
+    if (pathname?.startsWith("/agent/settings")) {
+      if (pathname === "/agent/settings") return undefined;
+      if (pathname.includes("/account-information")) {
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Account Information", href: undefined },
+        ];
+      }
+      if (pathname.includes("/change-password")) {
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Change Password", href: undefined },
+        ];
+      }
+      if (pathname.includes("/notifications")) {
+        if (pathname.includes("/notifications/settings")) {
+          return [
+            { label: "Setting", href: "/agent/settings" },
+            { label: "Notifications settings", href: undefined },
+          ];
+        }
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Notification", href: undefined },
+        ];
+      }
+      if (pathname.includes("/account-security")) {
+        if (pathname.includes("/set-security-question")) {
+          return [
+            { label: "Setting", href: "/agent/settings" },
+            { label: "Set security question", href: undefined },
+          ];
+        }
+        if (pathname.includes("/verify-security-question")) {
+          return [
+            { label: "Setting", href: "/agent/settings" },
+            { label: "Account Security", href: "/agent/settings/account-security" },
+            { label: "Security Verification", href: undefined },
+          ];
+        }
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Account Security", href: undefined },
+        ];
+      }
+    }
+    return undefined;
   };
 
   return (
@@ -94,9 +164,11 @@ function AgentLayoutShellContent({
       >
         <AgentHeader
           collapsed={collapsed}
-          title={getPageTitle()}
+          title={getBreadcrumbs() ? undefined : getPageTitle()}
           setCollapsed={toggleCollapsed}
           toggleMobile={toggleMobile}
+          breadcrumbs={getBreadcrumbs()}
+          transactionTitle={getBreadcrumbs() ? getPageTitle() : undefined}
         />
       </AppShell.Header>
 

@@ -4,12 +4,20 @@ import Link from "next/link";
 import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { Avatar, Popover, Text } from "@mantine/core";
+import TransactionHeader from "@/app/(customer)/_components/transactions/TransactionHeader";
+
+type BreadcrumbItem = {
+  label: string;
+  href?: string;
+};
 
 type AgentHeaderProps = {
   title?: string;
   collapsed: boolean;
   setCollapsed: () => void;
   toggleMobile?: () => void;
+  breadcrumbs?: BreadcrumbItem[];
+  transactionTitle?: string;
 };
 
 export default function AgentHeader({
@@ -17,6 +25,8 @@ export default function AgentHeader({
   collapsed,
   setCollapsed,
   toggleMobile,
+  breadcrumbs,
+  transactionTitle,
 }: AgentHeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -42,13 +52,17 @@ export default function AgentHeader({
             />
           </button>
         )}
-        {title && (
+        {breadcrumbs && transactionTitle ? (
+          <div className="flex items-center gap-2 ml-4 min-w-0 flex-1 overflow-hidden">
+            <TransactionHeader title={transactionTitle} breadcrumbs={breadcrumbs} />
+          </div>
+        ) : title ? (
           <div className="flex items-center gap-2 ml-4">
             <h1 className="text-body-heading-300 text-lg font-semibold">
               {title}
             </h1>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="flex items-center gap-3">
