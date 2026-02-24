@@ -17,6 +17,11 @@ export const API_ENDPOINTS = {
     nigerian: {
       verifyBvn: "/api/auth/signup/nigerian/verify-bvn",
       sendOtp: "/api/auth/signup/nigerian/send-otp",
+      resendOtp: "/api/auth/signup/nigerian/resend-otp",
+      validateOtp: "/api/auth/signup/nigerian/validate-otp",
+      sendEmailOtp: "/api/auth/signup/nigerian/send-email-otp",
+      resendEmailOtp: "/api/auth/signup/nigerian/resend-email-otp",
+      validateEmailOtp: "/api/auth/signup/nigerian/validate-email-otp",
       createAccount: "/api/auth/signup/nigerian/create-account",
     },
     
@@ -24,6 +29,8 @@ export const API_ENDPOINTS = {
     tourist: {
       verifyPassport: "/api/auth/signup/tourist/verify-passport",
       sendOtp: "/api/auth/signup/tourist/send-otp",
+      resendOtp: "/api/auth/signup/tourist/resend-otp",
+      validateOtp: "/api/auth/signup/tourist/validate-otp",
       createAccount: "/api/auth/signup/tourist/create-account",
     },
     
@@ -41,6 +48,11 @@ export const API_ENDPOINTS = {
         status: "/api/auth/kyc/passport/status",
       },
     },
+    
+    // Password reset flow
+    forgotPassword: "/api/auth/forgot-password",
+    verifyResetOtp: "/api/auth/verify-reset-otp",
+    resetPassword: "/api/auth/reset-password",
   },
   
   // Transactions
@@ -77,6 +89,10 @@ export const API_ENDPOINTS = {
       verifyLogin: "/api/admin/auth/verify-login",
       forgotPassword: "/api/admin/auth/forgot-password",
       resetPassword: "/api/admin/auth/reset-password",
+      logout: "/api/admin/auth/logout",
+      otp: {
+        validate: "/api/admin/auth/otp/validate",
+      },
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",

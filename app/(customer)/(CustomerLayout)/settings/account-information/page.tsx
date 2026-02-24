@@ -1,47 +1,43 @@
 "use client";
 
+import { useEffect } from "react";
 import { Avatar } from "@mantine/core";
+import { useAtom } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { normalizeProfile, setProfileInStorage } from "@/app/(customer)/_utils/auth-profile";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 
-const MOCK_ACCOUNT = {
-  name: "Micheal Smith Joshson",
-  status: "Active",
-  customerId: "7833",
-  email: "mic@gmail.com",
-  phone: "+234 90 4747 2791",
-  dateJoined: "April 14 2023",
-  lastActive: "November 14 2023",
-  bvn: "78338734938444",
-  tin: "378393784AGHA",
-  gender: "Male",
-  dateOfBirth: "April 14 2000",
-};
+function formatDate(dateString?: string | null): string {
+  if (!dateString) return "N/A";
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { 
+      month: "long", 
+      day: "numeric", 
+      year: "numeric" 
+    });
+  } catch {
+    return dateString;
+  }
+}
 
-const FIELDS_ROW_1 = [
-  { label: "Customer ID", value: MOCK_ACCOUNT.customerId },
-  { label: "Email Address", value: MOCK_ACCOUNT.email },
-  { label: "Phone Number", value: MOCK_ACCOUNT.phone },
-  { label: "Date Joined", value: MOCK_ACCOUNT.dateJoined },
-  { label: "Last Active", value: MOCK_ACCOUNT.lastActive },
-];
-
-const FIELDS_ROW_2 = [
-  { label: "BVN", value: MOCK_ACCOUNT.bvn },
-  { label: "TIN", value: MOCK_ACCOUNT.tin },
-  { label: "Gender", value: MOCK_ACCOUNT.gender },
-  { label: "Date of Birth", value: MOCK_ACCOUNT.dateOfBirth },
-  { label: "Last Active", value: MOCK_ACCOUNT.lastActive },
-];
+function formatPhone(phone?: string | null): string {
+  if (!phone) return "N/A";
+  // Unmask phone if it's masked (contains asterisks)
+  if (phone.includes("*")) return phone;
+  return phone;
+}
 
 function FieldGrid({ fields }: { fields: { label: string; value: string }[] }) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {fields.map(({ label, value }) => (
-        <div key={label} className="flex flex-col justify-center gap-2">
+        <div key={label} className="flex flex-col justify-center gap-2 min-w-0">
           <span className="text-base font-normal leading-6 text-[#8F8B8B]">
             {label}
           </span>
-          <span className="text-base font-medium leading-6 text-[#4D4B4B]">
+          <span className="text-base font-medium leading-6 text-[#4D4B4B] wrap-break-word break-all">
             {value}
           </span>
         </div>
@@ -51,6 +47,62 @@ function FieldGrid({ fields }: { fields: { label: string; value: string }[] }) {
 }
 
 export default function AccountInformationPage() {
+  const [userProfile, setUserProfile] = useAtom(userProfileAtom);
+
+  useEffect(() => {
+    if (userProfile?.id) {
+      customerApi.auth
+        .profile()
+        .then((res) => {
+          if (res.success && res.data) {
+            const normalized = normalizeProfile(res.data);
+            setUserProfile(normalized);
+            setProfileInStorage(normalized);
+          }
+        })
+        .catch(() => {
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (!userProfile) {
+    return null;
+  }
+
+  const displayName = userProfile.profile?.fullName ||
+    [userProfile.profile?.firstName, userProfile.profile?.lastName].filter(Boolean).join(' ') ||
+    userProfile.email?.split('@')[0] ||
+    'User';
+  const avatarUrl = userProfile.profile?.avatar || undefined;
+  const initials = userProfile.profile?.firstName?.[0] || 
+    userProfile.profile?.lastName?.[0] || 
+    userProfile.email?.[0]?.toUpperCase() || 
+    'U';
+  const status = userProfile.isActive ? "Active" : "Inactive";
+  const customerId = userProfile.id.slice(0, 8).toUpperCase();
+  const email = userProfile.email || "N/A";
+  const phone = formatPhone(userProfile.phoneNumber);
+  const dateJoined = formatDate(userProfile.createdAt);
+  const lastActive = formatDate(userProfile.updatedAt);
+  const bvn = userProfile.kyc?.bvn || "N/A";
+  const tin = userProfile.kyc?.tin || "N/A";
+  const dateOfBirth = formatDate(userProfile.profile?.dateOfBirth);
+
+  const FIELDS_ROW_1 = [
+    { label: "Customer ID", value: customerId },
+    { label: "Email Address", value: email },
+    { label: "Phone Number", value: phone },
+    { label: "Date Joined", value: dateJoined },
+    { label: "Last Active", value: lastActive },
+  ];
+
+  const FIELDS_ROW_2 = [
+    { label: "BVN", value: bvn },
+    { label: "TIN", value: tin },
+    { label: "Date of Birth", value: dateOfBirth },
+  ];
+
   return (
     <div
       className="flex flex-col rounded-2xl bg-white pb-8"
@@ -62,21 +114,23 @@ export default function AccountInformationPage() {
       {/* Header: avatar + name + badge */}
       <div className="flex flex-row flex-wrap items-start gap-3 border-b border-gray-100 px-6 py-6 pt-8 sm:px-8 md:px-10">
         <Avatar
-          src="https://placehold.co/120x120/?text=MS"
-          name={MOCK_ACCOUNT.name}
+          src={avatarUrl}
+          name={displayName}
           color="primary"
           size={60}
           radius="xl"
           className="shrink-0"
-        />
+        >
+          {initials}
+        </Avatar>
         <div className="flex min-w-0 flex-col gap-3">
           <h2
             className="text-2xl font-medium leading-8 tracking-[-0.032em] text-[#131212]"
           >
-            {MOCK_ACCOUNT.name}
+            {displayName}
           </h2>
-          <div style={getStatusBadge(MOCK_ACCOUNT.status)}>
-            {MOCK_ACCOUNT.status}
+          <div style={getStatusBadge(status)}>
+            {status}
           </div>
         </div>
       </div>

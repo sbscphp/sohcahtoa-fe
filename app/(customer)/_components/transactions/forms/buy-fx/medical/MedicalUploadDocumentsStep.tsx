@@ -5,26 +5,31 @@ import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
 import { Info } from "lucide-react";
-import FileUploadInput from "../../../../forms/FileUploadInput";
 import { FileWithPath } from "@mantine/dropzone";
+import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
+  ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
   formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
   formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Form A file is required",
   }),
-  utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Utility Bill file is required",
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
+  passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "International Passport file is required",
   }),
+  visaDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Visa Number is too long"),
   visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
-  ticketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Valid Ticket file is required",
+  returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
+  returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Return Ticket file is required",
   }),
   referenceLetterFromDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Reference Letter from Doctor is required",
+    message: "Reference Letter (Nigerian Specialist or Hospital) is required",
   }),
   letterFromOverseasDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter from overseas doctor stating treatment cost is required",
@@ -50,11 +55,15 @@ export default function MedicalUploadDocumentsStep({
     mode: "uncontrolled",
     initialValues: {
       bvn: initialValues?.bvn || "",
+      ninNumber: initialValues?.ninNumber || "",
       formAId: initialValues?.formAId || "",
       formAFile: initialValues?.formAFile ?? null,
-      utilityBillFile: initialValues?.utilityBillFile ?? null,
+      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportFile: initialValues?.passportFile ?? null,
+      visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       visaFile: initialValues?.visaFile ?? null,
-      ticketFile: initialValues?.ticketFile ?? null,
+      returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
+      returnTicketFile: initialValues?.returnTicketFile ?? null,
       referenceLetterFromDoctorFile: initialValues?.referenceLetterFromDoctorFile ?? null,
       letterFromOverseasDoctorFile: initialValues?.letterFromOverseasDoctorFile ?? null,
     },
@@ -83,9 +92,11 @@ export default function MedicalUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your medical fee once your documents is approved. Please note the maximum
-          you can transact is <strong>$5,000 per quarter</strong>.
+          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
+          transact is <strong>$5,000 per quarter</strong>.
+        </p>
+        <p className="text-body-text-200 mt-2">
+          {REVIEW_TIMELINE_MESSAGE}
         </p>
       </Alert>
 
@@ -107,9 +118,25 @@ export default function MedicalUploadDocumentsStep({
             form.setFieldValue("bvn", digits);
           }}
         />
-
         <TextInput
-          label="Form A"
+          label="NIN"
+          required
+          size="md"
+          placeholder="Enter 11-digit NIN"
+          maxLength={11}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          value={form.values.ninNumber}
+          onBlur={() => form.validateField("ninNumber")}
+          error={form.errors.ninNumber}
+          onChange={(e) => {
+            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            form.setFieldValue("ninNumber", digits);
+          }}
+        />
+        <TextInput
+          label="Form A ID"
           required
           size="md"
           placeholder="Enter Form A ID"
@@ -117,48 +144,81 @@ export default function MedicalUploadDocumentsStep({
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
+        <TextInput
+          label="International Passport Number"
+          required
+          size="md"
+          placeholder="Enter Passport Number"
+          maxLength={50}
+          autoComplete="off"
+          {...form.getInputProps("passportDocumentNumber")}
+        />
+      </div>
 
-        <FileUploadInput
-          label="Upload Form A"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TransactionFileUploadInput
+          label="Form A"
           required
           value={form.values.formAFile}
           onChange={(file) => form.setFieldValue("formAFile", file)}
           error={form.errors.formAFile as string}
         />
 
-        <FileUploadInput
-          label="Upload Utility Bill"
+        <TransactionFileUploadInput
+          label="International Passport"
           required
-          value={form.values.utilityBillFile}
-          onChange={(file) => form.setFieldValue("utilityBillFile", file)}
-          error={form.errors.utilityBillFile as string}
+          value={form.values.passportFile}
+          onChange={(file) => form.setFieldValue("passportFile", file)}
+          error={form.errors.passportFile as string}
         />
+      </div>
 
-        <FileUploadInput
-          label="Valid Visa"
-          required
-          value={form.values.visaFile}
-          onChange={(file) => form.setFieldValue("visaFile", file)}
-          error={form.errors.visaFile as string}
-        />
+      <TransactionFileUploadInput
+        label="Valid Visa"
+        required
+        value={form.values.visaFile}
+        onChange={(file) => form.setFieldValue("visaFile", file)}
+        error={form.errors.visaFile as string}
+      />
 
-        <FileUploadInput
-          label="Valid Ticket"
-          required
-          value={form.values.ticketFile}
-          onChange={(file) => form.setFieldValue("ticketFile", file)}
-          error={form.errors.ticketFile as string}
-        />
+      <TextInput
+        label="Valid Visa Number"
+        required
+        size="md"
+        placeholder="Enter Visa Number"
+        maxLength={50}
+        autoComplete="off"
+        {...form.getInputProps("visaDocumentNumber")}
+      />
 
-        <FileUploadInput
-          label="Reference Letter from Doctor"
+      <TransactionFileUploadInput
+        label="Return Ticket"
+        required
+        value={form.values.returnTicketFile}
+        onChange={(file) => form.setFieldValue("returnTicketFile", file)}
+        error={form.errors.returnTicketFile as string}
+      />
+
+      <TextInput
+        label="Return Ticket Number"
+        required
+        size="md"
+        placeholder="Enter Ticket Number"
+        maxLength={50}
+        autoComplete="off"
+        {...form.getInputProps("returnTicketDocumentNumber")}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TransactionFileUploadInput
+          label="Reference Letter (Nigerian Specialist or Hospital)"
           required
           value={form.values.referenceLetterFromDoctorFile}
           onChange={(file) => form.setFieldValue("referenceLetterFromDoctorFile", file)}
           error={form.errors.referenceLetterFromDoctorFile as string}
         />
 
-        <FileUploadInput
+        <TransactionFileUploadInput
           label="Letter from overseas doctor stating treatment cost"
           required
           value={form.values.letterFromOverseasDoctorFile}

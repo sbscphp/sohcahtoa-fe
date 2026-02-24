@@ -2,7 +2,19 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
+import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  buildTransactionPayload,
+  toTransactionDocuments,
+  type TransactionFormDataBag,
+} from "@/app/(customer)/_utils/transaction-payload";
+import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import {
   type TransactionStep,
   getStepsForTransactionType,
@@ -45,6 +57,7 @@ import type { ProfessionalBodyBankDetailsFormData } from "@/app/(customer)/_comp
 import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
 import type { TouristTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import type { TouristPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
+import { handleApiError } from "@/app/_lib/api/error-handler";
 
 const TRANSACTION_TYPE_MAP = {
   vacation: "pta",
@@ -106,6 +119,10 @@ export default function TransactionCreationPage() {
     | null
   >(null);
 
+  const userProfile = useAtomValue(userProfileAtom);
+  const uploadDocuments = useUploadDocuments();
+  const createTransaction = useCreateData(customerApi.transactions.create);
+
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
   const handleUploadDocumentsSubmit = (
@@ -155,25 +172,54 @@ export default function TransactionCreationPage() {
     setConfirmationOpened(true);
   };
 
-  const handleConfirmInitiate = () => {
-    console.log("Transaction data:", {
-      type: isBTA
-        ? "BTA"
-        : isSchoolFees
-          ? "School Fees"
-          : isMedical
-            ? "Medical"
-            : isProfessionalBody
-              ? "Professional Fee"
-              : isTourist
-                ? "Tourist"
-                : "PTA",
-      uploadDocuments: uploadDocumentsData,
-      transactionAmount: transactionAmountData,
-      pickupPoint: pickupPointData,
-      bankDetails: bankDetailsData,
-    });
-    router.push("/dashboard");
+  const handleConfirmInitiate = async () => {
+    if (uploadDocuments.isPending || createTransaction.isPending) return;
+    const transactionType = mapUITypeToAPIType(flowType);
+    if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
+      setConfirmationOpened(false);
+      router.push("/dashboard");
+      return;
+    }
+
+    const bag: TransactionFormDataBag = {
+      uploadDocumentsData: uploadDocumentsData as Record<string, unknown>,
+      transactionAmountData: transactionAmountData as Record<string, unknown>,
+      pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
+      bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
+    };
+
+    const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
+    if (hasPickup && !pickupPointData) {
+      setConfirmationOpened(false);
+      router.push("/dashboard");
+      return;
+    }
+    if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
+      setConfirmationOpened(false);
+      router.push("/dashboard");
+      return;
+    }
+
+    try {
+      const spec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
+      console.log("spec", spec);
+      const uploaded = spec
+        ? await uploadDocuments.mutateAsync({
+            file: spec.files,
+            userId: userProfile.id,
+            documentType: spec.documentTypes,
+          })
+        : [];
+      console.log("uploaded", uploaded);
+      const documents = toTransactionDocuments(uploaded);
+      const payload = buildTransactionPayload(transactionType, bag, documents);
+      await createTransaction.mutateAsync(payload);
+      setConfirmationOpened(false);
+      router.push("/transactions");
+    } catch (error) {
+      handleApiError(error);
+      setConfirmationOpened(false);
+    }
   };
 
   const handleBack = () => {
@@ -422,6 +468,8 @@ export default function TransactionCreationPage() {
         confirmLabel="View Transaction"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
+        requireInfoConfirmation
+        loading={uploadDocuments.isPending || createTransaction.isPending}
       />
     </div>
   );

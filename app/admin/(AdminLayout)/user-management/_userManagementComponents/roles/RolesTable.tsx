@@ -13,7 +13,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomerStatus } from "../../customer/[id]/page";
+import { CustomerStatus } from "../../../customer/[id]/page";
 import { CreateRoleModal } from "./CreateRoleModal";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";

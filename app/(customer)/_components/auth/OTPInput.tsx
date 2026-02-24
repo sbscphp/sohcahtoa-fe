@@ -9,6 +9,7 @@ interface OTPInputProps {
   expiryMinutes?: number;
   onResend?: () => void;
   maskedInfo?: string;
+  isResending?: boolean;
 }
 
 export function OTPInput({
@@ -16,7 +17,8 @@ export function OTPInput({
   onComplete,
   expiryMinutes = 15,
   onResend,
-  maskedInfo
+  maskedInfo,
+  isResending = false
 }: OTPInputProps) {
   const [otp, setOtp] = useState("");
   const [timeLeft, setTimeLeft] = useState(expiryMinutes * 60);
@@ -90,10 +92,10 @@ export function OTPInput({
             Didn&apos;t Receive Code?{" "}
             <button
               onClick={handleResendClick}
-              disabled={timeLeft > 0}
-              className="text-error-500 text-sm font-semibold! underline cursor-pointer transition-all duration-300"
+              disabled={timeLeft > 0 || isResending}
+              className="text-error-500 text-sm font-semibold! underline cursor-pointer transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Resend OTP
+              {isResending ? "Resending..." : "Resend OTP"}
             </button>
           </p>
         )}

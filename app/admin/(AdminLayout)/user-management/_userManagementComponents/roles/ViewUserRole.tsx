@@ -10,13 +10,13 @@ import {
   Text,
   Menu,
 } from "@mantine/core";
-import UserActivitiesTable from "./UserActivitiesTable";
-import { EditUserModal } from "./EditUserModal";
 import { useState } from "react";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomerStatus } from "../../customer/[id]/page";
+import { CustomerStatus } from "../../../customer/[id]/page";
 import { useRouter } from "next/navigation";
+import UserActivitiesTable from "../../user/[id]/UserActivitiesTable";
+import { EditUserModal } from "../../user/[id]/EditUserModal";
 
 export default function ViewAdminUserDetails() {
     const router = useRouter();

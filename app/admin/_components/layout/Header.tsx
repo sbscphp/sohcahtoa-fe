@@ -1,11 +1,15 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getBreadcrumbs } from "@/lib/adminBreadcrumbs";
 import { useHeaderContent } from "../../_contexts/HeaderContentContext";
+import { useAdminLogout } from "../../login/hooks/useAdminLogout";
+import { ConfirmationModal } from "../ConfirmationModal";
+import { SuccessModal } from "../SuccessModal";
 
 type HeaderProps = {
   title?: string;
@@ -24,8 +28,22 @@ export default function Header({
   const pathname = usePathname();
   const breadcrumbs = getBreadcrumbs(pathname);
   const { content } = useHeaderContent();
+  const { logout, redirectToLogin, isLoggingOut } = useAdminLogout();
 
-  // Use last breadcrumb as title if breadcrumbs exist, otherwise use provided title
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+
+  const handleLogoutConfirm = async () => {
+    await logout();
+    setConfirmOpen(false);
+    setSuccessOpen(true);
+  };
+
+  const handleSuccessDismiss = () => {
+    setSuccessOpen(false);
+    redirectToLogin();
+  };
+
   const displayTitle = breadcrumbs.length > 0
     ? breadcrumbs[breadcrumbs.length - 1].label
     : title;
@@ -97,8 +115,34 @@ export default function Header({
           )}
         </div>
 
+        <button
+          onClick={() => setConfirmOpen(true)}
+          className="rounded-full cursor-pointer w-9 h-9 flex items-center justify-center hover:bg-primary-25 transition-colors"
+          aria-label="Log out"
+        >
+          <LogOut size={20} className="text-primary-400" />
+        </button>
       </header>
 
+      <ConfirmationModal
+        opened={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Log Out"
+        message="Are you sure you want to log out?"
+        primaryButtonText="Yes, Log Out"
+        secondaryButtonText="Cancel"
+        onPrimary={handleLogoutConfirm}
+        loading={isLoggingOut}
+      />
+
+      <SuccessModal
+        opened={successOpen}
+        onClose={handleSuccessDismiss}
+        title="Logged Out"
+        message="You have been successfully logged out."
+        primaryButtonText="Go to Login"
+        onPrimaryClick={handleSuccessDismiss}
+      />
     </>
   );
 }

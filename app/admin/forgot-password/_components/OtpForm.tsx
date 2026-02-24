@@ -58,7 +58,7 @@ export function OtpForm({
             value={otp}
             onChange={onOtpChange}
             oneTimeCode
-            type="number"
+            type="alphanumeric"
             className="gap-3"
           />
         </div>

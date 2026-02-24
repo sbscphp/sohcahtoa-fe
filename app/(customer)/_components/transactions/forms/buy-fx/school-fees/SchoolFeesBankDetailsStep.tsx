@@ -3,15 +3,20 @@
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Button, Select, TextInput } from "@mantine/core";
+import { Alert, Button, Select, TextInput } from "@mantine/core";
+import { Info } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDown } from "@hugeicons/core-free-icons";
+import FileUploadInput from "../../../../forms/FileUploadInput";
+import type { FileWithPath } from "@mantine/dropzone";
+import { INVOICE_BENEFICIARY_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 
 const bankDetailsSchema = z.object({
   bankName: z.string().min(1, "Bank name is required"),
   accountNumber: z.string().min(1, "Account number is required"),
   accountName: z.string().min(1, "Account name is required"),
   iban: z.string().min(1, "IBAN is required"),
+  invoiceFile: z.custom<FileWithPath | null>().optional(),
 });
 
 export type SchoolFeesBankDetailsFormData = z.infer<typeof bankDetailsSchema>;
@@ -43,6 +48,7 @@ export default function SchoolFeesBankDetailsStep({
       accountNumber: initialValues?.accountNumber || "",
       accountName: initialValues?.accountName || "",
       iban: initialValues?.iban || "",
+      invoiceFile: initialValues?.invoiceFile ?? null,
     },
     validate: zod4Resolver(bankDetailsSchema),
   });
@@ -61,6 +67,11 @@ export default function SchoolFeesBankDetailsStep({
           Enter recipient bank details
         </p>
       </div>
+
+      <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
+        <p className="text-body-text-200 text-sm">{INVOICE_BENEFICIARY_MESSAGE}</p>
+        <p className="text-body-text-200 text-sm mt-1">You may also upload an invoice below to use as confirmation during internet banking.</p>
+      </Alert>
 
       <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
@@ -96,6 +107,15 @@ export default function SchoolFeesBankDetailsStep({
           placeholder="Enter"
           {...form.getInputProps("iban")}
         />
+
+        <div className="md:col-span-2">
+          <FileUploadInput
+            label="Upload invoice (optional – with beneficiary details for verification)"
+            value={form.values.invoiceFile ?? null}
+            onChange={(file) => form.setFieldValue("invoiceFile", file)}
+            placeholder="Click to upload invoice"
+          />
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

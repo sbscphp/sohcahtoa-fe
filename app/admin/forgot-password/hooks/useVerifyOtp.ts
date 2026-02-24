@@ -1,32 +1,29 @@
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiResponse, ApiError } from "@/app/_lib/api/client";
 
-type VerifyOtpResponse = { success: boolean };
+interface ValidateOtpResponseData {
+  resetToken: string;
+}
 
 export function useVerifyOtp(
   options?: Omit<
-    UseMutationOptions<VerifyOtpResponse, Error, string>,
+    UseMutationOptions<ApiResponse<ValidateOtpResponseData>, Error, string>,
     "mutationFn"
   >
 ) {
   return useMutation({
-    mutationFn: async (otp: string) => {
-      // TODO: Replace with actual API call
-      // const response = await fetch("/api/admin/forgot-password/verify-otp", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ otp }),
-      // });
-      // return response.json();
-      
-      await new Promise((r) => setTimeout(r, 1000)); // mock delay
-      
-      // Mock: simulate failure for OTP "000000" to test error modal
-      if (otp === "000000") {
-        throw new Error("Invalid OTP");
-      }
-      
-      return { success: true } satisfies VerifyOtpResponse;
-    },
+    mutationFn: (otp: string) => adminApi.auth.validateOtp({ otp }),
     ...options,
+    onError: (error, variables, context, mutation) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+      notifications.show({
+        title: "Invalid OTP",
+        message: apiResponse?.error?.message ?? error.message ?? "OTP verification failed. Please check the code and try again.",
+        color: "red",
+      });
+      options?.onError?.(error, variables, context, mutation);
+    },
   });
 }
