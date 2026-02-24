@@ -5,11 +5,13 @@ import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
 import { Info } from "lucide-react";
-import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { FileWithPath } from "@mantine/dropzone";
+import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 
 const uploadDocumentsSchema = z.object({
-  tinNumber: z.string().min(1, "TIN Number is required"),
+  tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
   internationalPassportFile: z
     .custom<FileWithPath | null>()
     .refine((file) => file !== null, {
@@ -39,6 +41,7 @@ export default function ResidentUploadDocumentsStep({
     mode: "uncontrolled",
     initialValues: {
       tinNumber: initialValues?.tinNumber || "",
+      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       internationalPassportFile: initialValues?.internationalPassportFile ?? null,
       utilityBillFile: initialValues?.utilityBillFile ?? null,
     },
@@ -66,36 +69,54 @@ export default function ResidentUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your transaction once your documents is approved. Please note the maximum
-          you can transact is <strong>$10,000</strong> per transaction.
+          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
+          transact is <strong>$10,000</strong> per transaction. For transactions of $10,000 or more, you will need to complete a source of funds declaration on the next step.
+        </p>
+        <p className="text-body-text-200 mt-2">
+          {REVIEW_TIMELINE_MESSAGE}
+        </p>
+        <p className="text-body-text-200 mt-2 text-sm">
+          If you have provided these details before, they may be pre-filled from your account.
         </p>
       </Alert>
 
-      <TextInput
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+<TextInput
         label="TIN Number"
         required
         size="md"
         placeholder="Enter TIN Number"
+        maxLength={30}
+        autoComplete="off"
         {...form.getInputProps("tinNumber")}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FileUploadInput
-          label="International Passport"
-          required
-          value={form.values.internationalPassportFile}
-          onChange={(file) => form.setFieldValue("internationalPassportFile", file)}
-          error={form.errors.internationalPassportFile as string}
-        />
-        <FileUploadInput
-          label="Utility Bill"
-          required
-          value={form.values.utilityBillFile}
-          onChange={(file) => form.setFieldValue("utilityBillFile", file)}
-          error={form.errors.utilityBillFile as string}
-        />
-      </div>
+      <TextInput
+        label="International Passport Number"
+        required
+        size="md"
+        placeholder="Enter Passport Number"
+        maxLength={50}
+        autoComplete="off"
+        {...form.getInputProps("passportDocumentNumber")}
+      />
+
+</div>
+      <TransactionFileUploadInput
+        label="International Passport"
+        required
+        value={form.values.internationalPassportFile}
+        onChange={(file) => form.setFieldValue("internationalPassportFile", file)}
+        error={form.errors.internationalPassportFile as string}
+      />
+
+      <TransactionFileUploadInput
+        label="Utility Bill"
+        required
+        value={form.values.utilityBillFile}
+        onChange={(file) => form.setFieldValue("utilityBillFile", file)}
+        error={form.errors.utilityBillFile as string}
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">
         {onBack && (

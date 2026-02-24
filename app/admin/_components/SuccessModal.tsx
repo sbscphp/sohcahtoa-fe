@@ -92,7 +92,7 @@ export function SuccessModal({
               <Button
                 onClick={handlePrimaryClick}
                 variant={primaryButtonVariant}
-                color={primaryButtonVariant === "filled" ? "orange" : "gray"}
+                color={primaryButtonVariant === "filled" ? "orange" : "orange"}
                 radius="xl"
                 size="md"
                 fullWidth

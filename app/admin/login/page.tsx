@@ -11,21 +11,15 @@ import { OtpModal } from "@/app/admin/_components/OtpModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { loginSchema, LoginFormValues } from "./_schemas/login.schema";
-import { useLogin } from "./hooks/useLogin";
-import { useVerifyOtp } from "./hooks/useVerifyOtp";
+import { useLogin, useVerifyOtp } from "./hooks/useLogin";
 
 export default function LoginPage() {
   const [otpModalOpened, setOtpModalOpened] = useState(false);
   const [successOpened, setSuccessOpened] = useState(false);
+  const [loginValues, setLoginValues] = useState<LoginFormValues | null>(null);
   const router = useRouter();
 
-  const loginMutation = useLogin({
-    onSuccess: (data: { requiresOtp: boolean }) => {
-      if (data.requiresOtp) {
-        setOtpModalOpened(true);
-      }
-    },
-  });
+  const loginMutation = useLogin();
 
   const verifyOtp = useVerifyOtp({
     onSuccess: () => {
@@ -45,7 +39,15 @@ export default function LoginPage() {
   });
 
   const onSubmit = form.onSubmit((values) => {
-    loginMutation.mutate(values);
+    loginMutation.mutate(
+      { email: values.email, password: values.password },
+      {
+        onSuccess: () => {
+          setLoginValues(values);
+          setOtpModalOpened(true);
+        },
+      }
+    );
   });
 
   return (
@@ -118,8 +120,18 @@ export default function LoginPage() {
         description="A six (6) digit OTP has been sent to your email linked to this account. Enter the code to log in."
         length={6}
         loading={verifyOtp.isPending}
-        onSubmit={(otp) => verifyOtp.mutate(otp)}
-        onResend={() => console.log("Resend OTP")}
+        isResending={loginMutation.isPending}
+        onSubmit={(otp) =>
+          verifyOtp.mutate({ otp, email: loginValues!.email })
+        }
+        onResend={() => {
+          if (loginValues) {
+            loginMutation.mutate({
+              email: loginValues.email,
+              password: loginValues.password,
+            });
+          }
+        }}
       />
 
       <SuccessModal

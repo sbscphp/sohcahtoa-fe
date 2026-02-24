@@ -14,7 +14,7 @@ describe("OTPSentModal", () => {
     expect(screen.queryByText(/OTP Code Sent/i)).not.toBeInTheDocument();
   });
 
-  it("renders title, message and Go To Email button when opened", () => {
+  it("renders title, message and Enter OTP button when opened", () => {
     render(
       <OTPSentModal
         opened
@@ -24,16 +24,16 @@ describe("OTPSentModal", () => {
     );
     expect(screen.getByRole("heading", { name: /OTP Code Sent/i })).toBeInTheDocument();
     expect(screen.getByText(/OTP Code has been sent to your email/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /go to email/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter otp/i })).toBeInTheDocument();
   });
 
-  it("calls onGoToEmail when Go To Email is clicked", async () => {
+  it("calls onGoToEmail when Enter OTP is clicked", async () => {
     const onGoToEmail = vi.fn();
     const user = userEvent.setup();
     render(
       <OTPSentModal opened onClose={vi.fn()} onGoToEmail={onGoToEmail} />
     );
-    await user.click(screen.getByRole("button", { name: /go to email/i }));
+    await user.click(screen.getByRole("button", { name: /enter otp/i }));
     expect(onGoToEmail).toHaveBeenCalledTimes(1);
   });
 });

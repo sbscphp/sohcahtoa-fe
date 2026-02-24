@@ -1,23 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@/test-utils";
 import TransactionPage from "../page";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/transactions",
+  useParams: () => ({}),
+}));
 
 describe("Transactions page", () => {
   it("renders the main heading and subtitle", () => {
     render(<TransactionPage />);
-    expect(
-      screen.getByRole("heading", { name: /what would like to use the fx for/i })
-    ).toBeInTheDocument();
-    expect(screen.getByText(/select transaction type below/i)).toBeInTheDocument();
+    expect(screen.getByText(/No\. of Transaction/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Completed/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Rejected/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Pending/i).length).toBeGreaterThan(0);
   });
 
-  it("renders all six FX transaction type cards", () => {
+  it("renders transaction type tabs", () => {
     render(<TransactionPage />);
-    expect(screen.getByRole("heading", { name: /i am going on a vacation/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /i am travelling for business/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /pay school fees/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /seek medical treatment/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /pay a professional body/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /i am touring nigeria/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Buy FX/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Sell FX/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Receive FX/i })).toBeInTheDocument();
   });
 });

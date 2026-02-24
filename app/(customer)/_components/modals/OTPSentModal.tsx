@@ -50,7 +50,7 @@ export function OTPSentModal({
           radius="xl"
           className="h-[52px] min-h-[52px] py-3.5 px-6 bg-white border border-[#CCCACA] text-[#4D4B4B] font-medium text-base leading-6 hover:bg-gray-50"
         >
-          Go To Email
+          Enter OTP
         </Button>
       </div>
     </Modal>

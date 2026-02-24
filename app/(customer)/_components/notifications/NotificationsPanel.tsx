@@ -2,39 +2,13 @@
 
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import Loader from "@/components/loader";
 import type { NotificationItemProps } from "./NotificationItem";
 import NotificationItem from "./NotificationItem";
-
-const MOCK_NOTIFICATIONS: NotificationItemProps[] = [
-  {
-    title: "Transfer completed",
-    context: "Your transfer to Ruth has been successful.",
-    date: "Nov 18 2025",
-    time: "11:00 am",
-    status: "unread",
-  },
-  {
-    title: "Payment received",
-    context: "You received $850.89 from Tochukwu.",
-    date: "Nov 18 2025",
-    time: "09:30 am",
-    status: "unread",
-  },
-  {
-    title: "Wallet to wallet",
-    context: "Your wallet transfer was processed.",
-    date: "Nov 17 2025",
-    time: "03:15 pm",
-    status: "read",
-  },
-  {
-    title: "Rate alert",
-    context: "USD/NGN rate has been updated.",
-    date: "Nov 17 2025",
-    time: "10:00 am",
-    status: "read",
-  },
-];
+import { transformNotificationToItem } from "@/app/(customer)/_utils/notifications";
 
 type NotificationsPanelProps = {
   items?: NotificationItemProps[];
@@ -43,10 +17,20 @@ type NotificationsPanelProps = {
 };
 
 export default function NotificationsPanel({
-  items = MOCK_NOTIFICATIONS,
-  viewAllHref = "#",
+  items: propItems,
+  viewAllHref = "/notifications",
   onViewAllClick,
 }: NotificationsPanelProps) {
+  // Fetch notifications from API
+  const { data: notificationsResponse, isLoading } = useFetchData(
+    [...customerKeys.notifications.list({ limit: 5 })],
+    () => customerApi.notifications.list({ limit: 5 })
+  );
+
+  // Use prop items if provided (for testing), otherwise use API data
+  const items = propItems
+    ? propItems
+    : notificationsResponse?.data?.notifications?.map(transformNotificationToItem) || [];
   return (
     <div className="flex w-[408px] max-w-[calc(100vw-2rem)] flex-col gap-4 px-4 py-3">
       <div className="flex flex-row items-center justify-between">
@@ -63,18 +47,28 @@ export default function NotificationsPanel({
         </Link>
       </div>
       <div className="flex max-h-[360px] flex-col gap-4 overflow-y-auto">
-        {items.map((item, i) => (
-          <NotificationItem
-            key={i}
-            title={item.title}
-            context={item.context}
-            date={item.date}
-            time={item.time}
-            status={item.status}
-            href={item.href}
-            onClick={item.onClick}
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="py-4 text-center text-sm text-[#6C6969]">
+            No notifications yet.
+          </div>
+        ) : (
+          items.map((item, i) => (
+            <NotificationItem
+              key={i}
+              title={item.title}
+              context={item.context}
+              date={item.date}
+              time={item.time}
+              status={item.status}
+              href={item.href}
+              onClick={item.onClick}
+            />
+          ))
+        )}
       </div>
     </div>
   );

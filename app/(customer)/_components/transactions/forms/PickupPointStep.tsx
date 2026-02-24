@@ -3,17 +3,20 @@
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Button, Select } from "@mantine/core";
+import { Button, Select, TextInput } from "@mantine/core";
 import SelectableLocationCard from "@/app/(customer)/_components/forms/SelectableLocationCard";
 import SelectableBankCard from "@/app/(customer)/_components/forms/SelectableBankCard";
 import { EmptyState } from "@/app/(customer)/_components/common";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDown } from "@hugeicons/core-free-icons";
+import { DateInput, TimeInput } from "@mantine/dates";
 
 const pickupOnlySchema = z.object({
   state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
   locationId: z.string().min(1, "Pickup location is required"),
+  pickupDate: z.string().min(1, "Date of collection is required"),
+  pickupTime: z.string().min(1, "Time of collection is required"),
 });
 
 const pickupOrBankSchema = z
@@ -23,6 +26,8 @@ const pickupOrBankSchema = z
     city: z.string(),
     locationId: z.string(),
     selectedBankId: z.string(),
+    pickupDate: z.string(),
+    pickupTime: z.string(),
   })
   .refine(
     (data) => {
@@ -30,12 +35,14 @@ const pickupOrBankSchema = z
         return (
           data.state.trim().length > 0 &&
           data.city.trim().length > 0 &&
-          data.locationId.trim().length > 0
+          data.locationId.trim().length > 0 &&
+          (data.pickupDate?.trim().length ?? 0) > 0 &&
+          (data.pickupTime?.trim().length ?? 0) > 0
         );
       }
       return true;
     },
-    { message: "Pickup location is required", path: ["locationId"] }
+    { message: "Pickup location, date and time are required", path: ["locationId"] }
   )
   .refine(
     (data) => {
@@ -118,6 +125,8 @@ export default function PickupPointStep({
       state: (initialValues as Partial<PickupPointFormData>)?.state || "",
       city: (initialValues as Partial<PickupPointFormData>)?.city || "",
       locationId: (initialValues as Partial<PickupPointFormData>)?.locationId || "",
+      pickupDate: (initialValues as Partial<PickupPointFormData>)?.pickupDate || "",
+      pickupTime: (initialValues as Partial<PickupPointFormData>)?.pickupTime || "",
     },
     validate: zod4Resolver(pickupOnlySchema),
   });
@@ -130,6 +139,8 @@ export default function PickupPointStep({
       city: (initialValues as Partial<PickupOrBankFormData>)?.city || "",
       locationId: (initialValues as Partial<PickupOrBankFormData>)?.locationId || "",
       selectedBankId: (initialValues as Partial<PickupOrBankFormData>)?.selectedBankId || "",
+      pickupDate: (initialValues as Partial<PickupOrBankFormData>)?.pickupDate || "",
+      pickupTime: (initialValues as Partial<PickupOrBankFormData>)?.pickupTime || "",
     },
     validate: zod4Resolver(pickupOrBankSchema),
   });
@@ -250,6 +261,24 @@ export default function PickupPointStep({
               )}
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TextInput
+              key={pickupOrBankForm.key("pickupDate")}
+              label="Date of collection"
+              required
+              size="md"
+              type="date"
+              {...pickupOrBankForm.getInputProps("pickupDate")}
+            />
+            <TextInput
+              key={pickupOrBankForm.key("pickupTime")}
+              label="Time of collection"
+              required
+              size="md"
+              type="time"
+              {...pickupOrBankForm.getInputProps("pickupTime")}
+            />
+          </div>
         </>
       )}
 
@@ -279,6 +308,24 @@ export default function PickupPointStep({
               }
               size="md"
               {...pickupOnlyForm.getInputProps("city")}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DateInput
+              key={pickupOnlyForm.key("pickupDate")}
+              label="Pick Up Date"
+              placeholder="DD MM YYYY"
+              required
+              size="md"
+              {...pickupOnlyForm.getInputProps("pickupDate")}
+            />
+            <TimeInput
+              key={pickupOnlyForm.key("pickupTime")}
+              label="Pick Up Time"
+              placeholder="HH:MM"
+              required
+              size="md"
+              {...pickupOnlyForm.getInputProps("pickupTime")}
             />
           </div>
 

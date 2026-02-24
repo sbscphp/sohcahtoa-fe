@@ -5,26 +5,24 @@ import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button } from "@mantine/core";
 import { Info } from "lucide-react";
-import FileUploadInput from "../../../../forms/FileUploadInput";
 import { TextInput } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
+import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
   ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
   formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
-  }),
+  formADocumentNumber: z.string().min(1, "International Passport number is required").max(50, "International Passport number is too long"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "International Passport file is required",
-  }),
-  visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
+  passportDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Visa Number is too long"),
   returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Return Ticket file is required",
   }),
+  returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
 });
 
 export type UploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
@@ -49,10 +47,11 @@ export default function PTAUploadDocumentsStep({
       bvn: initialValues?.bvn || "",
       ninNumber: initialValues?.ninNumber || "",
       formAId: initialValues?.formAId || "",
-      formAFile: initialValues?.formAFile ?? null,
+      formADocumentNumber: initialValues?.formADocumentNumber || "",
       passportFile: initialValues?.passportFile ?? null,
-      visaFile: initialValues?.visaFile ?? null,
+      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       returnTicketFile: initialValues?.returnTicketFile ?? null,
+      returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -79,9 +78,11 @@ export default function PTAUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your PTA once your documents is approved. Please note the maximum you can
+          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
           transact is <strong>$4,000 per quarter</strong>.
+        </p>
+        <p className="text-body-text-200 mt-2">
+          {REVIEW_TIMELINE_MESSAGE}
         </p>
       </Alert>
 
@@ -123,48 +124,64 @@ export default function PTAUploadDocumentsStep({
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TextInput
+          label="Form A"
+          required
+          size="md"
+          placeholder="Enter Form A"
+          maxLength={30}
+          autoComplete="off"
+          {...form.getInputProps("formAId")}
+        />
+        <TextInput
+          label="International Passport"
+          required
+          size="md"
+          placeholder="Enter International Passport"
+          maxLength={50}
+          autoComplete="off"
+          {...form.getInputProps("formADocumentNumber")}
+        />
+      </div>
+
+      <TransactionFileUploadInput
+            label="Valid Visa"
+            required
+            value={form.values.passportFile}
+            onChange={(file) => form.setFieldValue("passportFile", file)}
+            error={form.errors.passportFile as string}
+          />
+
+      <div className="space-y-3 ">
       <TextInput
-        label="Form A ID"
-        required
-        size="md"
-        placeholder="Enter Form A ID"
-        maxLength={30}
-        autoComplete="off"
-        {...form.getInputProps("formAId")}
-      />
+              label="Valid Visa Number"
+              required
+              size="md"
+              placeholder="Enter  Visa Number"
+              maxLength={50}
+              {...form.getInputProps("passportDocumentNumber")}
+            />
 
-      <div className="space-y-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FileUploadInput
-          label="Upload Form A"
-          required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
-        />
 
-        <FileUploadInput
-          label="Upload International Passport"
-          required
-          value={form.values.passportFile}
-          onChange={(file) => form.setFieldValue("passportFile", file)}
-          error={form.errors.passportFile as string}
-        />
+        <div className="space-y-2">
+        <TransactionFileUploadInput
+            label="Upload Return Ticket"
+            required
+            value={form.values.returnTicketFile}
+            onChange={(file) => form.setFieldValue("returnTicketFile", file)}
+            error={form.errors.returnTicketFile as string}
+          />
+          <TextInput
+            label="Return Ticket Number"
+            required
+            size="md"
+            placeholder="Enter Ticket Number"
+            maxLength={50}
+            {...form.getInputProps("returnTicketDocumentNumber")}
+          />
 
-        <FileUploadInput
-          label="Valid Visa"
-          required
-          value={form.values.visaFile}
-          onChange={(file) => form.setFieldValue("visaFile", file)}
-          error={form.errors.visaFile as string}
-        />
-
-        <FileUploadInput
-          label="Upload Return Ticket"
-          required
-          value={form.values.returnTicketFile}
-          onChange={(file) => form.setFieldValue("returnTicketFile", file)}
-          error={form.errors.returnTicketFile as string}
-        />
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

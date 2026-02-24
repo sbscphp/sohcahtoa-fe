@@ -4,6 +4,8 @@ import CustomerLayoutShell from "../CustomerLayoutShell";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
+  useParams: () => ({}),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
 }));
 
 vi.mock("@/app/assets/asset", () => ({

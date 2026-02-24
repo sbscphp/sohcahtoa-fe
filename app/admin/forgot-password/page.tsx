@@ -9,10 +9,7 @@ import { ErrorModal } from "@/app/admin/_components/ErrorModal";
 import { EmailForm } from "./_components/EmailForm";
 import { OtpForm } from "./_components/OtpForm";
 import { CreatePasswordForm } from "./_components/CreatePasswordForm";
-import {
-  type EmailFormValues,
-  type CreatePasswordFormValues,
-} from "./_schemas/forgotPassword.schema";
+import { type EmailFormValues, type CreatePasswordFormValues } from "./_schemas/forgotPassword.schema";
 import { useRequestPasswordReset } from "./hooks/useRequestPasswordReset";
 import { useVerifyOtp } from "./hooks/useVerifyOtp";
 import { useCreateNewPassword } from "./hooks/useCreateNewPassword";
@@ -25,6 +22,7 @@ export default function ForgotPasswordPage() {
   const [currentStep, setCurrentStep] = useState<Step>("email");
   const [userEmail, setUserEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
 
   // Modal states
@@ -50,7 +48,8 @@ export default function ForgotPasswordPage() {
   });
 
   const verifyOtp = useVerifyOtp({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setResetToken(data.data.resetToken);
       setOtpSuccessModalOpened(true);
     },
     onError: () => {
@@ -71,7 +70,7 @@ export default function ForgotPasswordPage() {
   };
 
   const handlePasswordSubmit = (values: CreatePasswordFormValues) => {
-    createNewPassword.mutate(values);
+    createNewPassword.mutate({ resetToken, password: values.password });
   };
 
   const handleOtpSentModalClose = () => {
@@ -134,8 +133,8 @@ export default function ForgotPasswordPage() {
         opened={otpSentModalOpened}
         onClose={handleOtpSentModalClose}
         title="OTP Code Sent"
-        message="A six digit OTP verification code has been sent to your email. Kindly open your email to continue."
-        primaryButtonText="Open Email →"
+        message="A six digit OTP verification code has been sent to your email."
+        primaryButtonText="Continue →"
         onPrimaryClick={handleOtpSentModalClose}
       />
 

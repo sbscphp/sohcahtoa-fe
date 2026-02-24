@@ -1,12 +1,21 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import { authTokensAtom, userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { performLogout } from "@/app/_lib/api/auth-logout";
 import { collapsed_logo, logo } from "@/app/assets/asset";
+import { Logout01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from '@hugeicons/react';
 import { Avatar, UnstyledButton } from "@mantine/core";
-import { ArrowUpRight, BanknoteIcon, Calculator, LayoutGrid } from "lucide-react";
+import { useDisclosure } from "@mantine/hooks";
+import { useAtom } from "jotai";
+import { ArrowUpRight, BanknoteIcon, Calculator, LayoutGrid, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type CustomerSidebarProps = {
   collapsed: boolean;
@@ -21,9 +30,38 @@ const menuItems = [
   // { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
-export default function CustomerSidebar({ collapsed, onCollapse, onNavigate }: CustomerSidebarProps) {
+export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [userProfile] = useAtom(userProfileAtom);
+  const [logoutModalOpened, { open: openLogoutModal, close: closeLogoutModal }] = useDisclosure(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const displayName = userProfile?.profile?.fullName || 
+    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
+    userProfile?.email?.split('@')[0] ||
+    'User';
+  const displayEmail = userProfile?.email || '';
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
+
+  const handlePerformLogout = useCallback(() => {
+    closeLogoutModal();
+    performLogout(router);
+  }, [router, closeLogoutModal]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await customerApi.auth.logout();
+    } catch (error) {
+      handleApiError(error);
+      setIsLoggingOut(false);
+      return;
+    }
+    
+    handlePerformLogout();
+  };
+
   return (
     <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
      
@@ -115,19 +153,57 @@ export default function CustomerSidebar({ collapsed, onCollapse, onNavigate }: C
             }}
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
-              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" />
+              <Avatar src={avatarUrl} name={displayName} color="initials"/>
             </div>
             <div className="min-w-0 flex-1 overflow-hidden text-left">
               <p className="truncate text-xs font-medium text-body-heading-300">
-                Michael Smith
+                {displayName}
               </p>
               <p className="truncate text-xs text-body-text-100">
-                michaelsmith12@gmail.com
+                {displayEmail}
               </p>
             </div>
           </UnstyledButton>
+
+          {/* Logout Button */}
+          <UnstyledButton
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-body-text-300 hover:bg-white hover:text-body-heading-300 transition-colors"
+            onClick={() => {
+              openLogoutModal();
+              onNavigate?.();
+            }}
+          >
+            <HugeiconsIcon icon={Logout01Icon} className="w-5 h-5 shrink-0" />
+            <span className="whitespace-nowrap text-body-text-300 font-medium">Logout</span>
+          </UnstyledButton>
         </div>
       )}
+
+      {/* Logout button when collapsed */}
+      {collapsed && (
+        <div className="p-3 border-t border-gray-100">
+          <UnstyledButton
+            className="flex w-full items-center justify-center rounded-lg px-3 py-2.5 text-sm font-medium text-body-text-300 hover:bg-white hover:text-body-heading-300 transition-colors"
+            onClick={openLogoutModal}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+          </UnstyledButton>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        opened={logoutModalOpened}
+        onClose={closeLogoutModal}
+        title="Are you sure you want to logout?"
+        description="You will need to log in again to access your account."
+        confirmLabel="Yes, Logout"
+        cancelLabel="No, Cancel"
+        onConfirm={handleLogout}
+        variant="warning"
+        loading={isLoggingOut}
+      />
     </aside>
   );
 }
