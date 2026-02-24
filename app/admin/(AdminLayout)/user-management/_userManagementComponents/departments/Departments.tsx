@@ -1,44 +1,72 @@
+"use client";
+
 import Image from "next/image";
+import { Skeleton } from "@mantine/core";
 import StatCard from "../../../../_components/StatCard";
-import gold from "../../../../_components/assets/icons/users-orange.png"
-import green from "../../../../_components/assets/icons/users-green.png"
-import pink from "../../../../_components/assets/icons/users-pink.png"
+import gold from "../../../../_components/assets/icons/users-orange.png";
+import green from "../../../../_components/assets/icons/users-green.png";
+import pink from "../../../../_components/assets/icons/users-pink.png";
 import DepartmentsTable from "./DepartmentsTable";
+import { useDepartmentStats } from "../../hooks/useDepartmentStats";
 
 export default function Departments() {
-    const Icon1 = <div><Image src={gold} alt="icon"/></div>;
-        const Icon2 = <div><Image src={green} alt="icon"/></div>;
-        const Icon3 = <div><Image src={pink} alt="icon"/></div>;return(
-        <>
-        <div className="w-full rounded-xl bg-white p-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <StatCard
-                    title="No. of Users"
-                    value={15}
-                    icon={Icon1}
-                    iconBg="bg-orange-100"
-                  />
-        
-                  <StatCard
-                    title="Active Users"
-                    value={10}
-                    icon={Icon2}
-                    iconBg="bg-[#FFE4E8]"
-                  />
-        
-                  <StatCard
-                    title="Deactivated Users"
-                    value={5}
-                    icon={Icon3}
-                    iconBg="bg-[#EBE9FE]"
-                  />
-        
-                  
-                </div>
-              </div>
-              <div className="mt-6"><DepartmentsTable /></div>
-              
-              
-        </>
-    )
+  const { stats, isLoading } = useDepartmentStats();
+
+  const Icon1 = (
+    <div>
+      <Image src={gold} alt="icon" />
+    </div>
+  );
+  const Icon2 = (
+    <div>
+      <Image src={green} alt="icon" />
+    </div>
+  );
+  const Icon3 = (
+    <div>
+      <Image src={pink} alt="icon" />
+    </div>
+  );
+
+  const inactiveCount = stats?.deactivatedDepartments ?? stats?.inactiveDepartments ?? 0;
+
+  return (
+    <>
+      <div className="w-full rounded-xl bg-white p-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {isLoading ? (
+            <>
+              <Skeleton height={100} radius="md" />
+              <Skeleton height={100} radius="md" />
+              <Skeleton height={100} radius="md" />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="No. of Departments"
+                value={stats?.totalDepartments ?? 0}
+                icon={Icon1}
+                iconBg="bg-orange-100"
+              />
+              <StatCard
+                title="Active Departments"
+                value={stats?.activeDepartments ?? 0}
+                icon={Icon2}
+                iconBg="bg-[#FFE4E8]"
+              />
+              <StatCard
+                title="Deactivated Departments"
+                value={inactiveCount}
+                icon={Icon3}
+                iconBg="bg-[#EBE9FE]"
+              />
+            </>
+          )}
+        </div>
+      </div>
+      <div className="mt-6">
+        <DepartmentsTable />
+      </div>
+    </>
+  );
 }

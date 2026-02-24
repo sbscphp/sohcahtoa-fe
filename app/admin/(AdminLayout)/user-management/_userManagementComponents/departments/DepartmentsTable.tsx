@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Text,
   Group,
@@ -17,169 +17,119 @@ import { ViewDepartmentModal } from "./ViewDepartmentModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { CustomerStatus } from "../../../customer/[id]/page";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useDepartments, type DepartmentItem } from "../../hooks/useDepartments";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface Department {
-  name: string;
-  id: string;
-  createdDate: string;
-  createdTime: string;
-  createdBy: string;
-  createdById: string;
-  status: "Active" | "Deactivated";
-}
-
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const departments: Department[] = [
-  {
-    name: "Internal Control",
-    id: "7320",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Kunle Dairo",
-    createdById: "9023",
-    status: "Active",
-  },
-  {
-    name: "Risk Assessment",
-    id: "9023",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Marcus Lee",
-    createdById: "9025",
-    status: "Deactivated",
-  },
-  {
-    name: "Financial Reporting",
-    id: "1234",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Sofia Wang",
-    createdById: "9026",
-    status: "Active",
-  },
-  {
-    name: "External Audit",
-    id: "8451",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Aisha Patel",
-    createdById: "9024",
-    status: "Deactivated",
-  },
-  {
-    name: "Compliance Review",
-    id: "6789",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Jamal Rivers",
-    createdById: "9027",
-    status: "Active",
-  },
-];
+const PAGE_SIZE = 10;
 
 /* --------------------------------------------
  Component
 --------------------------------------------- */
 export default function DepartmentsTable() {
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState("Filter By");
   const [open, setOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<DepartmentItem | null>(null);
 
   const [viewOpen, setViewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [status, setStatus] = useState<CustomerStatus>("Active");
   const isCurrentlyActive = status === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
   const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
-    const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
-  /* Search Filter */
-  const filteredData = useMemo(() => {
-    return departments.filter(
-      (dept) =>
-        dept.name.toLowerCase().includes(search.toLowerCase()) ||
-        dept.id.includes(search),
-    );
-  }, [search]);
+  const { departments, totalPages, isLoading } = useDepartments({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
   const handleConfirm = () => {
     setStatus((prev) => (prev === "Active" ? "Deactivated" : "Active"));
     setDeactivateOpen(false);
     setIsSuccessOpen(true);
   };
 
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
-
   /* Table Headers */
   const headers = [
     { label: "Department Name", key: "name" },
     { label: "Date Created", key: "date" },
-    { label: "Created By", key: "createdBy" },
+    { label: "No. of Users", key: "users" },
     { label: "Status", key: "status" },
     { label: "Action", key: "action" },
   ];
 
+  const formatDate = (iso?: string) => {
+    if (!iso) {
+      return { date: "—", time: "" };
+    }
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString("en-NG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      time: d.toLocaleTimeString("en-NG", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    };
+  };
+
   /* Row Renderer */
-  const renderRow = (dept: Department) => [
-    <div key="name">
-      <Text fw={500} size="sm">
-        {dept.name}
-      </Text>
-      <Text size="xs" c="dimmed">
-        ID:{dept.id}
-      </Text>
-    </div>,
+  const renderRow = (dept: DepartmentItem) => {
+    const { date, time } = formatDate(dept.createdAt);
 
-    <div key="date">
-      <Text size="sm">{dept.createdDate}</Text>
-      <Text size="xs" c="dimmed">
-        {dept.createdTime}
-      </Text>
-    </div>,
+    return [
+      <div key="name">
+        <Text fw={500} size="sm">
+          {dept.name}
+        </Text>
+        <Text size="xs" c="dimmed">
+          ID:{dept.id}
+        </Text>
+      </div>,
 
-    <div key="createdBy">
-      <Text size="sm">{dept.createdBy}</Text>
-      <Text size="xs" c="dimmed">
-        ID:{dept.createdById}
-      </Text>
-    </div>,
+      <div key="date">
+        <Text size="sm">{date}</Text>
+        <Text size="xs" c="dimmed">
+          {time}
+        </Text>
+      </div>,
 
-    <StatusBadge key="status" status={dept.status} />,
+      <Text key="users" size="sm">
+        {dept.usersCount ?? dept._count?.users ?? 0}
+      </Text>,
 
-    <RowActionMenu
-      key="actions"
-      onView={() => {
-        setSelectedDepartment(dept);
-        setViewOpen(true);
-      }}
-      onEdit={() => {
-        setSelectedDepartment(dept);
-        setEditOpen(true);
-      }}
-      onDeactivate={() => {
-        setSelectedDepartment(dept);
-        setDeactivateOpen(true);
-      }}
-      onDelete={() => {
-        setSelectedDepartment(dept);
-        setDeleteOpen(true);
-      }}
-    />,
-  ];
+      <StatusBadge key="status" status={dept.isActive ? "Active" : "Deactivated"} />,
+
+      <RowActionMenu
+        key="actions"
+        onView={() => {
+          setSelectedDepartment(dept);
+          setViewOpen(true);
+        }}
+        onEdit={() => {
+          setSelectedDepartment(dept);
+          setOpen(true);
+        }}
+        onDeactivate={() => {
+          setSelectedDepartment(dept);
+          setDeactivateOpen(true);
+        }}
+        onDelete={() => {
+          setSelectedDepartment(dept);
+          setDeleteOpen(true);
+        }}
+      />,
+    ];
+  };
 
   return (
     <div className="p-5 bg-white rounded-lg">
@@ -194,7 +144,10 @@ export default function DepartmentsTable() {
             placeholder="Enter keyword"
             leftSection={<Search size={16} color="#DD4F05" />}
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
             w={320}
             radius="xl"
           />
@@ -232,8 +185,8 @@ export default function DepartmentsTable() {
       {/* Table */}
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={departments}
+        loading={isLoading}
         renderItems={renderRow}
         emptyTitle="No Departments Found"
         emptyMessage="There are no departments available yet."
@@ -256,7 +209,17 @@ export default function DepartmentsTable() {
       <ViewDepartmentModal
         opened={viewOpen}
         onClose={() => setViewOpen(false)}
-        department={selectedDepartment}
+        department={
+          selectedDepartment
+            ? {
+                name: selectedDepartment.name,
+                email: selectedDepartment.departmentEmail ?? "",
+                branch: selectedDepartment.branch ?? "",
+                description: selectedDepartment.description ?? "",
+                isDefault: false,
+              }
+            : undefined
+        }
       />
       {/* Deactivate / Reactivate confirmation modal */}
       <ConfirmationModal

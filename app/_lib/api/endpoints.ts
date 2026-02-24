@@ -121,6 +121,10 @@ export const API_ENDPOINTS = {
         list: "/api/admin/management/roles",
         stats: "/api/admin/management/roles/stats",
       },
+      departments: {
+        list: "/api/admin/management/departments",
+        stats: "/api/admin/management/departments/stats",
+      },
     },
   },
 } as const;

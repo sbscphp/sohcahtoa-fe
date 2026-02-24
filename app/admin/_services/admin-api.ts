@@ -125,6 +125,19 @@ export const adminApi = {
           API_ENDPOINTS.admin.management.roles.stats
         ),
     },
+
+    departments: {
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.list,
+          { params }
+        ),
+
+      getStats: () =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.stats
+        ),
+    },
   },
 
   // ==================== Transactions ====================

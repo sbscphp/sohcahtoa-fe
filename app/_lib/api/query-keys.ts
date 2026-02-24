@@ -118,7 +118,9 @@ export const adminKeys = {
     },
     departments: {
       all: () => [...adminKeys.management.all, "departments"] as const,
-      list: () => [...adminKeys.management.departments.all(), "list"] as const,
+      stats: () => [...adminKeys.management.departments.all(), "stats"] as const,
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.departments.all(), "list", params] as const,
       detail: (id: string) => [...adminKeys.management.departments.all(), "detail", id] as const,
     },
   },
