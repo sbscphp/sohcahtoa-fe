@@ -103,19 +103,30 @@ export const adminKeys = {
   
   management: {
     all: ["admin", "management"] as const,
+    lookups: (query: "role" | "department") =>
+      [...adminKeys.management.all, "lookups", query] as const,
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,
-      list: (params?: { page?: number; limit?: number }) =>
+      stats: () => [...adminKeys.management.users.all(), "stats"] as const,
+      details: () => [...adminKeys.management.users.all(), "detail"] as const,
+      detail: (id: string) => [...adminKeys.management.users.details(), id] as const,
+      activities: (id: string, params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.users.all(), "activities", id, params] as const,
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
         [...adminKeys.management.users.all(), "list", params] as const,
     },
     roles: {
       all: () => [...adminKeys.management.all, "roles"] as const,
-      list: () => [...adminKeys.management.roles.all(), "list"] as const,
+      stats: () => [...adminKeys.management.roles.all(), "stats"] as const,
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.roles.all(), "list", params] as const,
       detail: (id: string) => [...adminKeys.management.roles.all(), "detail", id] as const,
     },
     departments: {
       all: () => [...adminKeys.management.all, "departments"] as const,
-      list: () => [...adminKeys.management.departments.all(), "list"] as const,
+      stats: () => [...adminKeys.management.departments.all(), "stats"] as const,
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.departments.all(), "list", params] as const,
       detail: (id: string) => [...adminKeys.management.departments.all(), "detail", id] as const,
     },
   },

@@ -1,62 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Group, Text, TextInput, Button, Select, Badge } from "@mantine/core";
 import { Search, ListFilter, Upload } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { ViewUserActionModal } from "./ViewUserActionModal";
+import { useDebouncedValue } from "@mantine/hooks";
+import {
+  useAdminUserActivities,
+  type AdminUserActivity,
+} from "../../hooks/useAdminUserActivities";
 
 /* --------------------------------------------
  Types
 --------------------------------------------- */
-interface UserActivity {
-  actionId: string;
-  actionDate: string;
-  actionTime: string;
-  module: string;
-  moduleId: string;
-  actionTaken: string;
-  effect: "Posted" | "Pending" | "Rejected";
-}
-
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const activities: UserActivity[] = [
-  {
-    actionId: "7844gAGAA563A",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    module: "Transaction Management",
-    moduleId: "8933",
-    actionTaken: "Resolve BTA",
-    effect: "Posted",
-  },
-  {
-    actionId: "7844gAGAA563A",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    module: "Agent Management",
-    moduleId: "8935",
-    actionTaken: "Create Agent",
-    effect: "Pending",
-  },
-  {
-    actionId: "7844gAGAA563A",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    module: "Escrow Management",
-    moduleId: "8936",
-    actionTaken: "Settle BTA",
-    effect: "Rejected",
-  },
-];
+const PAGE_SIZE = 10;
 
 /* --------------------------------------------
  Helpers
 --------------------------------------------- */
-const effectColor = (effect: UserActivity["effect"]) => {
+const effectColor = (effect?: string) => {
   switch (effect) {
     case "Posted":
       return "green";
@@ -64,33 +28,43 @@ const effectColor = (effect: UserActivity["effect"]) => {
       return "orange";
     case "Rejected":
       return "red";
+    default:
+      return "gray";
   }
 };
 
 /* --------------------------------------------
  Component
 --------------------------------------------- */
-export default function UserActivitiesTable() {
+export default function UserActivitiesTable({ userId }: { userId?: string }) {
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState<string | null>(null);
   const [viewActionOpen, setViewActionOpen] = useState(false);
 
-  const filteredData = useMemo(() => {
-    return activities.filter(
-      (item) =>
-        item.actionId.toLowerCase().includes(search.toLowerCase()) ||
-        item.module.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [search]);
+  const { activities, totalPages, isLoading } = useAdminUserActivities(userId, {
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
+  const formatDate = (iso?: string) => {
+    if (!iso) return { date: "—", time: "" };
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString("en-NG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      time: d.toLocaleTimeString("en-NG", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    };
+  };
 
   /* --------------------------------------------
    Table Headers
@@ -107,40 +81,46 @@ export default function UserActivitiesTable() {
   /* --------------------------------------------
    Row Renderer
   --------------------------------------------- */
-  const renderRow = (item: UserActivity) => [
-    <Text key="id" size="sm" fw={500}>
-      {item.actionId}
-    </Text>,
+  const renderRow = (item: AdminUserActivity) => {
+    const { date, time } = formatDate(
+      typeof item.createdAt === "string" ? item.createdAt : undefined
+    );
+    const actionId = (item.actionId as string) ?? item.id ?? "—";
+    const moduleName = (item.module as string) ?? "—";
+    const moduleId = (item.moduleId as string) ?? "";
+    const actionTaken = (item.actionTaken as string) ?? "—";
+    const effect = (item.effect as string) ?? "—";
 
-    <div key="date">
-      <Text size="sm">{item.actionDate}</Text>
-      <Text size="xs" c="dimmed">
-        {item.actionTime}
-      </Text>
-    </div>,
+    return [
+      <Text key="id" size="sm" fw={500}>
+        {actionId}
+      </Text>,
 
-    <div key="module">
-      <Text size="sm">{item.module}</Text>
-      <Text size="xs" c="dimmed">
-        ID:{item.moduleId}
-      </Text>
-    </div>,
+      <div key="date">
+        <Text size="sm">{date}</Text>
+        <Text size="xs" c="dimmed">
+          {time}
+        </Text>
+      </div>,
 
-    <Text key="taken" size="sm" c="blue">
-      {item.actionTaken}
-    </Text>,
+      <div key="module">
+        <Text size="sm">{moduleName}</Text>
+        <Text size="xs" c="dimmed">
+          {moduleId ? `ID:${moduleId}` : ""}
+        </Text>
+      </div>,
 
-    <Badge
-      key="effect"
-      color={effectColor(item.effect)}
-      radius="xl"
-      variant="light"
-    >
-      {item.effect}
-    </Badge>,
+      <Text key="taken" size="sm" c="blue">
+        {actionTaken}
+      </Text>,
 
-    <RowActionIcon key="action" onClick={() => setViewActionOpen(true)} />,
-  ];
+      <Badge key="effect" color={effectColor(effect)} radius="xl" variant="light">
+        {effect}
+      </Badge>,
+
+      <RowActionIcon key="action" onClick={() => setViewActionOpen(true)} />,
+    ];
+  };
 
   return (
     <div className="bg-white rounded-xl p-5">
@@ -155,7 +135,10 @@ export default function UserActivitiesTable() {
             leftSection={<Search size={16} />}
             radius="xl"
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
             w={260}
           />
         </Group>
@@ -184,8 +167,8 @@ export default function UserActivitiesTable() {
       {/* Table */}
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={activities}
+        loading={isLoading}
         renderItems={renderRow}
         emptyTitle="No Activities Found"
         emptyMessage="This user has no recorded activities."

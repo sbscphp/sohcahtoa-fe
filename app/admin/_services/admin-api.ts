@@ -16,6 +16,19 @@ interface ValidateOtpResponseData {
   resetToken: string;
 }
 
+export interface CreateAdminUserPayload {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  altPhoneNumber: string | null;
+  position: string | null;
+  branch: string;
+  departmentId: string;
+  roleId: string;
+}
+
+export type LookupQuery = "role" | "department";
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -94,6 +107,70 @@ export const adminApi = {
         apiClient.patch<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.customers.flags.updateStatus(flagId),
           data
+        ),
+    },
+  },
+
+  // ==================== Management ====================
+  management: {
+    lookups: (query: LookupQuery) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.management.lookups, {
+        params: { query },
+      }),
+
+    users: {
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.list,
+          { params }
+        ),
+
+      create: (data: CreateAdminUserPayload) =>
+        apiClient.post<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.list,
+          data
+        ),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.getById(id)
+        ),
+
+      getActivities: (id: string, params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.activities(id),
+          { params }
+        ),
+
+      getStats: () =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.stats
+        ),
+    },
+
+    roles: {
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.list,
+          { params }
+        ),
+
+      getStats: () =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.stats
+        ),
+    },
+
+    departments: {
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.list,
+          { params }
+        ),
+
+      getStats: () =>
+        apiClient.get<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.stats
         ),
     },
   },
