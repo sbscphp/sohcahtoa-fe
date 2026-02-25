@@ -61,7 +61,8 @@ export interface VerifyPassportResponseData {
   address?: string;
 }
 
-export type VerifyPassportResponse = ApiResponseWrapper<VerifyPassportResponseData>;
+export type VerifyPassportResponse =
+  ApiResponseWrapper<VerifyPassportResponseData>;
 
 // Nigerian signup: send-otp expects verificationToken and verificationType (phone or email)
 export interface SendOtpRequestNigerian {
@@ -135,7 +136,8 @@ export interface ValidateEmailOtpResponseData {
   validationToken: string; // Token to proceed to create-account
 }
 
-export type ValidateEmailOtpResponse = ApiResponseWrapper<ValidateEmailOtpResponseData>;
+export type ValidateEmailOtpResponse =
+  ApiResponseWrapper<ValidateEmailOtpResponseData>;
 
 export interface CreateNigerianAccountRequest {
   password: string;
@@ -169,7 +171,8 @@ export interface ForgotPasswordResponseData {
   otp?: string; // OTP returned in response (for testing/dev)
 }
 
-export type ForgotPasswordResponse = ApiResponseWrapper<ForgotPasswordResponseData>;
+export type ForgotPasswordResponse =
+  ApiResponseWrapper<ForgotPasswordResponseData>;
 
 export interface VerifyResetOtpRequest {
   email: string;
@@ -181,7 +184,8 @@ export interface VerifyResetOtpResponseData {
   message: string;
 }
 
-export type VerifyResetOtpResponse = ApiResponseWrapper<VerifyResetOtpResponseData>;
+export type VerifyResetOtpResponse =
+  ApiResponseWrapper<VerifyResetOtpResponseData>;
 
 export interface ResetPasswordRequest {
   resetToken: string;
@@ -192,7 +196,8 @@ export interface ResetPasswordResponseData {
   message: string;
 }
 
-export type ResetPasswordResponse = ApiResponseWrapper<ResetPasswordResponseData>;
+export type ResetPasswordResponse =
+  ApiResponseWrapper<ResetPasswordResponseData>;
 
 export interface LoginResponseData {
   accessToken: string;
@@ -323,7 +328,12 @@ export interface Transaction {
   type: string;
   amount: number;
   currency: string;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED" | "REQUEST_MORE_INFO";
+  status:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "COMPLETED"
+    | "REQUEST_MORE_INFO";
   stage: string;
   date: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
@@ -437,7 +447,13 @@ export interface TransactionDetailStepData {
   tin?: string;
   formAId?: string;
   admissionType?: string | null;
-  pickupLocation?: { id: string; name: string; address: string; recipientName: string; recipientPhone: string };
+  pickupLocation?: {
+    id: string;
+    name: string;
+    address: string;
+    recipientName: string;
+    recipientPhone: string;
+  };
 }
 
 export interface TransactionDetailStep {
@@ -586,7 +602,8 @@ export interface UploadPassportResponseData {
   passportDocumentUrl: string;
 }
 
-export type UploadPassportResponse = ApiResponseWrapper<UploadPassportResponseData>;
+export type UploadPassportResponse =
+  ApiResponseWrapper<UploadPassportResponseData>;
 
 export interface PassportStatusResponse {
   status: "PENDING" | "VERIFIED" | "REJECTED";
@@ -675,7 +692,8 @@ export interface NotificationPreferences {
   updatedAt: string;
 }
 
-export type NotificationPreferencesResponse = ApiResponseWrapper<NotificationPreferences>;
+export type NotificationPreferencesResponse =
+  ApiResponseWrapper<NotificationPreferences>;
 
 export interface UpdateNotificationPreferencesRequest {
   emailEnabled?: boolean;

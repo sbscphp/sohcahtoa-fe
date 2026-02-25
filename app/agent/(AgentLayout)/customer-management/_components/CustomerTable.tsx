@@ -2,17 +2,12 @@
 
 import { useState, useMemo } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import {
-  Text,
-  Group,
-  TextInput,
-  Select,
-  Button,
-  Badge,
-} from "@mantine/core";
-import { Search, Upload, ListFilter, ArrowUpRight, ChevronRight } from "lucide-react";
+import SearchInput from "@/app/admin/_components/SearchInput";
+import { Text, Group, Select, Button, Badge } from "@mantine/core";
+import { Upload, ListFilter, ArrowUpRight, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import EmptyState from "@/app/admin/_components/EmptyState";
+import { ActionButton } from "@/app/admin/_components/ActionButton";
 
 interface Customer {
   customerName: string;
@@ -160,34 +155,30 @@ export default function CustomerTable() {
       {item.kycStatus}
     </Badge>,
 
-    <button
+    <ActionButton
       key="action"
       onClick={() => router.push(`/agent/customer-management/${item.id}`)}
-      className="text-primary-400 hover:text-primary-500 transition-colors"
-    >
-      <ChevronRight size={18} />
-    </button>,
+      aria-label="View customer details"
+    />,
   ];
 
   return (
     <div className="my-5 p-5 rounded-lg bg-white">
       <div>
         <Group justify="space-between" mb="md" wrap="wrap">
-          <Text fw={600} size="lg">
-            All Customers
-          </Text>
-
-          <Group gap="xs">
+          <div className="flex items-center gap-4">
+            <Text fw={600} size="lg">
+              All Customers
+            </Text>
             {/* Search */}
-            <TextInput
+            <SearchInput
               placeholder="Enter keyword"
-              leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
-              w={280}
-              radius="xl"
             />
+          </div>
 
+          <Group gap="xs">
             {/* Filter */}
             <Select
               value={filter}
@@ -200,10 +191,10 @@ export default function CustomerTable() {
 
             {/* Export */}
             <Button
-              variant="filled"
+              variant="light"
               color="orange"
               radius="xl"
-              leftSection={<Upload size={16} />}
+              rightSection={<Upload size={16} />}
             >
               Export
             </Button>
@@ -227,23 +218,21 @@ export default function CustomerTable() {
           description="You currently have not have any data available yet. Check back Later."
         />
       ) : (
-        <>
-          <DynamicTableSection
-            headers={customerHeaders}
-            data={paginatedData}
-            loading={false}
-            renderItems={renderCustomerRow}
-            emptyTitle="No Customers Found"
-            emptyMessage="There are currently no customers to display."
-            pagination={{
-              page,
-              totalPages,
-              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
-              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
-              onPageChange: setPage,
-            }}
-          />
-        </>
+        <DynamicTableSection
+          headers={customerHeaders}
+          data={paginatedData}
+          loading={false}
+          renderItems={renderCustomerRow}
+          emptyTitle="No Customers Found"
+          emptyMessage="There are currently no customers to display."
+          pagination={{
+            page,
+            totalPages,
+            onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+            onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+            onPageChange: setPage,
+          }}
+        />
       )}
     </div>
   );

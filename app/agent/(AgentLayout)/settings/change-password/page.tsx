@@ -42,14 +42,22 @@ export default function ChangePasswordPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [otpModalOpen, { open: openOtpModal, close: closeOtpModal }] =
     useDisclosure(false);
-  const [successModalOpen, { open: openSuccessModal, close: closeSuccessModal }] =
-    useDisclosure(false);
-  const [validationSuccessOpen, { open: openValidationSuccess, close: closeValidationSuccess }] =
-    useDisclosure(false);
+  const [
+    successModalOpen,
+    { open: openSuccessModal, close: closeSuccessModal },
+  ] = useDisclosure(false);
+  const [
+    validationSuccessOpen,
+    { open: openValidationSuccess, close: closeValidationSuccess },
+  ] = useDisclosure(false);
 
   const handleValidateOld = () => {
     // TODO: API validate old password then show OTP modal
-    if (oldPassword && confirmOldPassword && oldPassword === confirmOldPassword) {
+    if (
+      oldPassword &&
+      confirmOldPassword &&
+      oldPassword === confirmOldPassword
+    ) {
       openOtpModal();
     }
   };
@@ -188,7 +196,8 @@ export default function ChangePasswordPage() {
                     },
                     {
                       text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-                      met: /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword),
+                      met:
+                        /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword),
                     },
                     {
                       text: "Include Numbers (0-9)",
@@ -261,7 +270,7 @@ export default function ChangePasswordPage() {
         description="A six (6) digit OTP has been sent to your email linked to this account. e*****sohcahtoa.com. Enter code to continue"
         length={6}
         onSubmit={handleOtpSubmit}
-        onResend={handleOtpResend}
+        onResend={() => Promise.resolve(true)}
         expiresInSeconds={900}
       />
 

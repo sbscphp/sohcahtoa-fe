@@ -22,8 +22,10 @@ export default function SetSecurityQuestionPage() {
   const [answer, setAnswer] = useState("");
   const [otpModalOpen, { open: openOtpModal, close: closeOtpModal }] =
     useDisclosure(false);
-  const [successModalOpen, { open: openSuccessModal, close: closeSuccessModal }] =
-    useDisclosure(false);
+  const [
+    successModalOpen,
+    { open: openSuccessModal, close: closeSuccessModal },
+  ] = useDisclosure(false);
 
   const handleContinue = () => {
     if (question && answer.trim()) {
@@ -123,7 +125,7 @@ export default function SetSecurityQuestionPage() {
         description="A six (6) digit OTP has been sent to your email linked to this account. e*****sohcahtoa.com. Enter code to continue"
         length={6}
         onSubmit={handleOtpSubmit}
-        onResend={handleOtpResend}
+        onResend={() => Promise.resolve(true)}
         expiresInSeconds={900}
       />
 

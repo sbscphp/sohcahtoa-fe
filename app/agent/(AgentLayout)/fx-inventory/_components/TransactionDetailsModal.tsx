@@ -21,6 +21,7 @@ export function TransactionDetailsModal({
 }: TransactionDetailsModalProps) {
   return (
     <Modal
+      centered
       opened={opened}
       onClose={onClose}
       title={
@@ -93,11 +94,7 @@ export function TransactionDetailsModal({
         </Group>
 
         <Group justify="flex-end" mt="xl">
-          <Button
-            variant="outline"
-            color="orange"
-            onClick={onClose}
-          >
+          <Button variant="outline" color="orange" onClick={onClose}>
             Close
           </Button>
         </Group>

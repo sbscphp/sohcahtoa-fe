@@ -18,7 +18,9 @@ export function AgentAuthLayout({ children }: AuthLayoutProps) {
           <div className="flex items-center gap-3 mb-12">
             <Image src={logo} alt="SohCahToa" width={40} height={40} />
             <div>
-              <div className="text-heading-200 text-xl font-bold">SohCahToa</div>
+              <div className="text-heading-200 text-xl font-bold">
+                SohCahToa
+              </div>
               <div className="text-body-text-100 text-sm">Payout BDC</div>
             </div>
           </div>
@@ -30,7 +32,8 @@ export function AgentAuthLayout({ children }: AuthLayoutProps) {
             </h2>
 
             <p className="text-body-text-100 text-sm leading-relaxed">
-              Log in with your newly created credentials to access your SOHCAHTOA Agent account.
+              Log in with your newly created credentials to access your
+              SOHCAHTOA Agent account.
             </p>
           </div>
         </div>
