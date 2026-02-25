@@ -52,7 +52,7 @@ export function ExampleAdminCustomersList() {
   const query = useFetchDataSeperateLoading(
     [...adminKeys.customers.list(params)],
     () => adminApi.customers.list(params),
-    true
+    true,
   );
 
   const customerResponse = query?.data?.data as unknown[];
@@ -84,7 +84,7 @@ export function ExampleCustomerTransactionsList() {
   const query = useFetchData(
     [...customerKeys.transactions.list(params)],
     () => customerApi.transactions.list(params),
-    true
+    true,
   );
 
   const { data, isLoading } = query;
@@ -92,7 +92,11 @@ export function ExampleCustomerTransactionsList() {
 
   return (
     <div>
-      {isLoading ? <Skeleton height={200} /> : <div>{list.length} transactions</div>}
+      {isLoading ? (
+        <Skeleton height={200} />
+      ) : (
+        <div>{list.length} transactions</div>
+      )}
     </div>
   );
 }
@@ -100,11 +104,17 @@ export function ExampleCustomerTransactionsList() {
 // EXAMPLE 3: Single item (useFetchSingleData)
 // Params: id – pass to both query key and API function
 
-export function ExampleTransactionDetail({ transactionId }: { transactionId: string | null }) {
+export function ExampleTransactionDetail({
+  transactionId,
+}: {
+  transactionId: string | null;
+}) {
   const query = useFetchSingleData(
-    transactionId != null ? [...customerKeys.transactions.detail(transactionId)] : [],
+    transactionId != null
+      ? [...customerKeys.transactions.detail(transactionId)]
+      : [],
     () => customerApi.transactions.getById(transactionId!),
-    !!transactionId
+    !!transactionId,
   );
 
   const { data, isLoading } = query;
@@ -113,7 +123,7 @@ export function ExampleTransactionDetail({ transactionId }: { transactionId: str
   if (isLoading) return <Skeleton height={120} />;
   if (!data) return <div>Not found</div>;
 
-  return <div>Transaction: {data.id}</div>;
+  return <div>Transaction: {data.data.transactionId}</div>;
 }
 
 // EXAMPLE 4: Create (useCreateData)
@@ -123,20 +133,28 @@ export function ExampleCreateTransaction() {
   const createMutation = useCreateData(customerApi.transactions.create);
 
   const handleCreate = () => {
-    createMutation.mutate({
-      type: "PTA",
-      amount: 5000,
-      currency: "USD",
-      purpose: "Travel",
-      beneficiaryDetails: {},
-    },  {
-      onSuccess: () => {},
-      onError: (err) => handleApiError(err),
-    });
+    createMutation.mutate(
+      {
+        type: "PTA",
+        amount: 5000,
+        currency: "USD",
+        purpose: "Travel",
+        beneficiaryDetails: {},
+        destinationCountry: "US",
+      },
+      {
+        onSuccess: () => {},
+        onError: (err) => handleApiError(err),
+      },
+    );
   };
 
   return (
-    <button type="button" onClick={handleCreate} disabled={createMutation.isPending}>
+    <button
+      type="button"
+      onClick={handleCreate}
+      disabled={createMutation.isPending}
+    >
       {createMutation.isPending ? "Creating…" : "Create"}
     </button>
   );
@@ -145,19 +163,28 @@ export function ExampleCreateTransaction() {
 // EXAMPLE 5: Update (usePutData)
 // Params: wrap in a function so you pass (data) => api.update(id, data)
 
-export function ExampleUpdateTransaction({ transactionId }: { transactionId: string }) {
-  const updateMutation = usePutData(
-    (data: UpdateTransactionRequest) =>
-      customerApi.transactions.update(transactionId, data)
+export function ExampleUpdateTransaction({
+  transactionId,
+}: {
+  transactionId: string;
+}) {
+  const updateMutation = usePutData((data: UpdateTransactionRequest) =>
+    customerApi.transactions.update(transactionId, data),
   );
 
   const handleUpdate = () => {
-    updateMutation.mutate({ amount: 6000, purpose: "Updated purpose" }, 
-      { onError: (err) => handleApiError(err) });
+    updateMutation.mutate(
+      { amount: 6000, purpose: "Updated purpose" },
+      { onError: (err) => handleApiError(err) },
+    );
   };
 
   return (
-    <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending}>
+    <button
+      type="button"
+      onClick={handleUpdate}
+      disabled={updateMutation.isPending}
+    >
       Update
     </button>
   );
@@ -166,9 +193,13 @@ export function ExampleUpdateTransaction({ transactionId }: { transactionId: str
 // EXAMPLE 6: Upload (useUploadData)
 // Params: FormData – build in handler and pass to mutate()
 
-export function ExampleUploadDocuments({ transactionId }: { transactionId: string }) {
-  const uploadMutation = useUploadData(
-    (formData: FormData) => customerApi.transactions.uploadDocuments(transactionId, formData)
+export function ExampleUploadDocuments({
+  transactionId,
+}: {
+  transactionId: string;
+}) {
+  const uploadMutation = useUploadData((formData: FormData) =>
+    customerApi.transactions.uploadDocuments(transactionId, formData),
   );
 
   const handleUpload = (files: FileList | null) => {
@@ -191,14 +222,21 @@ export function ExampleUploadDocuments({ transactionId }: { transactionId: strin
 // EXAMPLE 7: Login (useCreateData) – no query key, mutation only
 
 export function ExampleLogin() {
-    const loginMutation = useCreateData(customerApi.auth.login);
+  const loginMutation = useCreateData(customerApi.auth.login);
 
   const handleLogin = () => {
-    loginMutation.mutate({ email: "user@example.com", password: "password" }, { onError: (err) => handleApiError(err) });
+    loginMutation.mutate(
+      { email: "user@example.com", password: "password" },
+      { onError: (err) => handleApiError(err) },
+    );
   };
 
   return (
-    <button type="button" onClick={handleLogin} disabled={loginMutation.isPending}>
+    <button
+      type="button"
+      onClick={handleLogin}
+      disabled={loginMutation.isPending}
+    >
       Login
     </button>
   );
@@ -217,8 +255,9 @@ interface DashboardStatsResponse {
 export function ExampleAdminDashboardStats() {
   const query = useFetchData<DashboardStatsResponse>(
     [...adminKeys.dashboard.stats()],
-    () => adminApi.dashboard.getStats() as unknown as Promise<DashboardStatsResponse>,
-    true
+    () =>
+      adminApi.dashboard.getStats() as unknown as Promise<DashboardStatsResponse>,
+    true,
   );
 
   const { data, isLoading } = query;
@@ -230,8 +269,12 @@ export function ExampleAdminDashboardStats() {
       ) : data != null ? (
         <div>
           {data.totalUsers != null && <span>Users: {data.totalUsers}</span>}
-          {data.totalTransactions != null && <span>Transactions: {data.totalTransactions}</span>}
-          {data.pendingApprovals != null && <span>Pending: {data.pendingApprovals}</span>}
+          {data.totalTransactions != null && (
+            <span>Transactions: {data.totalTransactions}</span>
+          )}
+          {data.pendingApprovals != null && (
+            <span>Pending: {data.pendingApprovals}</span>
+          )}
         </div>
       ) : (
         "No data"

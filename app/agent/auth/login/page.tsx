@@ -33,12 +33,12 @@ export default function AgentLoginPage() {
 
   const handleLogin = form.onSubmit(async (values) => {
     setLoginError(null);
-    
+
     // Mock login logic - replace with actual API call
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 500));
-      
+
       // Mock: Check if password is correct
       // In real app, this would come from API response
       if (values.password !== "#Mypassword404") {
@@ -66,6 +66,7 @@ export default function AgentLoginPage() {
   const handleResendOtp = async () => {
     // Mock resend OTP - replace with actual API call
     console.log("Resending OTP...");
+    return Promise.resolve(true);
   };
 
   return (
