@@ -4,7 +4,11 @@ import { useState, useMemo } from "react";
 import { Menu, TextInput } from "@mantine/core";
 import { Search, ChevronDown } from "lucide-react";
 import Image from "next/image";
-import { CURRENCIES, getCurrencyByCode, type Currency } from "@/app/(customer)/_lib/currency";
+import {
+  CURRENCIES,
+  getCurrencyByCode,
+  type Currency,
+} from "@/app/(customer)/_lib/currency";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 
 interface CurrencySelectorWithSearchProps {
@@ -26,7 +30,7 @@ export function CurrencySelectorWithSearch({
     return currencies.filter(
       (currency) =>
         currency.code.toLowerCase().includes(q) ||
-        currency.name.toLowerCase().includes(q)
+        currency.name.toLowerCase().includes(q),
     );
   }, [search, currencies]);
 
@@ -41,7 +45,7 @@ export function CurrencySelectorWithSearch({
       <Menu.Target>
         <button
           type="button"
-          className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 border border-gray-200  bg-black text-white hover:bg-gray-500 transition-colors rounded-3xl"
         >
           <Image
             src={getCurrencyFlagUrl(selectedCurrency.code) ?? ""}
@@ -59,7 +63,7 @@ export function CurrencySelectorWithSearch({
         <div className="p-2">
           <TextInput
             placeholder="Search"
-            leftSection={<Search size={16} className="text-orange-500" />}
+            // leftSection={<Search size={16} className="text-orange-500" />}
             value={search}
             onChange={(e) => setSearch(e.currentTarget.value)}
             size="sm"

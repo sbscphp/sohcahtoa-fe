@@ -42,7 +42,6 @@ export function SummaryCards({
                 {card.value}
               </Text>
             </div>
-            <ArrowUpRight size={20} className="text-gray-400" />
           </div>
         </Card>
       ))}

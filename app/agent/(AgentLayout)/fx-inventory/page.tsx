@@ -1,16 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Stack, Group, Select } from "@mantine/core";
+import { Group, Select } from "@mantine/core";
 import { CurrencySelectorWithSearch } from "@/app/agent/(AgentLayout)/rate-calculator/_components/CurrencySelectorWithSearch";
-import { CURRENCIES, getCurrencyByCode, type Currency } from "@/app/(customer)/_lib/currency";
+import {
+  CURRENCIES,
+  getCurrencyByCode,
+  type Currency,
+} from "@/app/(customer)/_lib/currency";
 import { SummaryCards } from "./_components/SummaryCards";
 import { BalanceSection } from "./_components/BalanceSection";
 import { CashInventoryTable } from "./_components/CashInventoryTable";
+import { SELECT_WIDTH } from "../../utils/constants";
 
 export default function FXInventoryPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
-    getCurrencyByCode("USD") ?? CURRENCIES[0]
+    getCurrencyByCode("USD") ?? CURRENCIES[0],
   );
   const [dateRange, setDateRange] = useState("last 3 months");
 
@@ -40,7 +45,7 @@ export default function FXInventoryPage() {
           value={dateRange}
           onChange={(v) => setDateRange(v || "last 3 months")}
           size="sm"
-          style={{ width: 180 }}
+          w={SELECT_WIDTH}
         />
       </Group>
 
@@ -52,7 +57,7 @@ export default function FXInventoryPage() {
       />
 
       {/* Balance Section */}
-      <BalanceSection
+      {/* <BalanceSection
         totalFxUnits={totalFxUnits}
         currency={selectedCurrency}
         onCurrencyChange={setSelectedCurrency}
@@ -68,7 +73,7 @@ export default function FXInventoryPage() {
           // Handle receive money action
           console.log("Receive money clicked");
         }}
-      />
+      /> */}
 
       {/* Cash Inventory Table */}
       <CashInventoryTable />

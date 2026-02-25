@@ -1,13 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  Table,
-  Text,
-  Group,
-  Button,
-  ActionIcon,
-} from "@mantine/core";
+import { Table, Text, Group, Button, ActionIcon } from "@mantine/core";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import EmptySection from "./EmptySection";
 import LoadingState from "./LoadingState";
@@ -37,6 +31,7 @@ interface DynamicTableSectionProps<T> {
   emptyTitle?: string;
   pagination?: PaginationProps;
   onClick?: (item: T) => void;
+  isNoBorder?: boolean;
 }
 
 /* --------------------------------------------
@@ -50,13 +45,12 @@ export default function DynamicTableSection<T>({
   emptyMessage = "No records found",
   emptyTitle = "No Records Found",
   pagination,
+  isNoBorder = false,
 }: DynamicTableSectionProps<T>) {
   const renderRowContent = (item: T) => {
     const content = renderItems(item, headers);
     return content.map((value, index) => (
-      <Table.Td key={headers[index]?.key ?? index}>
-        {value}
-      </Table.Td>
+      <Table.Td key={headers[index]?.key ?? index}>{value}</Table.Td>
     ));
   };
 
@@ -92,6 +86,7 @@ export default function DynamicTableSection<T>({
             horizontalSpacing="md"
             highlightOnHover
             withTableBorder
+            withRowBorders={!isNoBorder}
             className="min-w-200"
           >
             <Table.Thead>
@@ -109,9 +104,7 @@ export default function DynamicTableSection<T>({
 
             <Table.Tbody>
               {data.map((item, index) => (
-                <Table.Tr key={index}>
-                  {renderRowContent(item)}
-                </Table.Tr>
+                <Table.Tr key={index}>{renderRowContent(item)}</Table.Tr>
               ))}
             </Table.Tbody>
           </Table>
@@ -135,9 +128,7 @@ export default function DynamicTableSection<T>({
                   <Text fw={600} size="sm" c="dimmed">
                     {header.label}
                   </Text>
-                  <div className="text-sm">
-                    {content[index]}
-                  </div>
+                  <div className="text-sm">{content[index]}</div>
                 </div>
               ))}
             </div>
@@ -174,9 +165,7 @@ export default function DynamicTableSection<T>({
                   variant={isActive ? "filled" : "subtle"}
                   color={isActive ? "#F8DCCD" : "gray"}
                   c={isActive ? "#DD4F05" : "#667085"}
-                  onClick={() =>
-                    pagination.onPageChange?.(pageNumber)
-                  }
+                  onClick={() => pagination.onPageChange?.(pageNumber)}
                 >
                   {pageNumber}
                 </ActionIcon>
