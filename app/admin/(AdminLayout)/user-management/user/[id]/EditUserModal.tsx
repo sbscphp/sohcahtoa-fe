@@ -1,178 +1,273 @@
 "use client";
 
-import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
-import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import {
   Modal,
   Text,
-  Group,
   TextInput,
   Select,
-  Button,
+  Group,
   Stack,
   Divider,
-  Badge,
+  Button,
 } from "@mantine/core";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
+import { useForm } from "@mantine/form";
+import { usePutData } from "@/app/_lib/api/hooks";
+import {
+  adminApi,
+  type UpdateAdminUserPayload,
+} from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { useManagementLookups } from "../../hooks/useManagementLookups";
 
 interface EditUserModalProps {
   opened: boolean;
   onClose: () => void;
-  onSave: (values: any) => void;
+  userId?: string;
   user: {
     fullName: string;
     email: string;
+    phoneNumber?: string;
+    altPhoneNumber?: string;
+    position?: string;
     branch: string;
-    department: string;
-    role: string;
+    departmentId: string;
+    roleId: string;
   };
 }
 
 export function EditUserModal({
   opened,
   onClose,
+  userId,
   user,
 }: EditUserModalProps) {
-    const router = useRouter();
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-  const handleClick = () => {
-    setIsConfirmOpen(true);
+  const queryClient = useQueryClient();
+  const { options: roleOptions, isLoading: rolesLoading } =
+    useManagementLookups("role");
+  const { options: departmentOptions, isLoading: departmentsLoading } =
+    useManagementLookups("department");
+
+  const form = useForm({
+    initialValues: {
+      fullName: user.fullName ?? "",
+      email: user.email ?? "",
+      phoneNumber: user.phoneNumber ?? "",
+      altPhoneNumber: user.altPhoneNumber ?? "",
+      branch: user.branch ?? "",
+      departmentId: user.departmentId ?? "",
+      position: user.position ?? "",
+      roleId: user.roleId ?? "",
+    },
+    validate: {
+      fullName: (value) =>
+        value.trim().length ? null : "Full Name is required",
+      email: (value) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+          ? null
+          : "Valid email is required",
+      phoneNumber: (value) =>
+        value.trim().length ? null : "Phone Number 1 is required",
+      branch: (value) => (value ? null : "Branch is required"),
+      departmentId: (value) => (value ? null : "Department is required"),
+      roleId: (value) => (value ? null : "Admin Role is required"),
+    },
+  });
+
+  const updateUserMutation = usePutData(
+    (payload: UpdateAdminUserPayload) => adminApi.management.users.update(userId!, payload),
+    {
+      onSuccess: async () => {
+        notifications.show({
+          title: "User Updated",
+          message: "Admin user has been updated successfully.",
+          color: "green",
+        });
+        onClose();
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.users.all()],
+          }),
+          ...(userId
+            ? [
+                queryClient.invalidateQueries({
+                  queryKey: [...adminKeys.management.users.detail(userId)],
+                }),
+              ]
+            : []),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Update User Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update admin user. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const handleSubmit = (values: typeof form.values) => {
+    if (!userId) return;
+    const payload: UpdateAdminUserPayload = {
+      fullName: values.fullName.trim(),
+      email: values.email.trim(),
+      phoneNumber: values.phoneNumber.trim(),
+      altPhoneNumber: values.altPhoneNumber.trim() || null,
+      position: values.position.trim() || null,
+      branch: values.branch,
+      departmentId: values.departmentId,
+      roleId: values.roleId,
+    };
+    updateUserMutation.mutate(payload);
   };
-  const handleConfirm = () => {
-    setIsConfirmOpen(false);
-    setIsSuccessOpen(true);
-  };
-  const handleManageUser = () => {
-    router.push("/admin/user-management");
-  };
+
   return (
-    <>
     <Modal
       opened={opened}
       onClose={onClose}
       centered
-      size="lg"
+      size="xl"
       radius="md"
-      withCloseButton={false}
+      title={
+        <Text className="text-body-heading-300! text-xl! font-bold! leading-tight!">
+          Edit User Details
+        </Text>
+      }
+      closeButtonProps={{
+        icon: (
+          <X
+            size={20}
+            className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!"
+          />
+        ),
+      }}
     >
-      {/* Header */}
-      <Group justify="space-between" mb="xs">
-        <div>
-          <Text fw={600} size="lg">
-            Edit User Details
-          </Text>
-          <Text size="sm" c="dimmed">
-            View and manage user details
-          </Text>
-        </div>
+      <Divider my="xs" />
 
-        <Badge
-          className="py-2! px-1! rounded-full"
-          color="#DD4F05"
-          size="xs"
-          onClick={onClose}
-        >
-          ✕
-        </Badge>
-      </Group>
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md" mt="lg">
+          <Group grow>
+            <TextInput
+              label="Full Name"
+              placeholder="Enter Full Name"
+              required
+              {...form.getInputProps("fullName")}
+            />
 
-      <Divider my="md" />
-
-      {/* Form */}
-      <Stack gap="md">
-        <Group grow>
-          <TextInput
-            label="Full Name"
-            required
-            value={user.fullName}
-          />
-
-          <TextInput
-            label="Email Address"
-            required
-            value={user.email}
-          />
-        </Group>
-
-        <Group grow>
-          <Select
-            label="Branch"
-            required
-            value={user.branch}
-            data={[
-              "Lagos State Branch",
-              "Abuja Branch",
-              "Port Harcourt Branch",
-            ]}
-          />
-          <Group className="relative">
-          <Select
-            label="Department"
-            required
-            className="w-full relative"
-            value={user.department}
-            data={[
-              "Audit and Internal Control",
-              "Finance and Accounting",
-              "Technology",
-            ]}
-          />
-          <span className="absolute text-xs text-gray-700 top-16">A corresponding department within a branch</span>
-          
+            <TextInput
+              label="Email Address"
+              placeholder="example@email.com"
+              required
+              {...form.getInputProps("email")}
+            />
           </Group>
+
+          <Group grow>
+            <TextInput
+              label="Phone Number 1"
+              placeholder="+234 00 0000 0000"
+              required
+              {...form.getInputProps("phoneNumber")}
+            />
+
+            <TextInput
+              label="Phone Number 2 (optional)"
+              placeholder="+234 00 0000 0000"
+              {...form.getInputProps("altPhoneNumber")}
+            />
+          </Group>
+
+          <Group grow>
+            <Select
+              label="Branch"
+              placeholder="Select an Option"
+              required
+              data={[
+                "Lagos Branch",
+                "Abuja Branch",
+                "Port Harcourt Branch",
+                "Lagos State Branch",
+              ]}
+              value={form.values.branch}
+              onChange={(value) => form.setFieldValue("branch", value ?? "")}
+              error={form.errors.branch}
+            />
+
+            <Stack gap={4}>
+              <Select
+                label="Department"
+                placeholder="Select an Option"
+                required
+                data={departmentOptions}
+                disabled={departmentsLoading}
+                searchable
+                value={form.values.departmentId}
+                onChange={(value) =>
+                  form.setFieldValue("departmentId", value ?? "")
+                }
+                error={form.errors.departmentId}
+              />
+              <Text size="xs" c="dimmed">
+                A corresponding department within a branch
+              </Text>
+            </Stack>
+          </Group>
+
+          <Stack gap={4}>
+            <TextInput
+              label="Position"
+              placeholder="Enter position name"
+              {...form.getInputProps("position")}
+            />
+            <Text size="xs" c="dimmed">
+              Position user hold in the company
+            </Text>
+          </Stack>
+
+          <Select
+            label="Admin Role"
+            placeholder="Search or select option"
+            required
+            data={roleOptions}
+            disabled={rolesLoading}
+            searchable
+            value={form.values.roleId}
+            onChange={(value) => form.setFieldValue("roleId", value ?? "")}
+            error={form.errors.roleId}
+          />
+        </Stack>
+
+        <Divider my="lg" />
+
+        <Group justify="flex-end">
+          <Button
+            variant="outline"
+            radius="xl"
+            onClick={onClose}
+            disabled={updateUserMutation.isPending}
+          >
+            Close
+          </Button>
+
+          <Button
+            type="submit"
+            color="orange"
+            radius="xl"
+            disabled={!form.isValid() || !userId}
+            loading={updateUserMutation.isPending}
+          >
+            Save Changes
+          </Button>
         </Group>
-
-        <Select
-          label="Role"
-          required
-          value={user.role}
-          data={[
-            "Audit and Internal Control Role",
-            "Finance Role",
-            "Admin Role",
-          ]}
-        />
-      </Stack>
-
-      <Divider my="lg" />
-
-      {/* Footer */}
-      <Group justify="flex-end">
-        <Button variant="outline" radius="xl" onClick={onClose}>
-          Close
-        </Button>
-
-        <Button
-          color="orange"
-          radius="xl"
-          onClick={handleClick}
-        >
-          Save Changes
-        </Button>
-      </Group>
+      </form>
     </Modal>
-    <ConfirmationModal
-        opened={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        title="Save Changes?"
-        message="Are you sure, save and update this changes? Kindly note that this new changes would override the existing data"
-        primaryButtonText={`Yes, Save and Update Changes`}
-        secondaryButtonText="No, Close"
-        onPrimary={handleConfirm}
-      />
-
-      {/* Success modal */}
-      <SuccessModal
-        opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
-        title="New Changes Saved"
-        message="New Changes has been successfully Saved and Updated"
-        primaryButtonText="Manage User"
-        onPrimaryClick={handleManageUser}
-        secondaryButtonText="No, Close"
-      />
-    </>
   );
 }

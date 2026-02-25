@@ -149,6 +149,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
           <Group grow>
             <TextInput
               label="Phone Number 1"
+              type="number"
               placeholder="+234 00 0000 0000"
               required
               {...form.getInputProps("phoneNumber")}
@@ -156,6 +157,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
 
             <TextInput
               label="Phone Number 2 (optional)"
+              type="number"
               placeholder="+234 00 0000 0000"
               {...form.getInputProps("altPhoneNumber")}
             />

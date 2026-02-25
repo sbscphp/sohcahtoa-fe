@@ -6,3 +6,5 @@ alwaysApply: true
 Maintain existing format for defining apis in _services & api folders for continuity
 
 Define related hooks in the same file
+
+Use strict type number for phone number fields

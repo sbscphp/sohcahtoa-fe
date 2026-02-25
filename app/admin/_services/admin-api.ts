@@ -27,6 +27,8 @@ export interface CreateAdminUserPayload {
   roleId: string;
 }
 
+export type UpdateAdminUserPayload = CreateAdminUserPayload;
+
 export type LookupQuery = "role" | "department";
 
 export const adminApi = {
@@ -127,7 +129,13 @@ export const adminApi = {
 
       create: (data: CreateAdminUserPayload) =>
         apiClient.post<ApiResponse<unknown>>(
-          API_ENDPOINTS.admin.management.users.list,
+          API_ENDPOINTS.admin.management.users.create,
+          data
+        ),
+
+      update: (id: string, data: UpdateAdminUserPayload) =>
+        apiClient.put<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.update(id),
           data
         ),
 

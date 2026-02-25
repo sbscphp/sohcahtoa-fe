@@ -59,9 +59,12 @@ export default function ViewAdminUserDetails() {
   const userDetails = {
     fullName: user?.fullName ?? "",
     email: user?.email ?? "",
+    phoneNumber: user?.phoneNumber ?? "",
+    altPhoneNumber: user?.altPhoneNumber ?? "",
+    position: user?.position ?? "",
     branch: user?.branch ?? "",
-    department: user?.departmentName ?? user?.departmentId ?? "",
-    role: user?.roleName ?? user?.roleId ?? "",
+    departmentId: user?.departmentId ?? "",
+    roleId: user?.roleId ?? "",
   };
 
   const handleViewAllCustomers = () => {
@@ -154,15 +157,14 @@ export default function ViewAdminUserDetails() {
       </div>
 
       {/* ✅ Edit User Modal */}
-      <EditUserModal
-        opened={editOpen}
-        onClose={() => setEditOpen(false)}
-        user={userDetails}
-        onSave={(updatedUser) => {
-          console.log("Updated user:", updatedUser);
-          setEditOpen(false);
-        }}
-      />
+      {editOpen && (
+        <EditUserModal
+          opened={editOpen}
+          onClose={() => setEditOpen(false)}
+          userId={userId}
+          user={userDetails}
+        />
+      )}
 
       {/* Deactivate / Reactivate confirmation modal */}
       <ConfirmationModal
