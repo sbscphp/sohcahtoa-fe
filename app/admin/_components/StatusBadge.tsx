@@ -58,6 +58,7 @@ export function StatusBadge({
       radius={radius}
       size={size}
       bg={bg}
+      styles={{ label: { overflow: "visible", textOverflow: "unset" } }}
     >
       {status}
     </Badge>

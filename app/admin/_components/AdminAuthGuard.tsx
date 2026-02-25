@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { adminUserAtom, adminAccessTokenAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
 import { apiClient } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useTokenExpiry } from "@/app/admin/_hooks/useTokenExpiry";
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
@@ -35,6 +36,9 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   useEffect(() => {
     apiClient.setAuthTokenGetter(() => accessToken);
   }, [accessToken]);
+
+  // Track token expiry and clear session + redirect when it expires.
+  useTokenExpiry(accessToken);
 
   // Redirect once hydration confirms there is no active session.
   useEffect(() => {

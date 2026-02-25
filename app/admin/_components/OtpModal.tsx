@@ -22,7 +22,7 @@ export interface OtpModalProps {
   /** Called when user submits the OTP (e.g. Validate clicked) */
   onSubmit: (otp: string) => void;
   /** Called when user requests a new OTP (e.g. Resend OTP clicked) */
-  onResend: () => void;
+  onResend: () => Promise<boolean> | boolean;
   /** Countdown duration in seconds. Default 900 (15 min) */
   expiresInSeconds?: number;
 }
@@ -43,7 +43,7 @@ function OtpModalContent({
   loading: boolean;
   isResending: boolean;
   onSubmit: (otp: string) => void;
-  onResend: () => void;
+  onResend: () => Promise<boolean> | boolean;
   expiresInSeconds: number;
 }) {
   const [otp, setOtp] = useState("");
@@ -58,6 +58,16 @@ function OtpModalContent({
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const canSubmit = otp.length === length && !loading;
+  const isTimerActive = timeLeft > 0;
+  const isResendDisabled = isResending || isTimerActive;
+
+  const handleResend = async () => {
+    if (isResendDisabled) return;
+    const didResendSucceed = await Promise.resolve(onResend());
+    if (didResendSucceed) {
+      setTimeLeft(expiresInSeconds);
+    }
+  };
 
   return (
     <Stack gap="md" p={"md"}>
@@ -89,20 +99,22 @@ function OtpModalContent({
           Didn’t Receive Code?{" "}
           <span
               role="button"
-              tabIndex={0}
-              onClick={isResending ? undefined : onResend}
+              tabIndex={isResendDisabled ? -1 : 0}
+              onClick={isResendDisabled ? undefined : handleResend}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  if (!isResending) onResend();
+                  if (!isResendDisabled) {
+                    void handleResend();
+                  }
                 }
               }}
               className={
-                isResending
+                isResendDisabled
                   ? "text-error-600/60 cursor-not-allowed"
                   : "text-error-600 cursor-pointer font-medium underline"
               }
-              aria-disabled={isResending}
+              aria-disabled={isResendDisabled}
             >
               Resend OTP
             </span>
@@ -135,7 +147,7 @@ export function OtpModal({
   isResending = false,
   onSubmit,
   onResend,
-  expiresInSeconds = 900,
+  expiresInSeconds = 300,
 }: OtpModalProps) {
   return (
     <Modal
