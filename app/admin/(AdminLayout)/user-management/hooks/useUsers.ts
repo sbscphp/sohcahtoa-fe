@@ -22,11 +22,6 @@ export interface AdminUserItem {
   departmentName: string | null;
 }
 
-interface UserListEntry {
-  user: AdminUserItem;
-  rolePermissions: Record<string, unknown>;
-}
-
 interface Pagination {
   total: number;
   page: number;
@@ -36,7 +31,7 @@ interface Pagination {
 
 interface UsersListResponse {
   success: boolean;
-  data: UserListEntry[];
+  data: AdminUserItem[];
   metadata: {
     timestamp: string;
     requestId: string;
@@ -59,11 +54,13 @@ export function useUsers(params: UseUsersParams = {}) {
     true
   );
 
+  console.log(query.data);
+
   const entries = query.data?.data ?? [];
   const pagination = query.data?.metadata?.pagination;
 
   return {
-    users: entries.map((entry) => entry.user),
+    users: entries,
     total: pagination?.total ?? 0,
     page: pagination?.page ?? 1,
     totalPages: pagination?.totalPages ?? 1,
