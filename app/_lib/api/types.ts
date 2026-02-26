@@ -141,12 +141,12 @@ export type ValidateEmailOtpResponse =
 
 export interface CreateNigerianAccountRequest {
   password: string;
-  validationToken: string; // From validate-email-otp step
+  verificationToken: string;
 }
 
 export interface CreateTouristAccountRequest {
   password: string;
-  validationToken: string; // From validate-otp step
+  verificationToken: string;
 }
 
 export interface RefreshTokenRequest {

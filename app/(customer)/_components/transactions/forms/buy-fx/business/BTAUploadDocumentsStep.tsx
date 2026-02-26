@@ -37,6 +37,9 @@ const uploadDocumentsSchema = z.object({
   letterOfInvitationFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter of Invitation from Partner is required",
   }),
+  tinCertificateFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Tax Identification Number (TIN) certificate file is required",
+  }),
 });
 
 export type BTAUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
@@ -72,6 +75,7 @@ export default function BTAUploadDocumentsStep({
       visaFile: initialValues?.visaFile ?? null,
       letterFromCompanyFile: initialValues?.letterFromCompanyFile ?? null,
       letterOfInvitationFile: initialValues?.letterOfInvitationFile ?? null,
+      tinCertificateFile: initialValues?.tinCertificateFile ?? null,
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -217,9 +221,9 @@ export default function BTAUploadDocumentsStep({
         <TransactionFileUploadInput
             label="Tax Identification Number (TIN)"
             required
-            value={form.values.passportFile}
-            onChange={(file) => form.setFieldValue("passportFile", file)}
-            error={form.errors.passportFile as string}
+            value={form.values.tinCertificateFile}
+            onChange={(file) => form.setFieldValue("tinCertificateFile", file)}
+            error={form.errors.tinCertificateFile as string}
           />
         <div className="space-y-2">
           <TransactionFileUploadInput
