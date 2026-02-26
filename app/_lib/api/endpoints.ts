@@ -112,5 +112,22 @@ export const API_ENDPOINTS = {
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },
+    management: {
+      lookups: "/api/admin/management/lookups",
+      users: {
+        list: "/api/admin/management/users",
+        stats: "/api/admin/management/users/stats",
+        getById: (id: string) => `/api/admin/management/users/${id}`,
+        activities: (id: string) => `/api/admin/management/users/${id}/activities`,
+      },
+      roles: {
+        list: "/api/admin/management/roles",
+        stats: "/api/admin/management/roles/stats",
+      },
+      departments: {
+        list: "/api/admin/management/departments",
+        stats: "/api/admin/management/departments/stats",
+      },
+    },
   },
 } as const;

@@ -116,7 +116,7 @@ export default function LoginPage() {
       <OtpModal
         opened={otpModalOpened}
         onClose={() => setOtpModalOpened(false)}
-        title="Account Authorisation Access"
+        title="Account Authorization Access"
         description="A six (6) digit OTP has been sent to your email linked to this account. Enter the code to log in."
         length={6}
         loading={verifyOtp.isPending}
@@ -124,12 +124,16 @@ export default function LoginPage() {
         onSubmit={(otp) =>
           verifyOtp.mutate({ otp, email: loginValues!.email })
         }
-        onResend={() => {
-          if (loginValues) {
-            loginMutation.mutate({
+        onResend={async () => {
+          if (!loginValues) return false;
+          try {
+            await loginMutation.mutateAsync({
               email: loginValues.email,
               password: loginValues.password,
             });
+            return true;
+          } catch {
+            return false;
           }
         }}
       />

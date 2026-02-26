@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Text,
   Group,
@@ -18,85 +18,16 @@ import { CreateRoleModal } from "./CreateRoleModal";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useRoles, type RoleItem } from "../../hooks/useRoles";
+import { useDebouncedValue } from "@mantine/hooks";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface Role {
-  name: string;
-  id: string;
-  createdDate: string;
-  createdTime: string;
-  createdBy: string;
-  createdById: string;
-  NumOfPermission: number;
-  status: "Active" | "Deactivated";
-}
+const PAGE_SIZE = 10;
 
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const departments: Role[] = [
-  {
-    name: "Internal Control",
-    id: "6320",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Kunle Dairo",
-    createdById: "9023",
-    NumOfPermission: 16,
-    status: "Active",
-  },
-  {
-    name: "Risk Assessment",
-    id: "7023",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Marcus Lee",
-    createdById: "9025",
-    NumOfPermission: 17,
-    status: "Deactivated",
-  },
-  {
-    name: "Financial Reporting",
-    id: "2234",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Sofia Wang",
-    createdById: "9026",
-    NumOfPermission: 18,
-    status: "Active",
-  },
-  {
-    name: "External Audit",
-    id: "5451",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Aisha Patel",
-    createdById: "9024",
-    NumOfPermission: 16,
-    status: "Deactivated",
-  },
-  {
-    name: "Compliance Review",
-    id: "7789",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Jamal Rivers",
-    createdById: "9027",
-    NumOfPermission: 20,
-    status: "Active",
-  },
-];
-
-/* --------------------------------------------
- Component
---------------------------------------------- */
 export default function RolesTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState("Filter By");
   const [open, setOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
@@ -105,90 +36,87 @@ export default function RolesTable() {
   const isCurrentlyActive = status === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
   const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
-    const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
-  /* Search Filter */
-  const filteredData = useMemo(() => {
-    return departments.filter(
-      (dept) =>
-        dept.name.toLowerCase().includes(search.toLowerCase()) ||
-        dept.id.includes(search),
-    );
-  }, [search]);
+  const { roles, totalPages, isLoading } = useRoles({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
   const handleConfirm = () => {
     setStatus((prev) => (prev === "Active" ? "Deactivated" : "Active"));
     setDeactivateOpen(false);
     setIsSuccessOpen(true);
   };
 
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
-
-  /* Table Headers */
   const headers = [
-    { label: "Department Name", key: "name" },
+    { label: "Role Name", key: "name" },
     { label: "Date Created", key: "date" },
-    { label: "Created By", key: "createdBy" },
+    { label: "Users", key: "users" },
     { label: "Status", key: "status" },
-    { label: "Number of Permission", key: "NumOfPermission" },
+    { label: "Permissions", key: "permissions" },
     { label: "Action", key: "action" },
   ];
 
-  /* Row Renderer */
-  const renderRow = (role: Role) => [
-    <div key="name">
-      <Text fw={500} size="sm">
-        {role.name}
-      </Text>
-      <Text size="xs" c="dimmed">
-        ID:{role.id}
-      </Text>
-    </div>,
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" }),
+      time: d.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit", hour12: true }),
+    };
+  };
 
-    <div key="date">
-      <Text size="sm">{role.createdDate}</Text>
-      <Text size="xs" c="dimmed">
-        {role.createdTime}
-      </Text>
-    </div>,
+  const renderRow = (role: RoleItem) => {
+    const { date, time } = formatDate(role.createdAt);
 
-    <div key="createdBy">
-      <Text size="sm">{role.createdBy}</Text>
-      <Text size="xs" c="dimmed">
-        ID:{role.createdById}
-      </Text>
-    </div>,
+    return [
+      <div key="name">
+        <Text fw={500} size="sm">
+          {role.name}
+        </Text>
+        <Text size="xs" c="dimmed">
+          ID:{role.id}
+        </Text>
+      </div>,
 
-    <StatusBadge key="status" status={role.status} />,
+      <div key="date">
+        <Text size="sm">{date}</Text>
+        <Text size="xs" c="dimmed">
+          {time}
+        </Text>
+      </div>,
 
-    <div key="createdBy">
-      <Text size="sm">{role.NumOfPermission}</Text>
-      
-    </div>,
+      <Text key="users" size="sm">
+        {role._count.users}
+      </Text>,
 
+      <StatusBadge key="status" status={role.isActive ? "Active" : "Deactivated"} />,
 
-        <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser())} />,
+      <Text key="permissions" size="sm">
+        {role.permissionsCount}
+      </Text>,
 
-  ];
+      <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(role.id))} />,
+    ];
+  };
 
   return (
     <div className="p-5 bg-white rounded-lg">
-      {/* Header */}
       <Group justify="space-between" mb="md" wrap="wrap">
         <Group>
           <Text fw={600} size="lg">
-            All Departments
+            All Roles
           </Text>
 
           <TextInput
             placeholder="Enter keyword"
             leftSection={<Search size={16} color="#DD4F05" />}
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
             w={320}
             radius="xl"
           />
@@ -214,7 +142,7 @@ export default function RolesTable() {
           </Button>
 
           <Button
-            onClick={() => {setOpen(true);}}
+            onClick={() => setOpen(true)}
             color="orange"
             radius="xl"
             rightSection={<Plus size={16} />}
@@ -223,14 +151,14 @@ export default function RolesTable() {
           </Button>
         </Group>
       </Group>
-      {/* Table */}
+
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={roles}
+        loading={isLoading}
         renderItems={renderRow}
-        emptyTitle="No Departments Found"
-        emptyMessage="There are no departments available yet."
+        emptyTitle="No Roles Found"
+        emptyMessage="There are no roles available yet."
         pagination={{
           page,
           totalPages,
