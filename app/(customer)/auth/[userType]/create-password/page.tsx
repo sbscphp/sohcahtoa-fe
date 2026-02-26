@@ -18,6 +18,11 @@ export default function CreatePasswordPage() {
   const params = useParams();
   const userType = validateUserType(params.userType);
 
+  type CreatePasswordPayload = {
+    password: string;
+    token: string;
+  };
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -51,9 +56,19 @@ export default function CreatePasswordPage() {
   }, [userType, router]);
 
   const createAccountMutation = useCreateData(
-    userType === "citizen"
-      ? customerApi.auth.nigerian.createAccount
-      : customerApi.auth.tourist.createAccount
+    async ({ password, token }: CreatePasswordPayload) => {
+      if (userType === "citizen") {
+        return customerApi.auth.nigerian.createAccount({
+          password,
+          verificationToken: token,
+        });
+      }
+
+      return customerApi.auth.tourist.createAccount({
+        password,
+        verificationToken: token,
+      });
+    }
   );
 
   const validatePassword = (pwd: string) => {
@@ -100,7 +115,7 @@ export default function CreatePasswordPage() {
     createAccountMutation.mutate(
       {
         password,
-        validationToken: tokenToUse,
+        token: tokenToUse,
       },
       {
         onSuccess: (response) => {
