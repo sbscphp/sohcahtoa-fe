@@ -148,7 +148,7 @@ class ApiClient {
         const error = await this.handleError(response);
 
         // Handle 401 Unauthorized - log user out
-        if (response.status === 401 && typeof window !== 'undefined') {
+        if (response.status === 401 && !skipAuth && typeof window !== "undefined") {
           performLogout();
         }
 
