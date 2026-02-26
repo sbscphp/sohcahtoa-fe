@@ -180,8 +180,7 @@ export default function RateManagementPage() {
         // Handle action click
         router.push(`/admin/rate/${item.id}`);
       }}
-    />
-    
+    />,
   ];
 
   return (
@@ -250,7 +249,7 @@ export default function RateManagementPage() {
 
             <CustomButton
               buttonType="primary"
-              onClick={() => router.push('/admin/rate/create')}
+              onClick={() => router.push("/admin/rate/create")}
               rightSection={<Plus size={16} />}
             >
               Add New Rate
