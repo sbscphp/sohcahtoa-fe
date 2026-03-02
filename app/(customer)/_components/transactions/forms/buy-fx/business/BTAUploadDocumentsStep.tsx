@@ -31,6 +31,9 @@ const uploadDocumentsSchema = z.object({
   visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
+  returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Return Ticket file is required",
+  }),
   letterFromCompanyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter from company/business confirming what the payment is about is required",
   }),
@@ -73,6 +76,7 @@ export default function BTAUploadDocumentsStep({
       passportFile: initialValues?.passportFile ?? null,
       visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       visaFile: initialValues?.visaFile ?? null,
+      returnTicketFile: initialValues?.returnTicketFile ?? null,
       letterFromCompanyFile: initialValues?.letterFromCompanyFile ?? null,
       letterOfInvitationFile: initialValues?.letterOfInvitationFile ?? null,
       tinCertificateFile: initialValues?.tinCertificateFile ?? null,
@@ -242,6 +246,14 @@ export default function BTAUploadDocumentsStep({
             {...form.getInputProps("visaDocumentNumber")}
           />
         </div>
+
+        <TransactionFileUploadInput
+          label="Return Ticket"
+          required
+          value={form.values.returnTicketFile}
+          onChange={(file) => form.setFieldValue("returnTicketFile", file)}
+          error={form.errors.returnTicketFile as string}
+        />
 
         <TransactionFileUploadInput
             label="Letter of request from Corporate Body"
