@@ -39,6 +39,14 @@ export interface CreateDepartmentPayload {
   isDefault: boolean;
 }
 
+export interface CreateAgentPayload {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  branch: string;
+  attachment: File;
+}
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -88,6 +96,35 @@ export const adminApi = {
 
     getPendingApprovals: () =>
       apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.pendingApprovals),
+  },
+
+  // ==================== Agent ====================
+  agent: {
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+      branch?: string;
+      fromDate?: string;
+      toDate?: string;
+      sort?: string;
+    }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.agent.list,
+        { params }
+      ),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.agent.stats
+      ),
+
+    create: (data: FormData) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.agent.list,
+        data
+      ),
   },
 
   // ==================== Customers ====================

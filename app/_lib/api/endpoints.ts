@@ -96,6 +96,10 @@ export const API_ENDPOINTS = {
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",
+    agent: {
+      list: "/api/admin/agent",
+      stats: "/api/admin/agent/stats",
+    },
     customers: {
       list: "/api/admin/customers",
       counts: "/api/admin/customers/counts",

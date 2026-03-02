@@ -77,6 +77,21 @@ export const adminKeys = {
     stats: () => [...adminKeys.dashboard.all, "stats"] as const,
     pendingApprovals: () => [...adminKeys.dashboard.all, "pending-approvals"] as const,
   },
+
+  agent: {
+    all: ["admin", "agent"] as const,
+    stats: () => [...adminKeys.agent.all, "stats"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+      branch?: string;
+      fromDate?: string;
+      toDate?: string;
+      sort?: string;
+    }) => [...adminKeys.agent.all, "list", params] as const,
+  },
   
   customers: {
     all: ["admin", "customers"] as const,
