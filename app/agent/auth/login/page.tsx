@@ -9,6 +9,7 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { OtpModal } from "@/app/admin/_components/OtpModal";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
+import { useCreateData } from "@/app/_lib/api/hooks";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,10 +23,12 @@ export default function AgentLoginPage() {
   const [otpModalOpened, setOtpModalOpened] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
+  const loginMutation = useCreateData("");
+
   const form = useForm<LoginFormValues>({
     initialValues: {
-      email: "emmanuel@sohcahtoa.com",
-      password: "#Mypassword404",
+      email: "",
+      password: "",
     },
     validate: zod4Resolver(loginSchema),
     validateInputOnChange: true,
