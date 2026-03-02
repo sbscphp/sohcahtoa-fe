@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { X } from "lucide-react";
 import { useForm } from "@mantine/form";
-import { usePutData } from "@/app/_lib/api/hooks";
+import { usePatchData } from "@/app/_lib/api/hooks";
 import {
   adminApi,
   type UpdateAdminUserPayload,
@@ -50,6 +50,8 @@ export function EditUserModal({
     useManagementLookups("role");
   const { options: departmentOptions, isLoading: departmentsLoading } =
     useManagementLookups("department");
+  const { options: branchOptions, isLoading: branchesLoading } =
+    useManagementLookups("branch", "name");
 
   const form = useForm({
     initialValues: {
@@ -77,7 +79,7 @@ export function EditUserModal({
     },
   });
 
-  const updateUserMutation = usePutData(
+  const updateUserMutation = usePatchData(
     (payload: UpdateAdminUserPayload) => adminApi.management.users.update(userId!, payload),
     {
       onSuccess: async () => {
@@ -190,12 +192,9 @@ export function EditUserModal({
               label="Branch"
               placeholder="Select an Option"
               required
-              data={[
-                "Lagos Branch",
-                "Abuja Branch",
-                "Port Harcourt Branch",
-                "Lagos State Branch",
-              ]}
+              data={branchOptions}
+              disabled={branchesLoading}
+              searchable
               value={form.values.branch}
               onChange={(value) => form.setFieldValue("branch", value ?? "")}
               error={form.errors.branch}

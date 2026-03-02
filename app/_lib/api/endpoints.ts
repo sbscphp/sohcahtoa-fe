@@ -98,7 +98,11 @@ export const API_ENDPOINTS = {
     pendingApprovals: "/api/admin/pending-approvals",
     customers: {
       list: "/api/admin/customers",
+      counts: "/api/admin/customers/counts",
       getById: (userId: string) => `/api/admin/customers/${userId}`,
+      deactivate: (userId: string) => `/api/admin/customers/${userId}/deactivate`,
+      toggleStatus: (userId: string) => `/api/admin/customers/${userId}/status`,
+      transactions: (userId: string) => `/api/admin/customers/${userId}/transactions`,
       flags: {
         list: (userId: string) => `/api/admin/customers/${userId}/flags`,
         create: (userId: string) => `/api/admin/customers/${userId}/flags`,
@@ -120,6 +124,7 @@ export const API_ENDPOINTS = {
         stats: "/api/admin/management/users/stats",
         getById: (id: string) => `/api/admin/management/users/${id}`,
         update: (id: string) => `/api/admin/management/users/${id}`,
+        updateStatus: (id: string) => `/api/admin/management/users/${id}/status`,
         activities: (id: string) => `/api/admin/management/users/${id}/activities`,
       },
       roles: {
@@ -128,6 +133,7 @@ export const API_ENDPOINTS = {
       },
       departments: {
         list: "/api/admin/management/departments",
+        create: "/api/admin/management/departments",
         stats: "/api/admin/management/departments/stats",
       },
     },

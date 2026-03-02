@@ -80,11 +80,21 @@ export const adminKeys = {
   
   customers: {
     all: ["admin", "customers"] as const,
+    counts: () => [...adminKeys.customers.all, "counts"] as const,
     lists: () => [...adminKeys.customers.all, "list"] as const,
-    list: (params?: { page?: number; limit?: number }) =>
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+    }) =>
       [...adminKeys.customers.lists(), params] as const,
     details: () => [...adminKeys.customers.all, "detail"] as const,
     detail: (userId: string) => [...adminKeys.customers.details(), userId] as const,
+    transactions: (
+      userId: string,
+      params?: { page?: number; limit?: number; status?: string; type?: string }
+    ) => [...adminKeys.customers.detail(userId), "transactions", params] as const,
     flags: {
       all: (userId: string) => [...adminKeys.customers.detail(userId), "flags"] as const,
       list: (userId: string) => [...adminKeys.customers.flags.all(userId), "list"] as const,
@@ -103,7 +113,7 @@ export const adminKeys = {
   
   management: {
     all: ["admin", "management"] as const,
-    lookups: (query: "role" | "department") =>
+    lookups: (query: "role" | "department" | "branch") =>
       [...adminKeys.management.all, "lookups", query] as const,
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,

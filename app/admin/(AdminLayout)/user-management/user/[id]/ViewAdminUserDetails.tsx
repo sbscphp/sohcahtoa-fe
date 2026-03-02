@@ -11,14 +11,20 @@ import { CustomerStatus } from "../../../customer/[id]/page";
 import { useParams, useRouter } from "next/navigation";
 import { useAdminUserDetails } from "../../hooks/useAdminUserDetails";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
+import { usePatchData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 export default function ViewAdminUserDetails() {
+  const queryClient = useQueryClient();
   const params = useParams<{ id: string }>();
   const userId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
   const { user, isLoading } = useAdminUserDetails(userId);
-  const [statusOverride, setStatusOverride] = useState<CustomerStatus | null>(null);
-  const status: CustomerStatus = statusOverride ?? (user?.isActive ? "Active" : "Deactivated");
+  const status: CustomerStatus = user?.isActive ? "Active" : "Deactivated";
   const [editOpen, setEditOpen] = useState(false);
   const isCurrentlyActive = status === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
@@ -26,17 +32,54 @@ export default function ViewAdminUserDetails() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
+  const toggleStatusMutation = usePatchData(
+    (payload: Record<string, never>) => {
+      void payload;
+      return adminApi.management.users.updateStatus(userId!);
+    },
+    {
+      onSuccess: async () => {
+        notifications.show({
+          title: "Status Updated",
+          message: `Admin user has been ${pastTenseVerb.toLowerCase()} successfully.`,
+          color: "green",
+        });
+        setIsConfirmOpen(false);
+        setIsSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.users.all()],
+          }),
+          ...(userId
+            ? [
+                queryClient.invalidateQueries({
+                  queryKey: [...adminKeys.management.users.detail(userId)],
+                }),
+              ]
+            : []),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Update Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update user status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const handleToggleClick = () => {
     setIsConfirmOpen(true);
   };
 
   const handleConfirm = () => {
-    setStatusOverride((prev) => {
-      const currentStatus = prev ?? (user?.isActive ? "Active" : "Deactivated");
-      return currentStatus === "Active" ? "Deactivated" : "Active";
-    });
-    setIsConfirmOpen(false);
-    setIsSuccessOpen(true);
+    if (!userId || toggleStatusMutation.isPending) return;
+    toggleStatusMutation.mutate({});
   };
 
   const formatDateTime = (iso?: string | null) => {
@@ -179,13 +222,14 @@ export default function ViewAdminUserDetails() {
         primaryButtonText={`Yes, ${actionVerb} User`}
         secondaryButtonText="No, Close"
         onPrimary={handleConfirm}
+        loading={toggleStatusMutation.isPending}
       />
 
       {/* Success modal */}
       <SuccessModal
         opened={isSuccessOpen}
         onClose={() => setIsSuccessOpen(false)}
-        title={`Customer ${pastTenseVerb}`}
+        title={`User ${pastTenseVerb}`}
         message={`Admin user has been successfully ${pastTenseVerb.toLowerCase()}.`}
         primaryButtonText="Manage User"
         onPrimaryClick={handleViewAllCustomers}

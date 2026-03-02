@@ -201,10 +201,6 @@ export default function DepartmentsTable() {
       <CreateDepartmentModal
         opened={open}
         onClose={() => setOpen(false)}
-        onSave={(data) => {
-          console.log(data);
-          setOpen(false);
-        }}
       />
       <ViewDepartmentModal
         opened={viewOpen}

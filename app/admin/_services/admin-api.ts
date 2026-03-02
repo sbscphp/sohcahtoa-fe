@@ -29,7 +29,15 @@ export interface CreateAdminUserPayload {
 
 export type UpdateAdminUserPayload = CreateAdminUserPayload;
 
-export type LookupQuery = "role" | "department";
+export type LookupQuery = "role" | "department" | "branch";
+
+export interface CreateDepartmentPayload {
+  name: string;
+  departmentEmail: string | null;
+  description: string | null;
+  branch: string;
+  isDefault: boolean;
+}
 
 export const adminApi = {
   // ==================== Auth ====================
@@ -84,11 +92,36 @@ export const adminApi = {
 
   // ==================== Customers ====================
   customers: {
-    list: (params?: { page?: number; limit?: number }) =>
-      apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.customers.list, { params }),
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+    }) =>
+      apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.customers.list, {
+        params,
+      }),
+
+    getCounts: () =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.counts),
 
     getById: (userId: string) =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.getById(userId)),
+
+    deactivate: (userId: string) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.deactivate(userId)),
+
+    toggleStatus: (userId: string) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.toggleStatus(userId)),
+
+    transactions: (
+      userId: string,
+      params?: { page?: number; limit?: number; status?: string; type?: string }
+    ) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.customers.transactions(userId),
+        { params }
+      ),
 
     flags: {
       list: (userId: string) =>
@@ -134,9 +167,14 @@ export const adminApi = {
         ),
 
       update: (id: string, data: UpdateAdminUserPayload) =>
-        apiClient.put<ApiResponse<unknown>>(
+        apiClient.patch<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.update(id),
           data
+        ),
+
+      updateStatus: (id: string) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.users.updateStatus(id)
         ),
 
       getById: (id: string) =>
@@ -170,6 +208,12 @@ export const adminApi = {
     },
 
     departments: {
+      create: (data: CreateDepartmentPayload) =>
+        apiClient.post<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.create,
+          data
+        ),
+
       list: (params?: { page?: number; limit?: number; search?: string }) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.departments.list,
