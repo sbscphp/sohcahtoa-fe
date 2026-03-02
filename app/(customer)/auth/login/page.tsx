@@ -10,6 +10,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { useCreateData } from '@/app/_lib/api/hooks';
 import { customerApi } from '@/app/(customer)/_services/customer-api';
 import { handleApiError } from '@/app/_lib/api/error-handler';
+import { getStoredReturnPath } from '@/app/_lib/api/auth-logout';
 import { authTokensAtom } from '@/app/_lib/atoms/auth-atom';
 import { apiClient } from '@/app/_lib/api/client';
 import { clearTemporaryAuthData } from '@/app/(customer)/_utils/auth-flow';
@@ -51,8 +52,9 @@ export default function LoginPage() {
             // Clear any leftover onboarding/reset password data since user is now authenticated
             clearTemporaryAuthData();
 
-            // Redirect to dashboard - AuthProfileSync will fetch profile automatically
-            router.push('/dashboard');
+            // Redirect to previous path if user was logged out from a protected page
+            const returnPath = getStoredReturnPath();
+            router.push(returnPath || '/dashboard');
           } else {
             handleApiError(
               { message: response.error?.message || 'Login failed', status: 400 },

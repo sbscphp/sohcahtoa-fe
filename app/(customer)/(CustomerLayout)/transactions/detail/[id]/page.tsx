@@ -11,8 +11,11 @@ import {
   getDetailViewStatusLabel,
   type DetailViewStatus,
 } from "@/app/(customer)/_lib/transaction-details";
-import { getTransactionById, getTransactionTypeLabel } from "@/app/(customer)/_lib/mock-transactions";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { useFetchSingleData } from "@/app/_lib/api/hooks";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import {
   TransactionDetailsSection,
@@ -25,6 +28,10 @@ import {
   type TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
 import TransactionRequestSheet from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
+import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
+import Loader from "@/components/loader";
+import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
+import EmptyState from "@/app/admin/_components/EmptyState";
 
 /** Full detail payload for a transaction (from API). Type/label come from backend. */
 export interface TransactionDetailPayload {
@@ -43,72 +50,25 @@ export interface TransactionDetailPayload {
   settlement?: TransactionSettlementData;
 }
 
-/** Build detail payload from the same table row so overview and documentation match. */
-function buildDetailPayloadFromRow(row: NonNullable<ReturnType<typeof getTransactionById>>): TransactionDetailPayload {
-  const viewStatus = getDetailViewStatus(row.stage, row.status);
-  const transactionTypeLabel = getTransactionTypeLabel(row.type);
-
-  const payload: TransactionDetailPayload = {
-    id: row.id,
-    date: row.date,
-    type: row.type,
-    transactionTypeLabel,
-    stage: row.stage,
-    status: row.status,
-    currencyCode: "USD",
-    transactionDetails: {
-      transactionId: row.id,
-      amount: { code: "NGN", formatted: "400,000.00" },
-      equivalentAmount: { code: "USD", formatted: "400" },
-      dateInitiated: new Date(row.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-      pickupAddress: "3, Adeola Odeku, VI, Lagos",
-    },
-    requiredDocuments: {
-      bvn: "2223334355",
-      nin: "12345678901",
-      tin: "876r245623",
-      formAId: "23456786543",
-      formA: { filename: "Doc.pdf" },
-      utilityBill: { filename: "Doc.pdf" },
-      visa: { filename: "Doc.pdf" },
-      returnTicket: { filename: "Doc.pdf" },
-    },
-  };
-
-  if (viewStatus === "awaiting_disbursement" || viewStatus === "transaction_settled") {
-    payload.paymentDetails = {
-      transactionId: "783383AXSH",
-      transactionDate: new Date(row.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-      transactionTime: new Date(row.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
-      transactionReceipt: { filename: "payment-receipt.pdf" },
-      paidTo: "SohCahToa BSC\nAccess Bank\n0069000592",
-    };
-  }
-
-  if (viewStatus === "transaction_settled") {
-    payload.settlement = {
-      settlementId: "278338233AC",
-      settlementDate: new Date(row.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-      settlementTime: new Date(row.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
-      settlementReceipt: { filename: "settlement-receipt.pdf" },
-      settlementStructureCash: "25% ~ $375",
-      settlementStructurePrepaidCard: "75% ~ $1,125",
-      paidInto: "GTB Bank Card\n11 ******** 6773",
-      settlementStatus: "Completed",
-    };
-  }
-
-  return payload;
-}
-
 export default function TransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params.id === "string" ? params.id : "";
 
+  const { data: apiResponse, isLoading: apiLoading } = useFetchSingleData(
+    [...customerKeys.transactions.detail(id)],
+    () => customerApi.transactions.getById(id),
+    !!id
+  );
+
+  const apiData = apiResponse?.data;
+  const payload = useMemo(
+    () => (apiData ? buildDetailPayloadFromApi(apiData) : null),
+    [apiData]
+  );
+
   const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
-  const row = useMemo(() => getTransactionById(id), [id]);
-  const payload = useMemo(() => (row ? buildDetailPayloadFromRow(row) : null), [row]);
+  const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
   const viewStatus: DetailViewStatus = useMemo(
     () =>
       payload
@@ -117,46 +77,17 @@ export default function TransactionDetailPage() {
     [payload]
   );
 
-  const formatHeaderDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const date = d.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-    const time = d.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    return `${date} | ${time}`;
-  };
-
-  const formatSheetDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatSheetTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
   if (!payload) {
+    if (apiLoading && id) {
+      return (
+        <div className="p-8">
+          <Loader fullPage />
+        </div>
+      );
+    }
     return (
       <div className="p-8">
-        <p className="text-[#6C6969]">Transaction not found.</p>
-        <Button variant="subtle" onClick={() => router.push("/transactions")} mt="md">
-          Back to Transactions
-        </Button>
+        <EmptyState title="Transaction not found" description="The transaction you are looking for does not exist." onClick={() => router.push("/transactions")} buttonText="Back to Transactions" />
       </div>
     );
   }
@@ -179,7 +110,7 @@ export default function TransactionDetailPage() {
       </Link>
 
       <div
-        className="flex flex-col rounded-2xl border border-[#F2F4F7] bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
+        className="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
       >
       {/* Header */}
       <div className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-[#F2F4F7] px-8 pt-8 pb-6">
@@ -194,7 +125,7 @@ export default function TransactionDetailPage() {
               className="text-base font-normal leading-6 text-[#6C6969]"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              {formatHeaderDate(payload.date)}
+              {formatHeaderDateTime(payload.date)}
             </span>
             <div style={getStatusBadge(statusLabel)}>{statusLabel}</div>
           </div>
@@ -243,8 +174,8 @@ export default function TransactionDetailPage() {
         viewStatus={viewStatus}
         transactionTypeLabel={payload.transactionTypeLabel}
         transactionId={payload.id}
-        date={formatSheetDate(payload.date)}
-        time={formatSheetTime(payload.date)}
+        date={formatShortDate(payload.date)}
+        time={formatShortTime(payload.date)}
         adminMessage={
           viewStatus === "approved"
             ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point"
@@ -264,9 +195,19 @@ export default function TransactionDetailPage() {
         <TransactionDetailsSection data={payload.transactionDetails} />
         <RequiredDocumentsSection
           data={payload.requiredDocuments}
-          onDownload={(doc, filename) => {
-            console.log("Download", doc, filename);
+          onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}
+          onDownload={(docKey) => {
+            const doc = payload.requiredDocuments[docKey as keyof RequiredDocumentsData];
+            if (doc && typeof doc === "object" && "url" in doc && (doc as { url?: string }).url) {
+              window.open((doc as { url: string }).url, "_blank");
+            }
           }}
+        />
+        <DocumentViewerModal
+          opened={documentViewer !== null}
+          onClose={() => setDocumentViewer(null)}
+          fileUrl={documentViewer?.url ?? null}
+          filename={documentViewer?.filename}
         />
         {showPaymentDetails && payload.paymentDetails && (
           <PaymentDetailsSection

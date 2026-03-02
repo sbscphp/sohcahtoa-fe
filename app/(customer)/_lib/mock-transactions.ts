@@ -12,11 +12,19 @@ export interface TableTransaction {
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
 }
 
-/** Map table type code to display label for detail header and sheet */
+/** Map transaction type code (API or table) to display label for detail header and sheet */
 export function getTransactionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     PTA: "Personal Travel Allowance (PTA)",
     BTA: "Business Travel Allowance (BTA)",
+    SCHOOL_FEES: "School Fees",
+    MEDICAL: "Medical",
+    PROFESSIONAL_BODY: "Professional Body Fee",
+    TOURIST_FX: "Tourist",
+    RESIDENT_FX: "Resident FX",
+    EXPATRIATE_FX: "Expatriate FX",
+    IMTO_REMITTANCE: "IMTO Remittance",
+    CASH_REMITTANCE: "Cash Remittance",
     Medical: "Medical",
     "Professional Body Fee": "Professional Body Fee",
     Tourist: "Tourist",

@@ -61,7 +61,8 @@ export interface VerifyPassportResponseData {
   address?: string;
 }
 
-export type VerifyPassportResponse = ApiResponseWrapper<VerifyPassportResponseData>;
+export type VerifyPassportResponse =
+  ApiResponseWrapper<VerifyPassportResponseData>;
 
 // Nigerian signup: send-otp expects verificationToken and verificationType (phone or email)
 export interface SendOtpRequestNigerian {
@@ -135,16 +136,17 @@ export interface ValidateEmailOtpResponseData {
   validationToken: string; // Token to proceed to create-account
 }
 
-export type ValidateEmailOtpResponse = ApiResponseWrapper<ValidateEmailOtpResponseData>;
+export type ValidateEmailOtpResponse =
+  ApiResponseWrapper<ValidateEmailOtpResponseData>;
 
 export interface CreateNigerianAccountRequest {
   password: string;
-  validationToken: string; // From validate-email-otp step
+  verificationToken: string;
 }
 
 export interface CreateTouristAccountRequest {
   password: string;
-  validationToken: string; // From validate-otp step
+  verificationToken: string;
 }
 
 export interface RefreshTokenRequest {
@@ -169,7 +171,8 @@ export interface ForgotPasswordResponseData {
   otp?: string; // OTP returned in response (for testing/dev)
 }
 
-export type ForgotPasswordResponse = ApiResponseWrapper<ForgotPasswordResponseData>;
+export type ForgotPasswordResponse =
+  ApiResponseWrapper<ForgotPasswordResponseData>;
 
 export interface VerifyResetOtpRequest {
   email: string;
@@ -181,7 +184,8 @@ export interface VerifyResetOtpResponseData {
   message: string;
 }
 
-export type VerifyResetOtpResponse = ApiResponseWrapper<VerifyResetOtpResponseData>;
+export type VerifyResetOtpResponse =
+  ApiResponseWrapper<VerifyResetOtpResponseData>;
 
 export interface ResetPasswordRequest {
   resetToken: string;
@@ -192,7 +196,8 @@ export interface ResetPasswordResponseData {
   message: string;
 }
 
-export type ResetPasswordResponse = ApiResponseWrapper<ResetPasswordResponseData>;
+export type ResetPasswordResponse =
+  ApiResponseWrapper<ResetPasswordResponseData>;
 
 export interface LoginResponseData {
   accessToken: string;
@@ -323,7 +328,12 @@ export interface Transaction {
   type: string;
   amount: number;
   currency: string;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED" | "REQUEST_MORE_INFO";
+  status:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "COMPLETED"
+    | "REQUEST_MORE_INFO";
   stage: string;
   date: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
@@ -416,6 +426,95 @@ export interface TransactionDetail extends Transaction {
   };
 }
 
+export interface TransactionDetailRequiredDocUploaded {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  status: string;
+  rejectionNotes: string | null;
+  uploadedAt: string;
+  verifiedAt: string | null;
+}
+
+export interface TransactionDetailRequiredDoc {
+  type: string;
+  uploaded: TransactionDetailRequiredDocUploaded | null;
+}
+
+export interface TransactionDetailStepData {
+  bvn?: string;
+  nin?: string;
+  tin?: string;
+  formAId?: string;
+  admissionType?: string | null;
+  pickupLocation?: {
+    id: string;
+    name: string;
+    address: string;
+    recipientName: string;
+    recipientPhone: string;
+  };
+}
+
+export interface TransactionDetailStep {
+  id: string;
+  transactionId: string;
+  step: string;
+  status: string;
+  data: TransactionDetailStepData;
+  completedAt: string;
+  createdAt: string;
+}
+
+export interface TransactionDetailCashPickup {
+  id: string;
+  transactionId: string;
+  pickupLocation: string;
+  pickupLocationId: string;
+  pickupState: string | null;
+  pickupCity: string | null;
+  pickupCode: string;
+  recipientName: string;
+  recipientPhone: string;
+  amount: string;
+  currency: string;
+  status: string;
+  scheduledPickupDate: string | null;
+  scheduledPickupTime: string | null;
+  expiryDate: string;
+  pickedUpAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionDetailData {
+  transactionId: string;
+  referenceNumber: string;
+  type: string;
+  status: string;
+  currentStep: string;
+  purpose: string;
+  destinationCountry: string;
+  currency: string;
+  foreignAmount: string;
+  nairaEquivalent: string | null;
+  exchangeRate: string | null;
+  disbursementMethod: string;
+  rejection: string | null;
+  requiredDocuments: TransactionDetailRequiredDoc[];
+  cashPickup: TransactionDetailCashPickup;
+  prepaidCard: unknown | null;
+  steps: TransactionDetailStep[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionDetailApiResponse {
+  success: boolean;
+  data: TransactionDetailData;
+  metadata?: { timestamp?: string; requestId?: string; version?: string };
+}
+
 export interface UpdateTransactionRequest {
   amount?: number;
   purpose?: string;
@@ -503,7 +602,8 @@ export interface UploadPassportResponseData {
   passportDocumentUrl: string;
 }
 
-export type UploadPassportResponse = ApiResponseWrapper<UploadPassportResponseData>;
+export type UploadPassportResponse =
+  ApiResponseWrapper<UploadPassportResponseData>;
 
 export interface PassportStatusResponse {
   status: "PENDING" | "VERIFIED" | "REJECTED";
@@ -592,7 +692,8 @@ export interface NotificationPreferences {
   updatedAt: string;
 }
 
-export type NotificationPreferencesResponse = ApiResponseWrapper<NotificationPreferences>;
+export type NotificationPreferencesResponse =
+  ApiResponseWrapper<NotificationPreferences>;
 
 export interface UpdateNotificationPreferencesRequest {
   emailEnabled?: boolean;

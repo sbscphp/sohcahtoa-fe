@@ -1,6 +1,6 @@
 "use client";
 
-import { Table, Pagination } from "@mantine/core";
+import { Table, Pagination, Skeleton } from "@mantine/core";
 import { useState, ReactNode } from "react";
 
 export interface PaginatedTableColumn<T> {
@@ -19,7 +19,12 @@ interface PaginatedTableProps<T> {
   pageSize?: number;
   onRowClick?: (item: T) => void;
   keyExtractor?: (item: T, index: number) => string | number;
+  /** Shown when data is empty and not loading. */
   emptyMessage?: string;
+  /** When true, shows skeleton rows instead of data. */
+  isLoading?: boolean;
+  /** Number of skeleton rows to show when loading. Default 4. */
+  skeletonRowCount?: number;
 }
 
 export default function PaginatedTable<T>({
@@ -29,6 +34,8 @@ export default function PaginatedTable<T>({
   onRowClick,
   keyExtractor,
   emptyMessage = "No data found",
+  isLoading = false,
+  skeletonRowCount = 4,
 }: PaginatedTableProps<T>) {
   const [page, setPage] = useState(1);
   const totalPages = Math.ceil(data.length / pageSize);
@@ -40,6 +47,10 @@ export default function PaginatedTable<T>({
     }
     return index;
   };
+
+  const showEmpty = !isLoading && paginatedData.length === 0;
+  const showSkeleton = isLoading;
+  const showData = !isLoading && paginatedData.length > 0;
 
   return (
     <div className="space-y-4">
@@ -73,13 +84,28 @@ export default function PaginatedTable<T>({
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {paginatedData.length === 0 ? (
+            {showSkeleton &&
+              Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+                <Table.Tr key={`skeleton-${rowIndex}`} className="border-b border-gray-100!">
+                  {columns.map((column) => (
+                    <Table.Td
+                      key={column.key}
+                      className="py-4 px-6! h-18! border-0!"
+                      style={{ textAlign: column.align ?? "left" }}
+                    >
+                      <Skeleton height={20} radius="sm" />
+                    </Table.Td>
+                  ))}
+                </Table.Tr>
+              ))}
+            {showEmpty && (
               <Table.Tr>
                 <Table.Td colSpan={columns.length} className="text-center py-8 border-0">
                   <p className="text-body-text-300 text-sm">{emptyMessage}</p>
                 </Table.Td>
               </Table.Tr>
-            ) : (
+            )}
+            {showData &&
               paginatedData.map((item, index) => (
                 <Table.Tr
                   key={getKey(item, index)}
@@ -104,13 +130,12 @@ export default function PaginatedTable<T>({
                     </Table.Td>
                   ))}
                 </Table.Tr>
-              ))
-            )}
+              ))}
           </Table.Tbody>
         </Table>
       </div>
 
-      {totalPages > 1 && (
+      {!isLoading && totalPages > 1 && (
         <div className="flex justify-center">
           <Pagination
             value={page}

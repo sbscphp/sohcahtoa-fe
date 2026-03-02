@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 
 const labelClass =
   "font-normal text-base leading-6 text-[#8F8B8B]";
@@ -17,8 +17,8 @@ export interface LabelTextProps {
   text?: string;
   /** Currency code for amount with flag (e.g. NGN, USD). Renders flag + "CODE amount" */
   amount?: { code: string; formatted: string };
-  /** Document link: filename + optional onDownload */
-  document?: { filename: string; onDownload?: () => void };
+  /** Document link: filename + optional url, onView (open in modal), onDownload */
+  document?: { filename: string; url?: string; onView?: () => void; onDownload?: () => void };
   /** Status string for badge (e.g. "Completed") */
   statusBadge?: string;
   /** Multi-line value (e.g. "Line1\nLine2") */
@@ -65,14 +65,20 @@ export default function LabelText({
       );
     }
     if (doc) {
+      const handleClick = doc.url && doc.onView ? doc.onView : doc.onDownload;
       return (
         <button
           type="button"
-          onClick={doc.onDownload}
+          onClick={handleClick}
           className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-label={doc.url && doc.onView ? "View document" : "Download document"}
         >
           <span className={valueClass}>{doc.filename}</span>
-          <Download className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
+          {doc.url && doc.onView ? (
+            <FileText className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
+          ) : (
+            <Download className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
+          )}
         </button>
       );
     }

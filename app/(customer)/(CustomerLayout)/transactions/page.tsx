@@ -103,9 +103,10 @@ export default function TransactionsPage() {
           onTypeChange={setActiveType}
           onFilterClick={handleFilterClick}
           onExportClick={handleExportClick}
-          transactions={isLoading ? [] : tableRows}
+          transactions={tableRows}
           pageSize={10}
           onRowClick={handleRowClick}
+          isLoading={isLoading}
         />
       </div>
     </div>

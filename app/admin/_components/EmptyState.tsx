@@ -1,6 +1,6 @@
 "use client";
 
-import { Text } from "@mantine/core";
+import { Button, Text } from "@mantine/core";
 import { ReactNode } from "react";
 import Empty from "../_components/assets/EmptyState.png";
 import Image from "next/image";
@@ -9,12 +9,16 @@ interface EmptyStateProps {
   title?: string;
   description?: string;
   icon?: ReactNode;
+  onClick?: () => void;
+  buttonText?: string;
 }
 
 export default function EmptyState({
   title = "No Data Available",
   description = "No data here yet. Customers will be populated as they create accounts on Sohcahtoa",
   icon,
+  onClick,
+  buttonText = "Back to Transactions"
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
@@ -32,6 +36,10 @@ export default function EmptyState({
       <Text size="sm" c="dimmed" ta="center" maw={400}>
         {description}
       </Text>
+      {onClick &&
+        <Button variant="subtle" onClick={onClick} mt="md">
+          {buttonText}
+        </Button>}
     </div>
   );
 }

@@ -43,6 +43,7 @@ import type {
   SignupRequest,
   Transaction,
   TransactionDetail,
+  TransactionDetailApiResponse,
   TransactionListParams,
   TransactionsListApiResponse,
   UnreadCountResponse,
@@ -174,7 +175,7 @@ export const customerApi = {
       }),
 
     getById: (id: string) =>
-      apiClient.get<TransactionDetail>(API_ENDPOINTS.transactions.getById(id)),
+      apiClient.get<TransactionDetailApiResponse>(API_ENDPOINTS.transactions.getById(id)),
 
     create: (data: CreateTransactionRequest) =>
       apiClient.post<Transaction>(API_ENDPOINTS.transactions.create, data),

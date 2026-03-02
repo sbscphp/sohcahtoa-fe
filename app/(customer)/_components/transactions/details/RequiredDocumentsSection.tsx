@@ -17,16 +17,21 @@ export interface RequiredDocumentsData {
 interface RequiredDocumentsSectionProps {
   data: RequiredDocumentsData;
   onDownload?: (doc: string, filename: string) => void;
+  /** When provided and document has url, clicking opens a viewer modal. */
+  onViewDocument?: (docKey: string, filename: string, url: string) => void;
 }
 
 export default function RequiredDocumentsSection({
   data,
   onDownload,
+  onViewDocument,
 }: RequiredDocumentsSectionProps) {
   const makeDoc = (d: { filename: string; url?: string } | undefined, key: string) =>
     d
       ? {
           filename: d.filename,
+          url: d.url,
+          onView: d.url && onViewDocument ? () => onViewDocument(key, d.filename, d.url!) : undefined,
           onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
         }
       : undefined;

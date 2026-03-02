@@ -26,6 +26,8 @@ interface TableWrapperProps<T> {
   onRowClick?: (item: T) => void;
   keyExtractor?: (item: T, index: number) => string | number;
   emptyMessage?: string;
+  isLoading?: boolean;
+  skeletonRowCount?: number;
 }
 
 export default function TableWrapper<T>({
@@ -42,6 +44,8 @@ export default function TableWrapper<T>({
   onRowClick,
   keyExtractor,
   emptyMessage = "No data found",
+  isLoading = false,
+  skeletonRowCount = 4,
 }: TableWrapperProps<T>) {
   return (
     <div className="space-y-4">
@@ -105,6 +109,8 @@ export default function TableWrapper<T>({
         onRowClick={onRowClick}
         keyExtractor={keyExtractor}
         emptyMessage={emptyMessage}
+        isLoading={isLoading}
+        skeletonRowCount={skeletonRowCount}
       />
     </div>
   );

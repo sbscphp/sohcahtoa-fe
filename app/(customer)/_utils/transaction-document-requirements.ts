@@ -19,44 +19,60 @@ export type DocumentType =
   | "RETURN_TICKET"
   | "FORM_A_DOCUMENT"
   | "TIN"
+  | "TCC"
   | "CORPORATE_BODY_LETTER"
   | "PARTNER_INVITATION_LETTER"
   | "UTILITY_BILL"
   | "MEDICAL_LETTER"
   | "OVERSEAS_MEDICAL_LETTER"
   | "MEMBERSHIP_CARD"
-  | "INVOICE";
+  | "INVOICE"
+  | "SCHOOL_ADMISSION"
+  | "STATEMENT_OF_RESULT"
+  | "DEGREE"
+  | "RECEIPT"
+  | "WORK_PERMIT";
 
 export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, DocumentType[]> = {
   PTA: ["BVN", "NIN", "PASSPORT", "VISA", "RETURN_TICKET", "FORM_A_DOCUMENT"],
+  // Buy FX – Business Travel Allowance (BTA)
   BTA: [
-    "BVN",
     "TIN",
+    "TCC",
     "PASSPORT",
     "VISA",
     "RETURN_TICKET",
-    "FORM_A_DOCUMENT",
     "CORPORATE_BODY_LETTER",
     "PARTNER_INVITATION_LETTER",
   ],
-  SCHOOL_FEES: ["FORM_A_DOCUMENT"],
+  // Buy FX – School Fees
+  SCHOOL_FEES: [
+    "PASSPORT",
+    "SCHOOL_ADMISSION",
+    "INVOICE",
+    "STATEMENT_OF_RESULT",
+    "DEGREE",
+  ],
+  // Buy FX – Medical
   MEDICAL: [
-    "BVN",
-    "NIN",
     "PASSPORT",
     "VISA",
     "RETURN_TICKET",
     "FORM_A_DOCUMENT",
-    "UTILITY_BILL",
     "MEDICAL_LETTER",
     "OVERSEAS_MEDICAL_LETTER",
   ],
-  PROFESSIONAL_BODY: ["BVN", "FORM_A_DOCUMENT", "UTILITY_BILL", "MEMBERSHIP_CARD", "INVOICE"],
-  TOURIST_FX: ["BVN", "NIN", "PASSPORT", "RETURN_TICKET", "FORM_A_DOCUMENT"],
-  RESIDENT_FX: ["BVN", "NIN", "PASSPORT", "FORM_A_DOCUMENT"],
-  EXPATRIATE_FX: ["PASSPORT", "VISA", "FORM_A_DOCUMENT"],
-  IMTO_REMITTANCE: ["BVN", "NIN", "FORM_A_DOCUMENT"],
-  CASH_REMITTANCE: ["BVN", "NIN", "FORM_A_DOCUMENT"],
+  // Buy FX – Professional Body
+  PROFESSIONAL_BODY: ["MEMBERSHIP_CARD", "INVOICE"],
+  // Buy FX – Tourist FX
+  TOURIST_FX: ["VISA", "PASSPORT", "RETURN_TICKET", "RECEIPT"],
+  // Sell FX – Resident FX
+  RESIDENT_FX: ["PASSPORT", "UTILITY_BILL"],
+  // Sell FX – Expatriate FX
+  EXPATRIATE_FX: ["PASSPORT", "WORK_PERMIT", "UTILITY_BILL"],
+  // Remittances – no required docs
+  IMTO_REMITTANCE: [],
+  CASH_REMITTANCE: [],
 };
 
 
