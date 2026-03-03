@@ -51,6 +51,11 @@ export interface CreateAgentPayload {
   attachment: File;
 }
 
+export interface UpdateAdminUserStatusPayload {
+  isActive: boolean;
+  reason: string;
+}
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -229,9 +234,10 @@ export const adminApi = {
           data
         ),
 
-      updateStatus: (id: string) =>
+      updateStatus: (id: string, data: UpdateAdminUserStatusPayload) =>
         apiClient.patch<ApiResponse<unknown>>(
-          API_ENDPOINTS.admin.management.users.updateStatus(id)
+          API_ENDPOINTS.admin.management.users.updateStatus(id),
+          data
         ),
 
       getById: (id: string) =>

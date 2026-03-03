@@ -194,6 +194,7 @@ export default function DepartmentsTable() {
 
       <RowActionMenu
         key="actions"
+        deactivateLabel={dept.isActive ? "Deactivate" : "Reactivate"}
         onView={() => {
           setSelectedDepartment(dept);
           setViewEditMode("view");

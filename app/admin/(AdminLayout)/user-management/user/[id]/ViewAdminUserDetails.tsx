@@ -12,7 +12,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useAdminUserDetails } from "../../hooks/useAdminUserDetails";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { usePatchData } from "@/app/_lib/api/hooks";
-import { adminApi } from "@/app/admin/_services/admin-api";
+import {
+  adminApi,
+  type UpdateAdminUserStatusPayload,
+} from "@/app/admin/_services/admin-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
@@ -33,10 +36,8 @@ export default function ViewAdminUserDetails() {
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
   const toggleStatusMutation = usePatchData(
-    (payload: Record<string, never>) => {
-      void payload;
-      return adminApi.management.users.updateStatus(userId!);
-    },
+    (payload: UpdateAdminUserStatusPayload) =>
+      adminApi.management.users.updateStatus(userId!, payload),
     {
       onSuccess: async () => {
         notifications.show({
@@ -79,7 +80,10 @@ export default function ViewAdminUserDetails() {
 
   const handleConfirm = () => {
     if (!userId || toggleStatusMutation.isPending) return;
-    toggleStatusMutation.mutate({});
+    toggleStatusMutation.mutate({
+      isActive: !isCurrentlyActive,
+      reason: "",
+    });
   };
 
   const formatDateTime = (iso?: string | null) => {
