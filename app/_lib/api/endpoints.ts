@@ -100,6 +100,8 @@ export const API_ENDPOINTS = {
     agent: {
       list: "/api/admin/agent",
       stats: "/api/admin/agent/stats",
+      getById: (id: string) => `/api/admin/agent/${id}`,
+      updateStatus: (id: string) => `/api/admin/agent/${id}/status`,
     },
     customers: {
       list: "/api/admin/customers",

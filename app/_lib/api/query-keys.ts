@@ -94,6 +94,8 @@ export const adminKeys = {
   agent: {
     all: ["admin", "agent"] as const,
     stats: () => [...adminKeys.agent.all, "stats"] as const,
+    details: () => [...adminKeys.agent.all, "detail"] as const,
+    detail: (id: string) => [...adminKeys.agent.details(), id] as const,
     list: (params?: {
       page?: number;
       limit?: number;

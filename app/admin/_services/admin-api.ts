@@ -51,6 +51,21 @@ export interface CreateAgentPayload {
   attachment: File;
 }
 
+export interface AgentDetailsResponseData {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  isApproved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateAgentStatusPayload {
+  isActive: boolean;
+}
+
 export interface UpdateAdminUserStatusPayload {
   isActive: boolean;
   reason: string;
@@ -143,6 +158,17 @@ export const adminApi = {
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.stats
+      ),
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<AgentDetailsResponseData>>(
+        API_ENDPOINTS.admin.agent.getById(id)
+      ),
+
+    updateStatus: (id: string, data: UpdateAgentStatusPayload) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.agent.updateStatus(id),
+        data
       ),
 
     create: (data: FormData) =>
