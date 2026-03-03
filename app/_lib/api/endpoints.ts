@@ -96,6 +96,7 @@ export const API_ENDPOINTS = {
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",
+    auditTrail: "/api/admin/audit/trail",
     agent: {
       list: "/api/admin/agent",
       stats: "/api/admin/agent/stats",
@@ -139,6 +140,9 @@ export const API_ENDPOINTS = {
         list: "/api/admin/management/departments",
         create: "/api/admin/management/departments",
         stats: "/api/admin/management/departments/stats",
+        update: (id: string) => `/api/admin/management/departments/${id}`,
+        updateStatus: (id: string) => `/api/admin/management/departments/${id}/status`,
+        delete: (id: string) => `/api/admin/management/departments/${id}`,
       },
     },
   },

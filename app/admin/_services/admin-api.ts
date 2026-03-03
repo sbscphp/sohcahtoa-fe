@@ -39,6 +39,10 @@ export interface CreateDepartmentPayload {
   isDefault: boolean;
 }
 
+export interface UpdateDepartmentStatusPayload {
+  isActive: boolean;
+}
+
 export interface CreateAgentPayload {
   name: string;
   email: string;
@@ -96,6 +100,22 @@ export const adminApi = {
 
     getPendingApprovals: () =>
       apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.pendingApprovals),
+  },
+
+  // ==================== Audit Trail ====================
+  auditTrail: {
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      module?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.auditTrail, {
+        params,
+      }),
   },
 
   // ==================== Agent ====================
@@ -219,7 +239,18 @@ export const adminApi = {
           API_ENDPOINTS.admin.management.users.getById(id)
         ),
 
-      getActivities: (id: string, params?: { page?: number; limit?: number; search?: string }) =>
+      getActivities: (
+        id: string,
+        params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          module?: string;
+          status?: string;
+          dateFrom?: string;
+          dateTo?: string;
+        }
+      ) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.activities(id),
           { params }
@@ -249,6 +280,23 @@ export const adminApi = {
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.departments.create,
           data
+        ),
+
+      update: (id: string, data: CreateDepartmentPayload) =>
+        apiClient.put<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.update(id),
+          data
+        ),
+
+      updateStatus: (id: string, data: UpdateDepartmentStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.updateStatus(id),
+          data
+        ),
+
+      delete: (id: string) =>
+        apiClient.delete<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.departments.delete(id)
         ),
 
       list: (params?: { page?: number; limit?: number; search?: string }) =>

@@ -30,7 +30,7 @@ const adminTransactionDetails = (id: string | number = ':id') => `${adminTransac
 const adminReport = () => `${admin()}/report`;
 
 // Audit trail routes
-const adminAuditTrail = () => `${admin()}/audit-trial`;
+const adminAuditTrail = () => `${admin()}/audit-trail`;
 
 // Ticket routes
 const adminTickets = () => `${admin()}/tickets`;

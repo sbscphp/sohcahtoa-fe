@@ -78,6 +78,19 @@ export const adminKeys = {
     pendingApprovals: () => [...adminKeys.dashboard.all, "pending-approvals"] as const,
   },
 
+  auditTrail: {
+    all: ["admin", "audit-trail"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      module?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) => [...adminKeys.auditTrail.all, "list", params] as const,
+  },
+
   agent: {
     all: ["admin", "agent"] as const,
     stats: () => [...adminKeys.agent.all, "stats"] as const,
