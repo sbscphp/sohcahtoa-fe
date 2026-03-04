@@ -96,6 +96,7 @@ export function mapUITypeToAPIType(uiType: string): TransactionType | null {
     medical: "MEDICAL",
     "professional-body": "PROFESSIONAL_BODY",
     tourist: "TOURIST_FX",
+    "touring-nigeria": "TOURIST_FX",
     resident: "RESIDENT_FX",
     expatriate: "EXPATRIATE_FX",
     imto: "IMTO_REMITTANCE",

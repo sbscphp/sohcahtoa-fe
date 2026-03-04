@@ -306,6 +306,10 @@ export interface PickupLocation {
   address: string;
   recipientName: string;
   recipientPhone: string;
+  state?: string;
+  city?: string;
+  pickupDate?: string;
+  pickupTime?: string;
 }
 
 export interface CreateTransactionRequest {
