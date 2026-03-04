@@ -295,7 +295,7 @@ export const adminApi = {
     },
 
     roles: {
-      list: (params?: { page?: number; limit?: number; search?: string }) =>
+      list: (params?: { page?: number; limit?: number; search?: string; isActive?: boolean }) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.list,
           { params }

@@ -22,13 +22,15 @@ import { useRoles, type RoleItem } from "../../hooks/useRoles";
 import { useDebouncedValue } from "@mantine/hooks";
 
 const PAGE_SIZE = 10;
+const FILTER_OPTIONS = ["Filter By", "Active", "Deactivated"] as const;
+type RoleFilter = (typeof FILTER_OPTIONS)[number];
 
 export default function RolesTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 400);
-  const [filter, setFilter] = useState("Filter By");
+  const [filter, setFilter] = useState<RoleFilter>("Filter By");
   const [open, setOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -42,6 +44,7 @@ export default function RolesTable() {
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
+    isActive: filter === "Filter By" ? undefined : filter === "Active",
   });
 
   const handleConfirm = () => {
@@ -125,8 +128,11 @@ export default function RolesTable() {
         <Group>
           <Select
             value={filter}
-            onChange={(value) => setFilter(value!)}
-            data={["Filter By", "Active", "Deactivated"]}
+            onChange={(value) => {
+              setFilter((value as RoleFilter) ?? "Filter By");
+              setPage(1);
+            }}
+            data={[...FILTER_OPTIONS]}
             radius="xl"
             w={120}
             rightSection={<ListFilter size={16} />}
