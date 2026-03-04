@@ -100,7 +100,7 @@ export default function RolesTable() {
         {role.permissionsCount}
       </Text>,
 
-      <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(role.id))} />,
+      <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementRole(role.id))} />,
     ];
   };
 
@@ -176,10 +176,6 @@ export default function RolesTable() {
       <CreateRoleModal
         opened={open}
         onClose={() => setOpen(false)}
-        onSave={(data) => {
-          console.log(data);
-          setOpen(false);
-        }}
       />
       {/* Deactivate / Reactivate confirmation modal */}
       <ConfirmationModal

@@ -71,6 +71,36 @@ export interface UpdateAdminUserStatusPayload {
   reason: string;
 }
 
+type RolePermissionAction = "can.view" | "can.create" | "can.edit" | "can.delete";
+type RolePermissionScope = "MODULE" | "ROLES" | "USERS";
+
+export interface CreateRolePayload {
+  name: string;
+  description: string;
+  branch: string;
+  department: string;
+  isDefault: boolean;
+  permissions: Partial<Record<string, Partial<Record<RolePermissionScope, RolePermissionAction[]>>>>;
+}
+
+export interface AdminRoleDetails {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: Record<string, Record<string, string[]>>;
+  branch: string | null;
+  departmentId: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  createdById: string | null;
+  _count: {
+    users: number;
+  };
+}
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -295,10 +325,26 @@ export const adminApi = {
     },
 
     roles: {
+      create: (data: CreateRolePayload) =>
+        apiClient.post<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.create,
+          data
+        ),
+
       list: (params?: { page?: number; limit?: number; search?: string; isActive?: boolean }) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.list,
           { params }
+        ),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<AdminRoleDetails>>(
+          API_ENDPOINTS.admin.management.roles.getById(id)
+        ),
+
+      delete: (id: string) =>
+        apiClient.delete<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.delete(id)
         ),
 
       getStats: () =>
