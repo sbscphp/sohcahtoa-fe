@@ -113,7 +113,26 @@ export default function CurrencyAmountInput({
 
       <NumberInput
         value={value ? Number(value) : undefined}
-        onChange={(v) => onChange(String(v ?? ""))}
+        onChange={(v) => {
+          if (v === null || v === undefined || v === "") {
+            onChange("");
+            return;
+          }
+
+          const numericValue = typeof v === "number" ? v : Number(v);
+
+          if (!Number.isFinite(numericValue) || numericValue < 0) {
+            onChange("");
+            return;
+          }
+
+          onChange(String(numericValue));
+        }}
+        onKeyDown={(event) => {
+          if (["-", "+", "e", "E"].includes(event.key)) {
+            event.preventDefault();
+          }
+        }}
         leftSection={
           <span className="font-semibold text-xl leading-7 text-[#1F1E1E]">
             {symbol}
