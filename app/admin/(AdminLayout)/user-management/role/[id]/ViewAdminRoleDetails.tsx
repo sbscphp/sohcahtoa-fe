@@ -27,6 +27,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import EmptySection from "@/app/admin/_components/EmptySection";
 
 export default function ViewAdminRoleDetails() {
   const params = useParams<{ id: string }>();
@@ -215,54 +216,64 @@ export default function ViewAdminRoleDetails() {
             Permissions
           </Text>
 
-          <Accordion radius="md" variant="separated">
-            {Object.entries(permissionsData).map(([moduleKey, scopes]) => {
-              const moduleChecked = Object.values(scopes ?? {}).some(
-                (actions) => Array.isArray(actions) && actions.length > 0
-              );
+          {isLoading ? (
+            <Skeleton height={120} radius="md" />
+          ) : permissionCount === 0 ? (
+            <EmptySection
+              format="compact"
+              title="No Applicable Permissions"
+              description="This role currently has no permissions assigned."
+            />
+          ) : (
+            <Accordion radius="md" variant="separated">
+              {Object.entries(permissionsData).map(([moduleKey, scopes]) => {
+                const moduleChecked = Object.values(scopes ?? {}).some(
+                  (actions) => Array.isArray(actions) && actions.length > 0
+                );
 
-              return (
-                <Accordion.Item key={moduleKey} value={moduleKey}>
-                <Accordion.Control
-                  icon={<Checkbox variant="outline" checked={moduleChecked} readOnly color="orange" />}
-                  chevron={<ChevronDown size={18} />}
-                >
-                  <Text size="sm" fw={500}>
-                    {moduleKey}
-                  </Text>
-                </Accordion.Control>
+                return (
+                  <Accordion.Item key={moduleKey} value={moduleKey}>
+                    <Accordion.Control
+                      icon={<Checkbox variant="outline" checked={moduleChecked} readOnly color="orange" />}
+                      chevron={<ChevronDown size={18} />}
+                    >
+                      <Text size="sm" fw={500}>
+                        {moduleKey}
+                      </Text>
+                    </Accordion.Control>
 
-                <Accordion.Panel>
-                  <Stack gap="xs" ml="lg">
-                    {Object.entries(scopes ?? {}).map(([scopeKey, actions]) => (
-                      <Group
-                        key={`${moduleKey}-${scopeKey}`}
-                        justify="space-between"
-                        py="sm"
-                        className="border-b border-[#E1E0E0]"
-                      >
-                        <Text size="sm">{scopeKey}</Text>
-                        <Group gap="xl">
-                          {(Array.isArray(actions) ? actions : []).map((action) => (
-                            <Checkbox
-                              key={`${moduleKey}-${scopeKey}-${action}`}
-                              labelPosition="left"
-                              variant="outline"
-                              radius="xl"
-                              label={normalizeAction(action)}
-                              checked
-                              readOnly
-                            />
-                          ))}
-                        </Group>
-                      </Group>
-                    ))}
-                  </Stack>
-                </Accordion.Panel>
-              </Accordion.Item>
-              );
-            })}
-          </Accordion>
+                    <Accordion.Panel>
+                      <Stack gap="xs" ml="lg">
+                        {Object.entries(scopes ?? {}).map(([scopeKey, actions]) => (
+                          <Group
+                            key={`${moduleKey}-${scopeKey}`}
+                            justify="space-between"
+                            py="sm"
+                            className="border-b border-[#E1E0E0]"
+                          >
+                            <Text size="sm">{scopeKey}</Text>
+                            <Group gap="xl">
+                              {(Array.isArray(actions) ? actions : []).map((action) => (
+                                <Checkbox
+                                  key={`${moduleKey}-${scopeKey}-${action}`}
+                                  labelPosition="left"
+                                  variant="outline"
+                                  radius="xl"
+                                  label={normalizeAction(action)}
+                                  checked
+                                  readOnly
+                                />
+                              ))}
+                            </Group>
+                          </Group>
+                        ))}
+                      </Stack>
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                );
+              })}
+            </Accordion>
+          )}
         </Stack>
       </Card>
 

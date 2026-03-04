@@ -26,6 +26,10 @@ import {
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 interface CreateRoleModalProps {
   opened: boolean;
@@ -36,9 +40,13 @@ export function CreateRoleModal({
   opened,
   onClose,
 }: CreateRoleModalProps) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<"details" | "permissions">("details");
   const [isDefault, setIsDefault] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<CreateRolePayload | null>(null);
   const { options: branchOptions, isLoading: branchesLoading } =
     useManagementLookups("branch", "name");
   const { options: departmentOptions, isLoading: departmentsLoading } =
@@ -112,6 +120,8 @@ export function CreateRoleModal({
     form.reset();
     setIsDefault(false);
     setStep("details");
+    setIsConfirmOpen(false);
+    setPendingPayload(null);
     setPermissions(createInitialPermissions());
   };
 
@@ -154,11 +164,8 @@ export function CreateRoleModal({
 
   const createRoleMutation = useCreateData(adminApi.management.roles.create, {
     onSuccess: async () => {
-      notifications.show({
-        title: "Role Created",
-        message: "Role has been created successfully.",
-        color: "green",
-      });
+      setIsConfirmOpen(false);
+      setIsSuccessOpen(true);
       handleClose();
       await Promise.all([
         queryClient.invalidateQueries({
@@ -227,10 +234,17 @@ export function CreateRoleModal({
       permissions: permissionsPayload,
     };
 
-    createRoleMutation.mutate(payload);
+    setPendingPayload(payload);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmCreateRole = () => {
+    if (!pendingPayload || createRoleMutation.isPending) return;
+    createRoleMutation.mutate(pendingPayload);
   };
 
   return (
+    <>
     <Modal
       opened={opened}
       onClose={handleClose}
@@ -424,5 +438,27 @@ export function CreateRoleModal({
         </Button>
       </Group>
     </Modal>
+    <ConfirmationModal
+      opened={isConfirmOpen}
+      onClose={() => setIsConfirmOpen(false)}
+      title="Create a New Role ?"
+      message="Are you sure you to create a new role ? Kindly note that this role would be created with it associated permission."
+      primaryButtonText="Yes, Create New Role"
+      secondaryButtonText="No, Close"
+      onPrimary={handleConfirmCreateRole}
+      loading={createRoleMutation.isPending}
+    />
+    <SuccessModal
+      opened={isSuccessOpen}
+      onClose={() => setIsSuccessOpen(false)}
+      title="Role Created"
+      message="Role has been successfully Created"
+      primaryButtonText="Manage Admin Role"
+      onPrimaryClick={() => {
+        setIsSuccessOpen(false);
+        router.push(adminRoutes.adminUserManagement());
+      }}
+    />
+    </>
   );
 }
