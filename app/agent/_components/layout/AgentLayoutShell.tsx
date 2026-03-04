@@ -6,27 +6,23 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AgentHeader from "./AgentHeader";
 import AgentSidebar from "./AgentSidebar";
-import TransactionHeader from "@/app/(customer)/_components/transactions/TransactionHeader";
 
-type BreadcrumbItem = {
-  label: string;
-  href?: string;
-};
+// type BreadcrumbItem = {
+//   label: string;
+//   href?: string;
+// };
 
 const HEADER_HEIGHT = 64;
 
-function AgentLayoutShellContent({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
-  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] =
+    useDisclosure(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useLayoutEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const mediaQuery = globalThis.matchMedia("(max-width: 768px)");
     setIsMobile(mediaQuery.matches);
 
     const handleChange = (e: MediaQueryListEvent) => {
@@ -48,7 +44,10 @@ function AgentLayoutShellContent({
     if (pathname?.startsWith("/agent/transactions")) return "Transactions";
     if (pathname?.startsWith("/agent/fx-inventory")) return "FX Inventory";
     if (pathname?.startsWith("/agent/customer-management")) {
-      if (pathname.includes("/customer-management/") && pathname !== "/agent/customer-management") {
+      if (
+        pathname.includes("/customer-management/") &&
+        pathname !== "/agent/customer-management"
+      ) {
         return "View Customer Details";
       }
       return "Customer Management";
@@ -61,18 +60,24 @@ function AgentLayoutShellContent({
       }
       return "Support";
     }
-    if (pathname?.startsWith("/agent/rate-calculator")) return "Rate Calculator";
+    if (pathname?.startsWith("/agent/rate-calculator"))
+      return "Rate Calculator";
     if (pathname?.startsWith("/agent/settings")) {
       if (pathname === "/agent/settings") return "Setting";
-      if (pathname.includes("/account-information")) return "Setting: Account Information";
-      if (pathname.includes("/change-password")) return "Setting: Change Password";
+      if (pathname.includes("/account-information"))
+        return "Setting: Account Information";
+      if (pathname.includes("/change-password"))
+        return "Setting: Change Password";
       if (pathname.includes("/notifications")) {
-        if (pathname.includes("/notifications/settings")) return "Setting: Notifications settings";
+        if (pathname.includes("/notifications/settings"))
+          return "Setting: Notifications settings";
         return "Setting: Notification";
       }
       if (pathname.includes("/account-security")) {
-        if (pathname.includes("/set-security-question")) return "Setting: Set Security Question";
-        if (pathname.includes("/verify-security-question")) return "Setting: Security Verification";
+        if (pathname.includes("/set-security-question"))
+          return "Setting: Set Security Question";
+        if (pathname.includes("/verify-security-question"))
+          return "Setting: Security Verification";
         return "Setting: Account Security";
       }
       return "Setting";
@@ -81,6 +86,15 @@ function AgentLayoutShellContent({
   };
 
   const getBreadcrumbs = () => {
+    if (
+      pathname?.startsWith("/agent/transactions") &&
+      pathname !== "/agent/transactions"
+    ) {
+      return [
+        { label: "Transactions", href: "/agent/transactions" },
+        { label: "Transaction details", href: undefined },
+      ];
+    }
     if (pathname?.startsWith("/agent/settings")) {
       if (pathname === "/agent/settings") return undefined;
       if (pathname.includes("/account-information")) {
@@ -117,7 +131,10 @@ function AgentLayoutShellContent({
         if (pathname.includes("/verify-security-question")) {
           return [
             { label: "Setting", href: "/agent/settings" },
-            { label: "Account Security", href: "/agent/settings/account-security" },
+            {
+              label: "Account Security",
+              href: "/agent/settings/account-security",
+            },
             { label: "Security Verification", href: undefined },
           ];
         }

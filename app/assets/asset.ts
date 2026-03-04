@@ -17,6 +17,7 @@ import moneyGram from "./svg/money-gram.svg";
 import westernUnion from "./svg/western-union.svg";
 import exclamation from "./png/exclamation.png";
 import actionBtnIcon from "./png/actionBtnIcon.png";
+import agentFlag from "./png/country-flags.png";
 
 export {
   logo,
@@ -38,4 +39,5 @@ export {
   westernUnion,
   exclamation,
   actionBtnIcon,
+  agentFlag,
 };
