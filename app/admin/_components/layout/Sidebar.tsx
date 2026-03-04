@@ -40,7 +40,7 @@ const menuItems2 = [
   { icon: LayoutGrid, label: "User Management", href: "/admin/user-management" },
   { icon: BanknoteIcon, label: "Regulatory & Compliance", href: "/admin/regulatory" },
   { icon: Database, label: "Report and Analytics", href: "/admin/report" },
-  { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trial" },
+  { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trail" },
 ];
 
 export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {

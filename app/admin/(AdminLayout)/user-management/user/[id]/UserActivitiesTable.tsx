@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Group, Text, TextInput, Button, Select, Badge } from "@mantine/core";
-import { Search, ListFilter, Upload } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Group, Text, TextInput, Button, Select, ActionIcon } from "@mantine/core";
+import { Search, ListFilter, Upload, ChevronRight } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ViewUserActionModal } from "./ViewUserActionModal";
 import { useDebouncedValue } from "@mantine/hooks";
 import {
@@ -15,23 +15,13 @@ import {
 /* --------------------------------------------
  Types
 --------------------------------------------- */
-const PAGE_SIZE = 10;
-
-/* --------------------------------------------
- Helpers
---------------------------------------------- */
-const effectColor = (effect?: string) => {
-  switch (effect) {
-    case "Posted":
-      return "green";
-    case "Pending":
-      return "orange";
-    case "Rejected":
-      return "red";
-    default:
-      return "gray";
-  }
-};
+const PAGE_SIZE = 20;
+const formatEnumLabel = (value: string) =>
+  value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 /* --------------------------------------------
  Component
@@ -39,42 +29,37 @@ const effectColor = (effect?: string) => {
 export default function UserActivitiesTable({ userId }: { userId?: string }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [debouncedSearch] = useDebouncedValue(search, 400);
-  const [filter, setFilter] = useState<string | null>(null);
+  const [debouncedSearch] = useDebouncedValue(search, 350);
+  const [statusFilter, setStatusFilter] = useState("All");
   const [viewActionOpen, setViewActionOpen] = useState(false);
 
   const { activities, totalPages, isLoading } = useAdminUserActivities(userId, {
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
+    status: statusFilter !== "All" ? statusFilter : undefined,
   });
-
-  const formatDate = (iso?: string) => {
-    if (!iso) return { date: "—", time: "" };
-    const d = new Date(iso);
-    return {
-      date: d.toLocaleDateString("en-NG", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-      time: d.toLocaleTimeString("en-NG", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    };
-  };
+  const safeTotalPages = Math.max(1, totalPages);
+  const statusOptions = useMemo(
+    () => [
+      { value: "All", label: "All" },
+      { value: "SUCCESS", label: "Success" },
+      { value: "PENDING", label: "Pending" },
+      { value: "FAILED", label: "Failed" },
+    ],
+    []
+  );
 
   /* --------------------------------------------
    Table Headers
   --------------------------------------------- */
   const headers = [
-    { label: "Action ID", key: "actionId" },
-    { label: "Action Date", key: "actionDate" },
+    { label: "Time stamp", key: "timestamp" },
+    { label: "Action By", key: "actionBy" },
     { label: "Affected Module", key: "module" },
     { label: "Action Taken", key: "actionTaken" },
-    { label: "Action Effect", key: "effect" },
+    { label: "Affected system", key: "affectedSystem" },
+    { label: "Status", key: "status" },
     { label: "Action", key: "action" },
   ];
 
@@ -82,54 +67,55 @@ export default function UserActivitiesTable({ userId }: { userId?: string }) {
    Row Renderer
   --------------------------------------------- */
   const renderRow = (item: AdminUserActivity) => {
-    const { date, time } = formatDate(
-      typeof item.createdAt === "string" ? item.createdAt : undefined
-    );
-    const actionId = (item.actionId as string) ?? item.id ?? "—";
-    const moduleName = (item.module as string) ?? "—";
-    const moduleId = (item.moduleId as string) ?? "";
-    const actionTaken = (item.actionTaken as string) ?? "—";
-    const effect = (item.effect as string) ?? "—";
-
     return [
-      <Text key="id" size="sm" fw={500}>
-        {actionId}
-      </Text>,
-
-      <div key="date">
-        <Text size="sm">{date}</Text>
+      <div key="timestamp">
+        <Text size="sm">{item.timestamp}</Text>
         <Text size="xs" c="dimmed">
-          {time}
+          {item.time}
         </Text>
       </div>,
 
-      <div key="module">
-        <Text size="sm">{moduleName}</Text>
+      <div key="actionBy">
+        <Text size="sm" fw={500}>
+          {item.actionBy}
+        </Text>
         <Text size="xs" c="dimmed">
-          {moduleId ? `ID:${moduleId}` : ""}
+          {item.role}
         </Text>
       </div>,
 
-      <Text key="taken" size="sm" c="blue">
-        {actionTaken}
+      <Text key="module" size="sm">
+        {formatEnumLabel(item.module)}
       </Text>,
 
-      <Badge key="effect" color={effectColor(effect)} radius="xl" variant="light">
-        {effect}
-      </Badge>,
+      <Text key="actionTaken" size="sm">
+        {item.actionTaken}
+      </Text>,
 
-      <RowActionIcon key="action" onClick={() => setViewActionOpen(true)} />,
+      <Text key="affectedSystem" size="sm">
+        {item.affectedSystem}
+      </Text>,
+
+      <StatusBadge key="status" status={formatEnumLabel(item.status)} variant="light" />,
+
+      <ActionIcon
+        key="action"
+        radius="xl"
+        variant="light"
+        color="orange"
+        onClick={() => setViewActionOpen(true)}
+      >
+        <ChevronRight size={14} />
+      </ActionIcon>,
     ];
   };
 
   return (
-    <div className="bg-white rounded-xl p-5">
+    <div className="bg-white rounded-lg p-5">
       {/* Header */}
-      <Group justify="space-between" mb="md">
-        <Group>
-          <Text fw={600} size="lg">
-            User Activities
-          </Text>
+      <Group gap="md" mb="md" justify="space-between">
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-semibold">User Activities</h2>
           <TextInput
             placeholder="Enter keyword"
             leftSection={<Search size={16} />}
@@ -139,21 +125,23 @@ export default function UserActivitiesTable({ userId }: { userId?: string }) {
               setSearch(e.currentTarget.value);
               setPage(1);
             }}
-            w={260}
+            w={320}
           />
-        </Group>
+        </div>
 
-        <Group>
+        <Group wrap="wrap">
           <Select
-            placeholder="Filter By"
-            data={["Posted", "Pending", "Rejected"]}
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value ?? "All");
+              setPage(1);
+            }}
+            data={statusOptions}
             radius="xl"
-            value={filter}
-            onChange={setFilter}
+            w={160}
             rightSection={<ListFilter size={16} />}
-            w={130}
+            placeholder="Status"
           />
-
           <Button
             variant="outline"
             radius="xl"
@@ -174,8 +162,8 @@ export default function UserActivitiesTable({ userId }: { userId?: string }) {
         emptyMessage="This user has no recorded activities."
         pagination={{
           page,
-          totalPages,
-          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
           onPageChange: setPage,
         }}

@@ -25,7 +25,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/customer',
     '/admin/rate',
     '/admin/report',
-    '/admin/audit-trial',
+    '/admin/audit-trail',
     '/admin/outlet',
     '/admin/tickets',
     '/admin/workflow',

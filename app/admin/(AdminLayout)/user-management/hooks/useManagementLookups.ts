@@ -16,6 +16,7 @@ interface LookupResponse {
   data: {
     roles?: LookupItem[];
     departments?: LookupItem[];
+    branches?: LookupItem[];
   };
   metadata?: Record<string, unknown> | null;
 }
@@ -25,7 +26,12 @@ export interface LookupOption {
   label: string;
 }
 
-export function useManagementLookups(query: LookupQuery) {
+type LookupOptionValueField = "id" | "name";
+
+export function useManagementLookups(
+  query: LookupQuery,
+  valueField: LookupOptionValueField = "id"
+) {
   const lookupQuery = useFetchData<LookupResponse>(
     [...adminKeys.management.lookups(query)],
     () => adminApi.management.lookups(query) as unknown as Promise<LookupResponse>,
@@ -36,15 +42,23 @@ export function useManagementLookups(query: LookupQuery) {
     const items =
       query === "role"
         ? lookupQuery.data?.data?.roles ?? []
-        : lookupQuery.data?.data?.departments ?? [];
+        : query === "department"
+          ? lookupQuery.data?.data?.departments ?? []
+          : lookupQuery.data?.data?.branches ?? [];
 
     return items
       .filter((item) => item.isActive)
       .map((item) => ({
-        value: item.id,
+        value: valueField === "name" ? item.name : item.id,
         label: item.name,
       }));
-  }, [lookupQuery.data?.data?.departments, lookupQuery.data?.data?.roles, query]);
+  }, [
+    lookupQuery.data?.data?.branches,
+    lookupQuery.data?.data?.departments,
+    lookupQuery.data?.data?.roles,
+    query,
+    valueField,
+  ]);
 
   return {
     options,

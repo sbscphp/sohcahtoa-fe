@@ -20,15 +20,29 @@ export interface AdminUserDetails {
   updatedAt: string;
   roleName?: string | null;
   departmentName?: string | null;
+  rolePermissions?: Record<string, unknown>;
 }
 
 interface AdminUserDetailsResponse {
   success: boolean;
-  data: {
-    user: AdminUserDetails;
-    rolePermissions: Record<string, unknown>;
-  };
+  data:
+    | AdminUserDetails
+    | {
+        user: AdminUserDetails;
+        rolePermissions: Record<string, unknown>;
+      };
   metadata?: Record<string, unknown> | null;
+}
+
+function unwrapUser(data: AdminUserDetailsResponse["data"] | undefined): AdminUserDetails | null {
+  if (!data) return null;
+  if ("user" in data) {
+    return {
+      ...data.user,
+      rolePermissions: data.rolePermissions,
+    };
+  }
+  return data;
 }
 
 export function useAdminUserDetails(id?: string) {
@@ -39,8 +53,8 @@ export function useAdminUserDetails(id?: string) {
   );
 
   return {
-    user: query.data?.data?.user ?? null,
-    rolePermissions: query.data?.data?.rolePermissions ?? {},
+    user: unwrapUser(query.data?.data),
+    rolePermissions: unwrapUser(query.data?.data)?.rolePermissions ?? {},
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

@@ -205,7 +205,7 @@ export default function   FormModal({
         inputElement = (
           <TextInput
             {...commonProps}
-            type={field.type}
+            type={field.type === "tel" ? "number" : field.type}
             value={formData[field.name] || ""}
             onChange={(e) => handleChange(field.name, e.currentTarget.value)}
           />

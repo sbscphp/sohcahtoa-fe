@@ -96,9 +96,20 @@ export const API_ENDPOINTS = {
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",
+    auditTrail: "/api/admin/audit/trail",
+    agent: {
+      list: "/api/admin/agent",
+      stats: "/api/admin/agent/stats",
+      getById: (id: string) => `/api/admin/agent/${id}`,
+      updateStatus: (id: string) => `/api/admin/agent/${id}/status`,
+    },
     customers: {
       list: "/api/admin/customers",
+      counts: "/api/admin/customers/counts",
       getById: (userId: string) => `/api/admin/customers/${userId}`,
+      deactivate: (userId: string) => `/api/admin/customers/${userId}/deactivate`,
+      toggleStatus: (userId: string) => `/api/admin/customers/${userId}/status`,
+      transactions: (userId: string) => `/api/admin/customers/${userId}/transactions`,
       flags: {
         list: (userId: string) => `/api/admin/customers/${userId}/flags`,
         create: (userId: string) => `/api/admin/customers/${userId}/flags`,
@@ -116,8 +127,11 @@ export const API_ENDPOINTS = {
       lookups: "/api/admin/management/lookups",
       users: {
         list: "/api/admin/management/users",
+        create: "/api/admin/management/add-user",
         stats: "/api/admin/management/users/stats",
         getById: (id: string) => `/api/admin/management/users/${id}`,
+        update: (id: string) => `/api/admin/management/users/${id}`,
+        updateStatus: (id: string) => `/api/admin/management/users/${id}/status`,
         activities: (id: string) => `/api/admin/management/users/${id}/activities`,
       },
       roles: {
@@ -126,7 +140,11 @@ export const API_ENDPOINTS = {
       },
       departments: {
         list: "/api/admin/management/departments",
+        create: "/api/admin/management/departments",
         stats: "/api/admin/management/departments/stats",
+        update: (id: string) => `/api/admin/management/departments/${id}`,
+        updateStatus: (id: string) => `/api/admin/management/departments/${id}/status`,
+        delete: (id: string) => `/api/admin/management/departments/${id}`,
       },
     },
   },
