@@ -123,7 +123,13 @@ export const adminKeys = {
     detail: (userId: string) => [...adminKeys.customers.details(), userId] as const,
     transactions: (
       userId: string,
-      params?: { page?: number; limit?: number; status?: string; type?: string }
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        type?: string;
+        search?: string;
+      }
     ) => [...adminKeys.customers.detail(userId), "transactions", params] as const,
     flags: {
       all: (userId: string) => [...adminKeys.customers.detail(userId), "flags"] as const,
@@ -158,7 +164,7 @@ export const adminKeys = {
     roles: {
       all: () => [...adminKeys.management.all, "roles"] as const,
       stats: () => [...adminKeys.management.roles.all(), "stats"] as const,
-      list: (params?: { page?: number; limit?: number; search?: string }) =>
+      list: (params?: { page?: number; limit?: number; search?: string; isActive?: boolean }) =>
         [...adminKeys.management.roles.all(), "list", params] as const,
       detail: (id: string) => [...adminKeys.management.roles.all(), "detail", id] as const,
     },

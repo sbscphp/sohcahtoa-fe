@@ -17,20 +17,38 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useForm } from "@mantine/form";
 import { useManagementLookups } from "../../hooks/useManagementLookups";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import {
+  adminApi,
+  type CreateRolePayload,
+} from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 interface CreateRoleModalProps {
   opened: boolean;
   onClose: () => void;
-  onSave?: (data: unknown) => void;
 }
 
 export function CreateRoleModal({
   opened,
   onClose,
-  onSave,
 }: CreateRoleModalProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<"details" | "permissions">("details");
   const [isDefault, setIsDefault] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<CreateRolePayload | null>(null);
+  const { options: branchOptions, isLoading: branchesLoading } =
+    useManagementLookups("branch", "name");
   const { options: departmentOptions, isLoading: departmentsLoading } =
     useManagementLookups("department");
 
@@ -54,58 +72,57 @@ export function CreateRoleModal({
     },
   });
 
-  const modules = [
-    "Transaction Management",
-    "Customer Management",
-    "Outlet Management",
-    "Settlement",
-    "Workflow",
-  ];
-  const subFeatures = [
-    "Sub-Feature 01",
-    "Sub-Feature 02",
-    "Sub-Feature 03",
-    "Sub-Feature 04",
-    "Sub-Feature 05",
-  ];
+  const PERMISSION_ACTIONS = ["can.view", "can.create", "can.edit", "can.delete"] as const;
+  type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
 
-  const [moduleEnabled, setModuleEnabled] = useState<Record<string, boolean>>(
-    Object.fromEntries(modules.map((moduleName) => [moduleName, false]))
-  );
-  const [permissions, setPermissions] = useState<
-    Record<string, Record<string, { canView: boolean; canEdit: boolean }>>
-  >(
+  const roleModules = [
+    { key: "TRANSACTIONS", label: "Transactions", scopes: ["MODULE"] },
+    { key: "CUSTOMERS", label: "Customers", scopes: ["MODULE"] },
+    { key: "AGENTS", label: "Agents", scopes: ["MODULE"] },
+    { key: "SETTLEMENTS", label: "Settlements", scopes: ["MODULE"] },
+    { key: "RATES", label: "Rates", scopes: ["MODULE"] },
+    { key: "USER_MANAGEMENT", label: "User Management", scopes: ["ROLES", "USERS"] },
+    { key: "WORKFLOW", label: "Workflow", scopes: ["MODULE"] },
+    { key: "COMPLIANCE", label: "Compliance", scopes: ["MODULE"] },
+    { key: "REPORTS", label: "Reports", scopes: ["MODULE"] },
+    { key: "AUDIT", label: "Audit", scopes: ["MODULE"] },
+  ] as const;
+  type ModuleKey = (typeof roleModules)[number]["key"];
+
+  const createInitialPermissions = () =>
     Object.fromEntries(
-      modules.map((moduleName) => [
-        moduleName,
+      roleModules.map((module) => [
+        module.key,
         Object.fromEntries(
-          subFeatures.map((feature) => [
-            feature,
-            { canView: false, canEdit: false },
+          module.scopes.map((scope) => [
+            scope,
+            Object.fromEntries(
+              PERMISSION_ACTIONS.map((action) => [action, false])
+            ) as Record<PermissionAction, boolean>,
           ])
         ),
       ])
-    )
-  );
+    ) as Record<
+      (typeof roleModules)[number]["key"],
+      Record<string, Record<PermissionAction, boolean>>
+    >;
+
+  const [permissions, setPermissions] = useState(createInitialPermissions);
+
+  const actionLabelMap: Record<PermissionAction, string> = {
+    "can.view": "Can View",
+    "can.create": "Can Create",
+    "can.edit": "Can Edit",
+    "can.delete": "Can Delete",
+  };
 
   const resetAll = () => {
     form.reset();
     setIsDefault(false);
     setStep("details");
-    setModuleEnabled(Object.fromEntries(modules.map((moduleName) => [moduleName, false])));
-    setPermissions(
-      Object.fromEntries(
-        modules.map((moduleName) => [
-          moduleName,
-          Object.fromEntries(
-            subFeatures.map((feature) => [
-              feature,
-              { canView: false, canEdit: false },
-            ])
-          ),
-        ])
-      )
-    );
+    setIsConfirmOpen(false);
+    setPendingPayload(null);
+    setPermissions(createInitialPermissions());
   };
 
   const handleClose = () => {
@@ -119,17 +136,115 @@ export function CreateRoleModal({
     setStep("permissions");
   };
 
+  const isModuleChecked = (moduleKey: ModuleKey, scopes: readonly string[]) =>
+    scopes.every((scope) =>
+      PERMISSION_ACTIONS.every((action) => permissions[moduleKey][scope][action])
+    );
+
+  const isModuleIndeterminate = (moduleKey: ModuleKey, scopes: readonly string[]) => {
+    const values = scopes.flatMap((scope) =>
+      PERMISSION_ACTIONS.map((action) => permissions[moduleKey][scope][action])
+    );
+    return values.some(Boolean) && !values.every(Boolean);
+  };
+
+  const toggleModule = (moduleKey: ModuleKey, scopes: readonly string[], checked: boolean) => {
+    setPermissions((prev) => ({
+      ...prev,
+      [moduleKey]: Object.fromEntries(
+        scopes.map((scope) => [
+          scope,
+          Object.fromEntries(
+            PERMISSION_ACTIONS.map((action) => [action, checked])
+          ) as Record<PermissionAction, boolean>,
+        ])
+      ),
+    }));
+  };
+
+  const createRoleMutation = useCreateData(adminApi.management.roles.create, {
+    onSuccess: async () => {
+      setIsConfirmOpen(false);
+      setIsSuccessOpen(true);
+      handleClose();
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.management.roles.all()],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.management.roles.stats()],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+      notifications.show({
+        title: "Create Role Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create role. Please try again.",
+        color: "red",
+      });
+    },
+  });
+
   const handleCreateRole = () => {
-    onSave?.({
-      ...form.values,
+    const validation = form.validate();
+    if (validation.hasErrors) {
+      setStep("details");
+      return;
+    }
+
+    const departmentName =
+      departmentOptions.find((option) => option.value === form.values.departmentId)
+        ?.label ?? "";
+
+    if (!departmentName) {
+      form.setFieldError("departmentId", "Department is required");
+      setStep("details");
+      return;
+    }
+
+    const permissionsPayload = Object.fromEntries(
+      roleModules
+        .map((module) => {
+          const scopePayload = Object.fromEntries(
+            module.scopes
+              .map((scope) => {
+                const selectedActions = PERMISSION_ACTIONS.filter(
+                  (action) => permissions[module.key][scope][action]
+                );
+                return [scope, selectedActions] as const;
+              })
+              .filter(([, actions]) => actions.length > 0)
+          );
+
+          return [module.key, scopePayload] as const;
+        })
+        .filter(([, scopePayload]) => Object.keys(scopePayload).length > 0)
+    );
+
+    const payload: CreateRolePayload = {
+      name: form.values.name.trim(),
+      description: form.values.description.trim(),
+      branch: form.values.branch,
+      department: departmentName,
       isDefault,
-      permissions,
-      moduleEnabled,
-    });
-    handleClose();
+      permissions: permissionsPayload,
+    };
+
+    setPendingPayload(payload);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmCreateRole = () => {
+    if (!pendingPayload || createRoleMutation.isPending) return;
+    createRoleMutation.mutate(pendingPayload);
   };
 
   return (
+    <>
     <Modal
       opened={opened}
       onClose={handleClose}
@@ -180,11 +295,9 @@ export function CreateRoleModal({
               label="Branch Applicable"
               placeholder="Select an Option"
               required
-              data={[
-                "Sohcahtoa Lagos State Branch",
-                "Abuja Branch",
-                "Port Harcourt Branch",
-              ]}
+              data={branchOptions}
+              disabled={branchesLoading}
+              searchable
               value={form.values.branch}
               onChange={(value) => form.setFieldValue("branch", value ?? "")}
               error={form.errors.branch}
@@ -244,72 +357,54 @@ export function CreateRoleModal({
       ) : (
         <Stack gap="md" mt="lg">
           <Accordion chevronPosition="right" radius="md" variant="separated">
-            {modules.map((moduleName) => (
-              <Accordion.Item key={moduleName} value={moduleName}>
+            {roleModules.map((module) => (
+              <Accordion.Item key={module.key} value={module.key}>
                 <Accordion.Control>
                   <Checkbox
-                    checked={moduleEnabled[moduleName]}
+                    checked={isModuleChecked(module.key, module.scopes)}
+                    indeterminate={isModuleIndeterminate(module.key, module.scopes)}
                     onChange={(e) => {
-                      const checked = e.currentTarget?.checked ?? false;
-                      setModuleEnabled((prev) => ({
-                        ...prev,
-                        [moduleName]: checked,
-                      }));
+                      const checked = e.currentTarget.checked ?? false;
+                      toggleModule(module.key, module.scopes, checked);
                     }}
-                    label={moduleName}
+                    label={module.label}
                     color="orange"
                   />
                 </Accordion.Control>
                 <Accordion.Panel>
                   <Stack gap={0}>
-                    {subFeatures.map((feature) => (
+                    {module.scopes.map((scope) => (
                       <Group
-                        key={feature}
+                        key={`${module.key}-${scope}`}
                         justify="space-between"
                         py="sm"
                         className="border-b border-[#E1E0E0]"
                       >
-                        <Text size="sm">{feature}</Text>
+                        <Text size="sm">{scope}</Text>
 
                         <Group gap="xl">
-                          <Checkbox
-                            labelPosition="left"
-                            label="Can View"
-                            color="orange"
-                            checked={permissions[moduleName][feature].canView}
-                            onChange={(e) => {
-                              const checked = e.currentTarget?.checked ?? false;
-                              setPermissions((prev) => ({
-                                ...prev,
-                                [moduleName]: {
-                                  ...prev[moduleName],
-                                  [feature]: {
-                                    ...prev[moduleName][feature],
-                                    canView: checked,
+                          {PERMISSION_ACTIONS.map((action) => (
+                            <Checkbox
+                              key={`${module.key}-${scope}-${action}`}
+                              labelPosition="left"
+                              label={actionLabelMap[action]}
+                              color="orange"
+                              checked={permissions[module.key][scope][action]}
+                              onChange={(e) => {
+                                const checked = e.currentTarget.checked ?? false;
+                                setPermissions((prev) => ({
+                                  ...prev,
+                                  [module.key]: {
+                                    ...prev[module.key],
+                                    [scope]: {
+                                      ...prev[module.key][scope],
+                                      [action]: checked,
+                                    },
                                   },
-                                },
-                              }));
-                            }}
-                          />
-                          <Checkbox
-                            labelPosition="left"
-                            label="Can edit"
-                            color="orange"
-                            checked={permissions[moduleName][feature].canEdit}
-                            onChange={(e) => {
-                              const checked = e.currentTarget?.checked ?? false;
-                              setPermissions((prev) => ({
-                                ...prev,
-                                [moduleName]: {
-                                  ...prev[moduleName],
-                                  [feature]: {
-                                    ...prev[moduleName][feature],
-                                    canEdit: checked,
-                                  },
-                                },
-                              }));
-                            }}
-                          />
+                                }));
+                              }}
+                            />
+                          ))}
                         </Group>
                       </Group>
                     ))}
@@ -324,7 +419,12 @@ export function CreateRoleModal({
       <Divider my="lg" />
 
       <Group justify="flex-end">
-        <Button variant="outline" radius="xl" onClick={handleClose}>
+        <Button
+          variant="outline"
+          radius="xl"
+          onClick={handleClose}
+          disabled={createRoleMutation.isPending}
+        >
           Close
         </Button>
 
@@ -332,10 +432,33 @@ export function CreateRoleModal({
           color="orange"
           radius="xl"
           onClick={step === "details" ? goToPermissions : handleCreateRole}
+          loading={step === "permissions" ? createRoleMutation.isPending : false}
         >
-          Continue
+          {step === "details" ? "Continue" : "Create Role"}
         </Button>
       </Group>
     </Modal>
+    <ConfirmationModal
+      opened={isConfirmOpen}
+      onClose={() => setIsConfirmOpen(false)}
+      title="Create a New Role ?"
+      message="Are you sure you to create a new role ? Kindly note that this role would be created with it associated permission."
+      primaryButtonText="Yes, Create New Role"
+      secondaryButtonText="No, Close"
+      onPrimary={handleConfirmCreateRole}
+      loading={createRoleMutation.isPending}
+    />
+    <SuccessModal
+      opened={isSuccessOpen}
+      onClose={() => setIsSuccessOpen(false)}
+      title="Role Created"
+      message="Role has been successfully Created"
+      primaryButtonText="Manage Admin Role"
+      onPrimaryClick={() => {
+        setIsSuccessOpen(false);
+        router.push(adminRoutes.adminUserManagement());
+      }}
+    />
+    </>
   );
 }

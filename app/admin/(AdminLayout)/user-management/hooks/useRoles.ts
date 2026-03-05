@@ -44,6 +44,7 @@ export interface UseRolesParams {
   page?: number;
   limit?: number;
   search?: string;
+  isActive?: boolean;
 }
 
 export function useRoles(params: UseRolesParams = {}) {
