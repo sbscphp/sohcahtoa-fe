@@ -377,6 +377,18 @@ export const adminApi = {
     },
 
     roles: {
+      export: async () => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.roles.export
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       create: (data: CreateRolePayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.create,

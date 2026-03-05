@@ -138,6 +138,7 @@ export const API_ENDPOINTS = {
       },
       roles: {
         list: "/api/admin/management/roles",
+        export: "/api/admin/management/roles/export",
         create: "/api/admin/management/roles",
         stats: "/api/admin/management/roles/stats",
         getById: (id: string) => `/api/admin/management/roles/${id}`,
