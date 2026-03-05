@@ -60,6 +60,25 @@ export interface AgentDetailsResponseData {
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;
+  branch?: {
+    id: string;
+    name: string;
+    state?: string;
+    address?: string;
+    email?: string;
+    phoneNumber?: string;
+    branchManager?: string;
+  } | null;
+  attachments?: Array<{
+    id: string;
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    mimeType?: string;
+    createdAt?: string;
+  }>;
+  totalTransactions?: number;
+  transactionValue?: number;
 }
 
 export interface UpdateAgentStatusPayload {

@@ -4,19 +4,13 @@ import { useMemo, useState } from "react";
 import {
   Button,
   Divider,
-  Group,
   Menu,
-  Select,
   Skeleton,
   Stack,
   Text,
-  TextInput,
 } from "@mantine/core";
-import { useParams, useRouter } from "next/navigation";
-import { Download, Search } from "lucide-react";
-import DynamicTableSection, {
-  Header,
-} from "@/app/admin/_components/DynamicTableSection";
+import { useParams } from "next/navigation";
+import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import FormModal, {
@@ -24,10 +18,8 @@ import FormModal, {
 } from "@/app/admin/_components/FormModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import EmptySection from "@/app/admin/_components/EmptySection";
 import { useAgentDetails } from "../hooks/useAgentDetails";
-import { adminRoutes } from "@/lib/adminRoutes";
 import { usePatchData } from "@/app/_lib/api/hooks";
 import {
   adminApi,
@@ -37,6 +29,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import AgentTransactionsTable from "../_agentComponents/AgentTransactionsTable";
 
 type AgentStatus = "Active" | "Deactivated";
 
@@ -53,17 +46,7 @@ interface AgentDetails {
   transactionValue: number;
   lastTransaction: string;
   documentLabel: string;
-}
-
-type TransactionStatus = "Posted" | "Pending" | "Rejected";
-
-interface AgentTransaction {
-  id: string;
-  actionDate: string;
-  actionTime: string;
-  type: string;
-  transactionValue: number;
-  status: TransactionStatus;
+  documentUrl: string | null;
 }
 
 const formatNaira = (amount: number): string =>
@@ -72,59 +55,8 @@ const formatNaira = (amount: number): string =>
     maximumFractionDigits: 2,
   })}`;
 
-const MOCK_TRANSACTIONS: AgentTransaction[] = [
-  {
-    id: "7844gAGA563A",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "BTA Buy",
-    transactionValue: 1250000,
-    status: "Posted",
-  },
-  {
-    id: "7844gAGA563B",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "PTA Buy",
-    transactionValue: 875000,
-    status: "Pending",
-  },
-  {
-    id: "7844gAGA563C",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "PTA Buy",
-    transactionValue: 930500,
-    status: "Rejected",
-  },
-  {
-    id: "7844gAGA563D",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "Export Proceeds",
-    transactionValue: 1100000,
-    status: "Posted",
-  },
-  {
-    id: "7844gAGA563E",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "BTA Buy",
-    transactionValue: 790000,
-    status: "Pending",
-  },
-  {
-    id: "7844gAGA563F",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "PTA Sell",
-    transactionValue: 980000,
-    status: "Posted",
-  },
-];
 
 export default function AgentDetailsPage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const params = useParams<{ id: string }>();
   const agentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -133,11 +65,6 @@ export default function AgentDetailsPage() {
   const [statusOverride, setStatusOverride] = useState<AgentStatus | null>(null);
   const currentStatus: AgentStatus =
     statusOverride ?? (agentData?.isActive ? "Active" : "Deactivated");
-
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>("All");
-  const [page, setPage] = useState(1);
-  const pageSize = 6;
   const [loading, setLoading] = useState(false);
 
   const [editModalOpened, setEditModalOpened] = useState(false);
@@ -177,71 +104,15 @@ export default function AgentDetailsPage() {
       createdTime: formatTime(agentData?.createdAt),
       email: agentData?.email ?? "—",
       phone: agentData?.phoneNumber ?? "—",
-      branch: "—",
-      totalTransactions: 0,
-      transactionValue: 0,
+      branch: agentData?.branch?.name ?? "—",
+      totalTransactions: agentData?.totalTransactions ?? 0,
+      transactionValue: agentData?.transactionValue ?? 0,
       lastTransaction: "—",
-      documentLabel: "N/A",
+      documentLabel: agentData?.attachments?.[0]?.fileName ?? "No attachment",
+      documentUrl: agentData?.attachments?.[0]?.fileUrl ?? null,
     }),
     [agentData, currentStatus]
   );
-
-  const headers: Header[] = [
-    { label: "Transaction ID", key: "transactionId" },
-    { label: "Action Date", key: "actionDate" },
-    { label: "Type", key: "type" },
-    { label: "Transaction Value", key: "transactionValue" },
-    { label: "Action Effect", key: "actionEffect" },
-    { label: "Action", key: "action" },
-  ];
-
-  const filteredTransactions = useMemo(() => {
-    return MOCK_TRANSACTIONS.filter((tx) => {
-      const matchesSearch =
-        tx.id.toLowerCase().includes(search.toLowerCase()) ||
-        tx.type.toLowerCase().includes(search.toLowerCase());
-
-      const matchesStatus =
-        !statusFilter ||
-        statusFilter === "All" ||
-        tx.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [search, statusFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / pageSize));
-
-  const paginatedTransactions = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredTransactions.slice(start, end);
-  }, [filteredTransactions, page, pageSize]);
-
-  const renderTransactionRow = (tx: AgentTransaction) => [
-    <Text key="transactionId" size="sm" fw={500}>
-      {tx.id}
-    </Text>,
-    <div key="actionDate" className="flex flex-col">
-      <Text size="sm">{tx.actionDate}</Text>
-      <Text size="xs" c="dimmed">
-        {tx.actionTime}
-      </Text>
-    </div>,
-    <Text key="type" size="sm">
-      {tx.type}
-    </Text>,
-    <Text key="transactionValue" size="sm" fw={500}>
-      {formatNaira(tx.transactionValue)}
-    </Text>,
-    <StatusBadge key="actionEffect" status={tx.status} />,
-    <RowActionIcon
-      key="action"
-      onClick={() => {
-        router.push(adminRoutes.adminAgentTransactions(tx.id));
-      }}
-    />,
-  ];
 
   const editAgentFields: FormField[] = useMemo(
     () => [
@@ -488,6 +359,11 @@ export default function AgentDetailsPage() {
                 size="xs"
                 leftSection={<Download size={14} />}
                 className="px-0"
+                disabled={isAgentLoading || !agent.documentUrl}
+                onClick={() => {
+                  if (!agent.documentUrl) return;
+                  window.open(agent.documentUrl, "_blank", "noopener,noreferrer");
+                }}
               >
                 {agent.documentLabel}
               </Button>
@@ -591,63 +467,7 @@ export default function AgentDetailsPage() {
         }}
       />
 
-      {/* Agent Transactions Table */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <Group justify="space-between" mb="md" wrap="wrap">
-          <Text fw={600} size="md">
-            Agent Transactions
-          </Text>
-
-          <Group gap="sm" wrap="wrap">
-            <TextInput
-              placeholder="Enter keyword"
-              leftSection={<Search size={16} color="#DD4F05" />}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.currentTarget.value);
-                setPage(1);
-              }}
-              radius="xl"
-              w={260}
-            />
-
-            <Select
-              value={statusFilter}
-              onChange={(value) => {
-                setStatusFilter(value);
-                setPage(1);
-              }}
-              data={["All", "Posted", "Pending", "Rejected"]}
-              radius="xl"
-              w={140}
-              placeholder="Filter By"
-            />
-
-            <Button
-              variant="outline"
-              color="#E36C2F"
-              radius="xl"
-            >
-              Export
-            </Button>
-          </Group>
-        </Group>
-
-        <DynamicTableSection
-          headers={headers}
-          data={paginatedTransactions}
-          renderItems={renderTransactionRow}
-          emptyTitle="No Transactions Found"
-          emptyMessage="There are currently no transactions for this agent."
-          pagination={{
-            page,
-            totalPages,
-            onNext: () => setPage((prev) => Math.min(prev + 1, totalPages)),
-            onPrevious: () => setPage((prev) => Math.max(prev - 1, 1)),
-            onPageChange: setPage,
-          }}
-        />
-      </div>
+      <AgentTransactionsTable agentId={agentId ?? ""} />
     </div>
   );
 }
