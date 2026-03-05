@@ -214,6 +214,21 @@ export const adminApi = {
         API_ENDPOINTS.admin.agent.getById(id)
       ),
 
+    transactions: (
+      id: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.agent.transactions(id),
+        { params }
+      ),
+
     updateStatus: (id: string, data: UpdateAgentStatusPayload) =>
       apiClient.patch<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.updateStatus(id),

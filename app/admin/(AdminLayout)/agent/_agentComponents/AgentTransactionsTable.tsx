@@ -8,6 +8,10 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 
 type TransactionStatus = "Posted" | "Pending" | "Rejected";
 
@@ -24,56 +28,27 @@ interface AgentTransactionsTableProps {
   agentId: string;
 }
 
-const MOCK_TRANSACTIONS: AgentTransaction[] = [
-  {
-    id: "7844gAGA563A",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "BTA Buy",
-    transactionValue: 1250000,
-    status: "Posted",
-  },
-  {
-    id: "7844gAGA563B",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "PTA Buy",
-    transactionValue: 875000,
-    status: "Pending",
-  },
-  {
-    id: "7844gAGA563C",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "PTA Buy",
-    transactionValue: 930500,
-    status: "Rejected",
-  },
-  {
-    id: "7844gAGA563D",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "Export Proceeds",
-    transactionValue: 1100000,
-    status: "Posted",
-  },
-  {
-    id: "7844gAGA563E",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "BTA Buy",
-    transactionValue: 790000,
-    status: "Pending",
-  },
-  {
-    id: "7844gAGA563F",
-    actionDate: "September 12, 2025",
-    actionTime: "11:00 am",
-    type: "PTA Sell",
-    transactionValue: 980000,
-    status: "Posted",
-  },
-];
+interface ApiTransactionItem {
+  id?: string;
+  actionDate?: string;
+  actionTime?: string;
+  type?: string;
+  transactionValue?: number | string;
+  status?: string;
+}
+
+interface AgentTransactionsResponse {
+  success: boolean;
+  data: ApiTransactionItem[];
+  metadata?: {
+    pagination?: {
+      page?: number;
+      limit?: number;
+      total?: number;
+      totalPages?: number;
+    };
+  } | null;
+}
 
 const formatNaira = (amount: number): string =>
   `₦ ${amount.toLocaleString("en-NG", {
@@ -81,14 +56,63 @@ const formatNaira = (amount: number): string =>
     maximumFractionDigits: 2,
   })}`;
 
+function parseNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return 0;
+}
+
+function toStatus(value?: string): TransactionStatus {
+  const normalized = (value ?? "").toLowerCase();
+  if (normalized === "pending") return "Pending";
+  if (normalized === "rejected") return "Rejected";
+  return "Posted";
+}
+
+function mapTransaction(item: ApiTransactionItem): AgentTransaction {
+  return {
+    id: item.id ?? "—",
+    actionDate: item.actionDate ?? "—",
+    actionTime: item.actionTime ?? "—",
+    type: item.type ?? "—",
+    transactionValue: parseNumber(item.transactionValue),
+    status: toStatus(item.status),
+  };
+}
+
 export default function AgentTransactionsTable({
   agentId,
 }: AgentTransactionsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 300);
   const [statusFilter, setStatusFilter] = useState<string | null>("All");
   const [page, setPage] = useState(1);
-  const pageSize = 6;
+  const pageSize = 20;
+  const statusParam =
+    !statusFilter || statusFilter === "All" ? undefined : statusFilter;
+
+  const query = useFetchDataSeperateLoading<AgentTransactionsResponse>(
+    agentId
+      ? [
+          ...adminKeys.agent.transactions(agentId, {
+            page,
+            limit: pageSize,
+            status: statusParam,
+          }),
+        ]
+      : [],
+    () =>
+      adminApi.agent.transactions(agentId, {
+        page,
+        limit: pageSize,
+        status: statusParam,
+      }) as unknown as Promise<AgentTransactionsResponse>,
+    !!agentId
+  );
 
   const headers = [
     { label: "Transaction ID", key: "transactionId" },
@@ -99,27 +123,27 @@ export default function AgentTransactionsTable({
     { label: "Action", key: "action" },
   ];
 
-  const filteredTransactions = useMemo(() => {
-    const sourceTransactions = agentId ? MOCK_TRANSACTIONS : [];
-    return sourceTransactions.filter((tx) => {
-      const matchesSearch =
-        tx.id.toLowerCase().includes(search.toLowerCase()) ||
-        tx.type.toLowerCase().includes(search.toLowerCase());
+  const entries = (Array.isArray(query.data?.data) ? query.data.data : []).map(
+    mapTransaction
+  );
 
-      const matchesStatus =
-        !statusFilter || statusFilter === "All" || tx.status === statusFilter;
+  const filteredTransactions = useMemo(() => {
+    return entries.filter((tx) => {
+      const matchesSearch =
+        tx.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        tx.type.toLowerCase().includes(debouncedSearch.toLowerCase());
+
+      const matchesStatus = !statusParam || tx.status === statusParam;
 
       return matchesSearch && matchesStatus;
     });
-  }, [agentId, search, statusFilter]);
+  }, [entries, debouncedSearch, statusParam]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / pageSize));
+  const totalPages = Math.max(1, query.data?.metadata?.pagination?.totalPages ?? 1);
 
   const paginatedTransactions = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredTransactions.slice(start, end);
-  }, [filteredTransactions, page, pageSize]);
+    return filteredTransactions;
+  }, [filteredTransactions]);
 
   const renderTransactionRow = (tx: AgentTransaction) => [
     <Text key="transactionId" size="sm" fw={500}>
@@ -187,6 +211,7 @@ export default function AgentTransactionsTable({
       <DynamicTableSection
         headers={headers}
         data={paginatedTransactions}
+        loading={query.isLoading}
         renderItems={renderTransactionRow}
         emptyTitle="No Transactions Found"
         emptyMessage="There are currently no transactions for this agent."
