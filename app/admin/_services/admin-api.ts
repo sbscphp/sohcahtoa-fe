@@ -318,6 +318,18 @@ export const adminApi = {
           { params }
         ),
 
+      export: async () => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.users.export
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       create: (data: CreateAdminUserPayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.create,

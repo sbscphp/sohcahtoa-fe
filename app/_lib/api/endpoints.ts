@@ -128,6 +128,7 @@ export const API_ENDPOINTS = {
       lookups: "/api/admin/management/lookups",
       users: {
         list: "/api/admin/management/users",
+        export: "/api/admin/management/users/export",
         create: "/api/admin/management/add-user",
         stats: "/api/admin/management/users/stats",
         getById: (id: string) => `/api/admin/management/users/${id}`,

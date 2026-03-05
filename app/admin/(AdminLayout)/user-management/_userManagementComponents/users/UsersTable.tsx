@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Text, Group, TextInput, Button, Select } from "@mantine/core";
 import { Search, Plus, Upload, ListFilter } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -11,6 +12,9 @@ import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useUsers, type AdminUserItem } from "../../hooks/useUsers";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const PAGE_SIZE = 10;
 
@@ -27,6 +31,35 @@ export default function UsersTable() {
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
   });
+
+  const exportUsersMutation = useGetExportData(
+    () => adminApi.management.users.export(),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-users-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Users Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export users at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const headers = [
     { label: "Admin Name", key: "name" },
@@ -105,6 +138,9 @@ export default function UsersTable() {
             color="#DD4F05"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportUsersMutation.mutate()}
+            loading={exportUsersMutation.isPending}
+            disabled={exportUsersMutation.isPending}
           >
             Export
           </Button>
