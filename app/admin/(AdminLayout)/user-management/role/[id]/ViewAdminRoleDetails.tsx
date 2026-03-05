@@ -28,6 +28,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import EmptySection from "@/app/admin/_components/EmptySection";
+import { EditRoleModal } from "../../_userManagementComponents/roles/EditRoleModal";
 
 export default function ViewAdminRoleDetails() {
   const params = useParams<{ id: string }>();
@@ -39,6 +40,7 @@ export default function ViewAdminRoleDetails() {
   const [statusOverride, setStatusOverride] = useState<CustomerStatus | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
 
@@ -164,7 +166,7 @@ export default function ViewAdminRoleDetails() {
               </Menu.Target>
 
               <Menu.Dropdown>
-                <Menu.Item>Edit</Menu.Item>
+                <Menu.Item onClick={() => setEditOpen(true)}>Edit</Menu.Item>
 
                 <Menu.Item onClick={() => setConfirmOpen(true)}>
                   {actionVerb}
@@ -321,6 +323,15 @@ export default function ViewAdminRoleDetails() {
         onPrimaryClick={() => router.push(adminRoutes.adminUserManagement())}
         secondaryButtonText="No, Close"
       />
+
+      {roleId ? (
+        <EditRoleModal
+          opened={editOpen}
+          onClose={() => setEditOpen(false)}
+          roleId={roleId}
+          role={role}
+        />
+      ) : null}
     </>
   );
 }

@@ -139,6 +139,7 @@ export const API_ENDPOINTS = {
         create: "/api/admin/management/roles",
         stats: "/api/admin/management/roles/stats",
         getById: (id: string) => `/api/admin/management/roles/${id}`,
+        update: (id: string) => `/api/admin/management/roles/${id}`,
         delete: (id: string) => `/api/admin/management/roles/${id}`,
       },
       departments: {

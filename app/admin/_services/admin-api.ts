@@ -234,7 +234,13 @@ export const adminApi = {
 
     transactions: (
       userId: string,
-      params?: { page?: number; limit?: number; status?: string; type?: string }
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        type?: string;
+        search?: string;
+      }
     ) =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.customers.transactions(userId),
@@ -328,6 +334,12 @@ export const adminApi = {
       create: (data: CreateRolePayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.create,
+          data
+        ),
+
+      update: (id: string, data: CreateRolePayload) =>
+        apiClient.put<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.update(id),
           data
         ),
 

@@ -22,487 +22,31 @@ interface Transaction {
   customerName: string;
   id: string;
   date: string;
+  reference: string;
   type: string;
   stage: string;
   workflow: string;
   amount: number;
-  status: "Pending" | "Settled" | "Rejected" | "More Info";
+  status: string;
 }
 
-/* --------------------------------------------
-Mock Data
---------------------------------------------- */
-export const generateBuyFXTransactions = (): Transaction[] => [
-  {
-    customerName: "Samuel Johnson",
-    id: "9023",
-    date: "Nov 19",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Review",
-    amount: 400,
-    status: "Pending",
-  },
-  {
-    customerName: "Michael Bennett",
-    id: "9025",
-    date: "Nov 21",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 500,
-    status: "Pending",
-  },
-  {
-    customerName: "Ava Thompson",
-    id: "9026",
-    date: "Nov 23",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 600,
-    status: "Settled",
-  },
-  {
-    customerName: "Emily Carter",
-    id: "9024",
-    date: "Nov 20",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Approval",
-    amount: 550,
-    status: "More Info",
-  },
-  {
-    customerName: "Oliver Reed",
-    id: "9027",
-    date: "Nov 22",
-    type: "Medical Fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 450,
-    status: "Rejected",
-  },
-  {
-    customerName: "Samuel Johnson",
-    id: "9023",
-    date: "Nov 19",
-    type: "School fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 400,
-    status: "Pending",
-  },
-  {
-    customerName: "Sophia Martinez",
-    id: "9028",
-    date: "Nov 24",
-    type: "BTA",
-    stage: "Settlement",
-    workflow: "Review",
-    amount: 750,
-    status: "Settled",
-  },
-  {
-    customerName: "James Wilson",
-    id: "9029",
-    date: "Nov 25",
-    type: "PTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 320,
-    status: "Pending",
-  },
-  {
-    customerName: "Isabella Brown",
-    id: "9030",
-    date: "Nov 26",
-    type: "Medical Fee",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 680,
-    status: "More Info",
-  },
-  {
-    customerName: "William Davis",
-    id: "9031",
-    date: "Nov 27",
-    type: "School fee",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 520,
-    status: "Settled",
-  },
-  {
-    customerName: "Charlotte Taylor",
-    id: "9032",
-    date: "Nov 28",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 890,
-    status: "Rejected",
-  },
-  {
-    customerName: "Benjamin Anderson",
-    id: "9033",
-    date: "Nov 29",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Review",
-    amount: 410,
-    status: "Pending",
-  },
-  {
-    customerName: "Amelia White",
-    id: "9034",
-    date: "Nov 30",
-    type: "Medical Fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 630,
-    status: "Settled",
-  },
-  {
-    customerName: "Lucas Harris",
-    id: "9035",
-    date: "Dec 1",
-    type: "School fee",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 380,
-    status: "More Info",
-  },
-  {
-    customerName: "Mia Clark",
-    id: "9036",
-    date: "Dec 2",
-    type: "BTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 720,
-    status: "Pending",
-  },
-];
-
-export const generateSellFXTransactions = (): Transaction[] => [
-  {
-    customerName: "Robert Johnson",
-    id: "8001",
-    date: "Nov 18",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Review",
-    amount: 1200,
-    status: "Pending",
-  },
-  {
-    customerName: "Patricia Williams",
-    id: "8002",
-    date: "Nov 19",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 850,
-    status: "Settled",
-  },
-  {
-    customerName: "Daniel Miller",
-    id: "8003",
-    date: "Nov 20",
-    type: "Medical Fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 950,
-    status: "Pending",
-  },
-  {
-    customerName: "Jennifer Garcia",
-    id: "8004",
-    date: "Nov 21",
-    type: "School fee",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 1100,
-    status: "More Info",
-  },
-  {
-    customerName: "Matthew Rodriguez",
-    id: "8005",
-    date: "Nov 22",
-    type: "BTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 1350,
-    status: "Settled",
-  },
-  {
-    customerName: "Linda Martinez",
-    id: "8006",
-    date: "Nov 23",
-    type: "PTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 780,
-    status: "Rejected",
-  },
-  {
-    customerName: "Christopher Lee",
-    id: "8007",
-    date: "Nov 24",
-    type: "Medical Fee",
-    stage: "Settlement",
-    workflow: "Review",
-    amount: 920,
-    status: "Pending",
-  },
-  {
-    customerName: "Barbara Walker",
-    id: "8008",
-    date: "Nov 25",
-    type: "School fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 1050,
-    status: "Settled",
-  },
-  {
-    customerName: "Joseph Hall",
-    id: "8009",
-    date: "Nov 26",
-    type: "BTA",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 1400,
-    status: "More Info",
-  },
-  {
-    customerName: "Susan Allen",
-    id: "8010",
-    date: "Nov 27",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 650,
-    status: "Pending",
-  },
-  {
-    customerName: "David Young",
-    id: "8011",
-    date: "Nov 28",
-    type: "Medical Fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 880,
-    status: "Rejected",
-  },
-  {
-    customerName: "Jessica King",
-    id: "8012",
-    date: "Nov 29",
-    type: "School fee",
-    stage: "Settlement",
-    workflow: "Review",
-    amount: 1150,
-    status: "Settled",
-  },
-  {
-    customerName: "Richard Wright",
-    id: "8013",
-    date: "Nov 30",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 1250,
-    status: "Pending",
-  },
-  {
-    customerName: "Sarah Lopez",
-    id: "8014",
-    date: "Dec 1",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 720,
-    status: "More Info",
-  },
-  {
-    customerName: "Thomas Hill",
-    id: "8015",
-    date: "Dec 2",
-    type: "Medical Fee",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 980,
-    status: "Settled",
-  },
-];
-
-export const generateReceiveFXTransactions = (): Transaction[] => [
-  {
-    customerName: "Andrew Scott",
-    id: "7001",
-    date: "Nov 17",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Review",
-    amount: 2000,
-    status: "Pending",
-  },
-  {
-    customerName: "Nancy Green",
-    id: "7002",
-    date: "Nov 18",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 1500,
-    status: "Settled",
-  },
-  {
-    customerName: "Mark Adams",
-    id: "7003",
-    date: "Nov 19",
-    type: "Medical Fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 1800,
-    status: "Pending",
-  },
-  {
-    customerName: "Betty Nelson",
-    id: "7004",
-    date: "Nov 20",
-    type: "School fee",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 2200,
-    status: "More Info",
-  },
-  {
-    customerName: "Paul Baker",
-    id: "7005",
-    date: "Nov 21",
-    type: "BTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 2500,
-    status: "Settled",
-  },
-  {
-    customerName: "Helen Carter",
-    id: "7006",
-    date: "Nov 22",
-    type: "PTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 1600,
-    status: "Rejected",
-  },
-  {
-    customerName: "Steven Mitchell",
-    id: "7007",
-    date: "Nov 23",
-    type: "Medical Fee",
-    stage: "Settlement",
-    workflow: "Review",
-    amount: 1900,
-    status: "Pending",
-  },
-  {
-    customerName: "Donna Perez",
-    id: "7008",
-    date: "Nov 24",
-    type: "School fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 2100,
-    status: "Settled",
-  },
-  {
-    customerName: "Kenneth Roberts",
-    id: "7009",
-    date: "Nov 25",
-    type: "BTA",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 2800,
-    status: "More Info",
-  },
-  {
-    customerName: "Carol Turner",
-    id: "7010",
-    date: "Nov 26",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 1300,
-    status: "Pending",
-  },
-  {
-    customerName: "Joshua Phillips",
-    id: "7011",
-    date: "Nov 27",
-    type: "Medical Fee",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 1750,
-    status: "Rejected",
-  },
-  {
-    customerName: "Michelle Campbell",
-    id: "7012",
-    date: "Nov 28",
-    type: "School fee",
-    stage: "Settlement",
-    workflow: "Review",
-    amount: 2300,
-    status: "Settled",
-  },
-  {
-    customerName: "Kevin Parker",
-    id: "7013",
-    date: "Nov 29",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 2400,
-    status: "Pending",
-  },
-  {
-    customerName: "Dorothy Evans",
-    id: "7014",
-    date: "Nov 30",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Review",
-    amount: 1400,
-    status: "More Info",
-  },
-  {
-    customerName: "Brian Edwards",
-    id: "7015",
-    date: "Dec 1",
-    type: "Medical Fee",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 1950,
-    status: "Settled",
-  },
-];
 
 /* --------------------------------------------
  Component
 --------------------------------------------- */
-type ApiTransactionStatus = "Pending" | "Settled" | "Rejected" | "More Info";
-
 interface ApiTransactionItem {
   id?: string;
   transactionId?: string;
   customerName?: string;
+  dateAndId?: {
+    date?: string;
+    reference?: string;
+  };
   date?: string;
   createdAt?: string;
+  reference?: string;
   type?: string;
+  transactionType?: string;
   stage?: string;
   transactionStage?: string;
   workflow?: string;
@@ -535,19 +79,32 @@ interface CustomerTransactionsTableProps {
 }
 
 const PAGE_SIZE = 5;
+const STATUS_OPTIONS = [
+  { value: "Filter By", label: "Filter By" },
+  { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
+  { value: "SETTLED", label: "Settled" },
+  { value: "REJECTED", label: "Rejected" },
+];
 
-const typeByTab: Record<string, string> = {
-  "buy-fx": "Buy FX",
-  "sell-fx": "Sell FX",
-  "receive-fx": "Receive FX",
-};
+function humanize(value?: string): string {
+  if (!value) return "—";
+  return value
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
-function normalizeStatus(status?: string): ApiTransactionStatus {
-  const normalized = status?.toLowerCase();
-  if (normalized === "settled") return "Settled";
-  if (normalized === "rejected") return "Rejected";
-  if (normalized === "more info" || normalized === "more_info") return "More Info";
-  return "Pending";
+function formatDate(value?: string): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function parseAmount(value: unknown): number {
@@ -560,15 +117,17 @@ function parseAmount(value: unknown): number {
 }
 
 function mapTransaction(item: ApiTransactionItem): Transaction {
+  const dateValue = item.dateAndId?.date ?? item.date ?? item.createdAt;
   return {
     customerName: item.customerName ?? "—",
     id: item.id ?? item.transactionId ?? "",
-    date: item.date ?? item.createdAt ?? "—",
-    type: item.type ?? "—",
-    stage: item.stage ?? item.transactionStage ?? "—",
-    workflow: item.workflow ?? item.workflowStage ?? "—",
+    date: formatDate(dateValue),
+    reference: item.dateAndId?.reference ?? item.reference ?? "—",
+    type: item.transactionType ?? item.type ?? "—",
+    stage: humanize(item.transactionStage ?? item.stage),
+    workflow: humanize(item.workflowStage ?? item.workflow),
     amount: parseAmount(item.amount ?? item.transactionValue),
-    status: normalizeStatus(item.status),
+    status: humanize(item.status),
   };
 }
 
@@ -587,10 +146,9 @@ export default function CustomerTransactionsTable({
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [status, setStatus] = useState("Filter By");
-  const [activeTab, setActiveTab] = useState<string>("buy-fx");
+  const [activeTab, setActiveTab] = useState<string>("buyfx");
   const router = useRouter();
 
-  const type = typeByTab[activeTab];
   const statusParam = status === "Filter By" ? undefined : status;
 
   const query = useFetchDataSeperateLoading<CustomerTransactionsResponse>(
@@ -600,7 +158,8 @@ export default function CustomerTransactionsTable({
             page,
             limit: PAGE_SIZE,
             status: statusParam,
-            type,
+            type: activeTab,
+            search: debouncedSearch || undefined,
           }),
         ]
       : [],
@@ -609,24 +168,15 @@ export default function CustomerTransactionsTable({
         page,
         limit: PAGE_SIZE,
         status: statusParam,
-        type,
+        type: activeTab,
+        search: debouncedSearch || undefined,
       }) as unknown as Promise<CustomerTransactionsResponse>,
     !!customerId
   );
 
   const entries = useMemo(
-    () =>
-      extractTransactions(query.data?.data)
-        .map(mapTransaction)
-        .filter((tx) => {
-          if (!debouncedSearch) return true;
-          const q = debouncedSearch.toLowerCase();
-          return (
-            tx.customerName.toLowerCase().includes(q) ||
-            tx.id.toLowerCase().includes(q)
-          );
-        }),
-    [query.data?.data, debouncedSearch]
+    () => extractTransactions(query.data?.data).map(mapTransaction),
+    [query.data?.data]
   );
 
   const totalPages = query.data?.metadata?.pagination?.totalPages ?? 1;
@@ -654,7 +204,7 @@ export default function CustomerTransactionsTable({
     <div key="date">
       <Text size="sm">{item.date}</Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id || "—"}
+        Ref:{item.reference}
       </Text>
     </div>,
     <Text key="type" size="sm">
@@ -669,7 +219,7 @@ export default function CustomerTransactionsTable({
     <Text key="amount" size="sm">
       ${item.amount}
     </Text>,
-    <StatusBadge key="status" status={item.status} />,
+    <StatusBadge key="status" status={item.status} defaultColor="orange" />,
     <RowActionIcon
       key="action"
       onClick={() => router.push(adminRoutes.adminTransactionDetails(item.id))}
@@ -686,7 +236,10 @@ export default function CustomerTransactionsTable({
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
@@ -698,9 +251,9 @@ export default function CustomerTransactionsTable({
                 setStatus(value ?? "Filter By");
                 setPage(1);
               }}
-              data={["Filter By", "Pending", "Settled", "Rejected", "More Info"]}
+              data={STATUS_OPTIONS}
               radius="xl"
-              w={140}
+              w={200}
               rightSection={<ListFilter size={16} />}
             />
             <Button
@@ -720,14 +273,14 @@ export default function CustomerTransactionsTable({
         color="orange"
         value={activeTab}
         onChange={(value) => {
-          setActiveTab(value || "buy-fx");
+          setActiveTab(value || "buyfx");
           setPage(1);
         }}
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
-          <AdminTabButton value="buy-fx">Buy FX</AdminTabButton>
-          <AdminTabButton value="sell-fx">Sell FX</AdminTabButton>
-          <AdminTabButton value="receive-fx">Receive FX</AdminTabButton>
+          <AdminTabButton value="buyfx">Buy FX</AdminTabButton>
+          <AdminTabButton value="sellfx">Sell FX</AdminTabButton>
+          <AdminTabButton value="receivefx">Receive FX</AdminTabButton>
         </Tabs.List>
       </Tabs>
 

@@ -123,7 +123,13 @@ export const adminKeys = {
     detail: (userId: string) => [...adminKeys.customers.details(), userId] as const,
     transactions: (
       userId: string,
-      params?: { page?: number; limit?: number; status?: string; type?: string }
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        type?: string;
+        search?: string;
+      }
     ) => [...adminKeys.customers.detail(userId), "transactions", params] as const,
     flags: {
       all: (userId: string) => [...adminKeys.customers.detail(userId), "flags"] as const,
