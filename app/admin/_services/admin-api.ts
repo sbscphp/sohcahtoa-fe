@@ -370,6 +370,18 @@ export const adminApi = {
           { params }
         ),
 
+      exportActivities: async (id: string) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.users.activitiesExport(id)
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       getStats: () =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.stats
@@ -424,6 +436,18 @@ export const adminApi = {
     },
 
     departments: {
+      export: async () => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.departments.export
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       create: (data: CreateDepartmentPayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.departments.create,

@@ -135,6 +135,7 @@ export const API_ENDPOINTS = {
         update: (id: string) => `/api/admin/management/users/${id}`,
         updateStatus: (id: string) => `/api/admin/management/users/${id}/status`,
         activities: (id: string) => `/api/admin/management/users/${id}/activities`,
+        activitiesExport: (id: string) => `/api/admin/management/users/${id}/activities/export`,
       },
       roles: {
         list: "/api/admin/management/roles",
@@ -147,6 +148,7 @@ export const API_ENDPOINTS = {
       },
       departments: {
         list: "/api/admin/management/departments",
+        export: "/api/admin/management/departments/export",
         create: "/api/admin/management/departments",
         stats: "/api/admin/management/departments/stats",
         update: (id: string) => `/api/admin/management/departments/${id}`,
