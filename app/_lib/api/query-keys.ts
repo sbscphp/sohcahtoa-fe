@@ -60,6 +60,18 @@ export const customerKeys = {
     byTransaction: (transactionId: string) =>
       [...customerKeys.documents.all, "transaction", transactionId] as const,
   },
+  
+  support: {
+    all: ["customer", "support"] as const,
+    tickets: {
+      all: ["customer", "support", "tickets"] as const,
+      lists: () => [...customerKeys.support.tickets.all, "list"] as const,
+      list: (params?: { page?: number; limit?: number }) =>
+        [...customerKeys.support.tickets.lists(), params] as const,
+      details: () => [...customerKeys.support.tickets.all, "detail"] as const,
+      detail: (id: string) => [...customerKeys.support.tickets.details(), id] as const,
+    },
+  },
 } as const;
 
 // ==================== Admin Query Keys ====================

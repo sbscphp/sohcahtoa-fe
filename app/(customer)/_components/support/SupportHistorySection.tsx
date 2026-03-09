@@ -11,6 +11,11 @@ import { ActionIcon } from "@mantine/core";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CircleArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { IconArrowRight } from "@/components/icons/IconArrowRight";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import type { SupportTicket } from "@/app/_lib/api/types";
+import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
 
 export interface SupportRequestRow {
   id: string;
@@ -19,42 +24,36 @@ export interface SupportRequestRow {
   status: string;
 }
 
-const MOCK_HISTORY: SupportRequestRow[] = [
-  {
-    id: "1",
-    categoryDescription: "Failed login/password reset not working.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved"
-  },
-  {
-    id: "2",
-    categoryDescription: "Customer unable to access account settings.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved"
-  },
-  {
-    id: "3",
-    categoryDescription: "2FA/OTP not delivered.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved"
-  },
-  {
-    id: "4",
-    categoryDescription: "BVN/TIN mismatch issue.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved"
-  },
-  {
-    id: "5",
-    categoryDescription:
-      "Error uploading document (flight ticket, admission letter, Medical bill, etc.)",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved"
-  }
-];
+function getCategoryLabel(category: string): string {
+  const match = [
+    { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
+    { value: "ACCOUNT_ACCESS", label: "Account access" },
+    { value: "PAYMENT_ISSUE", label: "Payment issue" },
+    { value: "DOCUMENT_VERIFICATION", label: "Document verification" },
+    { value: "TECHNICAL_ISSUE", label: "Technical issue" },
+    { value: "COMPLIANCE_INQUIRY", label: "Compliance / regulatory inquiry" },
+    { value: "GENERAL_INQUIRY", label: "General inquiry" },
+    { value: "OTHER", label: "Other" },
+  ].find((opt) => opt.value === category);
+  return match?.label ?? category;
+}
 
 export default function SupportHistorySection() {
   const router = useRouter();
+
+  const { data, isLoading } = useFetchData(
+    [...customerKeys.support.tickets.list({ page: 1, limit: 50 })],
+    () => customerApi.support.tickets.list({ page: 1, limit: 50 }),
+    true
+  );
+
+  const rows: SupportRequestRow[] =
+    data?.data?.map((t: SupportTicket) => ({
+      id: t.id,
+      categoryDescription: getCategoryLabel(t.category),
+      date: formatHeaderDateTime(t.createdAt) || t.createdAt,
+      status: t.status,
+    })) ?? [];
 
   const goToViewSupport = (id: string) => {
     router.push(`/support/history/${id}`);
@@ -126,7 +125,7 @@ export default function SupportHistorySection() {
         </p>
       </div>
       <PaginatedTable<SupportRequestRow>
-        data={MOCK_HISTORY}
+        data={rows}
         columns={columns}
         pageSize={10}
         keyExtractor={(row) => row.id}

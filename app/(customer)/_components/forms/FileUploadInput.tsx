@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { File02Icon, FileAddIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Text } from "@mantine/core";
-import { Dropzone, FileWithPath } from "@mantine/dropzone";
+import { Dropzone, FileWithPath, type FileRejection } from "@mantine/dropzone";
 import { X } from "lucide-react";
 
 interface FileUploadInputProps {
@@ -14,6 +15,7 @@ interface FileUploadInputProps {
   accept?: string[];
   error?: string;
   placeholder?: string;
+  maxSizeBytes?: number;
 }
 
 export default function FileUploadInput({
@@ -24,16 +26,35 @@ export default function FileUploadInput({
   accept = ["image/*", "application/pdf"],
   error,
   placeholder = "Click to upload",
+  maxSizeBytes,
 }: FileUploadInputProps) {
+  const [localError, setLocalError] = useState<string | null>(null);
+
   const handleFileDrop = (files: FileWithPath[]) => {
+    setLocalError(null);
     if (files.length > 0) {
       onChange(files[0]!);
     }
   };
 
-  const handleRemoveFile = () => {
+  const handleReject = (fileRejections: FileRejection[]) => {
+    if (!fileRejections.length) return;
+    const first = fileRejections[0];
+    const tooLarge = first.errors.some((e) => e.code === "file-too-large");
+    if (tooLarge) {
+      setLocalError("File must be 5MB or smaller");
+    } else {
+      setLocalError("Unsupported file type");
+    }
     onChange(null);
   };
+
+  const handleRemoveFile = () => {
+    onChange(null);
+    setLocalError(null);
+  };
+
+  const mergedError = error || localError || "";
 
   return (
     <div className="space-y-2">
@@ -44,8 +65,10 @@ export default function FileUploadInput({
       {!value ? (
         <Dropzone
           onDrop={handleFileDrop}
+          onReject={handleReject}
           accept={accept}
           maxFiles={1}
+          maxSize={maxSizeBytes}
           className="border border-gray-200 rounded-lg bg-bg-card hover:border-primary-400 transition-colors"
         >
           <div className="flex items-center p-3 gap-3">
@@ -84,8 +107,8 @@ export default function FileUploadInput({
         </div>
       )}
 
-      {error && (
-        <p className="text-error-500 text-xs">{error}</p>
+      {mergedError && (
+        <p className="text-error-500 text-xs">{mergedError}</p>
       )}
     </div>
   );

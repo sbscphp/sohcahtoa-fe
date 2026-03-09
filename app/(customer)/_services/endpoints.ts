@@ -97,4 +97,14 @@ export const API_ENDPOINTS = {
     getByTransaction: (transactionId: string) => `/api/documents/transaction/${transactionId}`,
     list: "/api/documents",
   },
+
+  // Support (Customer)
+  support: {
+    tickets: {
+      create: "/api/customer/support/tickets",
+      list: "/api/customer/support/tickets",
+      getById: (id: string) => `/api/customer/support/tickets/${id}`,
+      getByReference: (reference: string) => `/api/customer/support/tickets/reference/${reference}`,
+    },
+  },
 } as const;

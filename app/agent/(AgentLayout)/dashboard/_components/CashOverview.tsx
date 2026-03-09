@@ -78,7 +78,7 @@ function FxOverviewPanelContent({
           </button>
         </div>
       </div>
-      <div className="grid lg:grid-cols-3 grid-cols-1 gap-5 py-3">
+      <div className="grid xl:grid-cols-3 lg:grid-cols-2 grid-cols-1 gap-5 py-3">
         {amountOptions.map((option) => (
           <div
             className={`${option.label === "Total Cash Received" ? "border-x-2 border-gray-200 px-2" : ""} space-y-2`}

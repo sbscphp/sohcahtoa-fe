@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PinInput, Text, Title } from "@mantine/core";
 import { AgentAuthLayout } from "@/app/agent/_components/auth/AuthLayout";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 
 export default function VerifyOtpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [otp, setOtp] = useState("");
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
   const [loading, setLoading] = useState(false);
@@ -22,16 +23,20 @@ export default function VerifyOtpPage() {
   const seconds = timeLeft % 60;
   const canSubmit = otp.length === 6 && !loading;
 
+  const email = useMemo(() => searchParams.get("email") || "", [searchParams]);
+
   const handleOtpSubmit = async () => {
     if (!canSubmit) return;
     
     setLoading(true);
     try {
-      // Mock OTP verification - replace with actual API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
-      // On success, redirect to create password
-      router.push("/agent/auth/create-password");
+      // On success, redirect to create password with email + otp
+      const search = new URLSearchParams();
+      if (email) search.set("email", email);
+      search.set("otp", otp);
+      router.push(`/agent/auth/create-password?${search.toString()}`);
     } catch (error) {
       console.error("OTP verification failed", error);
     } finally {
