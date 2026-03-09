@@ -44,6 +44,8 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
   const { options: roleOptions, isLoading: rolesLoading } = useManagementLookups("role");
   const { options: departmentOptions, isLoading: departmentsLoading } =
     useManagementLookups("department");
+  const { options: branchOptions, isLoading: branchesLoading } =
+    useManagementLookups("branch", "name");
   const form = useForm({
     initialValues,
     validate: {
@@ -149,6 +151,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
           <Group grow>
             <TextInput
               label="Phone Number 1"
+              type="number"
               placeholder="+234 00 0000 0000"
               required
               {...form.getInputProps("phoneNumber")}
@@ -156,6 +159,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
 
             <TextInput
               label="Phone Number 2 (optional)"
+              type="number"
               placeholder="+234 00 0000 0000"
               {...form.getInputProps("altPhoneNumber")}
             />
@@ -166,12 +170,9 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
               label="Branch"
               placeholder="Select an Option"
               required
-              data={[
-                "Lagos Branch",
-                "Abuja Branch",
-                "Port Harcourt Branch",
-                "Lagos State Branch",
-              ]}
+              data={branchOptions}
+              disabled={branchesLoading}
+              searchable
               value={form.values.branch}
               onChange={(value) => form.setFieldValue("branch", value ?? "")}
               error={form.errors.branch}

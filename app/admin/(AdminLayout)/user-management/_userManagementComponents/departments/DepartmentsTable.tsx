@@ -16,9 +16,17 @@ import RowActionMenu from "@/app/admin/_components/RowActionMenu";
 import { ViewDepartmentModal } from "./ViewDepartmentModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomerStatus } from "../../../customer/[id]/page";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useDepartments, type DepartmentItem } from "../../hooks/useDepartments";
+import { usePatchData, useDeleteData } from "@/app/_lib/api/hooks";
+import {
+  adminApi,
+  type UpdateDepartmentStatusPayload,
+} from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 
 const PAGE_SIZE = 10;
 
@@ -26,21 +34,23 @@ const PAGE_SIZE = 10;
  Component
 --------------------------------------------- */
 export default function DepartmentsTable() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState("Filter By");
-  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentItem | null>(null);
+  const [viewEditMode, setViewEditMode] = useState<"view" | "edit">("view");
+  const [viewEditOpen, setViewEditOpen] = useState(false);
 
-  const [viewOpen, setViewOpen] = useState(false);
+  // Deactivate / Reactivate
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
+
+  // Delete
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [status, setStatus] = useState<CustomerStatus>("Active");
-  const isCurrentlyActive = status === "Active";
-  const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
-  const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
 
   const { departments, totalPages, isLoading } = useDepartments({
     page,
@@ -48,10 +58,83 @@ export default function DepartmentsTable() {
     search: debouncedSearch || undefined,
   });
 
-  const handleConfirm = () => {
-    setStatus((prev) => (prev === "Active" ? "Deactivated" : "Active"));
-    setDeactivateOpen(false);
-    setIsSuccessOpen(true);
+  /* ---- Status toggle mutation ---- */
+  const isCurrentlyActive = selectedDepartment?.isActive ?? true;
+  const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
+  const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
+
+  const toggleStatusMutation = usePatchData(
+    ({ id, data }: { id: string; data: UpdateDepartmentStatusPayload }) =>
+      adminApi.management.departments.updateStatus(id, data),
+    {
+      onSuccess: async () => {
+        setDeactivateOpen(false);
+        setDeactivateSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.all()],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.stats()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: `${actionVerb} Department Failed`,
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update department status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  /* ---- Delete mutation ---- */
+  const deleteDepartmentMutation = useDeleteData(
+    (id: string) => adminApi.management.departments.delete(id),
+    {
+      onSuccess: async () => {
+        setDeleteOpen(false);
+        setDeleteSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.all()],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.stats()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Delete Department Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to delete department. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  /* ---- Handlers ---- */
+  const handleConfirmToggleStatus = () => {
+    if (!selectedDepartment) return;
+    toggleStatusMutation.mutate({
+      id: selectedDepartment.id,
+      data: { isActive: !selectedDepartment.isActive },
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!selectedDepartment) return;
+    deleteDepartmentMutation.mutate(selectedDepartment.id);
   };
 
   /* Table Headers */
@@ -111,13 +194,16 @@ export default function DepartmentsTable() {
 
       <RowActionMenu
         key="actions"
+        deactivateLabel={dept.isActive ? "Deactivate" : "Reactivate"}
         onView={() => {
           setSelectedDepartment(dept);
-          setViewOpen(true);
+          setViewEditMode("view");
+          setViewEditOpen(true);
         }}
         onEdit={() => {
           setSelectedDepartment(dept);
-          setOpen(true);
+          setViewEditMode("edit");
+          setViewEditOpen(true);
         }}
         onDeactivate={() => {
           setSelectedDepartment(dept);
@@ -173,7 +259,7 @@ export default function DepartmentsTable() {
           </Button>
 
           <Button
-            onClick={() => {setOpen(true);}}
+            onClick={() => setCreateOpen(true)}
             color="orange"
             radius="xl"
             rightSection={<Plus size={16} />}
@@ -182,6 +268,7 @@ export default function DepartmentsTable() {
           </Button>
         </Group>
       </Group>
+
       {/* Table */}
       <DynamicTableSection
         headers={headers}
@@ -198,71 +285,65 @@ export default function DepartmentsTable() {
           onPageChange: setPage,
         }}
       />
+
+      {/* Create */}
       <CreateDepartmentModal
-        opened={open}
-        onClose={() => setOpen(false)}
-        onSave={(data) => {
-          console.log(data);
-          setOpen(false);
-        }}
+        opened={createOpen}
+        onClose={() => setCreateOpen(false)}
       />
+
+      {/* View / Edit */}
       <ViewDepartmentModal
-        opened={viewOpen}
-        onClose={() => setViewOpen(false)}
-        department={
-          selectedDepartment
-            ? {
-                name: selectedDepartment.name,
-                email: selectedDepartment.departmentEmail ?? "",
-                branch: selectedDepartment.branch ?? "",
-                description: selectedDepartment.description ?? "",
-                isDefault: false,
-              }
-            : undefined
-        }
+        opened={viewEditOpen}
+        onClose={() => setViewEditOpen(false)}
+        mode={viewEditMode}
+        department={selectedDepartment}
       />
-      {/* Deactivate / Reactivate confirmation modal */}
+
+      {/* Deactivate / Reactivate confirmation */}
       <ConfirmationModal
         opened={deactivateOpen}
         onClose={() => setDeactivateOpen(false)}
         title={`${actionVerb} Department ?`}
-        message={`Are you sure, ${actionVerb.toLowerCase()} this admin user? Kindly note that system access would be ${
+        message={`Are you sure you want to ${actionVerb.toLowerCase()} this department? ${
           isCurrentlyActive
-            ? "temporarily suspended, until the admin user is reactivated, therefore admin users under this department would be reassigned temporarily to the default department"
-            : "restored therefore this admin user would now be able to access the system according to their role and related permissions"
+            ? "Admin users under this department will be temporarily reassigned to the default department."
+            : "Admin users will be restored to this department."
         }`}
         primaryButtonText={`Yes, ${actionVerb} Department`}
         secondaryButtonText="No, Close"
-        onPrimary={handleConfirm}
+        onPrimary={handleConfirmToggleStatus}
+        loading={toggleStatusMutation.isPending}
       />
 
-      {/* Success modal */}
       <SuccessModal
-        opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
+        opened={deactivateSuccessOpen}
+        onClose={() => setDeactivateSuccessOpen(false)}
         title={`Department ${pastTenseVerb}`}
         message={`Department has been successfully ${pastTenseVerb.toLowerCase()}.`}
-        primaryButtonText="Manage User"
-        secondaryButtonText="No, Close"
+        primaryButtonText="Done"
+        onPrimaryClick={() => setDeactivateSuccessOpen(false)}
       />
+
+      {/* Delete confirmation */}
       <ConfirmationModal
         opened={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         title="Delete Department ?"
-        message="Are you sure, Delete this department? Kindly note that this action is irreversible, hence department details would be deleted completely and admin users under this department would be reassigned to the default department"
-        primaryButtonText={`Yes, Delete Department`}
+        message="Are you sure you want to delete this department? This action is irreversible. Department details will be permanently removed and admin users will be reassigned to the default department."
+        primaryButtonText="Yes, Delete Department"
         secondaryButtonText="No, Close"
-        onPrimary={handleConfirm}
+        onPrimary={handleConfirmDelete}
+        loading={deleteDepartmentMutation.isPending}
       />
 
-      {/* Success modal */}
       <SuccessModal
-        opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
+        opened={deleteSuccessOpen}
+        onClose={() => setDeleteSuccessOpen(false)}
         title="Department Deleted"
-        message="Department has been successfully deleted"
-        primaryButtonText="Manage User"
-        secondaryButtonText="No, Close"
+        message="Department has been successfully deleted."
+        primaryButtonText="Done"
+        onPrimaryClick={() => setDeleteSuccessOpen(false)}
       />
     </div>
   );

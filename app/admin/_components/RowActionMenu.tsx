@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, ActionIcon, Text } from "@mantine/core";
+import { Menu, ActionIcon } from "@mantine/core";
 import {
   TbExclamationMark,
   TbEye,
@@ -14,6 +14,7 @@ interface RowActionMenuProps {
   onEdit: () => void;
   onDeactivate: () => void;
   onDelete: () => void;
+  deactivateLabel?: string;
 }
 
 export default function RowActionMenu({
@@ -21,6 +22,7 @@ export default function RowActionMenu({
   onEdit,
   onDeactivate,
   onDelete,
+  deactivateLabel = "Deactivate",
 }: RowActionMenuProps) {
   return (
     <Menu shadow="md" width={180} position="bottom-end">
@@ -46,7 +48,7 @@ export default function RowActionMenu({
           color="orange"
           onClick={onDeactivate}
         >
-          Deactivate
+          {deactivateLabel}
         </Menu.Item>
 
         <Menu.Item
