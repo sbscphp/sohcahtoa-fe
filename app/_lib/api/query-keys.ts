@@ -177,8 +177,20 @@ export const adminKeys = {
   
   transactions: {
     all: ["admin", "transactions"] as const,
+    stats: () => [...adminKeys.transactions.all, "stats"] as const,
     lists: () => [...adminKeys.transactions.all, "list"] as const,
-    list: (params?: { page?: number; limit?: number; status?: string }) =>
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      step?: string;
+      type?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    }) =>
       [...adminKeys.transactions.lists(), params] as const,
     details: () => [...adminKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...adminKeys.transactions.details(), id] as const,

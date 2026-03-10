@@ -127,6 +127,29 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export type AdminTransactionListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  step?: string;
+  type?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export interface AdminTransactionStatsData {
+  underReview: number;
+  rejected: number;
+  requestInformation: number;
+  approved: number;
+}
+
 export type FranchiseListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -553,6 +576,16 @@ export const adminApi = {
 
   // ==================== Transactions ====================
   transactions: {
+    list: (params?: AdminTransactionListParams) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.transactions.list, {
+        params,
+      }),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<AdminTransactionStatsData>>(
+        API_ENDPOINTS.admin.transactions.stats
+      ),
+
     review: (id: string, data: { notes?: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.review(id),

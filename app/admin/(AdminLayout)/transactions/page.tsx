@@ -1,12 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import StatCard from "../../_components/StatCard";
 import gold from "../../_components/assets/icons/Goldmoneys.png"
 import pink from "../../_components/assets/icons/pinkmoneys.png"
 import blue from "../../_components/assets/icons/bluemoneys.png"
 import green from "../../_components/assets/icons/greenmoneys.png"
-import TransactionsTable from "./_transactionsComponents/TransactionTable";
+import TransactionsTable from "@/app/admin/(AdminLayout)/transactions/_transactionsComponents/TransactionTable";
+import { useTransactionStats } from "./hooks/useTransactionStats";
 
 export default function TransactionPage () {
+    const { stats } = useTransactionStats();
     const Icon1 = <div><Image src={gold} alt="icon"/></div>;
     const Icon2 = <div><Image src={pink} alt="icon"/></div>;
     const Icon3 = <div><Image src={blue} alt="icon"/></div>;
@@ -17,28 +21,28 @@ export default function TransactionPage () {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <StatCard
                     title="Under Review"
-                    value={10}
+                    value={stats?.underReview ?? 0}
                     icon={Icon1}
                     iconBg="bg-orange-100"
                   />
         
                   <StatCard
                     title="Rejected"
-                    value={4}
+                    value={stats?.rejected ?? 0}
                     icon={Icon2}
                     iconBg="bg-[#FFE4E8]"
                   />
         
                   <StatCard
                     title="Request Information"
-                    value={4}
+                    value={stats?.requestInformation ?? 0}
                     icon={Icon3}
                     iconBg="bg-[#EBE9FE]"
                   />
         
                   <StatCard
                     title="Approved"
-                    value={22}
+                    value={stats?.approved ?? 0}
                     icon={Icon4}
                     iconBg="bg-[#D1FADF]"
                   />
