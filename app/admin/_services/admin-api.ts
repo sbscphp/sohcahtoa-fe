@@ -202,6 +202,25 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.auditTrail, {
         params,
       }),
+
+    export: async (params?: {
+      search?: string;
+      module?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.auditTrailExport,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
   },
 
   // ==================== Agent ====================

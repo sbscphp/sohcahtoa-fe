@@ -97,6 +97,7 @@ export const API_ENDPOINTS = {
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",
     auditTrail: "/api/admin/audit/trail",
+    auditTrailExport: "/api/admin/audit/trail/export",
     agent: {
       list: "/api/admin/agent",
       stats: "/api/admin/agent/stats",

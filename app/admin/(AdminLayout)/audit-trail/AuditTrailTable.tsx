@@ -5,6 +5,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DateRangePicker } from "@/app/admin/_components/DateRangePicker";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
 import { useAuditTrail, type AuditTrailRowItem } from "./hooks/useAuditTrail";
 import {
   Text,
@@ -15,8 +16,11 @@ import {
   Button,
   Stack,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { ChevronRight, Search, Upload, ListFilter } from "lucide-react";
 import ViewUserActionModal from "./ViewUserActionModal";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const formatEnumLabel = (value: string) =>
   value
@@ -49,6 +53,41 @@ export default function AuditTrailTable() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
   });
+  const exportAuditTrailMutation = useGetExportData(
+    () =>
+      adminApi.auditTrail.export({
+        search: debouncedSearch || undefined,
+        module: moduleFilter !== "All" ? moduleFilter : undefined,
+        status: statusFilter !== "All" ? statusFilter : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `audit-trail-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Audit Trail Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export audit trail at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const moduleOptions = useMemo(
     () => [
@@ -156,6 +195,9 @@ export default function AuditTrailTable() {
             variant="outline"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportAuditTrailMutation.mutate()}
+            loading={exportAuditTrailMutation.isPending}
+            disabled={exportAuditTrailMutation.isPending}
           >
             Export
           </Button>
