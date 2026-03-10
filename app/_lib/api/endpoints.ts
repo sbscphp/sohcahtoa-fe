@@ -118,6 +118,17 @@ export const API_ENDPOINTS = {
         updateStatus: (flagId: string) => `/api/admin/customers/flags/${flagId}/status`,
       },
     },
+    tickets: {
+      list: "/api/admin/tickets",
+      stats: "/api/admin/tickets/stats",
+      getById: (id: string) => `/api/admin/tickets/${id}`,
+    },
+    outlet: {
+      franchises: {
+        list: "/api/admin/outlet/franchises",
+        stats: "/api/admin/outlet/franchises/stats",
+      },
+    },
     transactions: {
       review: (id: string) => `/api/admin/transactions/${id}/review`,
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,

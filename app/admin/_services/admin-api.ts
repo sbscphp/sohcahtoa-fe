@@ -120,6 +120,23 @@ export interface AdminRoleDetails {
   };
 }
 
+export interface FranchiseStatsData {
+  total: number;
+  active: number;
+  deactivated: number;
+  pendingApproval: number;
+}
+
+export type FranchiseListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+};
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -301,6 +318,37 @@ export const adminApi = {
           API_ENDPOINTS.admin.customers.flags.updateStatus(flagId),
           data
         ),
+    },
+  },
+
+  // ==================== Tickets ====================
+  tickets: {
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.list, {
+        params,
+      }),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.stats),
+  },
+
+  // ==================== Outlet ====================
+  outlet: {
+    franchises: {
+      list: (params?: FranchiseListParams) =>
+        apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.list, {
+          params,
+        }),
+
+      getStats: () =>
+        apiClient.get<ApiResponse<FranchiseStatsData>>(API_ENDPOINTS.admin.outlet.franchises.stats),
     },
   },
 

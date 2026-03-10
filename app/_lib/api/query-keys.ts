@@ -147,6 +147,33 @@ export const adminKeys = {
       allFlags: () => [...adminKeys.customers.all, "flags", "all"] as const,
     },
   },
+
+  tickets: {
+    all: ["admin", "tickets"] as const,
+    stats: () => [...adminKeys.tickets.all, "stats"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) => [...adminKeys.tickets.all, "list", params] as const,
+  },
+
+  outlet: {
+    all: ["admin", "outlet"] as const,
+    franchises: {
+      all: () => [...adminKeys.outlet.all, "franchises"] as const,
+      stats: () => [...adminKeys.outlet.franchises.all(), "stats"] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      }) => [...adminKeys.outlet.franchises.all(), "list", params] as const,
+    },
+  },
   
   transactions: {
     all: ["admin", "transactions"] as const,
