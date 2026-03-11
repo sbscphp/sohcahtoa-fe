@@ -394,6 +394,33 @@ export interface TransactionsListApiResponse {
   };
 }
 
+export interface TransactionOverviewGroupSummary {
+  totalAmount: number;
+  currency: string;
+  transactionCount: number;
+}
+
+export interface TransactionOverviewData {
+  all: TransactionOverviewGroupSummary;
+  buy: TransactionOverviewGroupSummary;
+  sell: TransactionOverviewGroupSummary;
+  remittance: TransactionOverviewGroupSummary;
+}
+
+export interface TransactionOverviewResponse {
+  success: boolean;
+  data: TransactionOverviewData;
+}
+
+export interface TransactionOverviewCustomRate {
+  currency: string;
+  rate: number;
+}
+
+export interface TransactionOverviewRequest {
+  customRates?: TransactionOverviewCustomRate[];
+}
+
 export interface TransactionDetail extends Transaction {
   transactionDetails?: {
     transactionId: string;

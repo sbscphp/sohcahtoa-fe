@@ -6,8 +6,15 @@
 import { apiClient, type ApiResponse } from "@/app/_lib/api/client";
 import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
 import type {
+  ApiResponseWrapper,
   LoginRequest,
   LoginResponse,
+  SendOtpRequestNigerian,
+  SendOtpResponse,
+  ValidateOtpRequestNigerian,
+  ValidateOtpResponse,
+  VerifyBvnRequest,
+  VerifyBvnResponse,
 } from "@/app/_lib/api/types";
 
 interface AgentLoginResponseData {
@@ -29,6 +36,16 @@ export interface AgentCreatePasswordPayload {
   otp: string;
   password: string;
   confirmPassword: string;
+}
+
+// Shape of /api/agent/customers response – keep generic until backend is finalized
+export type AgentCustomerListResponse = ApiResponseWrapper<unknown[]>;
+
+// Payload for /api/agent/customer-auth/create-account (agent-initiated customer creation)
+export interface AgentCreateCustomerAccountRequest {
+  verificationToken: string;
+  password: string;
+  customerType: "NIGERIAN_CITIZEN" | "EXPATRIATE";
 }
 
 export const agentApi = {
@@ -65,6 +82,45 @@ export const agentApi = {
         data,
         { skipAuth: true }
       ),
+  },
+
+  customers: {
+    list: () =>
+      apiClient.get<AgentCustomerListResponse>(AGENT_API_ENDPOINTS.customers.list),
+  },
+
+  /**
+   * Agent-initiated customer auth (Nigerian BVN + OTP) while creating a transaction.
+   * Uses the /api/agent/customer-auth/* endpoints.
+   */
+  customerAuth: {
+    nigerian: {
+      verifyBvn: (data: VerifyBvnRequest) =>
+        apiClient.post<VerifyBvnResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.verifyBvn,
+          data
+        ),
+      sendOtp: (data: SendOtpRequestNigerian) =>
+        apiClient.post<SendOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.sendOtp,
+          data
+        ),
+      resendOtp: (data: SendOtpRequestNigerian) =>
+        apiClient.post<SendOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.resendOtp,
+          data
+        ),
+      validateOtp: (data: ValidateOtpRequestNigerian) =>
+        apiClient.post<ValidateOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.validateOtp,
+          data
+        ),
+      createAccount: (data: AgentCreateCustomerAccountRequest) =>
+        apiClient.post<LoginResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.createAccount,
+          data
+        ),
+    },
   },
 };
 

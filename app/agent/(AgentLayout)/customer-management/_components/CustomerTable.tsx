@@ -1,13 +1,24 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import SearchInput from "@/app/admin/_components/SearchInput";
-import { Text, Group, Select, Button, Badge } from "@mantine/core";
-import { Upload, ListFilter, ArrowUpRight, ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
-import EmptyState from "@/app/admin/_components/EmptyState";
 import { ActionButton } from "@/app/admin/_components/ActionButton";
+import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
+import EmptyState from "@/app/admin/_components/EmptyState";
+import SearchInput from "@/app/admin/_components/SearchInput";
+import { formatLocalDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
+import { Badge, Button, Group, Select, Text } from "@mantine/core";
+import { ArrowUpRight, ListFilter, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+
+// Shape from /api/agent/customers
+interface AgentCustomerSummary {
+  userId: string;
+  fullName: string;
+  customerType: string;
+  lastTransactionType: string | null;
+  registeredAt: string;
+  kycStatus: string;
+}
 
 interface Customer {
   customerName: string;
@@ -18,56 +29,10 @@ interface Customer {
   kycStatus: "Pending" | "Approved" | "Rejected";
 }
 
-const generateCustomers = (): Customer[] => [
-  {
-    customerName: "Bukayo Eze",
-    id: "9029",
-    customerType: "Resident",
-    lastTransactionType: "PTA",
-    dateRegistered: "Nov 16 2025 11:00 am",
-    kycStatus: "Pending",
-  },
-  {
-    customerName: "Fiyinfoluwa Familua",
-    id: "9030",
-    customerType: "Tourist",
-    lastTransactionType: "BTA",
-    dateRegistered: "Nov 15 2025 10:30 am",
-    kycStatus: "Approved",
-  },
-  {
-    customerName: "Adeola Johnson",
-    id: "9031",
-    customerType: "Expatriate",
-    lastTransactionType: "Medical",
-    dateRegistered: "Nov 14 2025 09:15 am",
-    kycStatus: "Rejected",
-  },
-  {
-    customerName: "Chukwudi Okoro",
-    id: "9032",
-    customerType: "Resident",
-    lastTransactionType: "Professional Body Fee",
-    dateRegistered: "Nov 13 2025 02:45 pm",
-    kycStatus: "Approved",
-  },
-  {
-    customerName: "Ngozi Eze",
-    id: "9033",
-    customerType: "Tourist",
-    lastTransactionType: "School Fees",
-    dateRegistered: "Nov 12 2025 01:20 pm",
-    kycStatus: "Pending",
-  },
-  {
-    customerName: "Emeka Okafor",
-    id: "9034",
-    customerType: "Resident",
-    lastTransactionType: "IMTO",
-    dateRegistered: "Nov 11 2025 11:30 am",
-    kycStatus: "Approved",
-  },
-];
+interface CustomerTableProps {
+  customers?: AgentCustomerSummary[];
+  loading?: boolean;
+}
 
 const getKYCStatusColor = (status: string) => {
   switch (status) {
@@ -82,14 +47,46 @@ const getKYCStatusColor = (status: string) => {
   }
 };
 
-export default function CustomerTable() {
+const mapApiCustomerToTable = (item: AgentCustomerSummary): Customer => {
+  const type: Customer["customerType"] =
+    item.customerType === "NIGERIAN_CITIZEN"
+      ? "Resident"
+      : item.customerType === "EXPATRIATE"
+      ? "Expatriate"
+      : "Tourist";
+
+  let kyc: Customer["kycStatus"] = "Pending";
+  if (item.kycStatus === "VERIFIED" || item.kycStatus === "APPROVED") {
+    kyc = "Approved";
+  } else if (item.kycStatus === "REJECTED") {
+    kyc = "Rejected";
+  }
+
+
+  return {
+    customerName: item.fullName,
+    id: item.userId,
+    customerType: type,
+    lastTransactionType: item.lastTransactionType || "—",
+    dateRegistered: item.registeredAt,
+    kycStatus: kyc,
+  };
+};
+
+export default function CustomerTable({
+  customers = [],
+  loading = false,
+}: CustomerTableProps) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Filter By");
   const router = useRouter();
 
-  const allCustomers = useMemo(() => generateCustomers(), []);
+  const allCustomers = useMemo(
+    () => customers.map(mapApiCustomerToTable),
+    [customers]
+  );
 
   const filteredData = useMemo(() => {
     return allCustomers.filter((customer) => {
@@ -142,9 +139,10 @@ export default function CustomerTable() {
       {item.lastTransactionType}
     </Text>,
 
-    <Text key="dateRegistered" size="sm">
-      {item.dateRegistered}
-    </Text>,
+    <div key="dateRegistered">
+      <p className="text-body-text-300 text-sm leading-5">{formatLocalDate(item?.dateRegistered || "")}</p>
+      <p className="text-body-text-200 text-xs leading-5">{formatShortTime(item?.dateRegistered || "")}</p>
+    </div>,
 
     <Badge
       key="kycStatus"
@@ -221,7 +219,7 @@ export default function CustomerTable() {
         <DynamicTableSection
           headers={customerHeaders}
           data={paginatedData}
-          loading={false}
+          loading={loading}
           renderItems={renderCustomerRow}
           emptyTitle="No Customers Found"
           emptyMessage="There are currently no customers to display."

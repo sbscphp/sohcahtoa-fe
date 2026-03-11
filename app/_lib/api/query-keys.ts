@@ -23,6 +23,7 @@ export const customerKeys = {
       [...customerKeys.transactions.lists(), filters] as const,
     details: () => [...customerKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...customerKeys.transactions.details(), id] as const,
+    overview: () => [...customerKeys.transactions.all, "overview"] as const,
   },
   
   payments: {

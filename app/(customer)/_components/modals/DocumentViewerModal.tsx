@@ -39,6 +39,7 @@ export default function DocumentViewerModal({
       opened={opened}
       onClose={onClose}
       title={filename}
+      centered
       size="lg"
       classNames={{
         title: "text-body-heading-300 font-semibold text-lg",

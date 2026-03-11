@@ -127,6 +127,7 @@ export default function SupportHistorySection() {
       <PaginatedTable<SupportRequestRow>
         data={rows}
         columns={columns}
+        isLoading={isLoading}
         pageSize={10}
         keyExtractor={(row) => row.id}
         emptyMessage="No support requests yet."

@@ -14,6 +14,7 @@ import { useUploadData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import type { SupportTicketCategory } from "@/app/_lib/api/types";
+import { SuccessModal } from '../modals/SuccessModal';
 
 const CATEGORY_OPTIONS: { value: SupportTicketCategory; label: string }[] = [
   { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
@@ -107,21 +108,15 @@ export default function ChatSupportForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select
+        <Select
             label="Category"
             placeholder="Select Category"
             data={CATEGORY_OPTIONS}
             size="md"
             radius="md"
-            rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300 w-full!" />}
-            classNames={{
-              label: "text-sm font-medium text-[#6C6969]",
-              input: "border-gray-200 rounded-lg",
-            }}
+            rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
             {...form.getInputProps("category")}
           />
-       </div>
           <Textarea
             label="Description"
             required
@@ -182,13 +177,13 @@ export default function ChatSupportForm() {
         variant="info"
         loading={createTicket.isPending}
       />
-      <TransactionSuccessModal
+      <SuccessModal
         opened={successOpened}
         onClose={closeSuccess}
         title="Form Submitted"
-        description="Your support request has been submitted successfully."
-        confirmLabel="Continue"
-        onConfirm={() => {
+        message="Your support request has been submitted successfully."
+        buttonText="Continue"
+        onButtonClick={() => {
           closeSuccess();
           router.push("/support");
         }}

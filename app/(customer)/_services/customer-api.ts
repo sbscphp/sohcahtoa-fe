@@ -68,6 +68,8 @@ import type {
   UploadDocumentsJsonRequest,
   SupportTicketListResponse,
   SupportTicketDetailResponse,
+  TransactionOverviewRequest,
+  TransactionOverviewResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -189,6 +191,9 @@ export const customerApi = {
 
     checkLimits: (data: CheckTransactionLimitsRequest) =>
       apiClient.post<CheckTransactionLimitsResponse>(API_ENDPOINTS.transactions.checkLimits, data),
+
+    overview: (data?: TransactionOverviewRequest) =>
+      apiClient.post<TransactionOverviewResponse>(API_ENDPOINTS.transactions.overview, data),
   },
 
   // ==================== Notifications ====================
