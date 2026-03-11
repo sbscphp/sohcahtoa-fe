@@ -43,6 +43,10 @@ export interface UpdateDepartmentStatusPayload {
   isActive: boolean;
 }
 
+export interface UpdateRoleStatusPayload {
+  isActive: boolean;
+}
+
 export interface CreateAgentPayload {
   name: string;
   email: string;
@@ -500,6 +504,12 @@ export const adminApi = {
       update: (id: string, data: CreateRolePayload) =>
         apiClient.put<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.update(id),
+          data
+        ),
+
+      updateStatus: (id: string, data: UpdateRoleStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.updateStatus(id),
           data
         ),
 
