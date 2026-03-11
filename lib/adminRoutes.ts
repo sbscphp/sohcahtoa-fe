@@ -3,7 +3,7 @@ const admin = () => '/admin';
 
 // Auth routes
 const adminLogin = () => `${admin()}/login`;
-const adminForgotPassword = () => `${admin()}/forgot-password`;
+const adminResetPassword = () => `${admin()}/reset-password`;
 
 // Dashboard
 const adminDashboard = () => `${admin()}/dashboard`;
@@ -71,7 +71,7 @@ export const adminRoutes = {
   
   // Auth
   adminLogin,
-  adminForgotPassword,
+  adminResetPassword,
   
   // Dashboard
   adminDashboard,

@@ -7,12 +7,12 @@ import { AgentAuthLayout } from "@/app/agent/_components/auth/AuthLayout";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { ErrorModal } from "@/app/admin/_components/ErrorModal";
 import { EmailForm } from "./_components/EmailForm";
-import { OtpForm } from "@/app/admin/forgot-password/_components/OtpForm";
-import { CreatePasswordForm } from "@/app/admin/forgot-password/_components/CreatePasswordForm";
+import { OtpForm } from "@/app/admin/reset-password/_components/OtpForm";
+import { CreatePasswordForm } from "@/app/admin/reset-password/_components/CreatePasswordForm";
 import type {
   EmailFormValues,
   CreatePasswordFormValues,
-} from "@/app/admin/forgot-password/_schemas/forgotPassword.schema";
+} from "@/app/admin/reset-password/_schemas/resetPassword.schema";
 
 type Step = "email" | "otp" | "password";
 

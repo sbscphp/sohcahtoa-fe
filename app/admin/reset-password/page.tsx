@@ -9,7 +9,10 @@ import { ErrorModal } from "@/app/admin/_components/ErrorModal";
 import { EmailForm } from "./_components/EmailForm";
 import { OtpForm } from "./_components/OtpForm";
 import { CreatePasswordForm } from "./_components/CreatePasswordForm";
-import { type EmailFormValues, type CreatePasswordFormValues } from "./_schemas/forgotPassword.schema";
+import {
+  type EmailFormValues,
+  type CreatePasswordFormValues,
+} from "./_schemas/resetPassword.schema";
 import { useRequestPasswordReset } from "./hooks/useRequestPasswordReset";
 import { useVerifyOtp } from "./hooks/useVerifyOtp";
 import { useCreateNewPassword } from "./hooks/useCreateNewPassword";
@@ -17,7 +20,7 @@ import { adminRoutes } from "@/lib/adminRoutes";
 
 type Step = "email" | "otp" | "password";
 
-export default function ForgotPasswordPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<Step>("email");
   const [userEmail, setUserEmail] = useState("");
