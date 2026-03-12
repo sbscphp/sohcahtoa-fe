@@ -136,13 +136,16 @@ export const API_ENDPOINTS = {
       stats: "/api/admin/tickets/stats",
       caseTypes: "/api/admin/tickets/case-types",
       getById: (id: string) => `/api/admin/tickets/${id}`,
+      updateStatus: (id: string) => `/api/admin/tickets/${id}/status`,
     },
     outlet: {
       franchises: {
         list: "/api/admin/outlet/franchises",
+        create: "/api/admin/outlet/franchises",
         export: "/api/admin/outlet/franchises/export",
         stats: "/api/admin/outlet/franchises/stats",
       },
+      states: "/api/admin/outlet/states",
     },
     transactions: {
       list: "/api/admin/transactions",

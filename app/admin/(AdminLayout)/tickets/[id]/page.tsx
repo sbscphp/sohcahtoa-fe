@@ -8,14 +8,34 @@ import { DetailItem } from "@/app/admin/_components/DetailItem";
 import IncidentUpdatesOverlay from "@/app/admin/_components/IncidentUpdatesOverlay";
 import Communication from "@/app/admin/_components/Communication";
 import AssignIncidentModal from "../_ticketsComponents/AssignIncidentModal";
-import ChangeStatusModal, { type TicketStatusOption } from "../_ticketsComponents/ChangeStatusModal";
+import ChangeStatusModal, {
+  type TicketStatusOption,
+  type TicketStatusSelection,
+} from "../_ticketsComponents/ChangeStatusModal";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { Download } from "lucide-react";
 import { useTicketDetails } from "../hooks/useTicketDetails";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+
+const STATUS_PAYLOAD_MAP: Record<
+  TicketStatusOption,
+  "IN_PROGRESS" | "RESOLVED" | "REOPENED" | "CLOSED"
+> = {
+  "In-progress": "IN_PROGRESS",
+  Resolved: "RESOLVED",
+  "Re-opened": "REOPENED",
+  Closed: "CLOSED",
+};
 
 export default function ViewTicketPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params?.id as string;
   const { ticket, isLoading } = useTicketDetails(id);
 
@@ -24,12 +44,53 @@ export default function ViewTicketPage() {
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
   const [ticketStatus, setTicketStatus] = useState<string | null>(null);
 
+  const updateStatusMutation = useCreateData(
+    (variables: TicketStatusSelection) =>
+      adminApi.tickets.updateStatus(id, {
+        status: STATUS_PAYLOAD_MAP[variables.status],
+        notes: variables.notes,
+      }),
+    {
+      onSuccess: async (_response, variables) => {
+        setTicketStatus(variables.status);
+        setChangeStatusOpen(false);
+
+        notifications.show({
+          title: "Status Updated",
+          message: "Ticket status was updated successfully.",
+          color: "green",
+        });
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.detail(id)],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.all],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+
+        notifications.show({
+          title: "Update Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update ticket status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const handleAssignIncident = () => setAssignModalOpen(true);
   const handleUpdate = () => router.push(adminRoutes.adminTicketUpdate(id));
   const handleChangeStatus = () => setChangeStatusOpen(true);
 
-  const handleStatusSelect = (status: TicketStatusOption) => {
-    setTicketStatus(status);
+  const handleStatusSelect = (selection: TicketStatusSelection) => {
+    updateStatusMutation.mutate(selection);
   };
 
   const attachmentName = ticket?.firstAttachment?.fileName?.trim()
@@ -192,6 +253,7 @@ export default function ViewTicketPage() {
         opened={changeStatusOpen}
         onClose={() => setChangeStatusOpen(false)}
         onSelect={handleStatusSelect}
+        loading={updateStatusMutation.isPending}
       />
     </div>
   );
