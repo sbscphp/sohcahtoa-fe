@@ -47,6 +47,10 @@ export interface UpdateRoleStatusPayload {
   isActive: boolean;
 }
 
+export interface ManagementModulesResponseData {
+  modules: string[];
+}
+
 export interface CreateAgentPayload {
   name: string;
   email: string;
@@ -480,6 +484,13 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.management.lookups, {
         params: { query },
       }),
+
+    modules: {
+      list: () =>
+        apiClient.get<ApiResponse<ManagementModulesResponseData>>(
+          API_ENDPOINTS.admin.management.modules
+        ),
+    },
 
     users: {
       list: (params?: { page?: number; limit?: number; search?: string }) =>

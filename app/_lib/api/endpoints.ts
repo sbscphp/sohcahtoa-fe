@@ -147,6 +147,7 @@ export const API_ENDPOINTS = {
     },
     management: {
       lookups: "/api/admin/management/lookups",
+      modules: "/api/admin/management/modules",
       users: {
         list: "/api/admin/management/users",
         export: "/api/admin/management/users/export",

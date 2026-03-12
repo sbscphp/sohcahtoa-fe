@@ -202,6 +202,7 @@ export const adminKeys = {
     all: ["admin", "management"] as const,
     lookups: (query: "role" | "department" | "branch") =>
       [...adminKeys.management.all, "lookups", query] as const,
+    modules: () => [...adminKeys.management.all, "modules"] as const,
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,
       stats: () => [...adminKeys.management.users.all(), "stats"] as const,
