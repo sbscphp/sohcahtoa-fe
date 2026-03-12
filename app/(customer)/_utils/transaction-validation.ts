@@ -93,13 +93,19 @@ export function getDocumentName(documentType: DocumentType): string {
     RETURN_TICKET: "Return Ticket",
     FORM_A_DOCUMENT: "Form A Document",
     TIN: "TIN",
+    TCC: "Tax Clearance Certificate (TCC)",
+    CORPORATE_BODY_LETTER: "Corporate Body Letter",
+    PARTNER_INVITATION_LETTER: "Partner Invitation Letter",
     UTILITY_BILL: "Utility Bill",
     MEDICAL_LETTER: "Medical Letter (Nigerian Specialist or Hospital)",
     OVERSEAS_MEDICAL_LETTER: "Letter from Overseas Doctor/Hospital",
     MEMBERSHIP_CARD: "Evidence of Membership",
     INVOICE: "Invoice from Professional Body",
-    CORPORATE_BODY_LETTER: "Corporate Body Letter",
-    PARTNER_INVITATION_LETTER: "Partner Invitation Letter",
+    SCHOOL_ADMISSION: "School Admission / Offer Letter",
+    STATEMENT_OF_RESULT: "Statement of Result",
+    DEGREE: "Degree Certificate",
+    RECEIPT: "Payment Receipt",
+    WORK_PERMIT: "Work Permit",
   };
   return names[documentType] || documentType;
 }

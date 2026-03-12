@@ -88,7 +88,7 @@ export default function BTATransactionAmountStep({
               getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
             }
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code)}
+            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code ?? CURRENCIES[0].code)}
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
@@ -132,7 +132,7 @@ export default function BTATransactionAmountStep({
               value={form.values.sendAmount}
               onChange={(value) => form.setFieldValue("sendAmount", value)}
               currency={
-                getCurrencyByCode(form.values.sendCurrency) ?? CURRENCIES[0]
+                getCurrencyByCode(form.values.sendCurrency ?? CURRENCIES[0].code) ?? CURRENCIES[0]
               }
               placeholder="0"
               error={form.errors.sendAmount?.toString() || undefined}

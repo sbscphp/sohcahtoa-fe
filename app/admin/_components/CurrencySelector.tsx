@@ -39,8 +39,8 @@ export default function CurrencySelector() {
             <div className="flex items-center gap-2">
               <span className="text-base leading-none" aria-hidden>
                 <Image
-                  src={getCurrencyFlagUrl(currency.code) ?? ""}
-                  alt={currency.name}
+                  src={getCurrencyFlagUrl(currency.code ?? CURRENCIES[0].code) ?? ""}
+                  alt={currency.name ?? CURRENCIES[0].name}
                   width={24}
                   height={24}
                 />
