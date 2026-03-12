@@ -100,6 +100,7 @@ export const API_ENDPOINTS = {
     auditTrailExport: "/api/admin/audit/trail/export",
     agent: {
       list: "/api/admin/agent",
+      export: "/api/admin/agent/export",
       stats: "/api/admin/agent/stats",
       getById: (id: string) => `/api/admin/agent/${id}`,
       updateStatus: (id: string) => `/api/admin/agent/${id}/status`,
@@ -123,6 +124,7 @@ export const API_ENDPOINTS = {
     },
     tickets: {
       list: "/api/admin/tickets",
+      export: "/api/admin/tickets/export",
       create: "/api/admin/tickets",
       stats: "/api/admin/tickets/stats",
       caseTypes: "/api/admin/tickets/case-types",
@@ -131,6 +133,7 @@ export const API_ENDPOINTS = {
     outlet: {
       franchises: {
         list: "/api/admin/outlet/franchises",
+        export: "/api/admin/outlet/franchises/export",
         stats: "/api/admin/outlet/franchises/stats",
       },
     },

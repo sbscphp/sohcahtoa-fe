@@ -10,6 +10,10 @@ import { ListFilter, Plus, Search, Upload, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useFranchises, type FranchiseListItem } from "../hooks/useFranchises";
 import { useFranchiseStats } from "../hooks/useFranchiseStats";
 
@@ -52,6 +56,38 @@ export default function FranchiseSection() {
   }, [debouncedSearch, filter, page]);
 
   const { franchises, isLoading, totalPages } = useFranchises(queryParams);
+  const exportFranchisesMutation = useGetExportData(
+    () =>
+      adminApi.outlet.franchises.export({
+        search: debouncedSearch.trim() || undefined,
+        status: getStatusParam(filter),
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `franchises-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Franchises Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export franchises at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const renderRow = (item: FranchiseListItem) => [
     <div key="name">
@@ -158,6 +194,9 @@ export default function FranchiseSection() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportFranchisesMutation.mutate()}
+              loading={exportFranchisesMutation.isPending}
+              disabled={exportFranchisesMutation.isPending}
             >
               Export
             </Button>

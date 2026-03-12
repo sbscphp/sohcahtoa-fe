@@ -10,6 +10,10 @@ import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useTickets, type TicketListItem } from "../hooks/useTickets";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const ticketHeaders = [
   { label: "Incident ID", key: "id" },
@@ -110,6 +114,43 @@ export default function AllTicketsTable() {
   }, [debouncedCategory, debouncedSearch, page, priority, status]);
 
   const { tickets, isLoading, totalPages } = useTickets(queryParams);
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      status: status === "All" ? undefined : status,
+      category: debouncedCategory.trim() || undefined,
+      priority: priority === "All" ? undefined : priority,
+    }),
+    [debouncedCategory, debouncedSearch, priority, status]
+  );
+  const exportTicketsMutation = useGetExportData(
+    () => adminApi.tickets.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `tickets-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Tickets Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export tickets at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const renderRow = (item: TicketListItem) => {
     const { date, time } = formatDateTime(item.createdAt);
@@ -218,6 +259,9 @@ export default function AllTicketsTable() {
             color="#E36C2F"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportTicketsMutation.mutate()}
+            loading={exportTicketsMutation.isPending}
+            disabled={exportTicketsMutation.isPending}
           >
             Export
           </Button>

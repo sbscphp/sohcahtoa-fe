@@ -267,6 +267,26 @@ export const adminApi = {
         { params }
       ),
 
+    export: async (params?: {
+      search?: string;
+      isActive?: boolean;
+      branch?: string;
+      fromDate?: string;
+      toDate?: string;
+      sort?: string;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.agent.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.stats
@@ -400,6 +420,24 @@ export const adminApi = {
         params,
       }),
 
+    export: async (params?: {
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.tickets.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
     create: (data: FormData) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.create, data),
 
@@ -417,6 +455,19 @@ export const adminApi = {
         apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.list, {
           params,
         }),
+
+      export: async (params?: { search?: string; status?: string }) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.franchises.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
 
       getStats: () =>
         apiClient.get<ApiResponse<FranchiseStatsData>>(API_ENDPOINTS.admin.outlet.franchises.stats),
