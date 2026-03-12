@@ -121,6 +121,7 @@ export const adminKeys = {
   customers: {
     all: ["admin", "customers"] as const,
     counts: () => [...adminKeys.customers.all, "counts"] as const,
+    allCustomers: () => [...adminKeys.customers.all, "all"] as const,
     lists: () => [...adminKeys.customers.all, "list"] as const,
     list: (params?: {
       page?: number;
@@ -151,6 +152,7 @@ export const adminKeys = {
   tickets: {
     all: ["admin", "tickets"] as const,
     stats: () => [...adminKeys.tickets.all, "stats"] as const,
+    caseTypes: () => [...adminKeys.tickets.all, "case-types"] as const,
     list: (params?: {
       page?: number;
       limit?: number;

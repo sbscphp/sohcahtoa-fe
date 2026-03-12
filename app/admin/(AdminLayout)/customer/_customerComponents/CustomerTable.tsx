@@ -16,6 +16,10 @@ import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useCustomers, type CustomerRowItem } from "../hooks/useCustomers";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 /* --------------------------------------------
  Types
@@ -52,6 +56,38 @@ export default function CustomerTable() {
     search: debouncedSearch || undefined,
     isActive,
   });
+  const exportCustomersMutation = useGetExportData(
+    () =>
+      adminApi.customers.export({
+        search: debouncedSearch || undefined,
+        isActive,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `customers-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Customers Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export customers at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   /* Table headers */
   const customerHeaders = [
@@ -148,6 +184,9 @@ export default function CustomerTable() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportCustomersMutation.mutate()}
+              loading={exportCustomersMutation.isPending}
+              disabled={exportCustomersMutation.isPending}
             >
               Export
             </Button>

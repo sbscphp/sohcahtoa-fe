@@ -107,6 +107,8 @@ export const API_ENDPOINTS = {
     },
     customers: {
       list: "/api/admin/customers",
+      all: "/api/admin/customers/all",
+      export: "/api/admin/customers/export",
       counts: "/api/admin/customers/counts",
       getById: (userId: string) => `/api/admin/customers/${userId}`,
       deactivate: (userId: string) => `/api/admin/customers/${userId}/deactivate`,
@@ -121,7 +123,9 @@ export const API_ENDPOINTS = {
     },
     tickets: {
       list: "/api/admin/tickets",
+      create: "/api/admin/tickets",
       stats: "/api/admin/tickets/stats",
+      caseTypes: "/api/admin/tickets/case-types",
       getById: (id: string) => `/api/admin/tickets/${id}`,
     },
     outlet: {

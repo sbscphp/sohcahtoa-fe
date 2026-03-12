@@ -317,6 +317,25 @@ export const adminApi = {
         params,
       }),
 
+    export: async (params?: {
+      search?: string;
+      isActive?: boolean;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.customers.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getAll: () =>
+      apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.customers.all),
+
     getCounts: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.counts),
 
@@ -381,8 +400,14 @@ export const adminApi = {
         params,
       }),
 
+    create: (data: FormData) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.create, data),
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.stats),
+
+    getCaseTypes: () =>
+      apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.tickets.caseTypes),
   },
 
   // ==================== Outlet ====================
