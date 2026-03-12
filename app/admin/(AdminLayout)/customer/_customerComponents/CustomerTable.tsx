@@ -93,6 +93,7 @@ export default function CustomerTable() {
   const customerHeaders = [
     { label: "Customer", key: "customer" },
     { label: "Contact", key: "contact" },
+    { label: "Date Joined", key: "dateJoined" },
     { label: "Total Transactions", key: "totalTransactions" },
     { label: "Transaction Volume", key: "transactionVolume" },
     { label: "Status", key: "status" },
@@ -120,6 +121,11 @@ export default function CustomerTable() {
         {item.email}
       </Text>
     </div>,
+
+    // Date Joined
+    <Text key="dateJoined" size="sm">
+      {item.dateJoined}
+    </Text>,
 
     // Total Transactions
     <Text key="totalTransactions" size="sm">

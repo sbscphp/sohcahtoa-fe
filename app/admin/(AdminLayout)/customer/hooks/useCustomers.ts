@@ -17,6 +17,7 @@ interface CustomerApiItem {
   phoneNumber?: string;
   email?: string;
   emailAddress?: string;
+  dateJoined?: string;
   totalTransactions?: number | string;
   transactionCount?: number | string;
   numberOfTransactions?: number | string;
@@ -45,6 +46,7 @@ export interface CustomerRowItem {
   id: string;
   phone: string;
   email: string;
+  dateJoined: string;
   totalTransactions: number;
   transactionVolume: number;
   status: CustomerStatus;
@@ -69,11 +71,20 @@ function toStatus(value: CustomerApiItem): CustomerStatus {
 }
 
 function mapCustomer(item: CustomerApiItem): CustomerRowItem {
+  const joinedDate = item.dateJoined
+    ? new Date(item.dateJoined).toLocaleDateString("en-NG", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
+
   return {
     id: String(item.id ?? item.userId ?? item.customerId ?? ""),
     customerName: item.fullName ?? item.customerName ?? item.name ?? "—",
     phone: item.phone ?? item.phoneNumber ?? "—",
     email: item.email ?? item.emailAddress ?? "—",
+    dateJoined: joinedDate,
     totalTransactions: parseNumber(
       item.totalTransactions ?? item.transactionCount ?? item.numberOfTransactions
     ),
