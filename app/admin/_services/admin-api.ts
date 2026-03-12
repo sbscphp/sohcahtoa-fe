@@ -135,6 +135,20 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export interface CreateFranchisePayload {
+  franchiseName: string;
+  state: string;
+  address: string;
+  contactPersonName: string;
+  email: string;
+  phoneNumber: string;
+  altPhoneNumber: string;
+}
+
+export interface OutletStatesData {
+  states: string[];
+}
+
 export interface TicketAttachment {
   id: string;
   ticketId: string;
@@ -506,11 +520,18 @@ export const adminApi = {
 
   // ==================== Outlet ====================
   outlet: {
+    states: {
+      list: () =>
+        apiClient.get<ApiResponse<OutletStatesData>>(API_ENDPOINTS.admin.outlet.states),
+    },
     franchises: {
       list: (params?: FranchiseListParams) =>
         apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.list, {
           params,
         }),
+
+      create: (data: CreateFranchisePayload) =>
+        apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.create, data),
 
       export: async (params?: { search?: string; status?: string }) => {
         const response = await apiClient.get<Blob | string>(

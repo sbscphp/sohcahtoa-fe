@@ -141,9 +141,11 @@ export const API_ENDPOINTS = {
     outlet: {
       franchises: {
         list: "/api/admin/outlet/franchises",
+        create: "/api/admin/outlet/franchises",
         export: "/api/admin/outlet/franchises/export",
         stats: "/api/admin/outlet/franchises/stats",
       },
+      states: "/api/admin/outlet/states",
     },
     transactions: {
       list: "/api/admin/transactions",

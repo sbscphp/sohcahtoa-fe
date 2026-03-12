@@ -179,6 +179,10 @@ export const adminKeys = {
 
   outlet: {
     all: ["admin", "outlet"] as const,
+    states: {
+      all: () => [...adminKeys.outlet.all, "states"] as const,
+      list: () => [...adminKeys.outlet.states.all(), "list"] as const,
+    },
     franchises: {
       all: () => [...adminKeys.outlet.all, "franchises"] as const,
       stats: () => [...adminKeys.outlet.franchises.all(), "stats"] as const,
