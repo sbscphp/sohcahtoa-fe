@@ -12,17 +12,18 @@ import CustomerSelectModal, {
   type CustomerOption,
 } from "../_ticketsComponents/CustomerSelectModal";
 import { adminRoutes } from "@/lib/adminRoutes";
-
-const CASE_TYPE_OPTIONS = [
-  { value: "Technical", label: "Technical" },
-  { value: "Billing", label: "Billing" },
-  { value: "General", label: "General" },
-];
+import { useTicketCaseTypes } from "../hooks/useTicketCaseTypes";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 
 const PRIORITY_OPTIONS = [
-  { value: "High", label: "High" },
-  { value: "Medium", label: "Medium" },
-  { value: "Low", label: "Low" },
+  { value: "HIGH", label: "High" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "LOW", label: "Low" },
 ];
 
 const FILE_INPUT_ID = "file-input-Attachment";
@@ -37,6 +38,12 @@ type TicketFormValues = {
 
 export default function CreateTicketPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const {
+    options: caseTypeOptions,
+    isLoading: isCaseTypesLoading,
+    isError: isCaseTypesError,
+  } = useTicketCaseTypes();
 
   const form = useForm<TicketFormValues>({
     initialValues: {
@@ -64,7 +71,35 @@ export default function CreateTicketPage() {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+
+  const createTicketMutation = useCreateData(adminApi.tickets.create, {
+    onSuccess: async () => {
+      setIsConfirmOpen(false);
+      setIsSuccessOpen(true);
+      form.reset();
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.tickets.all],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.tickets.stats()],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+
+      notifications.show({
+        title: "Create Incident Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create incident. Please try again.",
+        color: "red",
+      });
+    },
+  });
 
   const handleCancel = () => {
     router.push(adminRoutes.adminTickets());
@@ -79,11 +114,18 @@ export default function CreateTicketPage() {
   };
 
   const handleConfirmCreate = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setIsConfirmOpen(false);
-    setIsSuccessOpen(true);
+    if (!form.values.customer || !form.values.attachment) {
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append("customer", form.values.customer.id);
+    payload.append("caseType", form.values.caseType);
+    payload.append("priorityLevel", form.values.priorityLevel);
+    payload.append("description", form.values.description.trim());
+    payload.append("file", form.values.attachment);
+
+    createTicketMutation.mutate(payload);
   };
 
   const handleManageIncident = () => {
@@ -124,13 +166,14 @@ export default function CreateTicketPage() {
             <Select
               label="Case Type"
               placeholder="Select an Option"
-              data={CASE_TYPE_OPTIONS}
+              data={caseTypeOptions}
               value={form.values.caseType}
               onChange={(value) =>
                 form.setFieldValue("caseType", value || "")
               }
               error={form.errors.caseType}
               required
+              disabled={isCaseTypesLoading || caseTypeOptions.length === 0}
               radius="md"
             />
             <Select
@@ -193,6 +236,7 @@ export default function CreateTicketPage() {
             size="md"
             buttonType="secondary"
             onClick={handleCancel}
+            disabled={createTicketMutation.isPending}
           >
             Cancel
           </CustomButton>
@@ -201,10 +245,24 @@ export default function CreateTicketPage() {
             size="md"
             buttonType="primary"
             onClick={handleCreateIncidentClick}
+            loading={createTicketMutation.isPending}
+            disabled={createTicketMutation.isPending}
           >
             Create Incident
           </CustomButton>
         </Group>
+
+        {isCaseTypesError && (
+          <Text size="sm" c="red" mt="md">
+            Unable to load case types. Please refresh and try again.
+          </Text>
+        )}
+
+        {!isCaseTypesLoading && !isCaseTypesError && caseTypeOptions.length === 0 && (
+          <Text size="sm" c="dimmed" mt="md">
+            No case types are available yet.
+          </Text>
+        )}
       </div>
 
       <ConfirmationModal
@@ -216,7 +274,7 @@ export default function CreateTicketPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleConfirmCreate}
         onSecondary={() => setIsConfirmOpen(false)}
-        loading={isSaving}
+        loading={createTicketMutation.isPending}
       />
 
       <SuccessModal

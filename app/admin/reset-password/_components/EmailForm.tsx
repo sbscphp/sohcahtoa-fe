@@ -6,7 +6,10 @@ import { zod4Resolver } from "mantine-form-zod-resolver";
 import { useRouter } from "next/navigation";
 
 import { CustomButton } from "@/app/admin/_components/CustomButton";
-import { emailSchema, type EmailFormValues } from "../_schemas/forgotPassword.schema";
+import {
+  emailSchema,
+  type EmailFormValues,
+} from "../_schemas/resetPassword.schema";
 import { adminRoutes } from "@/lib/adminRoutes";
 
 interface EmailFormProps {

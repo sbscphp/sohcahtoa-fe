@@ -3,14 +3,18 @@
 import { useMemo, useState } from "react";
 import { Group, Text, TextInput, Button, Select, ActionIcon } from "@mantine/core";
 import { Search, ListFilter, Upload, ChevronRight } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ViewUserActionModal } from "./ViewUserActionModal";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
 import {
   useAdminUserActivities,
   type AdminUserActivity,
 } from "../../hooks/useAdminUserActivities";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 /* --------------------------------------------
  Types
@@ -39,6 +43,34 @@ export default function UserActivitiesTable({ userId }: { userId?: string }) {
     search: debouncedSearch || undefined,
     status: statusFilter !== "All" ? statusFilter : undefined,
   });
+  const exportUserActivitiesMutation = useGetExportData(
+    () => adminApi.management.users.exportActivities(userId ?? ""),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-user-activities-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Activities Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export user activities at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
   const safeTotalPages = Math.max(1, totalPages);
   const statusOptions = useMemo(
     () => [
@@ -146,6 +178,9 @@ export default function UserActivitiesTable({ userId }: { userId?: string }) {
             variant="outline"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportUserActivitiesMutation.mutate()}
+            loading={exportUserActivitiesMutation.isPending}
+            disabled={exportUserActivitiesMutation.isPending || !userId}
           >
             Export
           </Button>

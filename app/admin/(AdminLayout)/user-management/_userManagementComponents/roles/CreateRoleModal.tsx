@@ -30,6 +30,8 @@ import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import EmptySection from "@/app/admin/_components/EmptySection";
+import { useManagementModules } from "../../hooks/useManagementModules";
 
 interface CreateRoleModalProps {
   opened: boolean;
@@ -51,6 +53,7 @@ export function CreateRoleModal({
     useManagementLookups("branch", "name");
   const { options: departmentOptions, isLoading: departmentsLoading } =
     useManagementLookups("department");
+  const { roleModules, isLoading: modulesLoading } = useManagementModules();
 
   const form = useForm({
     initialValues: {
@@ -74,40 +77,26 @@ export function CreateRoleModal({
 
   const PERMISSION_ACTIONS = ["can.view", "can.create", "can.edit", "can.delete"] as const;
   type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
+  type PermissionState = Record<string, { MODULE: Record<PermissionAction, boolean> }>;
 
-  const roleModules = [
-    { key: "TRANSACTIONS", label: "Transactions", scopes: ["MODULE"] },
-    { key: "CUSTOMERS", label: "Customers", scopes: ["MODULE"] },
-    { key: "AGENTS", label: "Agents", scopes: ["MODULE"] },
-    { key: "SETTLEMENTS", label: "Settlements", scopes: ["MODULE"] },
-    { key: "RATES", label: "Rates", scopes: ["MODULE"] },
-    { key: "USER_MANAGEMENT", label: "User Management", scopes: ["ROLES", "USERS"] },
-    { key: "WORKFLOW", label: "Workflow", scopes: ["MODULE"] },
-    { key: "COMPLIANCE", label: "Compliance", scopes: ["MODULE"] },
-    { key: "REPORTS", label: "Reports", scopes: ["MODULE"] },
-    { key: "AUDIT", label: "Audit", scopes: ["MODULE"] },
-  ] as const;
-  type ModuleKey = (typeof roleModules)[number]["key"];
-
-  const createInitialPermissions = () =>
+  const getDefaultActions = (): Record<PermissionAction, boolean> =>
     Object.fromEntries(
-      roleModules.map((module) => [
-        module.key,
-        Object.fromEntries(
-          module.scopes.map((scope) => [
-            scope,
-            Object.fromEntries(
-              PERMISSION_ACTIONS.map((action) => [action, false])
-            ) as Record<PermissionAction, boolean>,
-          ])
-        ),
-      ])
-    ) as Record<
-      (typeof roleModules)[number]["key"],
-      Record<string, Record<PermissionAction, boolean>>
-    >;
+      PERMISSION_ACTIONS.map((action) => [action, false])
+    ) as Record<PermissionAction, boolean>;
 
-  const [permissions, setPermissions] = useState(createInitialPermissions);
+  const createInitialPermissions = (
+    modules: Array<{ key: string }>
+  ): PermissionState =>
+    Object.fromEntries(
+      modules.map((roleModule) => [
+        roleModule.key,
+        {
+          MODULE: getDefaultActions(),
+        },
+      ])
+    );
+
+  const [permissions, setPermissions] = useState<PermissionState>({});
 
   const actionLabelMap: Record<PermissionAction, string> = {
     "can.view": "Can View",
@@ -122,7 +111,7 @@ export function CreateRoleModal({
     setStep("details");
     setIsConfirmOpen(false);
     setPendingPayload(null);
-    setPermissions(createInitialPermissions());
+    setPermissions(createInitialPermissions(roleModules));
   };
 
   const handleClose = () => {
@@ -131,34 +120,30 @@ export function CreateRoleModal({
   };
 
   const goToPermissions = () => {
+    if (modulesLoading || roleModules.length === 0) return;
     const validation = form.validate();
     if (validation.hasErrors) return;
     setStep("permissions");
   };
 
-  const isModuleChecked = (moduleKey: ModuleKey, scopes: readonly string[]) =>
-    scopes.every((scope) =>
-      PERMISSION_ACTIONS.every((action) => permissions[moduleKey][scope][action])
-    );
+  const isModuleChecked = (moduleKey: string) =>
+    PERMISSION_ACTIONS.every((action) => permissions[moduleKey]?.MODULE?.[action]);
 
-  const isModuleIndeterminate = (moduleKey: ModuleKey, scopes: readonly string[]) => {
-    const values = scopes.flatMap((scope) =>
-      PERMISSION_ACTIONS.map((action) => permissions[moduleKey][scope][action])
+  const isModuleIndeterminate = (moduleKey: string) => {
+    const values = PERMISSION_ACTIONS.map(
+      (action) => permissions[moduleKey]?.MODULE?.[action] ?? false
     );
     return values.some(Boolean) && !values.every(Boolean);
   };
 
-  const toggleModule = (moduleKey: ModuleKey, scopes: readonly string[], checked: boolean) => {
+  const toggleModule = (moduleKey: string, checked: boolean) => {
     setPermissions((prev) => ({
       ...prev,
-      [moduleKey]: Object.fromEntries(
-        scopes.map((scope) => [
-          scope,
-          Object.fromEntries(
-            PERMISSION_ACTIONS.map((action) => [action, checked])
-          ) as Record<PermissionAction, boolean>,
-        ])
-      ),
+      [moduleKey]: {
+        MODULE: Object.fromEntries(
+          PERMISSION_ACTIONS.map((action) => [action, checked])
+        ) as Record<PermissionAction, boolean>,
+      },
     }));
   };
 
@@ -208,19 +193,19 @@ export function CreateRoleModal({
 
     const permissionsPayload = Object.fromEntries(
       roleModules
-        .map((module) => {
+        .map((roleModule) => {
           const scopePayload = Object.fromEntries(
-            module.scopes
+            roleModule.scopes
               .map((scope) => {
                 const selectedActions = PERMISSION_ACTIONS.filter(
-                  (action) => permissions[module.key][scope][action]
+                  (action) => permissions[roleModule.key]?.[scope]?.[action] ?? false
                 );
                 return [scope, selectedActions] as const;
               })
               .filter(([, actions]) => actions.length > 0)
           );
 
-          return [module.key, scopePayload] as const;
+          return [roleModule.key, scopePayload] as const;
         })
         .filter(([, scopePayload]) => Object.keys(scopePayload).length > 0)
     );
@@ -356,63 +341,75 @@ export function CreateRoleModal({
         </Stack>
       ) : (
         <Stack gap="md" mt="lg">
-          <Accordion chevronPosition="right" radius="md" variant="separated">
-            {roleModules.map((module) => (
-              <Accordion.Item key={module.key} value={module.key}>
-                <Accordion.Control>
-                  <Checkbox
-                    checked={isModuleChecked(module.key, module.scopes)}
-                    indeterminate={isModuleIndeterminate(module.key, module.scopes)}
-                    onChange={(e) => {
-                      const checked = e.currentTarget.checked ?? false;
-                      toggleModule(module.key, module.scopes, checked);
-                    }}
-                    label={module.label}
-                    color="orange"
-                  />
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <Stack gap={0}>
-                    {module.scopes.map((scope) => (
-                      <Group
-                        key={`${module.key}-${scope}`}
-                        justify="space-between"
-                        py="sm"
-                        className="border-b border-[#E1E0E0]"
-                      >
-                        <Text size="sm">{scope}</Text>
+          {modulesLoading ? (
+            <Text size="sm" c="dimmed">
+              Loading permission modules...
+            </Text>
+          ) : roleModules.length === 0 ? (
+            <EmptySection
+              format="compact"
+              title="No Permission Modules"
+              description="No modules are currently available for role permissions."
+            />
+          ) : (
+            <Accordion chevronPosition="right" radius="md" variant="separated">
+              {roleModules.map((roleModule) => (
+                <Accordion.Item key={roleModule.key} value={roleModule.key}>
+                  <Accordion.Control>
+                    <Checkbox
+                      checked={isModuleChecked(roleModule.key)}
+                      indeterminate={isModuleIndeterminate(roleModule.key)}
+                      onChange={(e) => {
+                        const checked = e.currentTarget.checked ?? false;
+                        toggleModule(roleModule.key, checked);
+                      }}
+                      label={roleModule.label}
+                      color="orange"
+                    />
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Stack gap={0}>
+                      {roleModule.scopes.map((scope) => (
+                        <Group
+                          key={`${roleModule.key}-${scope}`}
+                          justify="space-between"
+                          py="sm"
+                          className="border-b border-[#E1E0E0]"
+                        >
+                          <Text size="sm">{scope}</Text>
 
-                        <Group gap="xl">
-                          {PERMISSION_ACTIONS.map((action) => (
-                            <Checkbox
-                              key={`${module.key}-${scope}-${action}`}
-                              labelPosition="left"
-                              label={actionLabelMap[action]}
-                              color="orange"
-                              checked={permissions[module.key][scope][action]}
-                              onChange={(e) => {
-                                const checked = e.currentTarget.checked ?? false;
-                                setPermissions((prev) => ({
-                                  ...prev,
-                                  [module.key]: {
-                                    ...prev[module.key],
-                                    [scope]: {
-                                      ...prev[module.key][scope],
-                                      [action]: checked,
+                          <Group gap="xl">
+                            {PERMISSION_ACTIONS.map((action) => (
+                              <Checkbox
+                                key={`${roleModule.key}-${scope}-${action}`}
+                                labelPosition="left"
+                                label={actionLabelMap[action]}
+                                color="orange"
+                                checked={permissions[roleModule.key]?.[scope]?.[action] ?? false}
+                                onChange={(e) => {
+                                  const checked = e.currentTarget.checked ?? false;
+                                  setPermissions((prev) => ({
+                                    ...prev,
+                                    [roleModule.key]: {
+                                      MODULE: {
+                                        ...getDefaultActions(),
+                                        ...prev[roleModule.key]?.MODULE,
+                                        [action]: checked,
+                                      },
                                     },
-                                  },
-                                }));
-                              }}
-                            />
-                          ))}
+                                  }));
+                                }}
+                              />
+                            ))}
+                          </Group>
                         </Group>
-                      </Group>
-                    ))}
-                  </Stack>
-                </Accordion.Panel>
-              </Accordion.Item>
-            ))}
-          </Accordion>
+                      ))}
+                    </Stack>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              ))}
+            </Accordion>
+          )}
         </Stack>
       )}
 
@@ -433,6 +430,7 @@ export function CreateRoleModal({
           radius="xl"
           onClick={step === "details" ? goToPermissions : handleCreateRole}
           loading={step === "permissions" ? createRoleMutation.isPending : false}
+          disabled={modulesLoading || roleModules.length === 0}
         >
           {step === "details" ? "Continue" : "Create Role"}
         </Button>

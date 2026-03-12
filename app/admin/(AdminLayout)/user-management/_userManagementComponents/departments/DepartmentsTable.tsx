@@ -18,7 +18,7 @@ import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useDepartments, type DepartmentItem } from "../../hooks/useDepartments";
-import { usePatchData, useDeleteData } from "@/app/_lib/api/hooks";
+import { usePatchData, useDeleteData, useGetExportData } from "@/app/_lib/api/hooks";
 import {
   adminApi,
   type UpdateDepartmentStatusPayload,
@@ -117,6 +117,35 @@ export default function DepartmentsTable() {
             apiResponse?.error?.message ??
             error.message ??
             "Unable to delete department. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const exportDepartmentsMutation = useGetExportData(
+    () => adminApi.management.departments.export(),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-departments-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Departments Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export departments at the moment. Please try again.",
           color: "red",
         });
       },
@@ -254,6 +283,9 @@ export default function DepartmentsTable() {
             color="#DD4F05"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportDepartmentsMutation.mutate()}
+            loading={exportDepartmentsMutation.isPending}
+            disabled={exportDepartmentsMutation.isPending}
           >
             Export
           </Button>

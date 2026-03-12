@@ -20,7 +20,10 @@ export function useVerifyOtp(
       const apiResponse = (error as unknown as ApiError).data as ApiResponse;
       notifications.show({
         title: "Invalid OTP",
-        message: apiResponse?.error?.message ?? error.message ?? "OTP verification failed. Please check the code and try again.",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "OTP verification failed. Please check the code and try again.",
         color: "red",
       });
       options?.onError?.(error, variables, context, mutation);

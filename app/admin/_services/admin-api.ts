@@ -43,6 +43,14 @@ export interface UpdateDepartmentStatusPayload {
   isActive: boolean;
 }
 
+export interface UpdateRoleStatusPayload {
+  isActive: boolean;
+}
+
+export interface ManagementModulesResponseData {
+  modules: string[];
+}
+
 export interface CreateAgentPayload {
   name: string;
   email: string;
@@ -60,6 +68,25 @@ export interface AgentDetailsResponseData {
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;
+  branch?: {
+    id: string;
+    name: string;
+    state?: string;
+    address?: string;
+    email?: string;
+    phoneNumber?: string;
+    branchManager?: string;
+  } | null;
+  attachments?: Array<{
+    id: string;
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    mimeType?: string;
+    createdAt?: string;
+  }>;
+  totalTransactions?: number;
+  transactionValue?: number;
 }
 
 export interface UpdateAgentStatusPayload {
@@ -100,6 +127,46 @@ export interface AdminRoleDetails {
     users: number;
   };
 }
+
+export interface FranchiseStatsData {
+  total: number;
+  active: number;
+  deactivated: number;
+  pendingApproval: number;
+}
+
+export type AdminTransactionListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  step?: string;
+  type?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export interface AdminTransactionStatsData {
+  underReview: number;
+  rejected: number;
+  requestInformation: number;
+  approved: number;
+}
+
+export type FranchiseListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+};
 
 export const adminApi = {
   // ==================== Auth ====================
@@ -166,6 +233,25 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.auditTrail, {
         params,
       }),
+
+    export: async (params?: {
+      search?: string;
+      module?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.auditTrailExport,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
   },
 
   // ==================== Agent ====================
@@ -185,6 +271,26 @@ export const adminApi = {
         { params }
       ),
 
+    export: async (params?: {
+      search?: string;
+      isActive?: boolean;
+      branch?: string;
+      fromDate?: string;
+      toDate?: string;
+      sort?: string;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.agent.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.stats
@@ -193,6 +299,21 @@ export const adminApi = {
     getById: (id: string) =>
       apiClient.get<ApiResponse<AgentDetailsResponseData>>(
         API_ENDPOINTS.admin.agent.getById(id)
+      ),
+
+    transactions: (
+      id: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.agent.transactions(id),
+        { params }
       ),
 
     updateStatus: (id: string, data: UpdateAgentStatusPayload) =>
@@ -219,6 +340,25 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.customers.list, {
         params,
       }),
+
+    export: async (params?: {
+      search?: string;
+      isActive?: boolean;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.customers.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getAll: () =>
+      apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.customers.all),
 
     getCounts: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.counts),
@@ -270,6 +410,74 @@ export const adminApi = {
     },
   },
 
+  // ==================== Tickets ====================
+  tickets: {
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.list, {
+        params,
+      }),
+
+    export: async (params?: {
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.tickets.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    create: (data: FormData) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.create, data),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.stats),
+
+    getCaseTypes: () =>
+      apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.tickets.caseTypes),
+  },
+
+  // ==================== Outlet ====================
+  outlet: {
+    franchises: {
+      list: (params?: FranchiseListParams) =>
+        apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.list, {
+          params,
+        }),
+
+      export: async (params?: { search?: string; status?: string }) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.franchises.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
+      getStats: () =>
+        apiClient.get<ApiResponse<FranchiseStatsData>>(API_ENDPOINTS.admin.outlet.franchises.stats),
+    },
+  },
+
   // ==================== Management ====================
   management: {
     lookups: (query: LookupQuery) =>
@@ -277,12 +485,31 @@ export const adminApi = {
         params: { query },
       }),
 
+    modules: {
+      list: () =>
+        apiClient.get<ApiResponse<ManagementModulesResponseData>>(
+          API_ENDPOINTS.admin.management.modules
+        ),
+    },
+
     users: {
       list: (params?: { page?: number; limit?: number; search?: string }) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.list,
           { params }
         ),
+
+      export: async () => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.users.export
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
 
       create: (data: CreateAdminUserPayload) =>
         apiClient.post<ApiResponse<unknown>>(
@@ -324,6 +551,18 @@ export const adminApi = {
           { params }
         ),
 
+      exportActivities: async (id: string) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.users.activitiesExport(id)
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       getStats: () =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.stats
@@ -331,6 +570,18 @@ export const adminApi = {
     },
 
     roles: {
+      export: async () => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.roles.export
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       create: (data: CreateRolePayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.create,
@@ -340,6 +591,12 @@ export const adminApi = {
       update: (id: string, data: CreateRolePayload) =>
         apiClient.put<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.roles.update(id),
+          data
+        ),
+
+      updateStatus: (id: string, data: UpdateRoleStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.management.roles.updateStatus(id),
           data
         ),
 
@@ -366,6 +623,18 @@ export const adminApi = {
     },
 
     departments: {
+      export: async () => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.management.departments.export
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       create: (data: CreateDepartmentPayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.departments.create,
@@ -404,6 +673,16 @@ export const adminApi = {
 
   // ==================== Transactions ====================
   transactions: {
+    list: (params?: AdminTransactionListParams) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.transactions.list, {
+        params,
+      }),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<AdminTransactionStatsData>>(
+        API_ENDPOINTS.admin.transactions.stats
+      ),
+
     review: (id: string, data: { notes?: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.review(id),

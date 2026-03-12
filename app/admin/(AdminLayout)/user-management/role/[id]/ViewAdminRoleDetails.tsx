@@ -21,8 +21,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useAdminRoleDetails } from "../../hooks/useAdminRoleDetails";
 import { adminRoutes } from "@/lib/adminRoutes";
-import { useDeleteData } from "@/app/_lib/api/hooks";
-import { adminApi } from "@/app/admin/_services/admin-api";
+import { useDeleteData, usePatchData } from "@/app/_lib/api/hooks";
+import { adminApi, type UpdateRoleStatusPayload } from "@/app/admin/_services/admin-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
@@ -85,13 +85,49 @@ export default function ViewAdminRoleDetails() {
   }, 0);
 
   const handleConfirm = () => {
-    setStatusOverride((prev) => {
-      const current = prev ?? (role?.isActive ? "Active" : "Deactivated");
-      return current === "Active" ? "Deactivated" : "Active";
+    if (!roleId || toggleRoleStatusMutation.isPending) return;
+    const isCurrentlyActive = status === "Active";
+    toggleRoleStatusMutation.mutate({
+      isActive: !isCurrentlyActive,
     });
-    setConfirmOpen(false);
-    setSuccessOpen(true);
   };
+
+  const toggleRoleStatusMutation = usePatchData(
+    (payload: UpdateRoleStatusPayload) => adminApi.management.roles.updateStatus(roleId!, payload),
+    {
+      onSuccess: async (_response, variables) => {
+        setStatusOverride(variables.isActive ? "Active" : "Deactivated");
+        setConfirmOpen(false);
+        setSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.roles.all()],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.roles.stats()],
+          }),
+          ...(roleId
+            ? [
+                queryClient.invalidateQueries({
+                  queryKey: [...adminKeys.management.roles.detail(roleId)],
+                }),
+              ]
+            : []),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: `${actionVerb} Role Failed`,
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update role status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const deleteRoleMutation = useDeleteData(
     (id: string) => adminApi.management.roles.delete(id),
@@ -288,6 +324,7 @@ export default function ViewAdminRoleDetails() {
         primaryButtonText={`Yes, ${actionVerb} Role`}
         secondaryButtonText="No, Close"
         onPrimary={handleConfirm}
+        loading={toggleRoleStatusMutation.isPending}
       />
 
       {/* Success Modal */}
