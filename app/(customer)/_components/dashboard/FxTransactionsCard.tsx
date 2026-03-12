@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Tabs } from "@mantine/core";
 import { formatCurrency } from "../../_lib/formatCurrency";
 import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
@@ -10,6 +10,11 @@ import SeeAllButton from "./SeeAllButton";
 import { FilterTabs } from "../common";
 import TransactionListItem from "./TransactionListItem";
 import { useRouter } from "next/navigation";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import type { TransactionListItem as ApiTransactionListItem, TransactionsListApiResponse } from "@/app/_lib/api/types";
+import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
 const FILTER_TABS = [
   { value: "all", label: "All" },
   { value: "fx", label: "FX" },
@@ -20,23 +25,32 @@ const FILTER_TABS = [
 
 type TxCategory = (typeof FILTER_TABS)[number]["value"];
 
-const MOCK_FX_TRANSACTIONS: {
-  id: string;
-  date: string;
-  amount: number;
-  category: Exclude<TxCategory, "all">;
-}[] = [
-  { id: "GHA67AGHA", date: "April 11, 2025 • 04:00 PM", amount: 2000, category: "fx" },
-  { id: "PTA8821K", date: "April 10, 2025 • 11:20 AM", amount: 500, category: "pta" },
-  { id: "GHA67AGHA", date: "April 9, 2025 • 03:15 PM", amount: 1500, category: "fx" },
-  { id: "BTA0012M", date: "April 8, 2025 • 09:45 AM", amount: 800, category: "bta" },
-  { id: "MED3345L", date: "April 7, 2025 • 02:00 PM", amount: 320, category: "medicals" },
-];
-
 export default function FxTransactionsCard() {
   const [activeFilter, setActiveFilter] = useState("all");
   const router = useRouter();
   const currencyCode = useSelectedCurrencyCode();
+
+  const listParams = useMemo(
+    () => ({
+      page: 1,
+      limit: 6,
+      sortBy: "createdAt",
+      sortOrder: "desc" as const,
+    }),
+    []
+  );
+
+  const { data: apiResponse, isLoading } = useFetchData<TransactionsListApiResponse>(
+    [...customerKeys.transactions.list(listParams)],
+    () => customerApi.transactions.list(listParams),
+    true
+  );
+
+  const transactions: ApiTransactionListItem[] = useMemo(
+    () => apiResponse?.data ?? [],
+    [apiResponse]
+  );
+
   return (
     <SectionCard>
       <SectionHeader title="FX transactions" action={<SeeAllButton onClick={() => router.push("/transactions")} />} />
@@ -51,14 +65,22 @@ export default function FxTransactionsCard() {
           <FilterTabs items={FILTER_TABS} value={activeFilter} />
         </div>
         {FILTER_TABS.map((tab) => {
-          const filtered =
+          const filtered: ApiTransactionListItem[] =
             tab.value === "all"
-              ? MOCK_FX_TRANSACTIONS
-              : MOCK_FX_TRANSACTIONS.filter((tx) => tx.category === tab.value);
+              ? transactions
+              : tab.value === "fx"
+              ? transactions.filter((tx) => tx.group === "BUY" || tx.group === "SELL")
+              : tab.value === "pta"
+              ? transactions.filter((tx) => tx.type === "PTA")
+              : tab.value === "bta"
+              ? transactions.filter((tx) => tx.type === "BTA")
+              : transactions.filter((tx) => tx.type === "MEDICAL");
           return (
             <Tabs.Panel key={tab.value} value={tab.value} className="min-h-[300px]">
               <div className="">
-                {filtered.length === 0 ? (
+                {isLoading ? (
+                  <p className="py-8 text-center text-sm text-gray-500">Loading transactions…</p>
+                ) : filtered.length === 0 ? (
                   <p className="py-8 text-center text-sm text-gray-500">
                     {tab.value === "all" ? "No transactions" : `No ${tab.label.toLowerCase()} transactions`}
                   </p>
@@ -66,9 +88,9 @@ export default function FxTransactionsCard() {
                   filtered.map((tx, i) => (
                     <TransactionListItem
                       key={`${tx.id}-${i}`}
-                      primaryText={tx.id}
-                      secondaryText={tx.date}
-                      amount={formatCurrency(tx.amount, currencyCode).formatted}
+                      primaryText={tx.referenceNumber}
+                      secondaryText={formatHeaderDateTime(tx.createdAt)}
+                      amount={formatCurrency(Number(tx.foreignAmount ?? 0), currencyCode).formatted}
                     />
                   ))
                 )}

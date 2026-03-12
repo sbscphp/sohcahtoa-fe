@@ -53,6 +53,13 @@ export const API_ENDPOINTS = {
     forgotPassword: "/api/auth/forgot-password",
     verifyResetOtp: "/api/auth/verify-reset-otp",
     resetPassword: "/api/auth/reset-password",
+
+    // Agent auth flow
+    agent: {
+      login: "/api/auth/agent/login",
+      verifyLogin: "/api/auth/agent/verify-login",
+      createPassword: "/api/auth/agent/create-password",
+    },
   },
   
   // Transactions

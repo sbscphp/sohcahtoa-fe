@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { PasswordInput } from "@mantine/core";
+import { useState, useMemo } from "react";
+import { PasswordInput, Anchor } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { notifications } from "@mantine/notifications";
 import { AgentAuthLayout } from "@/app/agent/_components/auth/AuthLayout";
 import { PasswordRequirements } from "@/app/agent/_components/auth/PasswordRequirements";
 import { PasswordCreatedModal } from "@/app/agent/_components/auth/PasswordCreatedModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { agentApi } from "@/app/agent/_services/agent-api";
 
 const passwordSchema = z
   .object({
@@ -32,8 +35,14 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function CreatePasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showRequirements, setShowRequirements] = useState(false);
+
+  const email = useMemo(() => searchParams.get("email") || "", [searchParams]);
+  const otp = useMemo(() => searchParams.get("otp") || "", [searchParams]);
+
+  const createPasswordMutation = useCreateData(agentApi.auth.createPassword);
 
   const form = useForm<PasswordFormValues>({
     initialValues: {
@@ -45,13 +54,38 @@ export default function CreatePasswordPage() {
   });
 
   const handleSubmit = form.onSubmit(async (values) => {
-    // Mock API call - replace with actual API
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error("Password creation failed", error);
+    if (!email || !otp) {
+      notifications.show({
+        title: "Link invalid or expired",
+        message:
+          "We could not find the email or code for this password setup. Please use the link from your email again.",
+        color: "red",
+      });
+      return;
     }
+
+    createPasswordMutation.mutate(
+      {
+        email,
+        otp,
+        password: values.password,
+        confirmPassword: values.confirmPassword,
+      },
+      {
+        onSuccess: (response) => {
+          setShowSuccessModal(true);
+        },
+        onError: (error) => {
+          notifications.show({
+            title: "Password creation failed",
+            message:
+              error.message ||
+              "We were unable to set your password. Please try again.",
+            color: "red",
+          });
+        },
+      }
+    );
   });
 
   const handleContinue = () => {
@@ -68,7 +102,7 @@ export default function CreatePasswordPage() {
               Create password
             </h1>
             <p className="text-body-text-100 text-base">
-              This password will be used every time you sign in as an Agent. Make sure it's unique and secure for you.
+              This password will be used every time you sign in as an Agent. Make sure it&apos;s unique and secure for you.
             </p>
           </div>
 
@@ -99,13 +133,27 @@ export default function CreatePasswordPage() {
               />
             </div>
 
+            <div className="flex justify-end gap-2">
+            <Anchor
+              component="button"
+              type="button"
+              c="red"
+              size="sm"
+              underline="always"
+              onClick={() => router.push("/agent/auth/login")}
+            >
+              Return to Login
+            </Anchor>
+          </div>
+
             <CustomButton
               buttonType="primary"
               type="submit"
               size="lg"
               radius="xl"
               fullWidth
-              disabled={!form.isValid()}
+            loading={createPasswordMutation.isPending}
+            disabled={!form.isValid() || createPasswordMutation.isPending}
               className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
             >
               Log In →

@@ -23,6 +23,7 @@ export const customerKeys = {
       [...customerKeys.transactions.lists(), filters] as const,
     details: () => [...customerKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...customerKeys.transactions.details(), id] as const,
+    overview: () => [...customerKeys.transactions.all, "overview"] as const,
   },
   
   payments: {
@@ -59,6 +60,18 @@ export const customerKeys = {
     detail: (id: string) => [...customerKeys.documents.details(), id] as const,
     byTransaction: (transactionId: string) =>
       [...customerKeys.documents.all, "transaction", transactionId] as const,
+  },
+  
+  support: {
+    all: ["customer", "support"] as const,
+    tickets: {
+      all: ["customer", "support", "tickets"] as const,
+      lists: () => [...customerKeys.support.tickets.all, "list"] as const,
+      list: (params?: { page?: number; limit?: number }) =>
+        [...customerKeys.support.tickets.lists(), params] as const,
+      details: () => [...customerKeys.support.tickets.all, "detail"] as const,
+      detail: (id: string) => [...customerKeys.support.tickets.details(), id] as const,
+    },
   },
 } as const;
 

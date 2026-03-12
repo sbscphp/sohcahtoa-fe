@@ -5,6 +5,8 @@ import type { CSSProperties } from "react";
  * Success/50 bg, Success/700 text per design.
  */
 const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
+  open: { bg: "#ECFDF3", textColor: "#027A48" },
+  closed: { bg: "#FEF2F2", textColor: "#B91C1C" },
   approved: { bg: "#ECFDF3", textColor: "#027A48" },
   success: { bg: "#ECFDF3", textColor: "#027A48" },
   completed: { bg: "#ECFDF3", textColor: "#027A48" },

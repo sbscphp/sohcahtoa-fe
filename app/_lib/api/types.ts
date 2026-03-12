@@ -394,6 +394,33 @@ export interface TransactionsListApiResponse {
   };
 }
 
+export interface TransactionOverviewGroupSummary {
+  totalAmount: number;
+  currency: string;
+  transactionCount: number;
+}
+
+export interface TransactionOverviewData {
+  all: TransactionOverviewGroupSummary;
+  buy: TransactionOverviewGroupSummary;
+  sell: TransactionOverviewGroupSummary;
+  remittance: TransactionOverviewGroupSummary;
+}
+
+export interface TransactionOverviewResponse {
+  success: boolean;
+  data: TransactionOverviewData;
+}
+
+export interface TransactionOverviewCustomRate {
+  currency: string;
+  rate: number;
+}
+
+export interface TransactionOverviewRequest {
+  customRates?: TransactionOverviewCustomRate[];
+}
+
 export interface TransactionDetail extends Transaction {
   transactionDetails?: {
     transactionId: string;
@@ -517,6 +544,60 @@ export interface TransactionDetailApiResponse {
   success: boolean;
   data: TransactionDetailData;
   metadata?: { timestamp?: string; requestId?: string; version?: string };
+}
+
+// ==================== Support Types ====================
+
+export type SupportTicketCategory =
+  | "TRANSACTION_ISSUE"
+  | "ACCOUNT_ACCESS"
+  | "PAYMENT_ISSUE"
+  | "DOCUMENT_VERIFICATION"
+  | "TECHNICAL_ISSUE"
+  | "COMPLIANCE_INQUIRY"
+  | "GENERAL_INQUIRY"
+  | "OTHER";
+
+export interface SupportTicket {
+  id: string;
+  reference: string;
+  category: SupportTicketCategory;
+  status: string;
+  subject?: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportTicketListResponse {
+  success: boolean;
+  data: SupportTicket[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface SupportTicketDetail extends SupportTicket {
+  messages?: {
+    id: string;
+    from: string;
+    message: string;
+    createdAt: string;
+  }[];
+  attachments?: {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    uploadedAt: string;
+  }[];
+}
+
+export interface SupportTicketDetailResponse {
+  success: boolean;
+  data: SupportTicketDetail;
 }
 
 export interface UpdateTransactionRequest {

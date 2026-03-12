@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
 
 import { AgentAuthLayout } from "@/app/agent/_components/auth/AuthLayout";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -35,6 +37,10 @@ export default function AgentForgotPasswordPage() {
   const [passwordCreatedModalOpened, setPasswordCreatedModalOpened] =
     useState(false);
 
+  const forgotPasswordMutation = useCreateData(customerApi.auth.forgotPassword);
+  const verifyResetOtpMutation = useCreateData(customerApi.auth.verifyResetOtp);
+  const resetPasswordMutation = useCreateData(customerApi.auth.resetPassword);
+
   useEffect(() => {
     if (currentStep === "otp" && timeLeft > 0) {
       const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
@@ -45,19 +51,38 @@ export default function AgentForgotPasswordPage() {
   const handleEmailSubmit = (values: EmailFormValues) => {
     setUserEmail(values.email);
     setEmailLoading(true);
-    // Mock API – replace with agent auth API when available
-    setTimeout(() => {
-      setEmailLoading(false);
-      setOtpSentModalOpened(true);
-    }, 600);
+    forgotPasswordMutation.mutate(
+      { email: values.email },
+      {
+        onSuccess: () => {
+          setOtpSentModalOpened(true);
+        },
+        onError: () => {
+          setOtpErrorModalOpened(true);
+        },
+        onSettled: () => {
+          setEmailLoading(false);
+        },
+      }
+    );
   };
 
   const handlePasswordSubmit = (values: CreatePasswordFormValues) => {
     setPasswordLoading(true);
-    setTimeout(() => {
-      setPasswordLoading(false);
-      setPasswordCreatedModalOpened(true);
-    }, 600);
+    resetPasswordMutation.mutate(
+      { resetToken, newPassword: values.password },
+      {
+        onSuccess: () => {
+          setPasswordCreatedModalOpened(true);
+        },
+        onError: () => {
+          setOtpErrorModalOpened(true);
+        },
+        onSettled: () => {
+          setPasswordLoading(false);
+        },
+      }
+    );
   };
 
   const handleOtpSentModalClose = () => {
@@ -75,20 +100,38 @@ export default function AgentForgotPasswordPage() {
     setOtp("");
     setTimeLeft(600);
     setResendLoading(true);
-    setTimeout(() => {
-      setResendLoading(false);
-    }, 500);
+    forgotPasswordMutation.mutate(
+      { email: userEmail },
+      {
+        onSettled: () => {
+          setResendLoading(false);
+        },
+      }
+    );
   };
 
   const handleOtpSubmit = () => {
     if (otp.length !== 6) return;
     setOtpLoading(true);
-    // Mock: accept any 6-digit OTP
-    setTimeout(() => {
-      setOtpLoading(false);
-      setResetToken("mock-reset-token");
-      setOtpSuccessModalOpened(true);
-    }, 600);
+    verifyResetOtpMutation.mutate(
+      { email: userEmail, otp },
+      {
+        onSuccess: (response) => {
+          if (response.success && response.data) {
+            setResetToken(response.data.resetToken);
+            setOtpSuccessModalOpened(true);
+          } else {
+            setOtpErrorModalOpened(true);
+          }
+        },
+        onError: () => {
+          setOtpErrorModalOpened(true);
+        },
+        onSettled: () => {
+          setOtpLoading(false);
+        },
+      }
+    );
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import { Table, Pagination, Skeleton } from "@mantine/core";
 import { useState, ReactNode } from "react";
+import { EmptyState } from "../EmptyState";
 
 export interface PaginatedTableColumn<T> {
   key: string;
@@ -19,6 +20,8 @@ interface PaginatedTableProps<T> {
   pageSize?: number;
   onRowClick?: (item: T) => void;
   keyExtractor?: (item: T, index: number) => string | number;
+  /** Title for the empty state */
+  emptyTitle?: string;
   /** Shown when data is empty and not loading. */
   emptyMessage?: string;
   /** When true, shows skeleton rows instead of data. */
@@ -33,6 +36,7 @@ export default function PaginatedTable<T>({
   pageSize = 10,
   onRowClick,
   keyExtractor,
+  emptyTitle = "No Data available",
   emptyMessage = "No data found",
   isLoading = false,
   skeletonRowCount = 4,
@@ -101,7 +105,11 @@ export default function PaginatedTable<T>({
             {showEmpty && (
               <Table.Tr>
                 <Table.Td colSpan={columns.length} className="text-center py-8 border-0">
-                  <p className="text-body-text-300 text-sm">{emptyMessage}</p>
+                  <EmptyState
+                    title={emptyTitle}
+                    description={emptyMessage}
+                    className="py-2"
+                  />
                 </Table.Td>
               </Table.Tr>
             )}

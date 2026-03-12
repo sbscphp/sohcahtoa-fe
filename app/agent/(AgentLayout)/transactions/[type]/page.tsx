@@ -2,6 +2,7 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
@@ -58,6 +59,8 @@ import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_component
 import type { TouristTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import type { TouristPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import { AgentCustomerSelectStep } from "@/app/agent/(AgentLayout)/transactions/_components/AgentCustomerSelectStep";
+import { AgentAddCustomerModal } from "@/app/agent/(AgentLayout)/transactions/_components/AgentAddCustomerModal";
 
 const TRANSACTION_TYPE_MAP = {
   vacation: "pta",
@@ -67,6 +70,8 @@ const TRANSACTION_TYPE_MAP = {
   "professional-body": "professional-body",
   tourist: "tourist",
 } as const;
+
+type AgentTransactionStep = "select-customer" | TransactionStep;
 
 export default function AgentTransactionCreationPage() {
   const router = useRouter();
@@ -80,16 +85,19 @@ export default function AgentTransactionCreationPage() {
   const isTourist = type === "tourist";
 
   const steps = useMemo(
-    () =>
-      getStepsForTransactionType(flowType).map((value) => ({
+    () => {
+      const base = getStepsForTransactionType(flowType).map((value) => ({
         label: STEP_LABELS[value],
         value,
-      })),
+      }));
+      return [{ label: "Select Customer", value: "select-customer" as AgentTransactionStep }, ...base];
+    },
     [flowType]
   );
 
-  const [activeStep, setActiveStep] = useState<TransactionStep>("upload-documents");
+  const [activeStep, setActiveStep] = useState<AgentTransactionStep>("select-customer");
   const [confirmationOpened, setConfirmationOpened] = useState(false);
+  const [addCustomerOpened, setAddCustomerOpened] = useState(false);
 
   const [uploadDocumentsData, setUploadDocumentsData] = useState<
     | UploadDocumentsFormData
@@ -119,6 +127,7 @@ export default function AgentTransactionCreationPage() {
     | null
   >(null);
 
+  const queryClient = useQueryClient();
   const userProfile = useAtomValue(userProfileAtom);
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(customerApi.transactions.create);
@@ -225,12 +234,25 @@ export default function AgentTransactionCreationPage() {
       setActiveStep("upload-documents");
     } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
       setActiveStep("amount");
-    } else {
+    } else if (activeStep === "select-customer") {
       router.push("/agent/transactions/new/buy");
+    } else {
+      setActiveStep("select-customer");
     }
   };
 
   const renderStepContent = () => {
+    if (activeStep === "select-customer") {
+      return (
+        <AgentCustomerSelectStep
+          onSubmit={() => {
+            setActiveStep("upload-documents");
+          }}
+          onAddCustomer={() => setAddCustomerOpened(true)}
+          onBack={handleBack}
+        />
+      );
+    }
     if (isTourist) {
       switch (activeStep) {
         case "upload-documents":
@@ -452,23 +474,30 @@ export default function AgentTransactionCreationPage() {
             : "Are you sure you want to initiate a new PTA?";
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-[800px] mx-auto">
-        <CustomStepper steps={steps} activeStep={activeStepIndex} className="mb-6" />
-        <div className="bg-white rounded-xl md:p-4 p-2">{renderStepContent()}</div>
+    <>
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-[800px] mx-auto">
+          <CustomStepper steps={steps} activeStep={activeStepIndex} className="mb-6" />
+          <div className="bg-white rounded-xl md:p-4 p-2">{renderStepContent()}</div>
+        </div>
+
+        <ConfirmationModal
+          opened={confirmationOpened}
+          onClose={() => setConfirmationOpened(false)}
+          title={confirmTitle}
+          description={confirmDescription}
+          confirmLabel="View Transaction"
+          cancelLabel="No, Close"
+          onConfirm={handleConfirmInitiate}
+          requireInfoConfirmation
+          loading={uploadDocuments.isPending || createTransaction.isPending}
+        />
       </div>
 
-      <ConfirmationModal
-        opened={confirmationOpened}
-        onClose={() => setConfirmationOpened(false)}
-        title={confirmTitle}
-        description={confirmDescription}
-        confirmLabel="View Transaction"
-        cancelLabel="No, Close"
-        onConfirm={handleConfirmInitiate}
-        requireInfoConfirmation
-        loading={uploadDocuments.isPending || createTransaction.isPending}
+      <AgentAddCustomerModal
+        opened={addCustomerOpened}
+        onClose={() => setAddCustomerOpened(false)}
       />
-    </div>
+    </>
   );
 }

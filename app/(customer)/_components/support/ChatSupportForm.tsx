@@ -3,25 +3,45 @@
 import { useRouter } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
-import { Button, TextInput, Select, Textarea } from "@mantine/core";
+import { Button, Select, Textarea } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
 import { TransactionSuccessModal } from "@/app/(customer)/_components/modals/TransactionSuccessModal";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDown } from "@hugeicons/core-free-icons";
+import { useUploadData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import type { SupportTicketCategory } from "@/app/_lib/api/types";
+import { SuccessModal } from '../modals/SuccessModal';
 
-const CATEGORIES = [
-  "Account",
-  "Transaction",
-  "Verification",
-  "Technical",
-  "Other",
+const CATEGORY_OPTIONS: { value: SupportTicketCategory; label: string }[] = [
+  { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
+  { value: "ACCOUNT_ACCESS", label: "Account access" },
+  { value: "PAYMENT_ISSUE", label: "Payment issue" },
+  { value: "DOCUMENT_VERIFICATION", label: "Document verification" },
+  { value: "TECHNICAL_ISSUE", label: "Technical issue" },
+  { value: "COMPLIANCE_INQUIRY", label: "Compliance / regulatory inquiry" },
+  { value: "GENERAL_INQUIRY", label: "General inquiry" },
+  { value: "OTHER", label: "Other" },
 ];
 
+type CategoryValue = (typeof CATEGORY_OPTIONS)[number]["value"];
+
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const ATTACHMENT_ACCEPT_MIME = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+const ATTACHMENT_ACCEPT_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".doc", ".docx"];
+
 const initialValues = {
-  customerId: "2223334355",
-  category: "" as string,
+  category: "" as CategoryValue | "",
   description: "",
   attachment: null as FileWithPath | null,
 };
@@ -33,12 +53,14 @@ export default function ChatSupportForm() {
   const [successOpened, { open: openSuccess, close: closeSuccess }] =
     useDisclosure(false);
 
+  const createTicket = useUploadData(customerApi.support.tickets.create);
+
   const form = useForm({
     mode: "uncontrolled",
     initialValues,
     validate: {
-      customerId: (v) => (v?.trim() ? null : "Customer ID is required"),
-      description: (v) => (v?.trim() ? null : "Description is required"),
+      category: (v: string) => (v?.trim() ? null : "Category is required"),
+      description: (v: string) => (v?.trim() ? null : "Description is required"),
     },
   });
 
@@ -47,9 +69,30 @@ export default function ChatSupportForm() {
   });
 
   const handleConfirmSubmit = () => {
-    closeConfirm();
-    openSuccess();
-    form.reset();
+    const values = form.values;
+    const formData = new FormData();
+    formData.append("category", values.category);
+    formData.append("description", values.description);
+    if (values.attachment) {
+      formData.append("file", values.attachment, values.attachment.name);
+    }
+
+    createTicket.mutate(formData, {
+      onSuccess: () => {
+        closeConfirm();
+        openSuccess();
+        form.reset();
+      },
+      onError: (error) => {
+        closeConfirm();
+        handleApiError(error);
+      },
+    });
+  };
+
+  const handleAttachmentChange = (file: FileWithPath | null) => {
+    form.clearFieldError("attachment");
+    form.setFieldValue("attachment", file);
   };
 
   return (
@@ -65,33 +108,15 @@ export default function ChatSupportForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-       <TextInput
-            label="Customer ID"
-            required
-            placeholder="Customer ID"
-            size="md"
-            radius="md"
-            classNames={{
-              label: "text-sm font-medium text-[#6C6969]",
-              input: "border-gray-200 rounded-lg",
-            }}
-            {...form.getInputProps("customerId")}
-          />
-          <Select
+        <Select
             label="Category"
             placeholder="Select Category"
-            data={CATEGORIES}
+            data={CATEGORY_OPTIONS}
             size="md"
             radius="md"
             rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
-            classNames={{
-              label: "text-sm font-medium text-[#6C6969]",
-              input: "border-gray-200 rounded-lg",
-            }}
             {...form.getInputProps("category")}
           />
-       </div>
           <Textarea
             label="Description"
             required
@@ -109,7 +134,10 @@ export default function ChatSupportForm() {
             label="Attachment (optional)"
             required={false}
             value={form.values.attachment}
-            onChange={(file) => form.setFieldValue("attachment", file)}
+            onChange={handleAttachmentChange}
+            accept={ATTACHMENT_ACCEPT_MIME}
+            maxSizeBytes={MAX_ATTACHMENT_SIZE_BYTES}
+            error={form.errors.attachment as string | undefined}
             placeholder="Click to upload"
           />
           <p className="text-body-text-200 text-sm">
@@ -128,6 +156,8 @@ export default function ChatSupportForm() {
             <Button
               type="submit"
               radius="xl"
+              loading={createTicket.isPending}
+              disabled={createTicket.isPending}
               className="min-h-[44px] px-6 bg-primary-400 hover:bg-primary-500 text-white font-medium"
             >
               Submit Form
@@ -145,14 +175,15 @@ export default function ChatSupportForm() {
         cancelLabel="No, Close"
         onConfirm={handleConfirmSubmit}
         variant="info"
+        loading={createTicket.isPending}
       />
-      <TransactionSuccessModal
+      <SuccessModal
         opened={successOpened}
         onClose={closeSuccess}
         title="Form Submitted"
-        description="Your support request has been submitted successfully."
-        confirmLabel="Continue"
-        onConfirm={() => {
+        message="Your support request has been submitted successfully."
+        buttonText="Continue"
+        onButtonClick={() => {
           closeSuccess();
           router.push("/support");
         }}
