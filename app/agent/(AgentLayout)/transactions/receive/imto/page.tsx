@@ -37,7 +37,7 @@ export default function AgentReceiveIMTOPage() {
   const [confirmationOpened, setConfirmationOpened] = useState(false);
 
   const steps = useMemo(
-    () => STEP_LABELS.map((label, i) => ({ label, value: i })),
+    () => STEP_LABELS.map((label, i) => ({ label, value: String(i) })),
     []
   );
 
@@ -123,8 +123,8 @@ export default function AgentReceiveIMTOPage() {
   const stepperSteps =
     stepIndex >= showStepperFromStep
       ? [
-          { label: "Disbursement Options", value: 0 },
-          { label: "Location / Bank", value: 1 },
+          { label: "Disbursement Options", value: "0" },
+          { label: "Location / Bank", value: "1" },
         ]
       : steps.slice(0, 3);
   const stepperActiveIndex =
@@ -139,7 +139,7 @@ export default function AgentReceiveIMTOPage() {
       <div className="bg-white rounded-2xl md:p-8 p-4 w-full md:max-w-[800px] mx-auto">
         {stepIndex >= showStepperFromStep ? (
           <CustomStepper
-            steps={stepperSteps as { label: string; value: number }[]}
+            steps={stepperSteps}
             activeStep={stepperActiveIndex}
             className="mb-6"
           />
