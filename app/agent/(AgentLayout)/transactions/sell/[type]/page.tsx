@@ -10,19 +10,13 @@ import {
 } from "@/app/(customer)/_utils/transaction-flow";
 import ResidentUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import ResidentTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
-import ResidentPickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
 import TouringNigeriaUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/touring-nigeria/TouringNigeriaUploadDocumentsStep";
-import TouringNigeriaDropOffPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/touring-nigeria/TouringNigeriaDropOffPointStep";
 import ExpatriateUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/expatriate/ExpatriateUploadDocumentsStep";
-import ExpatriatePickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/expatriate/ExpatriatePickupPointStep";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
 import type { ResidentUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import type { ResidentTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
-import type { ResidentPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
 import type { TouringNigeriaUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/touring-nigeria/TouringNigeriaUploadDocumentsStep";
-import type { TouringNigeriaDropOffPointFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/touring-nigeria/TouringNigeriaDropOffPointStep";
 import type { ExpatriateUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/expatriate/ExpatriateUploadDocumentsStep";
-import type { ExpatriatePickupPointFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/expatriate/ExpatriatePickupPointStep";
 
 const SELL_TYPE_MAP = {
   resident: "resident",
@@ -44,10 +38,12 @@ export default function AgentSellTransactionCreationPage() {
 
   const steps = useMemo(() => {
     const overrides = STEP_LABEL_OVERRIDES[flowType];
-    return getStepsForTransactionType(flowType).map((value) => ({
-      label: overrides?.[value] ?? STEP_LABELS[value],
-      value,
-    }));
+    return getStepsForTransactionType(flowType)
+      .filter((value) => value !== "pickup-point")
+      .map((value) => ({
+        label: overrides?.[value] ?? STEP_LABELS[value],
+        value,
+      }));
   }, [flowType]);
 
   const [activeStep, setActiveStep] = useState<TransactionStep>("upload-documents");
@@ -61,12 +57,6 @@ export default function AgentSellTransactionCreationPage() {
   >(null);
   const [transactionAmountData, setTransactionAmountData] =
     useState<ResidentTransactionAmountFormData | null>(null);
-  const [pickupPointData, setPickupPointData] = useState<
-    | ResidentPickupPointFormData
-    | TouringNigeriaDropOffPointFormData
-    | ExpatriatePickupPointFormData
-    | null
-  >(null);
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -82,16 +72,6 @@ export default function AgentSellTransactionCreationPage() {
 
   const handleTransactionAmountSubmit = (data: ResidentTransactionAmountFormData) => {
     setTransactionAmountData(data);
-    setActiveStep("pickup-point");
-  };
-
-  const handlePickupPointSubmit = (
-    data:
-      | ResidentPickupPointFormData
-      | TouringNigeriaDropOffPointFormData
-      | ExpatriatePickupPointFormData
-  ) => {
-    setPickupPointData(data);
     setConfirmationOpened(true);
   };
 
@@ -100,14 +80,12 @@ export default function AgentSellTransactionCreationPage() {
       flowType,
       uploadDocuments: uploadDocumentsData,
       transactionAmount: transactionAmountData,
-      pickupPoint: pickupPointData,
     });
     router.push("/agent/dashboard");
   };
 
   const handleBack = () => {
     if (activeStep === "amount") setActiveStep("upload-documents");
-    else if (activeStep === "pickup-point") setActiveStep("amount");
     else router.push("/agent/transactions/new/sell");
   };
 
@@ -127,14 +105,6 @@ export default function AgentSellTransactionCreationPage() {
             <ResidentTransactionAmountStep
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
-              onBack={handleBack}
-            />
-          );
-        case "pickup-point":
-          return (
-            <TouringNigeriaDropOffPointStep
-              initialValues={pickupPointData as TouringNigeriaDropOffPointFormData | undefined}
-              onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
             />
           );
@@ -160,14 +130,6 @@ export default function AgentSellTransactionCreationPage() {
               onBack={handleBack}
             />
           );
-        case "pickup-point":
-          return (
-            <ExpatriatePickupPointStep
-              initialValues={pickupPointData as ExpatriatePickupPointFormData | undefined}
-              onSubmit={handlePickupPointSubmit}
-              onBack={handleBack}
-            />
-          );
         default:
           return null;
       }
@@ -186,14 +148,6 @@ export default function AgentSellTransactionCreationPage() {
           <ResidentTransactionAmountStep
             initialValues={transactionAmountData || undefined}
             onSubmit={handleTransactionAmountSubmit}
-            onBack={handleBack}
-          />
-        );
-      case "pickup-point":
-        return (
-          <ResidentPickupPointStep
-            initialValues={pickupPointData as ResidentPickupPointFormData | undefined}
-            onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
           />
         );

@@ -117,9 +117,6 @@ export default function AgentTransactionCreationPage() {
     | TouristTransactionAmountFormData
     | null
   >(null);
-  const [pickupPointData, setPickupPointData] = useState<
-    PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData | null
-  >(null);
   const [bankDetailsData, setBankDetailsData] = useState<
     | SchoolFeesBankDetailsFormData
     | MedicalBankDetailsFormData
@@ -157,18 +154,11 @@ export default function AgentTransactionCreationPage() {
       | TouristTransactionAmountFormData
   ) => {
     setTransactionAmountData(data);
-    setActiveStep(
-      isSchoolFees || isMedical || isProfessionalBody
-        ? "bank-details"
-        : "pickup-point"
-    );
-  };
-
-  const handlePickupPointSubmit = (
-    data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
-  ) => {
-    setPickupPointData(data);
-    setConfirmationOpened(true);
+    if (isSchoolFees || isMedical) {
+      setActiveStep("bank-details");
+    } else {
+      setConfirmationOpened(true);
+    }
   };
 
   const handleBankDetailsSubmit = (
@@ -193,17 +183,11 @@ export default function AgentTransactionCreationPage() {
     const bag: TransactionFormDataBag = {
       uploadDocumentsData: uploadDocumentsData as Record<string, unknown>,
       transactionAmountData: transactionAmountData as Record<string, unknown>,
-      pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
+      pickupPointData: null,
       bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
     };
 
-    const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
-    if (hasPickup && !pickupPointData) {
-      setConfirmationOpened(false);
-      router.push("/agent/dashboard");
-      return;
-    }
-    if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
+    if ((isSchoolFees || isMedical) && !bankDetailsData) {
       setConfirmationOpened(false);
       router.push("/agent/dashboard");
       return;
@@ -232,7 +216,7 @@ export default function AgentTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
-    } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
+    } else if (activeStep === "bank-details") {
       setActiveStep("amount");
     } else if (activeStep === "select-customer") {
       router.push("/agent/transactions/new/buy");
@@ -275,14 +259,6 @@ export default function AgentTransactionCreationPage() {
               onBack={handleBack}
             />
           );
-        case "pickup-point":
-          return (
-            <TouristPickupPointStep
-              initialValues={pickupPointData || undefined}
-              onSubmit={handlePickupPointSubmit}
-              onBack={handleBack}
-            />
-          );
         default:
           return null;
       }
@@ -307,14 +283,6 @@ export default function AgentTransactionCreationPage() {
             <ProfessionalBodyTransactionAmountStep
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
-              onBack={handleBack}
-            />
-          );
-        case "bank-details":
-          return (
-            <ProfessionalBodyBankDetailsStep
-              initialValues={bankDetailsData || undefined}
-              onSubmit={handleBankDetailsSubmit}
               onBack={handleBack}
             />
           );
@@ -407,14 +375,6 @@ export default function AgentTransactionCreationPage() {
               onBack={handleBack}
             />
           );
-        case "pickup-point":
-          return (
-            <BTAPickupPointStep
-              initialValues={pickupPointData || undefined}
-              onSubmit={handlePickupPointSubmit}
-              onBack={handleBack}
-            />
-          );
         default:
           return null;
       }
@@ -434,14 +394,6 @@ export default function AgentTransactionCreationPage() {
           <PTATransactionAmountStep
             initialValues={transactionAmountData || undefined}
             onSubmit={handleTransactionAmountSubmit}
-            onBack={handleBack}
-          />
-        );
-      case "pickup-point":
-        return (
-          <PTAPickupPointStep
-            initialValues={pickupPointData || undefined}
-            onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
           />
         );
