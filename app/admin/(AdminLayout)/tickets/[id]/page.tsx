@@ -2,50 +2,103 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, Group, Text, Title, Button, Menu, Divider } from "@mantine/core";
+import { Card, Group, Text, Title, Button, Menu, Divider, Skeleton } from "@mantine/core";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import IncidentUpdatesOverlay from "@/app/admin/_components/IncidentUpdatesOverlay";
 import Communication from "@/app/admin/_components/Communication";
 import AssignIncidentModal from "../_ticketsComponents/AssignIncidentModal";
-import ChangeStatusModal, { type TicketStatusOption } from "../_ticketsComponents/ChangeStatusModal";
+import ChangeStatusModal, {
+  type TicketStatusOption,
+  type TicketStatusSelection,
+} from "../_ticketsComponents/ChangeStatusModal";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { Download } from "lucide-react";
+import { useTicketDetails } from "../hooks/useTicketDetails";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 
-const MOCK_TICKET = {
-  customerName: "Eddy Ubong",
-  dateCreated: "Nov 17 2025",
-  timeCreated: "11:00am",
-  status: "Active" as const,
-  incidentId: "2223334355",
-  category: "Transaction dispute",
-  priority: "High" as const,
-  docName: "Doc.pdf",
-  customerEmail: "eddy@example.com",
-  customerPhone: "+234 90 4747 2791",
-  description:
-    "A customer has reported a dispute regarding a recent transaction. They claim that the amount charged does not match their records, and they are seeking immediate resolution. This issue requires urgent attention to ensure customer satisfaction and trust.",
+const STATUS_PAYLOAD_MAP: Record<
+  TicketStatusOption,
+  "IN_PROGRESS" | "RESOLVED" | "REOPENED" | "CLOSED"
+> = {
+  "In-progress": "IN_PROGRESS",
+  Resolved: "RESOLVED",
+  "Re-opened": "REOPENED",
+  Closed: "CLOSED",
 };
 
 export default function ViewTicketPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { ticket, isLoading } = useTicketDetails(id);
 
   const [updatesOverlayOpen, setUpdatesOverlayOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
-  const [ticketStatus, setTicketStatus] = useState<string>(MOCK_TICKET.status);
+  const [ticketStatus, setTicketStatus] = useState<string | null>(null);
 
-  const ticket = MOCK_TICKET;
+  const updateStatusMutation = useCreateData(
+    (variables: TicketStatusSelection) =>
+      adminApi.tickets.updateStatus(id, {
+        status: STATUS_PAYLOAD_MAP[variables.status],
+        notes: variables.notes,
+      }),
+    {
+      onSuccess: async (_response, variables) => {
+        setTicketStatus(variables.status);
+        setChangeStatusOpen(false);
+
+        notifications.show({
+          title: "Status Updated",
+          message: "Ticket status was updated successfully.",
+          color: "green",
+        });
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.detail(id)],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.all],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+
+        notifications.show({
+          title: "Update Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update ticket status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const handleAssignIncident = () => setAssignModalOpen(true);
   const handleUpdate = () => router.push(adminRoutes.adminTicketUpdate(id));
   const handleChangeStatus = () => setChangeStatusOpen(true);
 
-  const handleStatusSelect = (status: TicketStatusOption) => {
-    setTicketStatus(status);
+  const handleStatusSelect = (selection: TicketStatusSelection) => {
+    updateStatusMutation.mutate(selection);
   };
+
+  const attachmentName = ticket?.firstAttachment?.fileName?.trim()
+    ? ticket.firstAttachment.fileName
+    : ticket?.firstAttachment?.fileUrl
+      ? ticket.firstAttachment.fileUrl.split("/").pop() || "Attachment"
+      : "--";
+  const displayedStatus = ticketStatus ?? ticket?.statusLabel ?? "--";
 
   return (
     <div className="w-full mx-auto">
@@ -54,13 +107,21 @@ export default function ViewTicketPage() {
         <Group justify="space-between" align="flex-start" wrap="wrap">
           <div>
             <Title order={3} className="text-gray-900 font-bold! text-2xl!" mb={"sm"}>
-              {ticket.customerName}
+              {isLoading ? <Skeleton height={28} width={220} /> : ticket?.customerName ?? "--"}
             </Title>
             <Group gap="xs" mt={4} align="center">
-              <Text size="sm" c="dimmed">
-                Date Created: {ticket.dateCreated} | {ticket.timeCreated}
-              </Text>
-              <StatusBadge status={ticketStatus} size="sm" />
+              {isLoading ? (
+                <Skeleton height={16} width={200} />
+              ) : (
+                <Text size="sm" c="dimmed">
+                  Date Created: {ticket?.createdDate ?? "--"} | {ticket?.createdTime ?? "--"}
+                </Text>
+              )}
+              {isLoading ? (
+                <Skeleton height={22} width={90} radius="xl" />
+              ) : (
+                <StatusBadge status={displayedStatus} size="sm" />
+              )}
             </Group>
           </div>
 
@@ -103,30 +164,42 @@ export default function ViewTicketPage() {
             Ticket Summary
           </Text>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailItem label="Incident ID" value={ticket.incidentId} />
-            <DetailItem label="Category" value={ticket.category} />
+            <DetailItem label="Incident ID" value={isLoading ? "..." : ticket?.reference ?? "--"} />
+            <DetailItem label="Category" value={isLoading ? "..." : ticket?.caseType ?? "--"} />
             <div className="space-y-1">
               <Text size="xs" className="text-body-text-50!" mb={4}>
                 Priority
               </Text>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden />
-                <Text fw={500} size="sm" className="text-red-600">
-                  {ticket.priority}
-                </Text>
-              </div>
+              {isLoading ? (
+                <Skeleton height={18} width={90} />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden />
+                  <Text fw={500} size="sm" className="text-red-600">
+                    {ticket?.priorityLabel ?? "--"}
+                  </Text>
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <Text size="xs" className="text-body-text-50!" mb={4}>
                 Doc
               </Text>
-              <a
-                href="#"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 underline hover:text-orange-600"
-              >
-                {ticket.docName}
-                <Download size={14} />
-              </a>
+              {isLoading ? (
+                <Skeleton height={18} width={100} />
+              ) : ticket?.firstAttachment?.fileUrl ? (
+                <a
+                  href={ticket.firstAttachment.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 underline hover:text-orange-600"
+                >
+                  {attachmentName}
+                  <Download size={14} />
+                </a>
+              ) : (
+                <Text size="sm">--</Text>
+              )}
             </div>
           </div>
         </section>
@@ -137,9 +210,12 @@ export default function ViewTicketPage() {
             Customer Details
           </Text>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailItem label="Customer" value={ticket.customerName} />
-            <DetailItem label="Email Address" value={ticket.customerEmail} />
-            <DetailItem label="Phone Number" value={ticket.customerPhone} />
+            <DetailItem label="Customer" value={isLoading ? "..." : ticket?.customerName ?? "--"} />
+            <DetailItem label="Email Address" value={isLoading ? "..." : ticket?.customerEmail ?? "--"} />
+            <DetailItem
+              label="Phone Number"
+              value={isLoading ? "..." : ticket?.customerPhoneNumber ?? "--"}
+            />
           </div>
         </section>
 
@@ -148,9 +224,13 @@ export default function ViewTicketPage() {
           <Text fw={500} className="text-orange-500! text-lg! mb-4!">
             Description
           </Text>
-          <Text size="sm" className="text-gray-700 leading-relaxed">
-            {ticket.description}
-          </Text>
+          {isLoading ? (
+            <Skeleton height={72} />
+          ) : (
+            <Text size="sm" className="text-gray-700 leading-relaxed">
+              {ticket?.description ?? "--"}
+            </Text>
+          )}
         </section>
       </Card>
 
@@ -173,6 +253,7 @@ export default function ViewTicketPage() {
         opened={changeStatusOpen}
         onClose={() => setChangeStatusOpen(false)}
         onSelect={handleStatusSelect}
+        loading={updateStatusMutation.isPending}
       />
     </div>
   );

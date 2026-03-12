@@ -135,6 +135,61 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export interface CreateFranchisePayload {
+  franchiseName: string;
+  state: string;
+  address: string;
+  contactPersonName: string;
+  email: string;
+  phoneNumber: string;
+  altPhoneNumber: string;
+}
+
+export interface OutletStatesData {
+  states: string[];
+}
+
+export interface TicketAttachment {
+  id: string;
+  ticketId: string;
+  fileUrl: string;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+  createdAt: string;
+}
+
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketDetailsResponseData {
+  id: string;
+  reference: string;
+  customerId: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhoneNumber: string | null;
+  caseType: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  assignedAgentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  attachments: TicketAttachment[];
+  comments: TicketComment[];
+}
+
+export interface UpdateTicketStatusPayload {
+  status: "IN_PROGRESS" | "RESOLVED" | "REOPENED" | "CLOSED" | "OPEN";
+  notes: string;
+}
+
 export type AdminTransactionListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -450,15 +505,33 @@ export const adminApi = {
 
     getCaseTypes: () =>
       apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.tickets.caseTypes),
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<TicketDetailsResponseData>>(
+        API_ENDPOINTS.admin.tickets.getById(id)
+      ),
+
+    updateStatus: (id: string, data: UpdateTicketStatusPayload) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.tickets.updateStatus(id),
+        data
+      ),
   },
 
   // ==================== Outlet ====================
   outlet: {
+    states: {
+      list: () =>
+        apiClient.get<ApiResponse<OutletStatesData>>(API_ENDPOINTS.admin.outlet.states),
+    },
     franchises: {
       list: (params?: FranchiseListParams) =>
         apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.list, {
           params,
         }),
+
+      create: (data: CreateFranchisePayload) =>
+        apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.create, data),
 
       export: async (params?: { search?: string; status?: string }) => {
         const response = await apiClient.get<Blob | string>(

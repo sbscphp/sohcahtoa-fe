@@ -166,6 +166,7 @@ export const adminKeys = {
     all: ["admin", "tickets"] as const,
     stats: () => [...adminKeys.tickets.all, "stats"] as const,
     caseTypes: () => [...adminKeys.tickets.all, "case-types"] as const,
+    detail: (id: string) => [...adminKeys.tickets.all, "detail", id] as const,
     list: (params?: {
       page?: number;
       limit?: number;
@@ -178,6 +179,10 @@ export const adminKeys = {
 
   outlet: {
     all: ["admin", "outlet"] as const,
+    states: {
+      all: () => [...adminKeys.outlet.all, "states"] as const,
+      list: () => [...adminKeys.outlet.states.all(), "list"] as const,
+    },
     franchises: {
       all: () => [...adminKeys.outlet.all, "franchises"] as const,
       stats: () => [...adminKeys.outlet.franchises.all(), "stats"] as const,
