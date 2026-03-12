@@ -180,7 +180,7 @@ export default function AuditTrailTable() {
 
             <TextInput
               placeholder="Enter keyword"
-              leftSection={<Search size={16} />}
+              leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
               onChange={(e) => {
                 setSearch(e.currentTarget.value);
