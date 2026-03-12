@@ -135,6 +135,42 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export interface TicketAttachment {
+  id: string;
+  ticketId: string;
+  fileUrl: string;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+  createdAt: string;
+}
+
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketDetailsResponseData {
+  id: string;
+  reference: string;
+  customerId: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhoneNumber: string | null;
+  caseType: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  assignedAgentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  attachments: TicketAttachment[];
+  comments: TicketComment[];
+}
+
 export type AdminTransactionListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -450,6 +486,11 @@ export const adminApi = {
 
     getCaseTypes: () =>
       apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.tickets.caseTypes),
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<TicketDetailsResponseData>>(
+        API_ENDPOINTS.admin.tickets.getById(id)
+      ),
   },
 
   // ==================== Outlet ====================

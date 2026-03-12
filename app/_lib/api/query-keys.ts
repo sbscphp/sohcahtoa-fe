@@ -166,6 +166,7 @@ export const adminKeys = {
     all: ["admin", "tickets"] as const,
     stats: () => [...adminKeys.tickets.all, "stats"] as const,
     caseTypes: () => [...adminKeys.tickets.all, "case-types"] as const,
+    detail: (id: string) => [...adminKeys.tickets.all, "detail", id] as const,
     list: (params?: {
       page?: number;
       limit?: number;

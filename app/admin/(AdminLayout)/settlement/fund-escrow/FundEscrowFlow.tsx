@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import {
   Modal,
   Text,
@@ -16,7 +16,7 @@ import {
   Card,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Trash, Calendar, Check, FileText } from "lucide-react";
@@ -26,22 +26,19 @@ import "@mantine/dates/styles.css";
 const escrowSchema = z.object({
   settlementAccount: z.string().min(1, "Settlement account is required"),
 
-  amount: z
-    .number({ invalid_type_error: "Amount is required" })
-    .min(1, "Amount must be greater than 0"),
+  amount: z.number({ message: "Amount is required" }).min(1, "Amount must be greater than 0"),
 
   referenceId: z.string().min(1, "Reference ID is required"),
 
-  // FIX: Use coerce.date() to handle strings/dates, and refine to ensure it's a valid date
-  dateOfFunding: z.coerce.date()
-    .refine((date) => !isNaN(date.getTime()), { message: "Date is required" }),
+  dateOfFunding: z.date({ message: "Date is required" }),
 
   receipt: z
     .any()
     .refine((file) => file instanceof File, "Receipt is required"),
 });
 
-type FormData = z.infer<typeof escrowSchema>;
+type FormData = z.output<typeof escrowSchema>;
+type FormInput = z.input<typeof escrowSchema>;
 
 // --- 2. Mock Data ---
 const SETTLEMENT_ACCOUNTS = [
@@ -153,15 +150,14 @@ export const FundEscrowForm = ({
   const {
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors, isValid },
-  } = useForm<FormData>({
+  } = useForm<FormInput, any, FormData>({
     resolver: zodResolver(escrowSchema),
     mode: "onChange",
   });
 
-  const selectedAccountValue = watch("settlementAccount");
+  const selectedAccountValue = useWatch({ control, name: "settlementAccount" });
   const selectedAccountLabel = SETTLEMENT_ACCOUNTS.find(
     (a) => a.value === selectedAccountValue,
   )?.label;
