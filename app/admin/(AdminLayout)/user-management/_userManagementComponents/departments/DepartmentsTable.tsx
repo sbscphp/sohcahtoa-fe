@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Text,
   Group,
@@ -16,170 +16,235 @@ import RowActionMenu from "@/app/admin/_components/RowActionMenu";
 import { ViewDepartmentModal } from "./ViewDepartmentModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomerStatus } from "../../../customer/[id]/page";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useDepartments, type DepartmentItem } from "../../hooks/useDepartments";
+import { usePatchData, useDeleteData, useGetExportData } from "@/app/_lib/api/hooks";
+import {
+  adminApi,
+  type UpdateDepartmentStatusPayload,
+} from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface Department {
-  name: string;
-  id: string;
-  createdDate: string;
-  createdTime: string;
-  createdBy: string;
-  createdById: string;
-  status: "Active" | "Deactivated";
-}
-
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const departments: Department[] = [
-  {
-    name: "Internal Control",
-    id: "7320",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Kunle Dairo",
-    createdById: "9023",
-    status: "Active",
-  },
-  {
-    name: "Risk Assessment",
-    id: "9023",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Marcus Lee",
-    createdById: "9025",
-    status: "Deactivated",
-  },
-  {
-    name: "Financial Reporting",
-    id: "1234",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Sofia Wang",
-    createdById: "9026",
-    status: "Active",
-  },
-  {
-    name: "External Audit",
-    id: "8451",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Aisha Patel",
-    createdById: "9024",
-    status: "Deactivated",
-  },
-  {
-    name: "Compliance Review",
-    id: "6789",
-    createdDate: "September 12, 2025",
-    createdTime: "11:00 am",
-    createdBy: "Jamal Rivers",
-    createdById: "9027",
-    status: "Active",
-  },
-];
+const PAGE_SIZE = 10;
 
 /* --------------------------------------------
  Component
 --------------------------------------------- */
 export default function DepartmentsTable() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 400);
   const [filter, setFilter] = useState("Filter By");
-  const [open, setOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<DepartmentItem | null>(null);
+  const [viewEditMode, setViewEditMode] = useState<"view" | "edit">("view");
+  const [viewEditOpen, setViewEditOpen] = useState(false);
 
-  const [viewOpen, setViewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  // Deactivate / Reactivate
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
+
+  // Delete
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [status, setStatus] = useState<CustomerStatus>("Active");
-  const isCurrentlyActive = status === "Active";
+  const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
+
+  const { departments, totalPages, isLoading } = useDepartments({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
+
+  /* ---- Status toggle mutation ---- */
+  const isCurrentlyActive = selectedDepartment?.isActive ?? true;
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
   const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
-    const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
-  /* Search Filter */
-  const filteredData = useMemo(() => {
-    return departments.filter(
-      (dept) =>
-        dept.name.toLowerCase().includes(search.toLowerCase()) ||
-        dept.id.includes(search),
-    );
-  }, [search]);
+  const toggleStatusMutation = usePatchData(
+    ({ id, data }: { id: string; data: UpdateDepartmentStatusPayload }) =>
+      adminApi.management.departments.updateStatus(id, data),
+    {
+      onSuccess: async () => {
+        setDeactivateOpen(false);
+        setDeactivateSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.all()],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.stats()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: `${actionVerb} Department Failed`,
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update department status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const handleConfirm = () => {
-    setStatus((prev) => (prev === "Active" ? "Deactivated" : "Active"));
-    setDeactivateOpen(false);
-    setIsSuccessOpen(true);
+  /* ---- Delete mutation ---- */
+  const deleteDepartmentMutation = useDeleteData(
+    (id: string) => adminApi.management.departments.delete(id),
+    {
+      onSuccess: async () => {
+        setDeleteOpen(false);
+        setDeleteSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.all()],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.departments.stats()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Delete Department Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to delete department. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const exportDepartmentsMutation = useGetExportData(
+    () => adminApi.management.departments.export(),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-departments-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Departments Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export departments at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  /* ---- Handlers ---- */
+  const handleConfirmToggleStatus = () => {
+    if (!selectedDepartment) return;
+    toggleStatusMutation.mutate({
+      id: selectedDepartment.id,
+      data: { isActive: !selectedDepartment.isActive },
+    });
   };
 
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
+  const handleConfirmDelete = () => {
+    if (!selectedDepartment) return;
+    deleteDepartmentMutation.mutate(selectedDepartment.id);
+  };
 
   /* Table Headers */
   const headers = [
     { label: "Department Name", key: "name" },
     { label: "Date Created", key: "date" },
-    { label: "Created By", key: "createdBy" },
+    { label: "No. of Users", key: "users" },
     { label: "Status", key: "status" },
     { label: "Action", key: "action" },
   ];
 
+  const formatDate = (iso?: string) => {
+    if (!iso) {
+      return { date: "—", time: "" };
+    }
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString("en-NG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      time: d.toLocaleTimeString("en-NG", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    };
+  };
+
   /* Row Renderer */
-  const renderRow = (dept: Department) => [
-    <div key="name">
-      <Text fw={500} size="sm">
-        {dept.name}
-      </Text>
-      <Text size="xs" c="dimmed">
-        ID:{dept.id}
-      </Text>
-    </div>,
+  const renderRow = (dept: DepartmentItem) => {
+    const { date, time } = formatDate(dept.createdAt);
 
-    <div key="date">
-      <Text size="sm">{dept.createdDate}</Text>
-      <Text size="xs" c="dimmed">
-        {dept.createdTime}
-      </Text>
-    </div>,
+    return [
+      <div key="name">
+        <Text fw={500} size="sm">
+          {dept.name}
+        </Text>
+        <Text size="xs" c="dimmed">
+          ID:{dept.id}
+        </Text>
+      </div>,
 
-    <div key="createdBy">
-      <Text size="sm">{dept.createdBy}</Text>
-      <Text size="xs" c="dimmed">
-        ID:{dept.createdById}
-      </Text>
-    </div>,
+      <div key="date">
+        <Text size="sm">{date}</Text>
+        <Text size="xs" c="dimmed">
+          {time}
+        </Text>
+      </div>,
 
-    <StatusBadge key="status" status={dept.status} />,
+      <Text key="users" size="sm">
+        {dept.usersCount ?? dept._count?.users ?? 0}
+      </Text>,
 
-    <RowActionMenu
-      key="actions"
-      onView={() => {
-        setSelectedDepartment(dept);
-        setViewOpen(true);
-      }}
-      onEdit={() => {
-        setSelectedDepartment(dept);
-        setEditOpen(true);
-      }}
-      onDeactivate={() => {
-        setSelectedDepartment(dept);
-        setDeactivateOpen(true);
-      }}
-      onDelete={() => {
-        setSelectedDepartment(dept);
-        setDeleteOpen(true);
-      }}
-    />,
-  ];
+      <StatusBadge key="status" status={dept.isActive ? "Active" : "Deactivated"} />,
+
+      <RowActionMenu
+        key="actions"
+        deactivateLabel={dept.isActive ? "Deactivate" : "Reactivate"}
+        onView={() => {
+          setSelectedDepartment(dept);
+          setViewEditMode("view");
+          setViewEditOpen(true);
+        }}
+        onEdit={() => {
+          setSelectedDepartment(dept);
+          setViewEditMode("edit");
+          setViewEditOpen(true);
+        }}
+        onDeactivate={() => {
+          setSelectedDepartment(dept);
+          setDeactivateOpen(true);
+        }}
+        onDelete={() => {
+          setSelectedDepartment(dept);
+          setDeleteOpen(true);
+        }}
+      />,
+    ];
+  };
 
   return (
     <div className="p-5 bg-white rounded-lg">
@@ -194,7 +259,10 @@ export default function DepartmentsTable() {
             placeholder="Enter keyword"
             leftSection={<Search size={16} color="#DD4F05" />}
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
             w={320}
             radius="xl"
           />
@@ -215,12 +283,15 @@ export default function DepartmentsTable() {
             color="#DD4F05"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportDepartmentsMutation.mutate()}
+            loading={exportDepartmentsMutation.isPending}
+            disabled={exportDepartmentsMutation.isPending}
           >
             Export
           </Button>
 
           <Button
-            onClick={() => {setOpen(true);}}
+            onClick={() => setCreateOpen(true)}
             color="orange"
             radius="xl"
             rightSection={<Plus size={16} />}
@@ -229,11 +300,12 @@ export default function DepartmentsTable() {
           </Button>
         </Group>
       </Group>
+
       {/* Table */}
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={departments}
+        loading={isLoading}
         renderItems={renderRow}
         emptyTitle="No Departments Found"
         emptyMessage="There are no departments available yet."
@@ -245,61 +317,65 @@ export default function DepartmentsTable() {
           onPageChange: setPage,
         }}
       />
+
+      {/* Create */}
       <CreateDepartmentModal
-        opened={open}
-        onClose={() => setOpen(false)}
-        onSave={(data) => {
-          console.log(data);
-          setOpen(false);
-        }}
+        opened={createOpen}
+        onClose={() => setCreateOpen(false)}
       />
+
+      {/* View / Edit */}
       <ViewDepartmentModal
-        opened={viewOpen}
-        onClose={() => setViewOpen(false)}
+        opened={viewEditOpen}
+        onClose={() => setViewEditOpen(false)}
+        mode={viewEditMode}
         department={selectedDepartment}
       />
-      {/* Deactivate / Reactivate confirmation modal */}
+
+      {/* Deactivate / Reactivate confirmation */}
       <ConfirmationModal
         opened={deactivateOpen}
         onClose={() => setDeactivateOpen(false)}
         title={`${actionVerb} Department ?`}
-        message={`Are you sure, ${actionVerb.toLowerCase()} this admin user? Kindly note that system access would be ${
+        message={`Are you sure you want to ${actionVerb.toLowerCase()} this department? ${
           isCurrentlyActive
-            ? "temporarily suspended, until the admin user is reactivated, therefore admin users under this department would be reassigned temporarily to the default department"
-            : "restored therefore this admin user would now be able to access the system according to their role and related permissions"
+            ? "Admin users under this department will be temporarily reassigned to the default department."
+            : "Admin users will be restored to this department."
         }`}
         primaryButtonText={`Yes, ${actionVerb} Department`}
         secondaryButtonText="No, Close"
-        onPrimary={handleConfirm}
+        onPrimary={handleConfirmToggleStatus}
+        loading={toggleStatusMutation.isPending}
       />
 
-      {/* Success modal */}
       <SuccessModal
-        opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
+        opened={deactivateSuccessOpen}
+        onClose={() => setDeactivateSuccessOpen(false)}
         title={`Department ${pastTenseVerb}`}
         message={`Department has been successfully ${pastTenseVerb.toLowerCase()}.`}
-        primaryButtonText="Manage User"
-        secondaryButtonText="No, Close"
+        primaryButtonText="Done"
+        onPrimaryClick={() => setDeactivateSuccessOpen(false)}
       />
+
+      {/* Delete confirmation */}
       <ConfirmationModal
         opened={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         title="Delete Department ?"
-        message="Are you sure, Delete this department? Kindly note that this action is irreversible, hence department details would be deleted completely and admin users under this department would be reassigned to the default department"
-        primaryButtonText={`Yes, Delete Department`}
+        message="Are you sure you want to delete this department? This action is irreversible. Department details will be permanently removed and admin users will be reassigned to the default department."
+        primaryButtonText="Yes, Delete Department"
         secondaryButtonText="No, Close"
-        onPrimary={handleConfirm}
+        onPrimary={handleConfirmDelete}
+        loading={deleteDepartmentMutation.isPending}
       />
 
-      {/* Success modal */}
       <SuccessModal
-        opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
+        opened={deleteSuccessOpen}
+        onClose={() => setDeleteSuccessOpen(false)}
         title="Department Deleted"
-        message="Department has been successfully deleted"
-        primaryButtonText="Manage User"
-        secondaryButtonText="No, Close"
+        message="Department has been successfully deleted."
+        primaryButtonText="Done"
+        onPrimaryClick={() => setDeleteSuccessOpen(false)}
       />
     </div>
   );

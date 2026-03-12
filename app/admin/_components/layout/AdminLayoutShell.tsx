@@ -40,7 +40,7 @@ function AdminLayoutShellContent({
     if (pathname?.startsWith('/admin/user-management')) return 'User Management';
     if (pathname?.startsWith('/admin/regulatory')) return 'Regulatory & Compliance';
     if (pathname?.startsWith('/admin/report')) return 'Report and Analytics';
-    if (pathname?.startsWith('/admin/audit-trial')) return 'Audit Trail';
+    if (pathname?.startsWith('/admin/audit-trail')) return 'Audit Trail';
     return 'Dashboard';
   };
 

@@ -68,8 +68,18 @@ export function RecentTransactions() {
   return (
     <SectionCard>
       <SectionHeader
-        title="FX transactions"
-        action={<SeeAllButton onClick={() => router.push("/agent/transactions")} />}
+        // if activeFilter is all, return "Recent transactions"
+        title={
+          activeFilter === "all"
+            ? "Recent transactions"
+            : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} transactions`
+        }
+        action={
+          <SeeAllButton
+            onClick={() => router.push("/agent/transactions")}
+            isViewAll
+          />
+        }
       />
       <Tabs
         value={activeFilter}
@@ -87,7 +97,11 @@ export function RecentTransactions() {
               ? MOCK_FX_TRANSACTIONS
               : MOCK_FX_TRANSACTIONS.filter((tx) => tx.category === tab.value);
           return (
-            <Tabs.Panel key={tab.value} value={tab.value} className="min-h-[300px]">
+            <Tabs.Panel
+              key={tab.value}
+              value={tab.value}
+              className="min-h-[300px]"
+            >
               <div>
                 {filtered.length === 0 ? (
                   <p className="py-8 text-center text-sm text-gray-500">
@@ -99,7 +113,7 @@ export function RecentTransactions() {
                   filtered.map((tx, i) => (
                     <TransactionListItem
                       key={`${tx.id}-${i}`}
-                      icon={(IconRecurring as unknown) as LucideIcon}
+                      icon={IconRecurring as unknown as LucideIcon}
                       primaryText={tx.id}
                       secondaryText={tx.date}
                       amount={formatCurrency(tx.amount, currencyCode).formatted}

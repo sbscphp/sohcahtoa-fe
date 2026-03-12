@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { TextInput, Tabs, Text, Badge } from "@mantine/core";
 import { Search, Calendar, Clock, ChevronRight } from "lucide-react";
 import SectionCard from "@/app/(customer)/_components/dashboard/SectionCard";
+import SearchInput from "@/app/admin/_components/SearchInput";
 
 interface Notification {
   id: string;
@@ -91,7 +92,7 @@ function NotificationCard({ notification }: { notification: Notification }) {
   const isUnread = notification.status === "unread";
 
   return (
-    <div className="flex items-center justify-between rounded-lg border-x-[1.5px] border-gray-100 bg-white px-5 py-4 transition-colors hover:bg-gray-50/50">
+    <div className="flex items-center justify-between rounded-lg border-[1.5px] border-gray-100 bg-white px-5 py-4 transition-colors hover:bg-gray-50/50">
       <div className="flex flex-col gap-1.5">
         <h4 className="text-sm font-semibold text-[#4D4B4B]">
           {notification.title}
@@ -110,11 +111,7 @@ function NotificationCard({ notification }: { notification: Notification }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Badge
-          color={isUnread ? "orange" : "gray"}
-          variant="light"
-          size="sm"
-        >
+        <Badge color={isUnread ? "orange" : "gray"} variant="light" size="sm">
           {isUnread ? "Unread" : "Read"}
         </Badge>
         <ChevronRight className="h-4 w-4 text-[#B2AFAF]" />
@@ -166,7 +163,7 @@ export default function NotificationsPage() {
       filtered = filtered.filter(
         (n) =>
           n.title.toLowerCase().includes(q) ||
-          n.description.toLowerCase().includes(q)
+          n.description.toLowerCase().includes(q),
       );
     }
 
@@ -174,16 +171,16 @@ export default function NotificationsPage() {
   }, [activeTab, search]);
 
   const unreadCount = MOCK_NOTIFICATIONS.filter(
-    (n) => n.status === "unread"
+    (n) => n.status === "unread",
   ).length;
 
   const groups = useMemo(
     () => groupByDate(filteredNotifications),
-    [filteredNotifications]
+    [filteredNotifications],
   );
 
   return (
-    <SectionCard className="rounded-2xl p-4 md:p-6">
+    <SectionCard className="rounded-2xl p-4 md:p-6 max-w-[800px] mx-auto">
       <div className="space-y-6">
         {/* Tabs */}
         <div className="mb-4">
@@ -193,7 +190,7 @@ export default function NotificationsPage() {
               if (v != null) setActiveTab(v as NotificationTabValue);
             }}
           >
-            <Tabs.List className="w-full flex flex-1 flex-wrap items-start gap-3 border-0 bg-transparent">
+            <Tabs.List className="w-full flex flex-1 flex-wrap items-start gap-3 border-0 bg-transparent pb-3">
               {NOTIFICATION_TABS.map((tab) => {
                 const isActive = activeTab === tab.value;
                 const label =
@@ -204,7 +201,7 @@ export default function NotificationsPage() {
                   <Tabs.Tab
                     key={tab.value}
                     value={tab.value}
-                    className={`shrink-0 cursor-pointer rounded-full! border px-2.5 py-1.5 text-sm font-normal leading-[120%] transition-colors ${
+                    className={`shrink-0 cursor-pointer rounded-full! border px-2.5 py-1.5 text-sm font-normal leading-[120%] transition-colors mx-2 ${
                       isActive
                         ? "border! border-primary-100! bg-[#FFF6F1]! text-primary-400!"
                         : "border! border-[#E4E4E7]! bg-white! text-gray-900! hover:border-gray-300!"
@@ -219,12 +216,11 @@ export default function NotificationsPage() {
         </div>
 
         {/* Search */}
-        <TextInput
+        <SearchInput
           placeholder="Search Notification"
-          leftSection={<Search size={16} />}
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
-          size="md"
+          className="w-full"
         />
 
         {/* Notification Groups */}

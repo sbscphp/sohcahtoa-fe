@@ -1,18 +1,33 @@
 "use client";
 
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { Button, Card, Divider, Group, Stack, Text, Menu } from "@mantine/core";
+import { Button, Card, Divider, Group, Skeleton, Stack, Text, Menu } from "@mantine/core";
 import UserActivitiesTable from "./UserActivitiesTable";
 import { EditUserModal } from "./EditUserModal";
 import { useState } from "react";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { CustomerStatus } from "../../../customer/[id]/page";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useAdminUserDetails } from "../../hooks/useAdminUserDetails";
+import { DetailItem } from "@/app/admin/_components/DetailItem";
+import { usePatchData } from "@/app/_lib/api/hooks";
+import {
+  adminApi,
+  type UpdateAdminUserStatusPayload,
+} from "@/app/admin/_services/admin-api";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 export default function ViewAdminUserDetails() {
+  const queryClient = useQueryClient();
+  const params = useParams<{ id: string }>();
+  const userId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
-  const [status, setStatus] = useState<CustomerStatus>("Active");
+  const { user, isLoading } = useAdminUserDetails(userId);
+  const status: CustomerStatus = user?.isActive ? "Active" : "Deactivated";
   const [editOpen, setEditOpen] = useState(false);
   const isCurrentlyActive = status === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
@@ -20,24 +35,85 @@ export default function ViewAdminUserDetails() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
+  const toggleStatusMutation = usePatchData(
+    (payload: UpdateAdminUserStatusPayload) =>
+      adminApi.management.users.updateStatus(userId!, payload),
+    {
+      onSuccess: async () => {
+        notifications.show({
+          title: "Status Updated",
+          message: `Admin user has been ${pastTenseVerb.toLowerCase()} successfully.`,
+          color: "green",
+        });
+        setIsConfirmOpen(false);
+        setIsSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.management.users.all()],
+          }),
+          ...(userId
+            ? [
+                queryClient.invalidateQueries({
+                  queryKey: [...adminKeys.management.users.detail(userId)],
+                }),
+              ]
+            : []),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Update Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update user status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const handleToggleClick = () => {
     setIsConfirmOpen(true);
   };
 
   const handleConfirm = () => {
-    setStatus((prev) => (prev === "Active" ? "Deactivated" : "Active"));
-    setIsConfirmOpen(false);
-    setIsSuccessOpen(true);
+    if (!userId || toggleStatusMutation.isPending) return;
+    toggleStatusMutation.mutate({
+      isActive: !isCurrentlyActive,
+      reason: "",
+    });
   };
 
-  // ✅ Single source of truth for user details
-  const userDetails = {
-    fullName: "Adekunle Ibrahim Olamide",
-    email: "olamide@socatoa.com",
-    branch: "Lagos State Branch",
-    department: "Audit and Internal Control",
-    role: "Audit and Internal Control Role",
+  const formatDateTime = (iso?: string | null) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const date = d.toLocaleDateString("en-NG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    const time = d.toLocaleTimeString("en-NG", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return `${date} | ${time}`;
   };
+
+  // Single source of truth for user details shown in edit modal
+  const userDetails = {
+    fullName: user?.fullName ?? "",
+    email: user?.email ?? "",
+    phoneNumber: user?.phoneNumber ?? "",
+    altPhoneNumber: user?.altPhoneNumber ?? "",
+    position: user?.position ?? "",
+    branch: user?.branch ?? "",
+    departmentId: user?.departmentId ?? "",
+    roleId: user?.roleId ?? "",
+  };
+
   const handleViewAllCustomers = () => {
     router.push("/admin/user-management");
   };
@@ -51,13 +127,17 @@ export default function ViewAdminUserDetails() {
             {/* Header */}
             <Group justify="space-between" align="flex-start">
               <Stack gap={4}>
-                <Text fw={600} size="lg">
-                  Adekunle Ibrahim
-                </Text>
+                {isLoading ? (
+                  <Skeleton height={24} width={220} />
+                ) : (
+                  <Text fw={600} size="lg">
+                    {user?.fullName ?? "—"}
+                  </Text>
+                )}
 
                 <Group gap="sm">
                   <Text size="xs" c="dimmed">
-                    Date Created: Nov 17, 2025 | 11:00am
+                    Date Created: {formatDateTime(user?.createdAt)}
                   </Text>
                   <StatusBadge status={status} />
                 </Group>
@@ -90,16 +170,29 @@ export default function ViewAdminUserDetails() {
 
             {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-y-6 gap-x-10">
-              <DetailItem label="User ID" value="2223334355" />
-              <DetailItem label="Role" value="Internal Control and Audit" />
-              <DetailItem label="Position" value="Head of Internal Control" />
-              <DetailItem label="Last Active" value="September 22, 2025" />
-              <DetailItem label="Email Address" value="adekunle@socahoa.com" />
-              <DetailItem label="Phone Number" value="+234 90 4747 2791" />
-              <DetailItem label="Branch" value="Lagos Branch" />
+              <DetailItem label="User ID" value={user?.id ?? "—"} loading={isLoading} />
+              <DetailItem
+                label="Role"
+                value={user?.roleName ?? user?.roleId ?? "—"}
+                loading={isLoading}
+              />
+              <DetailItem label="Position" value={user?.position ?? "—"} loading={isLoading} />
+              <DetailItem
+                label="Last Active"
+                value={formatDateTime(user?.updatedAt)}
+                loading={isLoading}
+              />
+              <DetailItem label="Email Address" value={user?.email ?? "—"} loading={isLoading} />
+              <DetailItem
+                label="Phone Number"
+                value={user?.phoneNumber ?? "—"}
+                loading={isLoading}
+              />
+              <DetailItem label="Branch" value={user?.branch ?? "—"} loading={isLoading} />
               <DetailItem
                 label="Department"
-                value="Audit and Internal Control"
+                value={user?.departmentName ?? user?.departmentId ?? "—"}
+                loading={isLoading}
               />
             </div>
           </Stack>
@@ -107,19 +200,18 @@ export default function ViewAdminUserDetails() {
       </div>
 
       <div className="my-6">
-        <UserActivitiesTable />
+        <UserActivitiesTable userId={userId} />
       </div>
 
       {/* ✅ Edit User Modal */}
-      <EditUserModal
-        opened={editOpen}
-        onClose={() => setEditOpen(false)}
-        user={userDetails}
-        onSave={(updatedUser) => {
-          console.log("Updated user:", updatedUser);
-          setEditOpen(false);
-        }}
-      />
+      {editOpen && (
+        <EditUserModal
+          opened={editOpen}
+          onClose={() => setEditOpen(false)}
+          userId={userId}
+          user={userDetails}
+        />
+      )}
 
       {/* Deactivate / Reactivate confirmation modal */}
       <ConfirmationModal
@@ -134,34 +226,19 @@ export default function ViewAdminUserDetails() {
         primaryButtonText={`Yes, ${actionVerb} User`}
         secondaryButtonText="No, Close"
         onPrimary={handleConfirm}
+        loading={toggleStatusMutation.isPending}
       />
 
       {/* Success modal */}
       <SuccessModal
         opened={isSuccessOpen}
         onClose={() => setIsSuccessOpen(false)}
-        title={`Customer ${pastTenseVerb}`}
+        title={`User ${pastTenseVerb}`}
         message={`Admin user has been successfully ${pastTenseVerb.toLowerCase()}.`}
         primaryButtonText="Manage User"
         onPrimaryClick={handleViewAllCustomers}
         secondaryButtonText="No, Close"
       />
     </>
-  );
-}
-
-/* --------------------------------------------
- Reusable Detail Item
---------------------------------------------- */
-function DetailItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <Text size="xs" c="dimmed" mb={4}>
-        {label}
-      </Text>
-      <Text size="sm" fw={500}>
-        {value}
-      </Text>
-    </div>
   );
 }

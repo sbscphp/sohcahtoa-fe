@@ -3,7 +3,7 @@ const admin = () => '/admin';
 
 // Auth routes
 const adminLogin = () => `${admin()}/login`;
-const adminForgotPassword = () => `${admin()}/forgot-password`;
+const adminResetPassword = () => `${admin()}/reset-password`;
 
 // Dashboard
 const adminDashboard = () => `${admin()}/dashboard`;
@@ -30,7 +30,7 @@ const adminTransactionDetails = (id: string | number = ':id') => `${adminTransac
 const adminReport = () => `${admin()}/report`;
 
 // Audit trail routes
-const adminAuditTrail = () => `${admin()}/audit-trial`;
+const adminAuditTrail = () => `${admin()}/audit-trail`;
 
 // Ticket routes
 const adminTickets = () => `${admin()}/tickets`;
@@ -71,7 +71,7 @@ export const adminRoutes = {
   
   // Auth
   adminLogin,
-  adminForgotPassword,
+  adminResetPassword,
   
   // Dashboard
   adminDashboard,

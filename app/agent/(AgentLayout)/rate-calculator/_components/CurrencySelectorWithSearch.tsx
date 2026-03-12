@@ -4,7 +4,11 @@ import { useState, useMemo } from "react";
 import { Menu, TextInput } from "@mantine/core";
 import { Search, ChevronDown } from "lucide-react";
 import Image from "next/image";
-import { CURRENCIES, getCurrencyByCode, type Currency } from "@/app/(customer)/_lib/currency";
+import {
+  CURRENCIES,
+  getCurrencyByCode,
+  type Currency,
+} from "@/app/(customer)/_lib/currency";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 
 interface CurrencySelectorWithSearchProps {
@@ -25,8 +29,8 @@ export function CurrencySelectorWithSearch({
     const q = search.toLowerCase().trim();
     return currencies.filter(
       (currency) =>
-        currency.code.toLowerCase().includes(q) ||
-        currency.name.toLowerCase().includes(q)
+        (currency.code?.toLowerCase().includes(q) ?? false) ||
+        (currency.name?.toLowerCase().includes(q) ?? false),
     );
   }, [search, currencies]);
 
@@ -41,16 +45,16 @@ export function CurrencySelectorWithSearch({
       <Menu.Target>
         <button
           type="button"
-          className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 border border-gray-200  bg-black text-white hover:bg-gray-500 transition-colors rounded-3xl"
         >
           <Image
-            src={getCurrencyFlagUrl(selectedCurrency.code) ?? ""}
-            alt={selectedCurrency.name}
+            src={getCurrencyFlagUrl(selectedCurrency.code ?? CURRENCIES[0].code) ?? ""}
+            alt={selectedCurrency.name ?? CURRENCIES[0].name}
             width={24}
             height={24}
             className="rounded-full"
           />
-          <span className="font-medium text-sm">{selectedCurrency.code}</span>
+          <span className="font-medium text-sm">{selectedCurrency.code ?? CURRENCIES[0].code}</span>
           <ChevronDown size={16} className="text-gray-400" />
         </button>
       </Menu.Target>
@@ -59,7 +63,7 @@ export function CurrencySelectorWithSearch({
         <div className="p-2">
           <TextInput
             placeholder="Search"
-            leftSection={<Search size={16} className="text-orange-500" />}
+            // leftSection={<Search size={16} className="text-orange-500" />}
             value={search}
             onChange={(e) => setSearch(e.currentTarget.value)}
             size="sm"
@@ -88,15 +92,15 @@ export function CurrencySelectorWithSearch({
               >
                 <div className="flex items-center gap-3">
                   <Image
-                    src={getCurrencyFlagUrl(currency.code) ?? ""}
-                    alt={currency.name}
-                    width={24}
+                    src={getCurrencyFlagUrl(currency.code ?? CURRENCIES[0].code) ?? ""}
+                    alt={currency.name ?? CURRENCIES[0].name}
+                    width={24}  
                     height={24}
                     className="rounded-full"
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-sm">{currency.code}</div>
-                    <div className="text-xs text-gray-500">{currency.name}</div>
+                    <div className="font-medium text-sm">{currency.code ?? CURRENCIES[0].code}</div>
+                    <div className="text-xs text-gray-500">{currency.name ?? CURRENCIES[0].name}</div>
                   </div>
                 </div>
               </Menu.Item>

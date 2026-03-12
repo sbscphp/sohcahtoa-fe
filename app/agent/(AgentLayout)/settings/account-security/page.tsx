@@ -21,8 +21,8 @@ const SECURITY_OPTIONS = [
 
 export default function AccountSecurityPage() {
   return (
-    <div className="space-y-8 rounded-2xl bg-white p-4 md:p-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="space-y-8 rounded-2xl bg-white p-4 md:p-6 max-w-[800px] mx-auto">
+      <div className="grid grid-cols-1 gap-6 ">
         {SECURITY_OPTIONS.map((opt, i) => (
           <FxTransactionTypeCard
             key={i}

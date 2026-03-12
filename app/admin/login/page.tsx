@@ -12,6 +12,7 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { loginSchema, LoginFormValues } from "./_schemas/login.schema";
 import { useLogin, useVerifyOtp } from "./hooks/useLogin";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 export default function LoginPage() {
   const [otpModalOpened, setOtpModalOpened] = useState(false);
@@ -92,7 +93,7 @@ export default function LoginPage() {
               c="red"
               size="sm"
               underline="always"
-              onClick={() => router.push("/admin/forgot-password")}
+              onClick={() => router.push(adminRoutes.adminResetPassword())}
             >
               Forgot Password?
             </Anchor>
@@ -116,7 +117,7 @@ export default function LoginPage() {
       <OtpModal
         opened={otpModalOpened}
         onClose={() => setOtpModalOpened(false)}
-        title="Account Authorisation Access"
+        title="Account Authorization Access"
         description="A six (6) digit OTP has been sent to your email linked to this account. Enter the code to log in."
         length={6}
         loading={verifyOtp.isPending}
@@ -124,12 +125,16 @@ export default function LoginPage() {
         onSubmit={(otp) =>
           verifyOtp.mutate({ otp, email: loginValues!.email })
         }
-        onResend={() => {
-          if (loginValues) {
-            loginMutation.mutate({
+        onResend={async () => {
+          if (!loginValues) return false;
+          try {
+            await loginMutation.mutateAsync({
               email: loginValues.email,
               password: loginValues.password,
             });
+            return true;
+          } catch {
+            return false;
           }
         }}
       />

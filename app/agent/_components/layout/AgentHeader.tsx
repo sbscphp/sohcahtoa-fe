@@ -5,6 +5,7 @@ import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { Avatar, Popover, Text } from "@mantine/core";
 import TransactionHeader from "@/app/(customer)/_components/transactions/TransactionHeader";
+import AgentHeaderMenu from "../auth/HeaderMenu";
 
 type BreadcrumbItem = {
   label: string;
@@ -54,7 +55,10 @@ export default function AgentHeader({
         )}
         {breadcrumbs && transactionTitle ? (
           <div className="flex items-center gap-2 ml-4 min-w-0 flex-1 overflow-hidden">
-            <TransactionHeader title={transactionTitle} breadcrumbs={breadcrumbs} />
+            <TransactionHeader
+              title={transactionTitle}
+              breadcrumbs={breadcrumbs}
+            />
           </div>
         ) : title ? (
           <div className="flex items-center gap-2 ml-4">
@@ -79,7 +83,11 @@ export default function AgentHeader({
               </span>
             </button>
           </Popover.Target>
-          <Popover.Dropdown className="rounded-2xl border border-gray-100 p-0" p={0} m={0}>
+          <Popover.Dropdown
+            className="rounded-2xl border border-gray-100 p-0"
+            p={0}
+            m={0}
+          >
             <Text size="sm" p="md">
               Notifications
             </Text>
@@ -87,15 +95,7 @@ export default function AgentHeader({
         </Popover>
 
         {/* User Avatar - click goes to Settings */}
-        <Link
-          href="/agent/settings"
-          className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50"
-        >
-          <Avatar name="Michael Smith" color="initials" size={40} radius="xl" />
-          {!collapsed && !isMobile && (
-            <ChevronDown size={16} className="text-primary-400" />
-          )}
-        </Link>
+        <AgentHeaderMenu />
       </div>
     </header>
   );

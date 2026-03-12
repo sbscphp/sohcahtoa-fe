@@ -5,6 +5,8 @@ import type { CSSProperties } from "react";
  * Success/50 bg, Success/700 text per design.
  */
 const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
+  open: { bg: "#ECFDF3", textColor: "#027A48" },
+  closed: { bg: "#FEF2F2", textColor: "#B91C1C" },
   approved: { bg: "#ECFDF3", textColor: "#027A48" },
   success: { bg: "#ECFDF3", textColor: "#027A48" },
   completed: { bg: "#ECFDF3", textColor: "#027A48" },
@@ -18,6 +20,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   transaction_settled: { bg: "#D1FADF", textColor: "#027A48" },
   settled: { bg: "#D1FADF", textColor: "#027A48" },
   resubmit_document: { bg: "#F4E8FF", textColor: "#7C3AED" },
+  request_more_info: { bg: "#F4E8FF", textColor: "#7C3AED" },
 };
 
 function normalizeStatus(status: string): string {

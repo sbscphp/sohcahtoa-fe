@@ -18,7 +18,6 @@ import { useState } from "react";
 interface RolePermissionModalProps {
   opened: boolean;
   onClose: () => void;
-  onContinue: () => void;
 }
 export interface PermissionRowProps {
   label: string;
@@ -27,7 +26,6 @@ export interface PermissionRowProps {
 export function RolePermissionModal({
   opened,
   onClose,
-  onContinue,
 }: RolePermissionModalProps) {
     const router = useRouter();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);

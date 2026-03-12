@@ -17,79 +17,20 @@ import { ListFilter, Plus, Search, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { adminRoutes } from "@/lib/adminRoutes";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useAgents, type AgentRowItem } from "../hooks/useAgents";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi, type CreateAgentPayload } from "@/app/admin/_services/admin-api";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useManagementLookups } from "../../user-management/hooks/useManagementLookups";
 
 /* --------------------------------------------
  Types
 --------------------------------------------- */
-interface Agent {
-  agentName: string;
-  id: string;
-  phone: string;
-  email: string;
-  totalTransactions: number;
-  transactionVolume: number;
-  status: "Active" | "Deactivated";
-}
-
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const generateAgents = (): Agent[] => [
-  {
-    agentName: "Tunde Bashorun",
-    id: "9023",
-    phone: "+234 90 2323 4545",
-    email: "tunde@eternalglobal.com",
-    totalTransactions: 209,
-    transactionVolume: 1250000,
-    status: "Active",
-  },
-  {
-    agentName: "Queen Omotola",
-    id: "9025",
-    phone: "+234 90 5858 3939",
-    email: "queen@kudimata.com",
-    totalTransactions: 9,
-    transactionVolume: 875000,
-    status: "Active",
-  },
-  {
-    agentName: "Samuel Olubanki",
-    id: "9026",
-    phone: "+234 91 2222 4545",
-    email: "olubankisamuel@gmail.com",
-    totalTransactions: 120,
-    transactionVolume: 930500,
-    status: "Active",
-  },
-  {
-    agentName: "Ibrahim Dantata",
-    id: "9024",
-    phone: "+234 90 5858 3939",
-    email: "ibrahim@sultan.com",
-    totalTransactions: 50,
-    transactionVolume: 1100000,
-    status: "Deactivated",
-  },
-  {
-    agentName: "Mfon Ubot",
-    id: "9027",
-    phone: "+234 90 2323 4545",
-    email: "mubot@greenfield.com",
-    totalTransactions: 60,
-    transactionVolume: 790000,
-    status: "Active",
-  },
-  {
-    agentName: "Sarik Sudan",
-    id: "9023",
-    phone: "+234 81 0000 3456",
-    email: "nagode@gmail.com",
-    totalTransactions: 98,
-    transactionVolume: 980000,
-    status: "Deactivated",
-  },
-];
+type Agent = AgentRowItem;
 
 /* --------------------------------------------
  Helpers
@@ -105,43 +46,64 @@ const formatNaira = (amount: number): string =>
 --------------------------------------------- */
 export default function AgentTable() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
   const [filter, setFilter] = useState("Filter By");
   const [createModalOpened, setCreateModalOpened] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmModalOpened, setConfirmModalOpened] = useState(false);
   const [successModalOpened, setSuccessModalOpened] = useState(false);
   const [pendingAgentData, setPendingAgentData] =
-    useState<Record<string, any> | null>(null);
+    useState<Record<string, unknown> | null>(null);
 
-  const allAgents = useMemo(() => generateAgents(), []);
+  const isActive =
+    filter === "Active" ? true : filter === "Deactivated" ? false : undefined;
 
-  const filteredData = useMemo(() => {
-    return allAgents.filter((agent) => {
-      const matchesSearch =
-        agent.agentName.toLowerCase().includes(search.toLowerCase()) ||
-        agent.id.includes(search) ||
-        agent.email.toLowerCase().includes(search.toLowerCase()) ||
-        agent.phone.includes(search);
+  const { agents, isLoading, totalPages } = useAgents({
+    page,
+    limit: pageSize,
+    search: debouncedSearch || undefined,
+    isActive,
+  });
+  const exportAgentsMutation = useGetExportData(
+    () =>
+      adminApi.agent.export({
+        search: debouncedSearch || undefined,
+        isActive,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
 
-      const matchesFilter =
-        filter === "Filter By" || filter === "All" || agent.status === filter;
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter, allAgents]);
-
-  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [page, filteredData]);
+        link.href = objectUrl;
+        link.download = `agents-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Agents Failed",
+          message:
+            apiResponse?.error?.message ??
+            (error as Error)?.message ??
+            "Unable to export agents at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+  const { options: branchOptions, isLoading: branchesLoading } =
+    useManagementLookups("branch", "name");
 
   const agentHeaders = [
     { label: "Agent", key: "agent" },
@@ -156,7 +118,7 @@ export default function AgentTable() {
   const createAgentFields: FormField[] = useMemo(
     () => [
       {
-        name: "agentName",
+        name: "name",
         label: "Agent Name",
         type: "text",
         required: true,
@@ -175,23 +137,18 @@ export default function AgentTable() {
         type: "select",
         required: true,
         placeholder: "Select an Option",
-        options: [
-          { value: "lagos", label: "Lagos" },
-          { value: "abuja", label: "Abuja" },
-          { value: "port-harcourt", label: "Port Harcourt" },
-          { value: "kano", label: "Kano" },
-          { value: "ibadan", label: "Ibadan" },
-        ],
+        options: branchOptions,
+        disabled: branchesLoading,
       },
       {
-        name: "phone",
+        name: "phoneNumber",
         label: "Phone Number",
         type: "tel",
         required: true,
         placeholder: "+234 00 0000 0000",
       },
       {
-        name: "kycDocument",
+        name: "attachment",
         label: "Additional Document",
         type: "file",
         required: true,
@@ -200,34 +157,45 @@ export default function AgentTable() {
         description: "Upload KYC document (Max: 2 MB)",
       },
     ],
-    []
+    [branchOptions, branchesLoading]
   );
 
-  const performCreateAgent = async (data: Record<string, any>) => {
+  const performCreateAgent = async (data: Record<string, unknown>) => {
     try {
       setLoading(true);
+      const payload = data as unknown as Partial<CreateAgentPayload>;
+      const formData = new FormData();
+      formData.append("name", String(payload.name ?? ""));
+      formData.append("email", String(payload.email ?? ""));
+      formData.append("phoneNumber", String(payload.phoneNumber ?? ""));
+      formData.append("branch", String(payload.branch ?? ""));
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (payload.attachment instanceof File) {
+        formData.append("attachment", payload.attachment);
+      }
 
-      console.log("Creating agent with data:", data);
-
-      // Here you would make the actual API call
-      // const response = await fetch("/api/agents", {
-      //   method: "POST",
-      //   body: formData,
-      // });
+      await adminApi.agent.create(formData);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.agent.all],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.agent.stats()],
+        }),
+      ]);
 
       setCreateModalOpened(false);
       setConfirmModalOpened(false);
       setSuccessModalOpened(true);
       setPendingAgentData(null);
-      // Optionally refresh the agents list
     } catch (error) {
-      console.error("Error creating agent:", error);
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
       notifications.show({
-        title: "Error",
-        message: "Failed to create agent. Please try again.",
+        title: "Create Agent Failed",
+        message:
+          apiResponse?.error?.message ??
+          (error as Error)?.message ??
+          "Failed to create agent. Please try again.",
         color: "red",
       });
     } finally {
@@ -235,7 +203,7 @@ export default function AgentTable() {
     }
   };
 
-  const handleOpenConfirm = (data: Record<string, any>) => {
+  const handleOpenConfirm = (data: Record<string, unknown>) => {
     setPendingAgentData(data);
     setConfirmModalOpened(true);
   };
@@ -278,7 +246,8 @@ export default function AgentTable() {
     <RowActionIcon
       key="action"
       onClick={() => {
-        router.push(`/admin/agent/${item.id}`);
+        if (!item.id) return;
+        router.push(adminRoutes.adminAgentDetails(item.id));
       }}
     />,
   ];
@@ -293,7 +262,10 @@ export default function AgentTable() {
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
@@ -302,7 +274,10 @@ export default function AgentTable() {
           <Group>
             <Select
               value={filter}
-              onChange={(value) => setFilter(value!)}
+              onChange={(value) => {
+                setFilter(value ?? "Filter By");
+                setPage(1);
+              }}
               data={["Filter By", "All", "Active", "Deactivated"]}
               radius="xl"
               w={120}
@@ -314,6 +289,9 @@ export default function AgentTable() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportAgentsMutation.mutate()}
+              loading={exportAgentsMutation.isPending}
+              disabled={exportAgentsMutation.isPending}
             >
               Export
             </Button>
@@ -371,8 +349,8 @@ export default function AgentTable() {
 
       <DynamicTableSection
         headers={agentHeaders}
-        data={paginatedData}
-        loading={false}
+        data={agents}
+        loading={isLoading}
         renderItems={renderAgentRow}
         emptyTitle="No Agents Found"
         emptyMessage="There are currently no agents to display. Agents will appear here once they are created."

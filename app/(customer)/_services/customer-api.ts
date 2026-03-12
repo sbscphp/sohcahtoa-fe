@@ -42,7 +42,6 @@ import type {
   SendOtpResponse,
   SignupRequest,
   Transaction,
-  TransactionDetail,
   TransactionDetailApiResponse,
   TransactionListParams,
   TransactionsListApiResponse,
@@ -67,6 +66,10 @@ import type {
   DocumentUploadResponse,
   MultipleDocumentsUploadResponse,
   UploadDocumentsJsonRequest,
+  SupportTicketListResponse,
+  SupportTicketDetailResponse,
+  TransactionOverviewRequest,
+  TransactionOverviewResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -188,6 +191,9 @@ export const customerApi = {
 
     checkLimits: (data: CheckTransactionLimitsRequest) =>
       apiClient.post<CheckTransactionLimitsResponse>(API_ENDPOINTS.transactions.checkLimits, data),
+
+    overview: (data?: TransactionOverviewRequest) =>
+      apiClient.post<TransactionOverviewResponse>(API_ENDPOINTS.transactions.overview, data),
   },
 
   // ==================== Notifications ====================
@@ -253,6 +259,25 @@ export const customerApi = {
       apiClient.get<DocumentsListResponse>(API_ENDPOINTS.documents.list, {
         params: params as ApiRequestConfig["params"],
       }),
+  },
+
+  // ==================== Support ====================
+  support: {
+    tickets: {
+      create: (formData: FormData) =>
+        apiClient.post<SupportTicketDetailResponse>(API_ENDPOINTS.support.tickets.create, formData),
+
+      list: (params?: { page?: number; limit?: number }) =>
+        apiClient.get<SupportTicketListResponse>(API_ENDPOINTS.support.tickets.list, {
+          params: params as ApiRequestConfig["params"],
+        }),
+
+      getById: (id: string) =>
+        apiClient.get<SupportTicketDetailResponse>(API_ENDPOINTS.support.tickets.getById(id)),
+
+      getByReference: (reference: string) =>
+        apiClient.get<SupportTicketDetailResponse>(API_ENDPOINTS.support.tickets.getByReference(reference)),
+    },
   },
 
   // ==================== Payments ====================

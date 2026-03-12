@@ -53,8 +53,10 @@ export default function SettingsPage() {
   const [password, setPassword] = useState("");
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] =
     useDisclosure(false);
-  const [enterPasswordOpen, { open: openEnterPassword, close: closeEnterPassword }] =
-    useDisclosure(false);
+  const [
+    enterPasswordOpen,
+    { open: openEnterPassword, close: closeEnterPassword },
+  ] = useDisclosure(false);
   const [successOpen, { open: openSuccess, close: closeSuccess }] =
     useDisclosure(false);
 
@@ -86,8 +88,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 rounded-2xl bg-white p-4 md:p-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-8 rounded-2xl bg-white p-4 md:p-6 max-w-[800px] mx-auto">
+      <div className="grid grid-cols-1 gap-6 ">
         {SETTINGS_OPTIONS_WITH_LINKS.map((opt, i) => (
           <FxTransactionTypeCard
             key={i}
@@ -97,12 +99,12 @@ export default function SettingsPage() {
             href={opt.href}
           />
         ))}
-        <FxTransactionTypeCard
+        {/* <FxTransactionTypeCard
           icon={<DELETE_ACCOUNT_OPTION.icon className="size-6 text-primary-400" />}
           title={DELETE_ACCOUNT_OPTION.title}
           description={DELETE_ACCOUNT_OPTION.description}
           onClick={openDeleteAccountFlow}
-        />
+        /> */}
       </div>
 
       {/* Delete Account Confirmation Modal */}

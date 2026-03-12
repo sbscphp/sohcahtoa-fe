@@ -31,11 +31,17 @@ const uploadDocumentsSchema = z.object({
   visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
+  returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Return Ticket file is required",
+  }),
   letterFromCompanyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter from company/business confirming what the payment is about is required",
   }),
   letterOfInvitationFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter of Invitation from Partner is required",
+  }),
+  tinCertificateFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Tax Identification Number (TIN) certificate file is required",
   }),
 });
 
@@ -70,8 +76,10 @@ export default function BTAUploadDocumentsStep({
       passportFile: initialValues?.passportFile ?? null,
       visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       visaFile: initialValues?.visaFile ?? null,
+      returnTicketFile: initialValues?.returnTicketFile ?? null,
       letterFromCompanyFile: initialValues?.letterFromCompanyFile ?? null,
       letterOfInvitationFile: initialValues?.letterOfInvitationFile ?? null,
+      tinCertificateFile: initialValues?.tinCertificateFile ?? null,
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -217,9 +225,9 @@ export default function BTAUploadDocumentsStep({
         <TransactionFileUploadInput
             label="Tax Identification Number (TIN)"
             required
-            value={form.values.passportFile}
-            onChange={(file) => form.setFieldValue("passportFile", file)}
-            error={form.errors.passportFile as string}
+            value={form.values.tinCertificateFile}
+            onChange={(file) => form.setFieldValue("tinCertificateFile", file)}
+            error={form.errors.tinCertificateFile as string}
           />
         <div className="space-y-2">
           <TransactionFileUploadInput
@@ -238,6 +246,14 @@ export default function BTAUploadDocumentsStep({
             {...form.getInputProps("visaDocumentNumber")}
           />
         </div>
+
+        <TransactionFileUploadInput
+          label="Return Ticket"
+          required
+          value={form.values.returnTicketFile}
+          onChange={(file) => form.setFieldValue("returnTicketFile", file)}
+          error={form.errors.returnTicketFile as string}
+        />
 
         <TransactionFileUploadInput
             label="Letter of request from Corporate Body"

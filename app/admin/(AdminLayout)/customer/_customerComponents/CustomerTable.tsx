@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import {
@@ -13,160 +13,18 @@ import {
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useRouter } from "next/navigation";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { adminRoutes } from "@/lib/adminRoutes";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useCustomers, type CustomerRowItem } from "../hooks/useCustomers";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 /* --------------------------------------------
  Types
 --------------------------------------------- */
-interface Customer {
-  customerName: string;
-  id: string;
-  phone: string;
-  email: string;
-  totalTransactions: number;
-  transactionVolume: number;
-  status: "Active" | "Deactivated";
-}
-
-/* --------------------------------------------
-Mock Data
---------------------------------------------- */
-const generateCustomers = (): Customer[] => [
-  {
-    customerName: "Tunde Bashorun",
-    id: "9023",
-    phone: "+234 90 2323 4545",
-    email: "tunde@eternalglobal.com",
-    totalTransactions: 200,
-    transactionVolume: 1250000,
-    status: "Active",
-  },
-  {
-    customerName: "Samuel Johnson",
-    id: "9024",
-    phone: "+234 80 1234 5678",
-    email: "samuel@example.com",
-    totalTransactions: 150,
-    transactionVolume: 950000,
-    status: "Active",
-  },
-  {
-    customerName: "Michael Bennett",
-    id: "9025",
-    phone: "+234 70 9876 5432",
-    email: "michael@example.com",
-    totalTransactions: 80,
-    transactionVolume: 450000,
-    status: "Deactivated",
-  },
-  {
-    customerName: "Ava Thompson",
-    id: "9026",
-    phone: "+234 81 2345 6789",
-    email: "ava@example.com",
-    totalTransactions: 120,
-    transactionVolume: 780000,
-    status: "Active",
-  },
-  {
-    customerName: "Emily Carter",
-    id: "9027",
-    phone: "+234 90 3456 7890",
-    email: "emily@example.com",
-    totalTransactions: 95,
-    transactionVolume: 620000,
-    status: "Active",
-  },
-  {
-    customerName: "Oliver Reed",
-    id: "9028",
-    phone: "+234 70 4567 8901",
-    email: "oliver@example.com",
-    totalTransactions: 60,
-    transactionVolume: 380000,
-    status: "Deactivated",
-  },
-  {
-    customerName: "Sophia Martinez",
-    id: "9029",
-    phone: "+234 81 5678 9012",
-    email: "sophia@example.com",
-    totalTransactions: 180,
-    transactionVolume: 1100000,
-    status: "Active",
-  },
-  {
-    customerName: "James Wilson",
-    id: "9030",
-    phone: "+234 90 6789 0123",
-    email: "james@example.com",
-    totalTransactions: 140,
-    transactionVolume: 890000,
-    status: "Active",
-  },
-  {
-    customerName: "Isabella Brown",
-    id: "9031",
-    phone: "+234 70 7890 1234",
-    email: "isabella@example.com",
-    totalTransactions: 75,
-    transactionVolume: 420000,
-    status: "Deactivated",
-  },
-  {
-    customerName: "William Davis",
-    id: "9032",
-    phone: "+234 81 8901 2345",
-    email: "william@example.com",
-    totalTransactions: 165,
-    transactionVolume: 1020000,
-    status: "Active",
-  },
-  {
-    customerName: "Charlotte Taylor",
-    id: "9033",
-    phone: "+234 90 9012 3456",
-    email: "charlotte@example.com",
-    totalTransactions: 110,
-    transactionVolume: 680000,
-    status: "Active",
-  },
-  {
-    customerName: "Benjamin Anderson",
-    id: "9034",
-    phone: "+234 70 0123 4567",
-    email: "benjamin@example.com",
-    totalTransactions: 50,
-    transactionVolume: 310000,
-    status: "Deactivated",
-  },
-  {
-    customerName: "Amelia White",
-    id: "9035",
-    phone: "+234 81 1234 5678",
-    email: "amelia@example.com",
-    totalTransactions: 195,
-    transactionVolume: 1180000,
-    status: "Active",
-  },
-  {
-    customerName: "Lucas Harris",
-    id: "9036",
-    phone: "+234 90 2345 6789",
-    email: "lucas@example.com",
-    totalTransactions: 85,
-    transactionVolume: 510000,
-    status: "Deactivated",
-  },
-  {
-    customerName: "Mia Clark",
-    id: "9037",
-    phone: "+234 70 3456 7890",
-    email: "mia@example.com",
-    totalTransactions: 130,
-    transactionVolume: 820000,
-    status: "Active",
-  },
-];
+type Customer = CustomerRowItem;
 
 /* --------------------------------------------
  Format Currency Helper
@@ -187,40 +45,55 @@ export default function CustomerTable() {
   const pageSize = 5;
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
   const [filter, setFilter] = useState("Filter By");
   const router = useRouter();
+  const isActive =
+    filter === "Active" ? true : filter === "Deactivated" ? false : undefined;
+  const { customers, isLoading, totalPages } = useCustomers({
+    page,
+    limit: pageSize,
+    search: debouncedSearch || undefined,
+    isActive,
+  });
+  const exportCustomersMutation = useGetExportData(
+    () =>
+      adminApi.customers.export({
+        search: debouncedSearch || undefined,
+        isActive,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
 
-  const allCustomers = useMemo(() => generateCustomers(), []);
-
-  const filteredData = useMemo(() => {
-    return allCustomers.filter((customer) => {
-      const matchesSearch =
-        customer.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        customer.id.includes(search) ||
-        customer.email.toLowerCase().includes(search.toLowerCase()) ||
-        customer.phone.includes(search);
-
-      const matchesFilter =
-        filter === "Filter By" ||
-        filter === "All" ||
-        customer.status === filter;
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter, allCustomers]);
-
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [page, filteredData]);
+        link.href = objectUrl;
+        link.download = `customers-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Customers Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export customers at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   /* Table headers */
   const customerHeaders = [
     { label: "Customer", key: "customer" },
     { label: "Contact", key: "contact" },
+    { label: "Date Joined", key: "dateJoined" },
     { label: "Total Transactions", key: "totalTransactions" },
     { label: "Transaction Volume", key: "transactionVolume" },
     { label: "Status", key: "status" },
@@ -249,6 +122,11 @@ export default function CustomerTable() {
       </Text>
     </div>,
 
+    // Date Joined
+    <Text key="dateJoined" size="sm">
+      {item.dateJoined}
+    </Text>,
+
     // Total Transactions
     <Text key="totalTransactions" size="sm">
       {item.totalTransactions}
@@ -265,7 +143,10 @@ export default function CustomerTable() {
     // Action
     <RowActionIcon
       key="action"
-      onClick={() => router.push(`/admin/customer/${item.id}`)}
+      onClick={() => {
+        if (!item.id) return;
+        router.push(adminRoutes.adminCustomerDetails(item.id));
+      }}
     />
   ];
 
@@ -280,7 +161,10 @@ export default function CustomerTable() {
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
@@ -290,7 +174,10 @@ export default function CustomerTable() {
             {/* Filter */}
             <Select
               value={filter}
-              onChange={(value) => setFilter(value!)}
+              onChange={(value) => {
+                setFilter(value ?? "Filter By");
+                setPage(1);
+              }}
               data={["Filter By", "All", "Active", "Deactivated"]}
               radius="xl"
               w={120}
@@ -303,6 +190,9 @@ export default function CustomerTable() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportCustomersMutation.mutate()}
+              loading={exportCustomersMutation.isPending}
+              disabled={exportCustomersMutation.isPending}
             >
               Export
             </Button>
@@ -312,8 +202,8 @@ export default function CustomerTable() {
 
       <DynamicTableSection
         headers={customerHeaders}
-        data={paginatedData}
-        loading={false}
+        data={customers}
+        loading={isLoading}
         renderItems={renderCustomerRow}
         emptyTitle="No Customers Found"
         emptyMessage="There are currently no customers to display. Customers will appear here once they create accounts."

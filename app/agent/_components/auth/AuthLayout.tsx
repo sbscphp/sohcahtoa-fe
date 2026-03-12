@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import Image from "next/image";
-import { logo } from "@/app/assets/asset";
+import { agentFlag, logo } from "@/app/assets/asset";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -12,15 +12,11 @@ export function AgentAuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="min-h-screen flex p-3">
       {/* Left Column - Branding and Information */}
-      <div className="hidden lg:flex lg:w-2/5 xl:w-1/3 bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg">
+      <div className="hidden lg:flex lg:w-2/5 xl:w-1/3 bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg relative overflow-hidden">
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
-            <Image src={logo} alt="SohCahToa" width={40} height={40} />
-            <div>
-              <div className="text-heading-200 text-xl font-bold">SohCahToa</div>
-              <div className="text-body-text-100 text-sm">Payout BDC</div>
-            </div>
+            <Image src={logo} alt="SohCahToa" width={100} height={100} />
           </div>
 
           {/* Headline and Description */}
@@ -30,35 +26,22 @@ export function AgentAuthLayout({ children }: AuthLayoutProps) {
             </h2>
 
             <p className="text-body-text-100 text-sm leading-relaxed">
-              Log in with your newly created credentials to access your SOHCAHTOA Agent account.
+              Log in with your newly created credentials to access your
+              SOHCAHTOA Agent account.
             </p>
           </div>
         </div>
 
         {/* Visual Elements - Country Flags */}
-        <div className="flex flex-wrap gap-4 justify-start">
+        <div className="flex flex-wrap gap-4 justify-start w-full h-[40%] absolute bottom-0 left-0">
           {/* Country flag icons would go here - using placeholder circles for now */}
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇪🇸</span>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇸🇦</span>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇨🇦</span>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇳🇬</span>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇺🇸</span>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇬🇭</span>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <span className="text-xs">🇬🇧</span>
-          </div>
+          <Image
+            src={agentFlag}
+            alt="Agent Flag"
+            width={100}
+            height={100}
+            className="w-full h-full object-contain relative -right-10"
+          />
         </div>
       </div>
 

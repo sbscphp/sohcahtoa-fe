@@ -11,12 +11,12 @@ import {
 } from "@/app/(customer)/_lib/currency";
 
 function CurrencyFlag({ currency }: { currency: Currency }) {
-  const url = getCurrencyFlagUrl(currency.code);
+  const url = getCurrencyFlagUrl(currency.code ?? CURRENCIES[0].code);
   if (url) {
     return (
       <Image
         src={url}
-        alt={currency.name}
+        alt={currency.name ?? CURRENCIES[0].name}
         title={currency.name}
         width={24}
         height={24}
@@ -26,7 +26,7 @@ function CurrencyFlag({ currency }: { currency: Currency }) {
   }
   return (
     <span className="flex-none w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 font-medium text-xs text-gray-600">
-      {currency.code.slice(0, 2)}
+      {currency.code?.slice(0, 2) ?? CURRENCIES[0].code.slice(0, 2)}
     </span>
   );
 }
@@ -56,7 +56,7 @@ export default function CurrencyAmountInput({
   disabled = false,
   showDropdown = true,
 }: CurrencyAmountInputProps) {
-  const symbol = getCurrencySymbol(currency.code);
+  const symbol = getCurrencySymbol(currency.code ?? CURRENCIES[0].code);
   const list = currencies.length > 0 ? currencies : CURRENCIES;
   const canChangeCurrency = showDropdown && onCurrencyChange && list.length > 0;
 
@@ -76,7 +76,7 @@ export default function CurrencyAmountInput({
               >
                 <CurrencyFlag currency={currency} />
                 <span className="font-medium text-base leading-6 text-[#1F1E1E]">
-                  {currency.code}
+                  {currency.code ?? CURRENCIES[0].code}
                 </span>
                 <ChevronDown
                   size={20}
@@ -113,7 +113,26 @@ export default function CurrencyAmountInput({
 
       <NumberInput
         value={value ? Number(value) : undefined}
-        onChange={(v) => onChange(String(v ?? ""))}
+        onChange={(v) => {
+          if (v === null || v === undefined || v === "") {
+            onChange("");
+            return;
+          }
+
+          const numericValue = typeof v === "number" ? v : Number(v);
+
+          if (!Number.isFinite(numericValue) || numericValue < 0) {
+            onChange("");
+            return;
+          }
+
+          onChange(String(numericValue));
+        }}
+        onKeyDown={(event) => {
+          if (["-", "+", "e", "E"].includes(event.key)) {
+            event.preventDefault();
+          }
+        }}
         leftSection={
           <span className="font-semibold text-xl leading-7 text-[#1F1E1E]">
             {symbol}

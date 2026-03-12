@@ -72,8 +72,7 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <div className="space-y-8">
+<div className="space-y-8">
         <div>
           <h1 className="text-body-heading-200 text-3xl font-semibold mb-2">
             Log In to Continue
@@ -150,6 +149,5 @@ export default function LoginPage() {
 
         <SecurityBadges />
       </div>
-    </>
   );
 }

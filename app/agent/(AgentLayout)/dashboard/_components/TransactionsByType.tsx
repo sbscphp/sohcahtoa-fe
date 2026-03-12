@@ -1,14 +1,15 @@
 "use client";
 
 import { Group, Stack, Select, Text } from "@mantine/core";
-import { FilterIcon } from "lucide-react";
+import { ListFilter } from "lucide-react";
 import { HiCalendarDateRange } from "react-icons/hi2";
 import dynamic from "next/dynamic";
 import SectionHeader from "@/app/(customer)/_components/dashboard/SectionHeader";
+import { SELECT_WIDTH } from "@/app/agent/utils/constants";
 
-const DonutChart = dynamic(
-  () => import("@mantine/charts").then((m) => m.DonutChart),
-  { ssr: false }
+const PieChart = dynamic(
+  () => import("@mantine/charts").then((m) => m.PieChart),
+  { ssr: false },
 );
 
 const data = [
@@ -25,7 +26,7 @@ const colors: Record<string, string> = {
 
 export function TransactionsByType() {
   const icon = <HiCalendarDateRange size={16} />;
-  const filterIcon = <FilterIcon size={16} />;
+  const filterIcon = <ListFilter size={16} />;
 
   return (
     <div className="flex flex-col rounded-2xl bg-[#FAFAFA] p-2 shadow-sm">
@@ -35,7 +36,7 @@ export function TransactionsByType() {
           <Group gap="xs">
             <Select
               size="xs"
-              w={100}
+              w={SELECT_WIDTH}
               data={["Buy Fx", "Sell Fx", "All"]}
               defaultValue="Buy Fx"
               rightSection={filterIcon}
@@ -44,10 +45,10 @@ export function TransactionsByType() {
             />
             <Select
               size="xs"
-              w={120}
+              w={SELECT_WIDTH}
               data={["Last 7 Days", "Last 30 Days", "Last 90 Days"]}
               defaultValue="Last 30 Days"
-              rightSection={icon}
+              rightSection={filterIcon}
               rightSectionPointerEvents="none"
               radius="lg"
             />
@@ -56,10 +57,9 @@ export function TransactionsByType() {
       />
       <div className="grid grid-cols-[2fr_1fr] gap-4">
         <Group justify="center">
-          <DonutChart
+          <PieChart
             data={data}
             size={200}
-            thickness={30}
             withLabelsLine={false}
             withTooltip
             tooltipDataSource="segment"

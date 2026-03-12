@@ -43,35 +43,54 @@ export function getDocumentUploadSpec(
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
       break;
     case "BTA":
+      // Buy FX – Business Travel Allowance (BTA)
+      collectFileAndType(uploadStepData, "tinCertificateFile", "TIN", spec);
+      collectFileAndType(uploadStepData, "tccFile", "TCC", spec);
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
-      collectFileAndType(uploadStepData, "corporateBodyLetterFile", "CORPORATE_BODY_LETTER", spec);
-      collectFileAndType(uploadStepData, "partnerInvitationLetterFile", "PARTNER_INVITATION_LETTER", spec);
+      collectFileAndType(uploadStepData, "letterFromCompanyFile", "CORPORATE_BODY_LETTER", spec);
+      collectFileAndType(uploadStepData, "letterOfInvitationFile", "PARTNER_INVITATION_LETTER", spec);
       break;
     case "TOURIST_FX":
+      // Buy FX – Tourist FX
+      collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
+      collectFileAndType(uploadStepData, "receiptForInitialNairaPurchaseFile", "RECEIPT", spec);
       break;
     case "SCHOOL_FEES":
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
+      // Buy FX – School Fees
+      collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
+      collectFileAndType(uploadStepData, "evidenceOfAdmissionFile", "SCHOOL_ADMISSION", spec);
+      collectFileAndType(uploadStepData, "schoolInvoiceFile", "INVOICE", spec);
+      collectFileAndType(uploadStepData, "statementOfResultFile", "STATEMENT_OF_RESULT", spec);
+      collectFileAndType(uploadStepData, "firstDegreeCertificateFile", "DEGREE", spec);
       break;
     case "MEDICAL":
+      // Buy FX – Medical
+      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
-      collectFileAndType(uploadStepData, "utilityBillFile", "UTILITY_BILL", spec);
-      collectFileAndType(uploadStepData, "medicalLetterFile", "MEDICAL_LETTER", spec);
-      collectFileAndType(uploadStepData, "overseasMedicalLetterFile", "OVERSEAS_MEDICAL_LETTER", spec);
+      collectFileAndType(uploadStepData, "referenceLetterFromDoctorFile", "MEDICAL_LETTER", spec);
+      collectFileAndType(uploadStepData, "letterFromOverseasDoctorFile", "OVERSEAS_MEDICAL_LETTER", spec);
       break;
     case "PROFESSIONAL_BODY":
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
+      // Buy FX – Professional Body
+      collectFileAndType(uploadStepData, "evidenceOfMembershipFile", "MEMBERSHIP_CARD", spec);
+      collectFileAndType(uploadStepData, "invoiceFromProfessionalBodyFile", "INVOICE", spec);
+      break;
+    case "RESIDENT_FX":
+      // Sell FX – Resident FX
+      collectFileAndType(uploadStepData, "internationalPassportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "utilityBillFile", "UTILITY_BILL", spec);
-      collectFileAndType(uploadStepData, "membershipCardFile", "MEMBERSHIP_CARD", spec);
-      collectFileAndType(uploadStepData, "invoiceFile", "INVOICE", spec);
+      break;
+    case "EXPATRIATE_FX":
+      // Sell FX – Expatriate FX
+      collectFileAndType(uploadStepData, "internationalPassportFile", "PASSPORT", spec);
+      collectFileAndType(uploadStepData, "workPermitFile", "WORK_PERMIT", spec);
+      collectFileAndType(uploadStepData, "utilityBillFile", "UTILITY_BILL", spec);
       break;
     default:
       return null;

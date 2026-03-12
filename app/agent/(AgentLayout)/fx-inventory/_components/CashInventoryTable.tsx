@@ -9,12 +9,18 @@ import {
   Button,
   Tabs,
   Badge,
+  Select,
 } from "@mantine/core";
 import { Search, ListFilter, Upload, ChevronRight } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
+import { ActionButton } from "@/app/admin/_components/ActionButton";
 import { TransactionDetailsModal } from "./TransactionDetailsModal";
+import { SELECT_WIDTH } from "@/app/agent/utils/constants";
 
-type TransactionType = "disbursed" | "received_from_customer" | "received_from_admin";
+type TransactionType =
+  | "disbursed"
+  | "received_from_customer"
+  | "received_from_admin";
 
 interface CashTransaction {
   id: string;
@@ -28,9 +34,7 @@ interface CashTransaction {
   nameOfAdmin?: string;
 }
 
-const generateMockTransactions = (
-  type: TransactionType
-): CashTransaction[] => {
+const generateMockTransactions = (type: TransactionType): CashTransaction[] => {
   const baseTransactions: CashTransaction[] = [
     {
       id: "1",
@@ -133,14 +137,17 @@ const generateMockTransactions = (
 };
 
 export function CashInventoryTable() {
-  const [activeTab, setActiveTab] = useState<TransactionType>("received_from_customer");
+  const [activeTab, setActiveTab] = useState<TransactionType>(
+    "received_from_customer",
+  );
   const [search, setSearch] = useState("");
-  const [selectedTransaction, setSelectedTransaction] = useState<CashTransaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<CashTransaction | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
 
   const transactions = useMemo(
     () => generateMockTransactions(activeTab),
-    [activeTab]
+    [activeTab],
   );
 
   const filteredTransactions = useMemo(() => {
@@ -151,7 +158,7 @@ export function CashInventoryTable() {
         t.receivedFrom.toLowerCase().includes(q) ||
         t.cashAmount.toLowerCase().includes(q) ||
         t.transactionId?.toLowerCase().includes(q) ||
-        t.transactionDate.toLowerCase().includes(q)
+        t.transactionDate.toLowerCase().includes(q),
     );
   }, [search, transactions]);
 
@@ -200,16 +207,14 @@ export function CashInventoryTable() {
         <Text key="transactionDate" size="sm" c="dimmed">
           {item.transactionDate}
         </Text>,
-        <button
+        <ActionButton
           key="action"
           onClick={() => {
             setSelectedTransaction(item);
             setModalOpened(true);
           }}
-          className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center hover:bg-primary-200 transition-colors"
-        >
-          <ChevronRight size={16} className="text-primary-400" />
-        </button>,
+          aria-label="View transaction details"
+        />,
       ];
     }
 
@@ -223,16 +228,14 @@ export function CashInventoryTable() {
       <Text key="transactionDate" size="sm" c="dimmed">
         {item.transactionDate}
       </Text>,
-      <button
+      <ActionButton
         key="action"
         onClick={() => {
           setSelectedTransaction(item);
           setModalOpened(true);
         }}
-        className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center hover:bg-primary-200 transition-colors"
-      >
-        <ChevronRight size={16} className="text-primary-400" />
-      </button>,
+        aria-label="View transaction details"
+      />,
     ];
   };
 
@@ -240,45 +243,65 @@ export function CashInventoryTable() {
     <>
       <Card radius="md" padding="lg" withBorder>
         <Group justify="space-between" mb="md">
-          <Tabs value={activeTab} onChange={(v) => setActiveTab(v as TransactionType)}>
-            <Tabs.List>
-              <Tabs.Tab value="disbursed">Cash Disbursed</Tabs.Tab>
-              <Tabs.Tab value="received_from_customer">
-                Cash Received from Customer
-              </Tabs.Tab>
-              <Tabs.Tab value="received_from_admin">
-                Cash Received from Admin
-              </Tabs.Tab>
+          <Tabs
+            value={activeTab}
+            onChange={(v) => setActiveTab(v as TransactionType)}
+          >
+            <Tabs.List className="w-full flex flex-1 flex-wrap items-start gap-3 border-0 bg-transparent pb-3">
+              {[
+                { value: "disbursed" as const, label: "Cash Disbursed" },
+                {
+                  value: "received_from_customer" as const,
+                  label: "Cash Received from Customer",
+                },
+                {
+                  value: "received_from_admin" as const,
+                  label: "Cash Received from Admin",
+                },
+              ].map((tab) => {
+                const isActive = activeTab === tab.value;
+                return (
+                  <Tabs.Tab
+                    key={tab.value}
+                    value={tab.value}
+                    className={`shrink-0 cursor-pointer rounded-full! border px-2.5 py-1.5 text-sm font-normal leading-[120%] transition-colors mx-2 ${
+                      isActive
+                        ? "border! border-primary-100! bg-[#FFF6F1]! text-primary-400!"
+                        : "border! border-[#E4E4E7]! bg-white! text-gray-900! hover:border-gray-300!"
+                    }`}
+                  >
+                    {tab.label}
+                  </Tabs.Tab>
+                );
+              })}
             </Tabs.List>
           </Tabs>
-
-          <Group gap="xs">
-            <TextInput
-              placeholder="Enter keyword"
-              leftSection={<Search size={16} />}
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+        </Group>
+        <div className="flex items-center gap-2 justify-between pt-2 pb-6">
+          <TextInput
+            placeholder="Enter keyword"
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            size="sm"
+          />
+          <div className="flex items-center gap-2">
+            <Select
+              placeholder="Filter By"
+              data={["All", "Pending", "Completed"]}
               size="sm"
-              style={{ width: 200 }}
+              w={SELECT_WIDTH}
             />
-            <Button
-              variant="default"
-              leftSection={<ListFilter size={16} />}
-              size="sm"
-            >
-              Filter By
-            </Button>
             <Button
               variant="outline"
               color="orange"
-              leftSection={<Upload size={16} />}
               size="sm"
+              rightSection={<Upload size={16} />}
+              w={SELECT_WIDTH}
             >
               Export
             </Button>
-          </Group>
-        </Group>
-
+          </div>
+        </div>
         <DynamicTableSection
           headers={getHeaders()}
           data={filteredTransactions}
