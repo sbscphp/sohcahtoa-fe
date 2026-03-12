@@ -117,7 +117,7 @@ export default function RateCalculatorPage() {
             onChange={setFromAmount}
             currency={getCurrencyByCode(fromCurrency) ?? CURRENCIES[0]}
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => setFromCurrency(c.code)}
+            onCurrencyChange={(c) => setFromCurrency(c?.code ?? CURRENCIES[0].code)}
             placeholder="0"
           />
         </div>
@@ -150,7 +150,7 @@ export default function RateCalculatorPage() {
               }}
               currency={getCurrencyByCode(toCurrency) ?? CURRENCIES[0]}
               currencies={CURRENCIES}
-              onCurrencyChange={(c) => setToCurrency(c.code)}
+              onCurrencyChange={(c) => setToCurrency(c?.code ?? CURRENCIES[0].code)}
               placeholder="0"
             />
           </div>

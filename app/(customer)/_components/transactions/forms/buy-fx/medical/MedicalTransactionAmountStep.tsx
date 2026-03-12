@@ -81,7 +81,7 @@ export default function MedicalTransactionAmountStep({
             onChange={(value) => form.setFieldValue("receiveAmount", value)}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code)}
+            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code ?? CURRENCIES[0].code)}
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />

@@ -1,5 +1,5 @@
 export interface Currency {
-  code?: string;
+  code: string;
   name?: string;
   countryCode?: string;
   symbol?: string;
