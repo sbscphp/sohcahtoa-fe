@@ -3,6 +3,7 @@
  * 
  */
 
+import type React from 'react';
 import { createTheme } from '@mantine/core';
 
 export const mantineTheme = createTheme({
@@ -213,9 +214,12 @@ export const mantineTheme = createTheme({
     },
     Input: {
       defaultProps: {
-        styles: {
+        styles: (_theme: unknown, props: { leftSection?: React.ReactNode; rightSection?: React.ReactNode }) => ({
           input: {
-            padding: '16px 14px',
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            ...(props.leftSection ? {} : { paddingInlineStart: '14px' }),
+            ...(props.rightSection ? {} : { paddingInlineEnd: '14px' }),
             backgroundColor: '#FFFFFF',
             border: '1px solid #CCCACA',
             borderRadius: '8px',
@@ -234,7 +238,7 @@ export const mantineTheme = createTheme({
               backgroundColor: '#F9F9F9',
             },
           },
-        },
+        }),
       },
     },
     InputWrapper: {
@@ -253,9 +257,12 @@ export const mantineTheme = createTheme({
     },
     Select: {
       defaultProps: {
-        styles: {
+        styles: (_theme: unknown, props: { leftSection?: React.ReactNode }) => ({
           input: {
-            padding: '16px 14px',
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            // Select always has an internal right section (chevron) — never override paddingInlineEnd
+            ...(props.leftSection ? {} : { paddingInlineStart: '14px' }),
             backgroundColor: '#FFFFFF',
             border: '1px solid #CCCACA',
             borderRadius: '8px',
@@ -282,14 +289,17 @@ export const mantineTheme = createTheme({
             letterSpacing: '0.04px',
             marginBottom: '8px',
           },
-        },
+        }),
       },
     },
     TimeInput: {
       defaultProps: {
-        styles: {
+        styles: (_theme: unknown, props: { leftSection?: React.ReactNode; rightSection?: React.ReactNode }) => ({
           input: {
-            padding: '16px 14px',
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            ...(props.leftSection ? {} : { paddingInlineStart: '14px' }),
+            ...(props.rightSection ? {} : { paddingInlineEnd: '14px' }),
             backgroundColor: '#FFFFFF',
             border: '1px solid #CCCACA',
             borderRadius: '8px',
@@ -316,7 +326,7 @@ export const mantineTheme = createTheme({
             letterSpacing: '0.04px',
             marginBottom: '8px',
           },
-        },
+        }),
       },
     },
     Card: {

@@ -20,6 +20,7 @@ import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useAgents, type AgentRowItem } from "../hooks/useAgents";
+import { useGetExportData } from "@/app/_lib/api/hooks";
 import { adminApi, type CreateAgentPayload } from "@/app/admin/_services/admin-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
@@ -69,6 +70,38 @@ export default function AgentTable() {
     search: debouncedSearch || undefined,
     isActive,
   });
+  const exportAgentsMutation = useGetExportData(
+    () =>
+      adminApi.agent.export({
+        search: debouncedSearch || undefined,
+        isActive,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `agents-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Agents Failed",
+          message:
+            apiResponse?.error?.message ??
+            (error as Error)?.message ??
+            "Unable to export agents at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
   const { options: branchOptions, isLoading: branchesLoading } =
     useManagementLookups("branch", "name");
 
@@ -256,6 +289,9 @@ export default function AgentTable() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportAgentsMutation.mutate()}
+              loading={exportAgentsMutation.isPending}
+              disabled={exportAgentsMutation.isPending}
             >
               Export
             </Button>

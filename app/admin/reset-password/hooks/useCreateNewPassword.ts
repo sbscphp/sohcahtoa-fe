@@ -22,7 +22,10 @@ export function useCreateNewPassword(
       const apiResponse = (error as unknown as ApiError).data as ApiResponse;
       notifications.show({
         title: "Password Reset Failed",
-        message: apiResponse?.error?.message ?? error.message ?? "Failed to reset password. Please try again.",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Failed to reset password. Please try again.",
         color: "red",
       });
       options?.onError?.(error, variables, context, mutation);

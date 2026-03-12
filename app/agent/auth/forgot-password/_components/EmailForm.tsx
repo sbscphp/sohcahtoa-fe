@@ -9,7 +9,7 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import {
   emailSchema,
   type EmailFormValues,
-} from "@/app/admin/forgot-password/_schemas/forgotPassword.schema";
+} from "@/app/admin/reset-password/_schemas/resetPassword.schema";
 
 interface EmailFormProps {
   onSubmit: (values: EmailFormValues) => void;

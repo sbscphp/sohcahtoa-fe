@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { AuthLayout } from "@/app/admin/_components/auth/AuthLayout";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -9,7 +9,10 @@ import { ErrorModal } from "@/app/admin/_components/ErrorModal";
 import { EmailForm } from "./_components/EmailForm";
 import { OtpForm } from "./_components/OtpForm";
 import { CreatePasswordForm } from "./_components/CreatePasswordForm";
-import { type EmailFormValues, type CreatePasswordFormValues } from "./_schemas/forgotPassword.schema";
+import {
+  type EmailFormValues,
+  type CreatePasswordFormValues,
+} from "./_schemas/resetPassword.schema";
 import { useRequestPasswordReset } from "./hooks/useRequestPasswordReset";
 import { useVerifyOtp } from "./hooks/useVerifyOtp";
 import { useCreateNewPassword } from "./hooks/useCreateNewPassword";
@@ -17,11 +20,16 @@ import { adminRoutes } from "@/lib/adminRoutes";
 
 type Step = "email" | "otp" | "password";
 
-export default function ForgotPasswordPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<Step>("email");
+  const searchParams = useSearchParams();
+  const initialQueryOtp = searchParams.get("otp")?.trim() ?? "";
+  const hasCheckedQueryOtp = useRef(false);
+  const [currentStep, setCurrentStep] = useState<Step>(() =>
+    initialQueryOtp ? "otp" : "email"
+  );
   const [userEmail, setUserEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(initialQueryOtp);
   const [resetToken, setResetToken] = useState("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
 
@@ -95,6 +103,17 @@ export default function ForgotPasswordPage() {
       verifyOtp.mutate(otp);
     }
   };
+
+  // One-time query bootstrap for invite/reset links, e.g. ?otp=R3Q5R8
+  useEffect(() => {
+    if (hasCheckedQueryOtp.current) return;
+    hasCheckedQueryOtp.current = true;
+
+    const queryOtp = initialQueryOtp;
+    if (!queryOtp) return;
+
+    verifyOtp.mutate(queryOtp);
+  }, [initialQueryOtp, verifyOtp]);
 
   return (
     <AuthLayout>

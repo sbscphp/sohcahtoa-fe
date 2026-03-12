@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Modal, TextInput, Text, ScrollArea } from "@mantine/core";
 import { Search } from "lucide-react";
+import { useAllCustomers } from "../hooks/useAllCustomers";
 
 export interface CustomerOption {
   id: string;
@@ -16,17 +17,6 @@ interface CustomerSelectModalProps {
   error?: string;
   required?: boolean;
 }
-
-const MOCK_CUSTOMERS: CustomerOption[] = [
-  { id: "12536", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com" },
-  { id: "12537", name: "Adewale, Emmanuel", email: "aemmanuel@sohcahtoa.com" },
-  { id: "12538", name: "Afolabi, Funke", email: "fafolabi@sohcahtoa.com" },
-  { id: "12539", name: "Oluwaseun, Adebayo", email: "adebayo@sohcahtoa.com" },
-  { id: "12540", name: "Chidinma, Nwosu", email: "cnwosu@sohcahtoa.com" },
-  { id: "12541", name: "Tunde, Bakare", email: "tbakare@sohcahtoa.com" },
-  { id: "12542", name: "Amaka, Okonkwo", email: "aokonkwo@sohcahtoa.com" },
-  { id: "12543", name: "Chukwuemeka, Eze", email: "ceze@sohcahtoa.com" },
-];
 
 function getInitials(name: string): string {
   return name
@@ -44,19 +34,20 @@ export default function CustomerSelectModal({
   error,
   required = false,
 }: CustomerSelectModalProps) {
+  const { customers, isLoading, isError } = useAllCustomers();
   const [opened, setOpened] = useState(false);
   const [search, setSearch] = useState("");
 
   const filteredCustomers = useMemo(() => {
-    if (!search.trim()) return MOCK_CUSTOMERS;
+    if (!search.trim()) return customers;
     const q = search.toLowerCase().trim();
-    return MOCK_CUSTOMERS.filter(
+    return customers.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q) ||
         c.id.includes(q)
     );
-  }, [search]);
+  }, [customers, search]);
 
   const handleSelect = (customer: CustomerOption) => {
     onChange(customer);
@@ -139,7 +130,15 @@ export default function CustomerSelectModal({
           />
           <ScrollArea h={320} type="scroll">
             <div className="divide-y divide-gray-200">
-              {filteredCustomers.length === 0 ? (
+              {isLoading ? (
+                <Text size="sm" c="dimmed" py="xl" ta="center">
+                  Loading customers...
+                </Text>
+              ) : isError ? (
+                <Text size="sm" c="red" py="xl" ta="center">
+                  Unable to load customers. Please try again.
+                </Text>
+              ) : filteredCustomers.length === 0 ? (
                 <Text size="sm" c="dimmed" py="xl" ta="center">
                   No customers found
                 </Text>
@@ -165,12 +164,12 @@ export default function CustomerSelectModal({
                         {customer.email}
                       </Text>
                     </div>
-                    <span
+                    {/* <span
                       className="shrink-0 rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700"
                       aria-hidden
                     >
                       ID: {customer.id}
-                    </span>
+                    </span> */}
                   </button>
                 ))
               )}

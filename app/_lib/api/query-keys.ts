@@ -109,6 +109,16 @@ export const adminKeys = {
     stats: () => [...adminKeys.agent.all, "stats"] as const,
     details: () => [...adminKeys.agent.all, "detail"] as const,
     detail: (id: string) => [...adminKeys.agent.details(), id] as const,
+    transactions: (
+      id: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) => [...adminKeys.agent.detail(id), "transactions", params] as const,
     list: (params?: {
       page?: number;
       limit?: number;
@@ -124,6 +134,7 @@ export const adminKeys = {
   customers: {
     all: ["admin", "customers"] as const,
     counts: () => [...adminKeys.customers.all, "counts"] as const,
+    allCustomers: () => [...adminKeys.customers.all, "all"] as const,
     lists: () => [...adminKeys.customers.all, "list"] as const,
     list: (params?: {
       page?: number;
@@ -150,11 +161,51 @@ export const adminKeys = {
       allFlags: () => [...adminKeys.customers.all, "flags", "all"] as const,
     },
   },
+
+  tickets: {
+    all: ["admin", "tickets"] as const,
+    stats: () => [...adminKeys.tickets.all, "stats"] as const,
+    caseTypes: () => [...adminKeys.tickets.all, "case-types"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) => [...adminKeys.tickets.all, "list", params] as const,
+  },
+
+  outlet: {
+    all: ["admin", "outlet"] as const,
+    franchises: {
+      all: () => [...adminKeys.outlet.all, "franchises"] as const,
+      stats: () => [...adminKeys.outlet.franchises.all(), "stats"] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      }) => [...adminKeys.outlet.franchises.all(), "list", params] as const,
+    },
+  },
   
   transactions: {
     all: ["admin", "transactions"] as const,
+    stats: () => [...adminKeys.transactions.all, "stats"] as const,
     lists: () => [...adminKeys.transactions.all, "list"] as const,
-    list: (params?: { page?: number; limit?: number; status?: string }) =>
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      step?: string;
+      type?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    }) =>
       [...adminKeys.transactions.lists(), params] as const,
     details: () => [...adminKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...adminKeys.transactions.details(), id] as const,
@@ -164,6 +215,7 @@ export const adminKeys = {
     all: ["admin", "management"] as const,
     lookups: (query: "role" | "department" | "branch") =>
       [...adminKeys.management.all, "lookups", query] as const,
+    modules: () => [...adminKeys.management.all, "modules"] as const,
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,
       stats: () => [...adminKeys.management.users.all(), "stats"] as const,

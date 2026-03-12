@@ -9,6 +9,7 @@ import {
   Select,
 } from "@mantine/core";
 import { Search, Plus, Upload, ListFilter } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
@@ -20,6 +21,9 @@ import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useRoles, type RoleItem } from "../../hooks/useRoles";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const PAGE_SIZE = 10;
 const FILTER_OPTIONS = ["Filter By", "Active", "Deactivated"] as const;
@@ -46,6 +50,35 @@ export default function RolesTable() {
     search: debouncedSearch || undefined,
     isActive: filter === "Filter By" ? undefined : filter === "Active",
   });
+
+  const exportRolesMutation = useGetExportData(
+    () => adminApi.management.roles.export(),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-roles-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Roles Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export roles at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const handleConfirm = () => {
     setStatus((prev) => (prev === "Active" ? "Deactivated" : "Active"));
@@ -143,6 +176,9 @@ export default function RolesTable() {
             color="#DD4F05"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportRolesMutation.mutate()}
+            loading={exportRolesMutation.isPending}
+            disabled={exportRolesMutation.isPending}
           >
             Export
           </Button>

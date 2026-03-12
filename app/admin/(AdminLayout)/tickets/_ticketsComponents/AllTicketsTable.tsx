@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
@@ -8,190 +8,12 @@ import { Group, TextInput, Select, Button, Text } from "@mantine/core";
 import { ListFilter, Plus, Search, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
-
-export type TicketStatus = "Resolved" | "Open" | "In progress" | "Closed";
-export type TicketPriority = "High" | "Medium" | "Low";
-
-export interface TicketRow {
-  id: string;
-  customerName: string;
-  customerEmail: string;
-  date: string;
-  time: string;
-  assignedTo: string;
-  assignedRole: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-}
-
-const TICKET_DATA: TicketRow[] = [
-  {
-    id: "1001",
-    customerName: "Liam Neeson",
-    customerEmail: "liam@fictitiousmail.com",
-    date: "September 12, 2025",
-    time: "11:00 am",
-    assignedTo: "Jide Adeola",
-    assignedRole: "System Admin",
-    status: "Resolved",
-    priority: "High",
-  },
-  {
-    id: "1002",
-    customerName: "Emma Watson",
-    customerEmail: "emma@fakedomain.com",
-    date: "September 12, 2025",
-    time: "11:00 am",
-    assignedTo: "Finance",
-    assignedRole: "Department",
-    status: "Open",
-    priority: "Medium",
-  },
-  {
-    id: "1003",
-    customerName: "Noah Smith",
-    customerEmail: "noah@samplemail.net",
-    date: "September 12, 2025",
-    time: "11:00 am",
-    assignedTo: "Jide Adeola",
-    assignedRole: "CRM Manager",
-    status: "Resolved",
-    priority: "Low",
-  },
-  {
-    id: "1004",
-    customerName: "Ava Brown",
-    customerEmail: "ava@mockemail.org",
-    date: "September 12, 2025",
-    time: "11:00 am",
-    assignedTo: "Marketing",
-    assignedRole: "Department",
-    status: "Resolved",
-    priority: "Medium",
-  },
-  {
-    id: "1005",
-    customerName: "Ethan Hunt",
-    customerEmail: "ethan@theoreticalmail.com",
-    date: "September 12, 2025",
-    time: "11:00 am",
-    assignedTo: "Sodiq Dairo",
-    assignedRole: "Settlement Manager",
-    status: "In progress",
-    priority: "High",
-  },
-  {
-    id: "1006",
-    customerName: "Sophia Turner",
-    customerEmail: "sophia@imaginarymail.com",
-    date: "September 12, 2025",
-    time: "11:00 am",
-    assignedTo: "Internal Control",
-    assignedRole: "",
-    status: "Closed",
-    priority: "High",
-  },
-  // Additional mock tickets to match stat (15 total) and multi-page pagination
-  {
-    id: "1007",
-    customerName: "James Wilson",
-    customerEmail: "james@example.com",
-    date: "September 13, 2025",
-    time: "09:30 am",
-    assignedTo: "Support",
-    assignedRole: "Department",
-    status: "Resolved",
-    priority: "Low",
-  },
-  {
-    id: "1008",
-    customerName: "Olivia Davis",
-    customerEmail: "olivia@example.com",
-    date: "September 13, 2025",
-    time: "02:15 pm",
-    assignedTo: "Jide Adeola",
-    assignedRole: "System Admin",
-    status: "Open",
-    priority: "Medium",
-  },
-  {
-    id: "1009",
-    customerName: "William Brown",
-    customerEmail: "william@example.com",
-    date: "September 14, 2025",
-    time: "10:00 am",
-    assignedTo: "Finance",
-    assignedRole: "Department",
-    status: "Resolved",
-    priority: "High",
-  },
-  {
-    id: "1010",
-    customerName: "Isabella Martinez",
-    customerEmail: "isabella@example.com",
-    date: "September 14, 2025",
-    time: "11:45 am",
-    assignedTo: "Sodiq Dairo",
-    assignedRole: "Settlement Manager",
-    status: "In progress",
-    priority: "Medium",
-  },
-  {
-    id: "1011",
-    customerName: "Benjamin Garcia",
-    customerEmail: "benjamin@example.com",
-    date: "September 15, 2025",
-    time: "08:00 am",
-    assignedTo: "Marketing",
-    assignedRole: "Department",
-    status: "Resolved",
-    priority: "Low",
-  },
-  {
-    id: "1012",
-    customerName: "Mia Anderson",
-    customerEmail: "mia@example.com",
-    date: "September 15, 2025",
-    time: "03:30 pm",
-    assignedTo: "Internal Control",
-    assignedRole: "",
-    status: "Closed",
-    priority: "High",
-  },
-  {
-    id: "1013",
-    customerName: "Lucas Thomas",
-    customerEmail: "lucas@example.com",
-    date: "September 16, 2025",
-    time: "01:00 pm",
-    assignedTo: "Jide Adeola",
-    assignedRole: "CRM Manager",
-    status: "Open",
-    priority: "Medium",
-  },
-  {
-    id: "1014",
-    customerName: "Charlotte Jackson",
-    customerEmail: "charlotte@example.com",
-    date: "September 16, 2025",
-    time: "04:45 pm",
-    assignedTo: "Finance",
-    assignedRole: "Department",
-    status: "Resolved",
-    priority: "Low",
-  },
-  {
-    id: "1015",
-    customerName: "Henry White",
-    customerEmail: "henry@example.com",
-    date: "September 17, 2025",
-    time: "09:15 am",
-    assignedTo: "Support",
-    assignedRole: "Department",
-    status: "In progress",
-    priority: "High",
-  },
-];
+import { useDebouncedValue } from "@mantine/hooks";
+import { useTickets, type TicketListItem } from "../hooks/useTickets";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const ticketHeaders = [
   { label: "Incident ID", key: "id" },
@@ -203,48 +25,139 @@ const ticketHeaders = [
   { label: "Action", key: "action" },
 ];
 
-const priorityColorMap: Record<TicketPriority, string> = {
+const priorityColorMap: Record<string, string> = {
   High: "text-red-600",
   Medium: "text-amber-600",
   Low: "text-blue-600",
 };
 
-const priorityDotColorMap: Record<TicketPriority, string> = {
+const priorityDotColorMap: Record<string, string> = {
   High: "bg-red-500",
   Medium: "bg-amber-500",
   Low: "bg-blue-500",
 };
 
+const PAGE_SIZE = 10;
+
+function toDisplayStatus(value: string): string {
+  if (!value) return "--";
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "in_progress" || normalized === "in-progress") {
+    return "In progress";
+  }
+
+  return value
+    .split("_")
+    .map((word) =>
+      word ? `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}` : word
+    )
+    .join(" ");
+}
+
+function toDisplayPriority(value: string): string {
+  if (!value) return "--";
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "high" || normalized === "medium" || normalized === "low") {
+    return `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
+  }
+
+  return value;
+}
+
+function formatDateTime(createdAt: string): { date: string; time: string } {
+  if (!createdAt) {
+    return { date: "--", time: "--" };
+  }
+
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return { date: "--", time: "--" };
+  }
+
+  return {
+    date: date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    time: date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }),
+  };
+}
+
 export default function AllTicketsTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Filter By");
-  const pageSize = 6;
+  const [status, setStatus] = useState("All");
+  const [category, setCategory] = useState("");
+  const [priority, setPriority] = useState("All");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
+  const [debouncedCategory] = useDebouncedValue(category, 350);
 
-  const filteredData = useMemo(() => {
-    return TICKET_DATA.filter((t) => {
-      const matchesSearch =
-        t.id.includes(search) ||
-        t.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        t.customerEmail.toLowerCase().includes(search.toLowerCase()) ||
-        t.assignedTo.toLowerCase().includes(search.toLowerCase()) ||
-        t.assignedRole.toLowerCase().includes(search.toLowerCase());
-      const matchesFilter =
-        filter === "Filter By" ||
-        filter === "All" ||
-        t.status === filter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter]);
+  const queryParams = useMemo(() => {
+    const trimmedSearch = debouncedSearch.trim();
+    const trimmedCategory = debouncedCategory.trim();
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
+    return {
+      page,
+      limit: PAGE_SIZE,
+      search: trimmedSearch || undefined,
+      status: status === "All" ? undefined : status,
+      category: trimmedCategory || undefined,
+      priority: priority === "All" ? undefined : priority,
+    };
+  }, [debouncedCategory, debouncedSearch, page, priority, status]);
 
-  const renderRow = (item: TicketRow) => [
+  const { tickets, isLoading, totalPages } = useTickets(queryParams);
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      status: status === "All" ? undefined : status,
+      category: debouncedCategory.trim() || undefined,
+      priority: priority === "All" ? undefined : priority,
+    }),
+    [debouncedCategory, debouncedSearch, priority, status]
+  );
+  const exportTicketsMutation = useGetExportData(
+    () => adminApi.tickets.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `tickets-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Tickets Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export tickets at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const renderRow = (item: TicketListItem) => {
+    const { date, time } = formatDateTime(item.createdAt);
+    const displayStatus = toDisplayStatus(item.status);
+    const displayPriority = toDisplayPriority(item.priority);
+
+    return [
     <Text key="id" size="sm" fw={500}>
       ID: {item.id}
     </Text>,
@@ -257,9 +170,9 @@ export default function AllTicketsTable() {
       </Text>
     </div>,
     <div key="date">
-      <Text size="sm">{item.date}</Text>
+      <Text size="sm">{date}</Text>
       <Text size="xs" c="dimmed">
-        {item.time}
+        {time}
       </Text>
     </div>,
     <div key="assigned">
@@ -272,14 +185,14 @@ export default function AllTicketsTable() {
         </Text>
       )}
     </div>,
-    <StatusBadge key="status" status={item.status} />,
+    <StatusBadge key="status" status={displayStatus} />,
     <div key="priority" className="flex items-center gap-1.5">
       <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${priorityDotColorMap[item.priority]}`}
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${priorityDotColorMap[displayPriority] ?? "bg-gray-500"}`}
         aria-hidden
       />
-      <Text size="sm" className={priorityColorMap[item.priority]}>
-        {item.priority}
+      <Text size="sm" className={priorityColorMap[displayPriority] ?? "text-gray-600"}>
+        {displayPriority}
       </Text>
     </div>,
     <RowActionIcon
@@ -287,6 +200,7 @@ export default function AllTicketsTable() {
       onClick={() => router.push(adminRoutes.adminTicketDetails(item.id))}
     />,
   ];
+  };
 
   return (
     <div className="rounded-lg bg-white p-5 shadow-sm">
@@ -307,21 +221,37 @@ export default function AllTicketsTable() {
         </div>
         <Group>
           <Select
-            value={filter}
+            value={status}
             onChange={(value) => {
-              setFilter(value!);
+              setStatus(value ?? "All");
               setPage(1);
             }}
-            data={[
-              "Filter By",
-              "All",
-              "Resolved",
-              "Open",
-              "In progress",
-              "Closed",
-            ]}
+            data={["All", "Resolved", "Open", "In progress", "Closed"]}
+            placeholder="Status"
             radius="xl"
-            w={120}
+            w={140}
+            rightSection={<ListFilter size={16} />}
+          />
+          <TextInput
+            placeholder="Category"
+            value={category}
+            onChange={(e) => {
+              setCategory(e.currentTarget.value);
+              setPage(1);
+            }}
+            w={140}
+            radius="xl"
+          />
+          <Select
+            value={priority}
+            onChange={(value) => {
+              setPriority(value ?? "All");
+              setPage(1);
+            }}
+            data={["All", "High", "Medium", "Low"]}
+            placeholder="Priority"
+            radius="xl"
+            w={130}
             rightSection={<ListFilter size={16} />}
           />
           <Button
@@ -329,6 +259,9 @@ export default function AllTicketsTable() {
             color="#E36C2F"
             radius="xl"
             rightSection={<Upload size={16} />}
+            onClick={() => exportTicketsMutation.mutate()}
+            loading={exportTicketsMutation.isPending}
+            disabled={exportTicketsMutation.isPending}
           >
             Export
           </Button>
@@ -345,8 +278,8 @@ export default function AllTicketsTable() {
       </Group>
       <DynamicTableSection
         headers={ticketHeaders}
-        data={paginatedData}
-        loading={false}
+        data={tickets}
+        loading={isLoading}
         renderItems={renderRow}
         emptyTitle="No Tickets Found"
         emptyMessage="There are currently no tickets to display."

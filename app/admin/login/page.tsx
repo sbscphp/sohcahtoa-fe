@@ -12,6 +12,7 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { loginSchema, LoginFormValues } from "./_schemas/login.schema";
 import { useLogin, useVerifyOtp } from "./hooks/useLogin";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 export default function LoginPage() {
   const [otpModalOpened, setOtpModalOpened] = useState(false);
@@ -92,7 +93,7 @@ export default function LoginPage() {
               c="red"
               size="sm"
               underline="always"
-              onClick={() => router.push("/admin/forgot-password")}
+              onClick={() => router.push(adminRoutes.adminResetPassword())}
             >
               Forgot Password?
             </Anchor>

@@ -10,7 +10,7 @@ import {
   createPasswordSchema,
   checkPasswordRequirements,
   type CreatePasswordFormValues,
-} from "../_schemas/forgotPassword.schema";
+} from "../_schemas/resetPassword.schema";
 
 interface CreatePasswordFormProps {
   onSubmit: (values: CreatePasswordFormValues) => void;
