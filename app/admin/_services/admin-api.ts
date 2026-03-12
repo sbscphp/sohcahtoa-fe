@@ -171,6 +171,11 @@ export interface TicketDetailsResponseData {
   comments: TicketComment[];
 }
 
+export interface UpdateTicketStatusPayload {
+  status: "IN_PROGRESS" | "RESOLVED" | "REOPENED" | "CLOSED" | "OPEN";
+  notes: string;
+}
+
 export type AdminTransactionListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -490,6 +495,12 @@ export const adminApi = {
     getById: (id: string) =>
       apiClient.get<ApiResponse<TicketDetailsResponseData>>(
         API_ENDPOINTS.admin.tickets.getById(id)
+      ),
+
+    updateStatus: (id: string, data: UpdateTicketStatusPayload) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.tickets.updateStatus(id),
+        data
       ),
   },
 
