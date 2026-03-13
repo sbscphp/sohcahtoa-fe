@@ -154,6 +154,7 @@ export const API_ENDPOINTS = {
     transactions: {
       list: "/api/admin/transactions",
       stats: "/api/admin/transactions/stats",
+      getById: (id: string) => `/api/admin/transactions/${id}`,
       review: (id: string) => `/api/admin/transactions/${id}/review`,
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,

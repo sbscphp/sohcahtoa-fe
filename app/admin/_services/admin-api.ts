@@ -262,6 +262,31 @@ export interface AdminTransactionStatsData {
   approved: number;
 }
 
+export interface AdminTransactionDetailsPayload {
+  transactionValueFx?: number | string | null;
+  transactionValueNgn?: number | string | null;
+  requesterType?: string | null;
+  bvnNumber?: string | null;
+  numberOfDocuments?: number | string | null;
+  pickupLocation?: string | null;
+}
+
+export interface AdminTransactionDetailsData {
+  id: string;
+  reference: string;
+  date: string;
+  time: string;
+  customerName: string;
+  customerType: string;
+  transactionType: string;
+  fxType: string;
+  transactionStage: string;
+  workflowStage: string;
+  requestStatus: string;
+  details: AdminTransactionDetailsPayload | null;
+  raw?: Record<string, unknown> | null;
+}
+
 export type FranchiseListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -833,6 +858,11 @@ export const adminApi = {
     getStats: () =>
       apiClient.get<ApiResponse<AdminTransactionStatsData>>(
         API_ENDPOINTS.admin.transactions.stats
+      ),
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<AdminTransactionDetailsData>>(
+        API_ENDPOINTS.admin.transactions.getById(id)
       ),
 
     review: (id: string, data: { notes?: string }) =>
