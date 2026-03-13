@@ -167,6 +167,22 @@ export interface TicketComment {
   updatedAt: string;
 }
 
+export interface TicketCommentAdmin {
+  id: string;
+  fullName: string;
+}
+
+export interface TicketCommentItem {
+  id: string;
+  message: string;
+  createdAt: string;
+  admin: TicketCommentAdmin | null;
+}
+
+export interface AddTicketCommentPayload {
+  message: string;
+}
+
 export interface TicketDetailsResponseData {
   id: string;
   reference: string;
@@ -512,6 +528,17 @@ export const adminApi = {
     getById: (id: string) =>
       apiClient.get<ApiResponse<TicketDetailsResponseData>>(
         API_ENDPOINTS.admin.tickets.getById(id)
+      ),
+
+    getComments: (id: string) =>
+      apiClient.get<ApiResponse<TicketCommentItem[]>>(
+        API_ENDPOINTS.admin.tickets.comments(id)
+      ),
+
+    addComment: (id: string, data: AddTicketCommentPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.tickets.comments(id),
+        data
       ),
 
     updateStatus: (id: string, data: UpdateTicketStatusPayload) =>

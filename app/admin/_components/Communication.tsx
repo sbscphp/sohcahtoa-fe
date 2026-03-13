@@ -1,89 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import {
   Card,
   Group,
   Text,
   Button,
-  TextInput,
   Textarea,
   Avatar,
   Skeleton,
-  ActionIcon,
   Divider,
 } from "@mantine/core";
-import {
-  Search,
-  FileX,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Maximize2,
-  Minimize2,
-  Bold,
-  Italic,
-  Quote,
-  Link,
-  Image as ImageIcon,
-  List,
-  ListOrdered,
-  Heading1,
-  Heading2,
-} from "lucide-react";
+import { MessageSquareOff } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
 import EmptyState from "./EmptyState";
-
-export interface RecipientOption {
-  id: string;
-  name: string;
-}
-
-export interface EmailItem {
-  id: string;
-  senderName: string;
-  senderEmail: string;
-  timestamp: string;
-  preview: string;
-  fullBody: string;
-}
+import { useCreateData, useFetchData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import {
+  adminApi,
+  type TicketCommentItem,
+} from "@/app/admin/_services/admin-api";
+import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
 
 interface CommunicationProps {
   entityId?: string;
   emptyTitle?: string;
   emptyDescription?: string;
-  defaultComposeOpen?: boolean;
 }
-
-const MOCK_RECIPIENTS: RecipientOption[] = [
-  { id: "r1", name: "Adekunle Ibrahim" },
-  { id: "r2", name: "Moshood Aremu" },
-  { id: "r3", name: "Sodiq Olajide" },
-];
-
-const MOCK_EMAILS_INITIAL: EmailItem[] = [
-  {
-    id: "e1",
-    senderName: "Adekunle Ibrahim",
-    senderEmail: "adekunle@gmail.com",
-    timestamp: "1hr ago",
-    preview: "I am yet to get a refuns still. My account has not been credited.",
-    fullBody:
-      "I am yet to get a refuns still. My account has not been credited. Please look into this matter as soon as possible. I have been waiting for over a week.",
-  },
-  {
-    id: "e2",
-    senderName: "Adekunle Ibrahim",
-    senderEmail: "moshood@sohcahtoa.com",
-    timestamp: "2hrs ago",
-    preview: "Customer attempted to pay for Order #84722 via card (Mastercard – GTBank)",
-    fullBody:
-      "Customer attempted to pay for Order #84722 via card (Mastercard – GTBank). The transaction was declined. We have notified the customer to try an alternative payment method.",
-  },
-];
 
 function getInitials(name: string): string {
   return name
-    .split(/\s+/)
+    .split(/[\s,]+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
@@ -91,82 +39,136 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+function formatCommentDate(value: string): string {
+  if (!value) {
+    return "--";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "--";
+  }
+
+  return parsed.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function normalizeComments(data: unknown): TicketCommentItem[] {
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data
+    .filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null
+    )
+    .map((item) => ({
+      id: typeof item.id === "string" ? item.id : "",
+      message: typeof item.message === "string" ? item.message : "",
+      createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
+      admin:
+        typeof item.admin === "object" && item.admin !== null
+          ? {
+              id:
+                typeof (item.admin as Record<string, unknown>).id === "string"
+                  ? ((item.admin as Record<string, unknown>).id as string)
+                  : "",
+              fullName:
+                typeof (item.admin as Record<string, unknown>).fullName ===
+                "string"
+                  ? ((item.admin as Record<string, unknown>).fullName as string)
+                  : "Admin",
+            }
+          : null,
+    }))
+    .filter((item) => item.id && item.message.trim())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+}
+
 export default function Communication({
   entityId,
   emptyTitle = "No Communication Yet",
-  emptyDescription = "Assign this incident to a staff for communication to begin",
-  defaultComposeOpen = false,
+  emptyDescription = "No comment has been added for this ticket yet.",
 }: CommunicationProps) {
-  const [composeOpen, setComposeOpen] = useState(defaultComposeOpen);
-  const [to, setTo] = useState<RecipientOption[]>([]);
-  const [cc, setCc] = useState("");
-  const [bcc, setBcc] = useState("");
-  const [body, setBody] = useState(
-    "A message has been sent to your bank. This will be resived very soon. We apologize for every inconvenice caused by this."
+  const queryClient = useQueryClient();
+  const [message, setMessage] = useState("");
+  const trimmedMessage = message.trim();
+  const hasEntityId = Boolean(entityId);
+
+  const commentsQuery = useFetchData<ApiResponse<TicketCommentItem[]>>(
+    [...adminKeys.tickets.comments(entityId ?? "")],
+    () =>
+      adminApi.tickets.getComments(entityId ?? "") as unknown as Promise<
+        ApiResponse<TicketCommentItem[]>
+      >,
+    hasEntityId
   );
-  const [emails, setEmails] = useState<EmailItem[]>([]);
-  const [listLoading, setListLoading] = useState(true);
-  const [maximizedId, setMaximizedId] = useState<string | null>(null);
-  const [maximizeLoading, setMaximizeLoading] = useState(false);
-  const [expandingId, setExpandingId] = useState<string | null>(null);
 
-  // Simulate list fetch on mount
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setEmails(MOCK_EMAILS_INITIAL);
-      setListLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
-  }, [entityId]);
+  const comments = useMemo(
+    () => normalizeComments(commentsQuery.data?.data),
+    [commentsQuery.data?.data]
+  );
 
-  const removeTo = (id: string) => setTo((prev) => prev.filter((r) => r.id !== id));
-  const addTo = (recipient: RecipientOption) => {
-    if (to.some((r) => r.id === recipient.id)) return;
-    setTo((prev) => [...prev, recipient]);
+  const addCommentMutation = useCreateData(
+    (payload: { message: string }) =>
+      adminApi.tickets.addComment(entityId ?? "", payload),
+    {
+      onSuccess: async () => {
+        setMessage("");
+
+        notifications.show({
+          title: "Comment Added",
+          message: "Your comment has been added successfully.",
+          color: "green",
+        });
+
+        if (entityId) {
+          await queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.comments(entityId)],
+          });
+          await queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.detail(entityId)],
+          });
+        }
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+
+        notifications.show({
+          title: "Unable to add comment",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "An unexpected error occurred. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const handleAddComment = () => {
+    if (!entityId || !trimmedMessage) {
+      return;
+    }
+
+    addCommentMutation.mutate({ message: trimmedMessage });
   };
-
-  const handleSend = () => {
-    if (to.length === 0) return;
-    const newEmail: EmailItem = {
-      id: `e${Date.now()}`,
-      senderName: to[0].name,
-      senderEmail: "noreply@sohcahtoa.com",
-      timestamp: "Just now",
-      preview: body.slice(0, 60) + (body.length > 60 ? "…" : ""),
-      fullBody: body,
-    };
-    setEmails((prev) => [newEmail, ...prev]);
-    setTo([]);
-    setCc("");
-    setBcc("");
-    setBody("");
-    setComposeOpen(false);
-  };
-
-  const handleMaximize = (id: string) => {
-    setExpandingId(id);
-    setMaximizeLoading(true);
-    setTimeout(() => {
-      setMaximizedId(id);
-      setMaximizeLoading(false);
-      setExpandingId(null);
-    }, 600);
-  };
-
-  const handleMinimize = () => setMaximizedId(null);
 
   const emptyIcon = (
     <div className="relative flex items-center justify-center w-24 h-24 text-gray-300">
-      <FileX size={48} strokeWidth={1.5} className="absolute" />
-      <Search size={28} className="absolute opacity-80" />
+      <MessageSquareOff size={48} strokeWidth={1.5} className="absolute" />
     </div>
   );
-
-  const showEmptyState = !listLoading && emails.length === 0 && !composeOpen;
-  const showCompose = composeOpen;
-  const showList = !listLoading && emails.length > 0;
-  const showMaximized = maximizedId && !maximizeLoading;
-  const maximizedEmail = maximizedId ? emails.find((e) => e.id === maximizedId) : null;
 
   return (
     <Card radius="lg" p="xl" className="bg-white shadow-sm mt-6">
@@ -174,197 +176,92 @@ export default function Communication({
         <Text fw={600} size="lg" className="text-gray-900">
           Communication
         </Text>
-        <Button
-          variant="subtle"
-          color="orange"
-          size="sm"
-          rightSection={composeOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          onClick={() => setComposeOpen((o) => !o)}
-        >
-          {composeOpen ? "Close" : "Compose"}
-        </Button>
       </Group>
+      <Divider my="sm" />
+      <div className="space-y-3">
+        <Text size="sm" fw={500} className="text-gray-900">
+          Add Comment
+        </Text>
+        <Textarea
+          placeholder="Write a comment..."
+          value={message}
+          onChange={(event) => setMessage(event.currentTarget.value)}
+          minRows={3}
+          radius="md"
+          disabled={!hasEntityId || addCommentMutation.isPending}
+        />
+        <Group justify="flex-end">
+          <Button
+            color="#DD4F05"
+            radius="xl"
+            onClick={handleAddComment}
+            loading={addCommentMutation.isPending}
+            disabled={!hasEntityId || !trimmedMessage}
+          >
+            Add Comment
+          </Button>
+        </Group>
+      </div>
+      <Divider my="md" />
 
-      {showCompose && (
-        <>
-          <Divider my="sm" />
-          <div className="space-y-4">
-            <div>
-              <Text size="xs" c="dimmed" mb={4}>
-                To:
-              </Text>
-              <Group gap="xs" wrap="wrap">
-                {to.map((r) => (
-                  <span
-                    key={r.id}
-                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-700"
-                  >
-                    {r.name}
-                    <button
-                      type="button"
-                      onClick={() => removeTo(r.id)}
-                      className="p-0.5 rounded hover:bg-gray-200"
-                      aria-label={`Remove ${r.name}`}
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-                {to.length === 0 && (
-                  <Text size="sm" c="dimmed">
-                    Add recipients below
-                  </Text>
-                )}
-              </Group>
-              <Group gap="xs" mt="xs">
-                {MOCK_RECIPIENTS.filter((r) => !to.some((t) => t.id === r.id)).map((r) => (
-                  <Button
-                    key={r.id}
-                    variant="light"
-                    size="xs"
-                    color="gray"
-                    onClick={() => addTo(r)}
-                  >
-                    + {r.name}
-                  </Button>
-                ))}
-              </Group>
-            </div>
-            <TextInput label="CC:" placeholder="Optional" value={cc} onChange={(e) => setCc(e.currentTarget.value)} radius="md" />
-            <TextInput label="BCC:" placeholder="Optional" value={bcc} onChange={(e) => setBcc(e.currentTarget.value)} radius="md" />
-            <div>
-              <Group gap={4} mb={4} className="flex-wrap">
-                <ActionIcon variant="subtle" size="sm" color="gray"><Bold size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><Italic size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><Heading1 size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><Heading2 size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><Quote size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><Link size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><ImageIcon size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><List size={16} /></ActionIcon>
-                <ActionIcon variant="subtle" size="sm" color="gray"><ListOrdered size={16} /></ActionIcon>
-              </Group>
-              <Textarea
-                placeholder="Write your message..."
-                value={body}
-                onChange={(e) => setBody(e.currentTarget.value)}
-                minRows={5}
-                radius="md"
-              />
-            </div>
-            <Group justify="flex-end">
-              <Button color="#DD4F05" radius="xl" onClick={handleSend} disabled={to.length === 0}>
-                Send
-              </Button>
-            </Group>
-          </div>
-          <Divider my="md" />
-        </>
-      )}
-
-      {listLoading && (
-        <div className="space-y-4 py-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex gap-3 items-start">
-              <Skeleton height={40} width={40} radius="xl" />
+      {commentsQuery.isLoading && (
+        <div className="space-y-4 py-2">
+          {[1, 2, 3].map((index) => (
+            <div key={index} className="flex gap-3 items-start">
+              <Skeleton height={36} width={36} radius="xl" />
               <div className="flex-1 space-y-2">
-                <Skeleton height={14} width="40%" />
-                <Skeleton height={12} width="60%" />
-                <Skeleton height={12} width="80%" />
+                <Skeleton height={12} width="30%" />
+                <Skeleton height={10} width="20%" />
+                <Skeleton height={14} width="80%" />
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {showEmptyState && !showCompose && (
-        <EmptyState
-          title={emptyTitle}
-          description={emptyDescription}
-          icon={emptyIcon}
-        />
+      {!commentsQuery.isLoading && commentsQuery.isError && (
+        <Text size="sm" c="red" py="md">
+          Unable to load communication comments. Please refresh and try again.
+        </Text>
       )}
 
-      {maximizeLoading && expandingId && (
-        <div className="py-8 flex flex-col items-center justify-center gap-4">
-          <Skeleton height={200} width="100%" radius="md" />
-          <Text size="sm" c="dimmed">
-            Loading message...
-          </Text>
-        </div>
+      {!commentsQuery.isLoading && !commentsQuery.isError && comments.length === 0 && (
+        <EmptyState title={emptyTitle} description={emptyDescription} icon={emptyIcon} />
       )}
 
-      {showMaximized && maximizedEmail && (
-        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
-          <Group justify="space-between" mb="md">
-            <Group gap="sm">
-              <Avatar size="md" radius="xl" className="bg-orange-100 text-orange-700">
-                {getInitials(maximizedEmail.senderName)}
-              </Avatar>
-              <div>
-                <Text fw={600} size="sm">{maximizedEmail.senderName}</Text>
-                <Text size="xs" c="dimmed">From: {maximizedEmail.senderEmail}</Text>
-              </div>
-            </Group>
-            <Group gap="xs">
-              <Text size="xs" c="dimmed">{maximizedEmail.timestamp}</Text>
-              <ActionIcon variant="light" size="sm" color="blue" onClick={handleMinimize} title="Minimize">
-                <Minimize2 size={16} />
-              </ActionIcon>
-            </Group>
-          </Group>
-          <Text size="sm" className="text-gray-700 whitespace-pre-wrap">
-            {maximizedEmail.fullBody}
-          </Text>
-        </div>
-      )}
+      {!commentsQuery.isLoading && !commentsQuery.isError && comments.length > 0 && (
+        <div className="space-y-4">
+          {comments.map((comment) => {
+            const authorName = comment.admin?.fullName?.trim() || "Admin";
 
-      {showList && !showMaximized && !maximizeLoading && (
-        <>
-          <div className="space-y-4">
-            {emails.map((email) => {
-              return (
-                <div
-                  key={email.id}
-                  className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors"
-                >
-                  <Group justify="space-between" align="flex-start" wrap="nowrap">
-                    <Group gap="sm" wrap="nowrap" className="min-w-0 flex-1">
-                      <Avatar size="md" radius="xl" className="bg-orange-100 text-orange-700 shrink-0">
-                        {getInitials(email.senderName)}
-                      </Avatar>
-                      <div className="min-w-0">
-                        <Text fw={600} size="sm" className="text-gray-900">
-                          {email.senderName}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          From: {email.senderEmail}
-                        </Text>
-                        <Text size="sm" className="text-gray-600 mt-1 line-clamp-1">
-                          {email.preview}
-                        </Text>
-                      </div>
-                    </Group>
-                    <Group gap="xs" className="shrink-0!">
-                      <Text size="xs" c="dimmed">
-                        {email.timestamp}
+            return (
+              <div key={comment.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                <Group align="flex-start" gap="sm" wrap="nowrap">
+                  <Avatar
+                    size="md"
+                    radius="xl"
+                    className="bg-orange-100 text-orange-700 shrink-0"
+                  >
+                    {getInitials(authorName)}
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <Group justify="space-between" gap="sm" wrap="wrap">
+                      <Text fw={600} size="sm" className="text-gray-900">
+                        {authorName}
                       </Text>
-                      <ActionIcon
-                        variant="light"
-                        size="sm"
-                        color="blue"
-                        onClick={() => handleMaximize(email.id)}
-                        title="Expand"
-                      >
-                        <Maximize2 size={16} />
-                      </ActionIcon>
+                      <Text size="xs" c="dimmed">
+                        {formatCommentDate(comment.createdAt)}
+                      </Text>
                     </Group>
-                  </Group>
-                </div>
-              );
-            })}
-          </div>
-        </>
+                    <Text size="sm" className="text-gray-700 whitespace-pre-wrap mt-1">
+                      {comment.message}
+                    </Text>
+                  </div>
+                </Group>
+              </div>
+            );
+          })}
+        </div>
       )}
     </Card>
   );
