@@ -183,6 +183,19 @@ export interface AddTicketCommentPayload {
   message: string;
 }
 
+export type TicketStatusCode =
+  | "OPEN"
+  | "IN_PROGRESS"
+  | "RESOLVED"
+  | "REOPENED"
+  | "CLOSED";
+
+export interface TicketStatusOptionItem {
+  status: TicketStatusCode;
+  note: string;
+  condition?: string;
+}
+
 export interface TicketDetailsResponseData {
   id: string;
   reference: string;
@@ -524,6 +537,11 @@ export const adminApi = {
 
     getCaseTypes: () =>
       apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.tickets.caseTypes),
+
+    getStatuses: () =>
+      apiClient.get<ApiResponse<TicketStatusOptionItem[]>>(
+        API_ENDPOINTS.admin.tickets.statuses
+      ),
 
     getById: (id: string) =>
       apiClient.get<ApiResponse<TicketDetailsResponseData>>(

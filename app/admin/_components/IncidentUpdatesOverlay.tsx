@@ -20,6 +20,15 @@ interface IncidentUpdatesOverlayProps {
   title?: string;
   description?: string;
   ticketId?: string;
+  attachment?: {
+    fileUrl: string | null;
+    fileName: string | null;
+    fileSize: number | null;
+    uploadedBy?: string;
+  };
+  onAddComment?: () => void;
+  onResolve?: () => void;
+  actionLoading?: boolean;
 }
 
 const MOCK_TIMELINE: TimelineEntry[] = [
@@ -102,14 +111,29 @@ export default function IncidentUpdatesOverlay({
   onClose,
   title = "Incident Action Type Title",
   description = "A one line short context text is here to describe",
-  // ticketId,
+  attachment,
+  onAddComment,
+  onResolve,
+  actionLoading = false,
 }: IncidentUpdatesOverlayProps) {
+  const attachmentName = attachment?.fileName?.trim()
+    ? attachment.fileName
+    : attachment?.fileUrl
+      ? attachment.fileUrl.split("/").pop() ?? "Attachment"
+      : "No attachment";
+  const attachmentSizeLabel =
+    typeof attachment?.fileSize === "number" && attachment.fileSize > 0
+      ? `${Math.max(1, Math.round(attachment.fileSize / 1024))} KB`
+      : "--";
+  const hasAttachment = Boolean(attachment?.fileUrl);
+
   return (
     <Drawer
       opened={opened}
       onClose={onClose}
       position="right"
       size={480}
+      zIndex={3000}
       withCloseButton={false}
       overlayProps={{ opacity: 0.55, blur: 2 }}
       classNames={{
@@ -198,7 +222,7 @@ export default function IncidentUpdatesOverlay({
                     Uploaded by:
                   </Text>
                   <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
-                    Customer
+                    {attachment?.uploadedBy ?? "Customer"}
                   </span>
                 </Group>
 
@@ -210,20 +234,28 @@ export default function IncidentUpdatesOverlay({
                       </div>
                       <div>
                         <Text size="sm" fw={500} className="text-gray-900">
-                          CAC Document
+                          {attachmentName}
                         </Text>
                         <Text size="xs" c="dimmed">
-                          100 KB
+                          {attachmentSizeLabel}
                         </Text>
                       </div>
                     </div>
-                    <a
-                      href="#"
-                      className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 shrink-0"
-                    >
-                      View Document
-                      <ArrowUpRight size={14} />
-                    </a>
+                    {hasAttachment ? (
+                      <a
+                        href={attachment?.fileUrl ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 shrink-0"
+                      >
+                        View Document
+                        <ArrowUpRight size={14} />
+                      </a>
+                    ) : (
+                      <Text size="xs" c="dimmed">
+                        No document
+                      </Text>
+                    )}
                   </div>
                 </div>
               </div>
@@ -235,7 +267,15 @@ export default function IncidentUpdatesOverlay({
         {/* Sticky Footer */}
         <div className="sticky bottom-0 left-0 right-0 z-10 py-5 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-4">
           <Group justify="center" gap="md">
-            <Button color="#DD4F05" radius="xl" size="lg" className="font-medium! text-sm!">
+            <Button
+              color="#DD4F05"
+              radius="xl"
+              size="lg"
+              className="font-medium! text-sm!"
+              onClick={onResolve}
+              loading={actionLoading}
+              disabled={actionLoading}
+            >
               Resolve Incident
             </Button>
             <Button
@@ -244,6 +284,8 @@ export default function IncidentUpdatesOverlay({
               size="lg"
               color="orange"
               className="font-medium! text-sm! border-orange-500! text-orange-600!"
+              onClick={onAddComment}
+              disabled={actionLoading}
             >
               Add Comment
             </Button>

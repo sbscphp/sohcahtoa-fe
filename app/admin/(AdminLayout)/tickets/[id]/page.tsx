@@ -7,9 +7,10 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import IncidentUpdatesOverlay from "@/app/admin/_components/IncidentUpdatesOverlay";
 import Communication from "@/app/admin/_components/Communication";
+import CommentNoteModal from "@/app/admin/_components/CommentNoteModal";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import AssignIncidentModal from "../_ticketsComponents/AssignIncidentModal";
 import ChangeStatusModal, {
-  type TicketStatusOption,
   type TicketStatusSelection,
 } from "../_ticketsComponents/ChangeStatusModal";
 import { adminRoutes } from "@/lib/adminRoutes";
@@ -21,16 +22,14 @@ import { notifications } from "@mantine/notifications";
 import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
+import type { TicketStatusCode } from "@/app/admin/_services/admin-api";
 
-const STATUS_PAYLOAD_MAP: Record<
-  TicketStatusOption,
-  "IN_PROGRESS" | "RESOLVED" | "REOPENED" | "CLOSED"
-> = {
-  "In-progress": "IN_PROGRESS",
-  Resolved: "RESOLVED",
-  "Re-opened": "REOPENED",
-  Closed: "CLOSED",
-};
+function formatStatusLabel(status: TicketStatusCode): string {
+  return status
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+}
 
 export default function ViewTicketPage() {
   const params = useParams();
@@ -42,17 +41,22 @@ export default function ViewTicketPage() {
   const [updatesOverlayOpen, setUpdatesOverlayOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [noteModalMode, setNoteModalMode] = useState<"comment" | "resolve">(
+    "comment"
+  );
+  const [resolveSuccessOpen, setResolveSuccessOpen] = useState(false);
   const [ticketStatus, setTicketStatus] = useState<string | null>(null);
 
   const updateStatusMutation = useCreateData(
     (variables: TicketStatusSelection) =>
       adminApi.tickets.updateStatus(id, {
-        status: STATUS_PAYLOAD_MAP[variables.status],
+        status: variables.status,
         notes: variables.notes,
       }),
     {
       onSuccess: async (_response, variables) => {
-        setTicketStatus(variables.status);
+        setTicketStatus(formatStatusLabel(variables.status));
         setChangeStatusOpen(false);
 
         notifications.show({
@@ -84,10 +88,98 @@ export default function ViewTicketPage() {
       },
     }
   );
+  const addCommentMutation = useCreateData(
+    (message: string) => adminApi.tickets.addComment(id, { message }),
+    {
+      onSuccess: async () => {
+        setNoteModalOpen(false);
+        notifications.show({
+          title: "Comment Added",
+          message: "Comment posted successfully.",
+          color: "green",
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.comments(id)],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.detail(id)],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Add Comment Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to post comment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+  const resolveIncidentMutation = useCreateData(
+    (message: string) =>
+      adminApi.tickets.updateStatus(id, {
+        status: "CLOSED",
+        notes: message,
+      }),
+    {
+      onSuccess: async () => {
+        setTicketStatus("Closed");
+        setNoteModalOpen(false);
+        setResolveSuccessOpen(true);
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.detail(id)],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.all],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.stats()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Resolve Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to resolve incident. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const handleAssignIncident = () => setAssignModalOpen(true);
   const handleUpdate = () => router.push(adminRoutes.adminTicketUpdate(id));
   const handleChangeStatus = () => setChangeStatusOpen(true);
+  const handleOverlayAddComment = () => {
+    setNoteModalMode("comment");
+    setNoteModalOpen(true);
+  };
+  const handleOverlayResolve = () => {
+    setNoteModalMode("resolve");
+    setNoteModalOpen(true);
+  };
+  const handleNoteSubmit = (message: string) => {
+    if (noteModalMode === "resolve") {
+      resolveIncidentMutation.mutate(message);
+      return;
+    }
+
+    addCommentMutation.mutate(message);
+  };
+  const handleCloseSuccess = () => {
+    setResolveSuccessOpen(false);
+  };
 
   const handleStatusSelect = (selection: TicketStatusSelection) => {
     updateStatusMutation.mutate(selection);
@@ -239,9 +331,20 @@ export default function ViewTicketPage() {
       <IncidentUpdatesOverlay
         opened={updatesOverlayOpen}
         onClose={() => setUpdatesOverlayOpen(false)}
-        title="Incident Action Type Title"
-        description="A one line short context text is here to describe"
+        title={ticket?.caseType ?? "--"}
+        description={ticket?.description ?? "--"}
         ticketId={id}
+        attachment={{
+          fileUrl: ticket?.firstAttachment?.fileUrl ?? null,
+          fileName: ticket?.firstAttachment?.fileName ?? null,
+          fileSize: ticket?.firstAttachment?.fileSize ?? null,
+          uploadedBy: "Customer",
+        }}
+        onAddComment={handleOverlayAddComment}
+        onResolve={handleOverlayResolve}
+        actionLoading={
+          addCommentMutation.isPending || resolveIncidentMutation.isPending
+        }
       />
 
       <AssignIncidentModal
@@ -254,6 +357,30 @@ export default function ViewTicketPage() {
         onClose={() => setChangeStatusOpen(false)}
         onSelect={handleStatusSelect}
         loading={updateStatusMutation.isPending}
+        currentStatus={ticket?.statusCode ?? null}
+      />
+
+      <CommentNoteModal
+        opened={noteModalOpen}
+        onClose={() => setNoteModalOpen(false)}
+        onSubmit={handleNoteSubmit}
+        loading={
+          noteModalMode === "resolve"
+            ? resolveIncidentMutation.isPending
+            : addCommentMutation.isPending
+        }
+        title="Leave comment"
+        placeholder="Write comment here"
+        submitLabel={noteModalMode === "resolve" ? "Resolve Incident" : "Post Note"}
+      />
+
+      <SuccessModal
+        opened={resolveSuccessOpen}
+        onClose={handleCloseSuccess}
+        title="Incident Resolved"
+        message="Incident has been resolved successfully."
+        primaryButtonText="Close"
+        onPrimaryClick={handleCloseSuccess}
       />
     </div>
   );

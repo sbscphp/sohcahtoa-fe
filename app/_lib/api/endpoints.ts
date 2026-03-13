@@ -135,6 +135,7 @@ export const API_ENDPOINTS = {
       create: "/api/admin/tickets",
       update: (id: string) => `/api/admin/tickets/${id}`,
       comments: (id: string) => `/api/admin/tickets/${id}/comments`,
+      statuses: "/api/admin/tickets/statuses",
       stats: "/api/admin/tickets/stats",
       caseTypes: "/api/admin/tickets/case-types",
       getById: (id: string) => `/api/admin/tickets/${id}`,

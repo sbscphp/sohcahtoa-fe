@@ -7,6 +7,7 @@ import {
   adminApi,
   type TicketDetailsResponseData,
   type TicketAttachment,
+  type TicketStatusCode,
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
 
@@ -19,6 +20,7 @@ export interface TicketDetailsViewModel {
   caseType: string;
   description: string;
   priorityLabel: string;
+  statusCode: TicketStatusCode | null;
   statusLabel: string;
   createdDate: string;
   createdTime: string;
@@ -74,6 +76,14 @@ function toViewModel(data: TicketDetailsResponseData | null): TicketDetailsViewM
     caseType: data.caseType || "--",
     description: data.description || "--",
     priorityLabel: toDisplayLabel(data.priority),
+    statusCode:
+      data.status === "OPEN" ||
+      data.status === "IN_PROGRESS" ||
+      data.status === "RESOLVED" ||
+      data.status === "REOPENED" ||
+      data.status === "CLOSED"
+        ? data.status
+        : null,
     statusLabel: toDisplayLabel(data.status),
     createdDate,
     createdTime,
