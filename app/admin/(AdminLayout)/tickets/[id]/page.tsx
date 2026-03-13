@@ -162,10 +162,12 @@ export default function ViewTicketPage() {
   const handleUpdate = () => router.push(adminRoutes.adminTicketUpdate(id));
   const handleChangeStatus = () => setChangeStatusOpen(true);
   const handleOverlayAddComment = () => {
+    setUpdatesOverlayOpen(false);
     setNoteModalMode("comment");
     setNoteModalOpen(true);
   };
   const handleOverlayResolve = () => {
+    setUpdatesOverlayOpen(false);
     setNoteModalMode("resolve");
     setNoteModalOpen(true);
   };

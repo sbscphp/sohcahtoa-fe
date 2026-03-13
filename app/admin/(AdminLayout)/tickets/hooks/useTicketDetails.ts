@@ -66,13 +66,17 @@ function toViewModel(data: TicketDetailsResponseData | null): TicketDetailsViewM
 
   const { createdDate, createdTime } = formatDateTime(data.createdAt);
   const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+  const customerName = data.customer?.fullName || data.customerName || "--";
+  const customerEmail = data.customer?.email || data.customerEmail || "--";
+  const customerPhoneNumber =
+    data.customer?.phoneNumber || data.customerPhoneNumber || "--";
 
   return {
     id: data.id || "--",
     reference: data.reference || data.id || "--",
-    customerName: data.customerName || "--",
-    customerEmail: data.customerEmail || "--",
-    customerPhoneNumber: data.customerPhoneNumber || "--",
+    customerName,
+    customerEmail,
+    customerPhoneNumber,
     caseType: data.caseType || "--",
     description: data.description || "--",
     priorityLabel: toDisplayLabel(data.priority),

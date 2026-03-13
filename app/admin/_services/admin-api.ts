@@ -200,9 +200,15 @@ export interface TicketDetailsResponseData {
   id: string;
   reference: string;
   customerId: string;
-  customerName: string | null;
-  customerEmail: string | null;
-  customerPhoneNumber: string | null;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhoneNumber?: string | null;
+  customer?: {
+    id: string;
+    fullName: string | null;
+    email: string | null;
+    phoneNumber: string | null;
+  } | null;
   caseType: string;
   description: string | null;
   priority: string;

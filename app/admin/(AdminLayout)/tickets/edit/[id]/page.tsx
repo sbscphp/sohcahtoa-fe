@@ -85,6 +85,13 @@ export default function EditTicketPage() {
       return;
     }
 
+    const rawCustomerName =
+      ticketData.customer?.fullName ?? ticketData.customerName ?? "";
+    const rawCustomerEmail =
+      ticketData.customer?.email ?? ticketData.customerEmail ?? "";
+    const customerName = rawCustomerName || "--";
+    const customerEmail = rawCustomerEmail || "--";
+
     const matchedCustomer = customers.find(
       (customer) => customer.id === ticketData.customerId
     );
@@ -93,8 +100,8 @@ export default function EditTicketPage() {
     if (
       !matchedCustomer &&
       isCustomersLoading &&
-      !ticketData.customerName &&
-      !ticketData.customerEmail
+      !rawCustomerName &&
+      !rawCustomerEmail
     ) {
       return;
     }
@@ -108,8 +115,8 @@ export default function EditTicketPage() {
           }
         : {
             id: ticketData.customerId,
-            name: ticketData.customerName ?? "--",
-            email: ticketData.customerEmail ?? "--",
+            name: customerName,
+            email: customerEmail,
           },
       caseType: ticketData.caseType ?? "",
       priorityLevel: ticketData.priority ?? "",
