@@ -144,10 +144,10 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
-  // Ticket Update: /admin/tickets/did/:id
-  const ticketDidMatch = pathname.match(/^\/admin\/tickets\/did\/([^/]+)$/);
-  if (ticketDidMatch) {
-    const ticketId = ticketDidMatch[1];
+  // Ticket Update: /admin/tickets/edit/:id
+  const ticketEditMatch = pathname.match(/^\/admin\/tickets\/edit\/([^/]+)$/);
+  if (ticketEditMatch) {
+    const ticketId = ticketEditMatch[1];
     return [
       { label: 'Ticket Management', url: adminRoutes.adminTickets() },
       { label: 'Ticket Details', url: adminRoutes.adminTicketDetails(ticketId) },

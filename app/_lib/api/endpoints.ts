@@ -133,6 +133,7 @@ export const API_ENDPOINTS = {
       list: "/api/admin/tickets",
       export: "/api/admin/tickets/export",
       create: "/api/admin/tickets",
+      update: (id: string) => `/api/admin/tickets/${id}`,
       stats: "/api/admin/tickets/stats",
       caseTypes: "/api/admin/tickets/case-types",
       getById: (id: string) => `/api/admin/tickets/${id}`,

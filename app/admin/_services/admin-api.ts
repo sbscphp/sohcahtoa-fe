@@ -500,6 +500,9 @@ export const adminApi = {
     create: (data: FormData) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.create, data),
 
+    update: (id: string, data: FormData) =>
+      apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.update(id), data),
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.stats),
 
