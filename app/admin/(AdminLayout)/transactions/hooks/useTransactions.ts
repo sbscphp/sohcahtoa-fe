@@ -32,7 +32,7 @@ export interface TransactionListItem {
   status: string;
 }
 
-export interface UseTransactionsParams extends AdminTransactionListParams {}
+export type UseTransactionsParams = AdminTransactionListParams;
 
 function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
