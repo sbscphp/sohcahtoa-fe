@@ -15,6 +15,7 @@ import CustomerSelectModal, {
 } from "../../_ticketsComponents/CustomerSelectModal";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useTicketCaseTypes } from "../../hooks/useTicketCaseTypes";
+import { useAllCustomers } from "../../hooks/useAllCustomers";
 import { useCreateData, useFetchData } from "@/app/_lib/api/hooks";
 import { adminApi, type TicketDetailsResponseData } from "@/app/admin/_services/admin-api";
 import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
@@ -47,6 +48,7 @@ export default function EditTicketPage() {
     isLoading: isCaseTypesLoading,
     isError: isCaseTypesError,
   } = useTicketCaseTypes();
+  const { customers, isLoading: isCustomersLoading } = useAllCustomers();
 
   const ticketQuery = useFetchData<ApiResponse<TicketDetailsResponseData>>(
     [...adminKeys.tickets.detail(id ?? "")],
@@ -83,19 +85,39 @@ export default function EditTicketPage() {
       return;
     }
 
+    const matchedCustomer = customers.find(
+      (customer) => customer.id === ticketData.customerId
+    );
+
+    // Wait for customer options when ticket payload doesn't provide identity fields.
+    if (
+      !matchedCustomer &&
+      isCustomersLoading &&
+      !ticketData.customerName &&
+      !ticketData.customerEmail
+    ) {
+      return;
+    }
+
     form.setValues({
-      customer: {
-        id: ticketData.customerId,
-        name: ticketData.customerName ?? "--",
-        email: ticketData.customerEmail ?? "--",
-      },
+      customer: matchedCustomer
+        ? {
+            id: matchedCustomer.id,
+            name: matchedCustomer.name,
+            email: matchedCustomer.email,
+          }
+        : {
+            id: ticketData.customerId,
+            name: ticketData.customerName ?? "--",
+            email: ticketData.customerEmail ?? "--",
+          },
       caseType: ticketData.caseType ?? "",
       priorityLevel: ticketData.priority ?? "",
       description: ticketData.description ?? "",
       attachment: null,
     });
     setIsPrefilled(true);
-  }, [form, isPrefilled, ticketData]);
+  }, [customers, form, isCustomersLoading, isPrefilled, ticketData]);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
