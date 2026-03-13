@@ -131,6 +131,7 @@ export default function TakeActionOverlay({
       onClose={onClose}
       position="right"
       size={480}
+      zIndex={3000}
       withCloseButton={false}
       overlayProps={{ opacity: 0.55, blur: 2 }}
       classNames={{
