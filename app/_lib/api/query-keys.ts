@@ -225,6 +225,7 @@ export const adminKeys = {
     modules: () => [...adminKeys.management.all, "modules"] as const,
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,
+      allUsers: () => [...adminKeys.management.users.all(), "all"] as const,
       stats: () => [...adminKeys.management.users.all(), "stats"] as const,
       details: () => [...adminKeys.management.users.all(), "detail"] as const,
       detail: (id: string) => [...adminKeys.management.users.details(), id] as const,

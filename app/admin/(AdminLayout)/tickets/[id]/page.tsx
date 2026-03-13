@@ -157,6 +157,42 @@ export default function ViewTicketPage() {
       },
     }
   );
+  const assignIncidentMutation = useCreateData(
+    (adminId: string) => adminApi.tickets.assign(id, { adminId }),
+    {
+      onSuccess: async () => {
+        setAssignModalOpen(false);
+        notifications.show({
+          title: "Incident Assigned",
+          message: "Incident has been assigned successfully.",
+          color: "green",
+        });
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.detail(id)],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.all],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.tickets.stats()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Assignment Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to assign incident. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const handleAssignIncident = () => setAssignModalOpen(true);
   const handleUpdate = () => router.push(adminRoutes.adminTicketUpdate(id));
@@ -352,6 +388,9 @@ export default function ViewTicketPage() {
       <AssignIncidentModal
         opened={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
+        assignedAdminId={ticket?.assignedAgentId ?? null}
+        onAssign={(adminId) => assignIncidentMutation.mutate(adminId)}
+        loading={assignIncidentMutation.isPending}
       />
 
       <ChangeStatusModal

@@ -14,6 +14,7 @@ import type { ApiResponse } from "@/app/_lib/api/client";
 export interface TicketDetailsViewModel {
   id: string;
   reference: string;
+  assignedAgentId: string | null;
   customerName: string;
   customerEmail: string;
   customerPhoneNumber: string;
@@ -74,6 +75,7 @@ function toViewModel(data: TicketDetailsResponseData | null): TicketDetailsViewM
   return {
     id: data.id || "--",
     reference: data.reference || data.id || "--",
+    assignedAgentId: data.assignedAgentId ?? null,
     customerName,
     customerEmail,
     customerPhoneNumber,

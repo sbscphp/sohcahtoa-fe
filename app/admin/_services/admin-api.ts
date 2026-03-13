@@ -196,6 +196,20 @@ export interface TicketStatusOptionItem {
   condition?: string;
 }
 
+export interface AssignTicketPayload {
+  adminId: string;
+}
+
+export interface ManagementAdminUserItem {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  roleName: string | null;
+  departmentName: string | null;
+}
+
 export interface TicketDetailsResponseData {
   id: string;
   reference: string;
@@ -565,6 +579,12 @@ export const adminApi = {
         data
       ),
 
+    assign: (id: string, data: AssignTicketPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.tickets.assign(id),
+        data
+      ),
+
     updateStatus: (id: string, data: UpdateTicketStatusPayload) =>
       apiClient.patch<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.tickets.updateStatus(id),
@@ -620,6 +640,11 @@ export const adminApi = {
     },
 
     users: {
+      getAll: () =>
+        apiClient.get<ApiResponse<ManagementAdminUserItem[]>>(
+          API_ENDPOINTS.admin.management.users.all
+        ),
+
       list: (params?: { page?: number; limit?: number; search?: string }) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.list,

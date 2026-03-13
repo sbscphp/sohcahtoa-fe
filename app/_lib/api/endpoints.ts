@@ -134,6 +134,7 @@ export const API_ENDPOINTS = {
       export: "/api/admin/tickets/export",
       create: "/api/admin/tickets",
       update: (id: string) => `/api/admin/tickets/${id}`,
+      assign: (id: string) => `/api/admin/tickets/${id}/assign`,
       comments: (id: string) => `/api/admin/tickets/${id}/comments`,
       statuses: "/api/admin/tickets/statuses",
       stats: "/api/admin/tickets/stats",
@@ -163,6 +164,7 @@ export const API_ENDPOINTS = {
       modules: "/api/admin/management/modules",
       users: {
         list: "/api/admin/management/users",
+        all: "/api/admin/management/users/all",
         export: "/api/admin/management/users/export",
         create: "/api/admin/management/add-user",
         stats: "/api/admin/management/users/stats",
