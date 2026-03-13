@@ -1,27 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Card,
   Group,
   Text,
-  Button,
-  Textarea,
   Avatar,
   Skeleton,
   Divider,
 } from "@mantine/core";
 import { MessageSquareOff } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { notifications } from "@mantine/notifications";
 import EmptyState from "./EmptyState";
-import { useCreateData, useFetchData } from "@/app/_lib/api/hooks";
+import { useFetchData } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import {
   adminApi,
   type TicketCommentItem,
 } from "@/app/admin/_services/admin-api";
-import { type ApiError, type ApiResponse } from "@/app/_lib/api/client";
+import { type ApiResponse } from "@/app/_lib/api/client";
 
 interface CommunicationProps {
   entityId?: string;
@@ -100,9 +96,6 @@ export default function Communication({
   emptyTitle = "No Communication Yet",
   emptyDescription = "No comment has been added for this ticket yet.",
 }: CommunicationProps) {
-  const queryClient = useQueryClient();
-  const [message, setMessage] = useState("");
-  const trimmedMessage = message.trim();
   const hasEntityId = Boolean(entityId);
 
   const commentsQuery = useFetchData<ApiResponse<TicketCommentItem[]>>(
@@ -119,51 +112,6 @@ export default function Communication({
     [commentsQuery.data?.data]
   );
 
-  const addCommentMutation = useCreateData(
-    (payload: { message: string }) =>
-      adminApi.tickets.addComment(entityId ?? "", payload),
-    {
-      onSuccess: async () => {
-        setMessage("");
-
-        notifications.show({
-          title: "Comment Added",
-          message: "Your comment has been added successfully.",
-          color: "green",
-        });
-
-        if (entityId) {
-          await queryClient.invalidateQueries({
-            queryKey: [...adminKeys.tickets.comments(entityId)],
-          });
-          await queryClient.invalidateQueries({
-            queryKey: [...adminKeys.tickets.detail(entityId)],
-          });
-        }
-      },
-      onError: (error) => {
-        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
-
-        notifications.show({
-          title: "Unable to add comment",
-          message:
-            apiResponse?.error?.message ??
-            error.message ??
-            "An unexpected error occurred. Please try again.",
-          color: "red",
-        });
-      },
-    }
-  );
-
-  const handleAddComment = () => {
-    if (!entityId || !trimmedMessage) {
-      return;
-    }
-
-    addCommentMutation.mutate({ message: trimmedMessage });
-  };
-
   const emptyIcon = (
     <div className="relative flex items-center justify-center w-24 h-24 text-gray-300">
       <MessageSquareOff size={48} strokeWidth={1.5} className="absolute" />
@@ -177,31 +125,6 @@ export default function Communication({
           Communication
         </Text>
       </Group>
-      <Divider my="sm" />
-      <div className="space-y-3">
-        <Text size="sm" fw={500} className="text-gray-900">
-          Add Comment
-        </Text>
-        <Textarea
-          placeholder="Write a comment..."
-          value={message}
-          onChange={(event) => setMessage(event.currentTarget.value)}
-          minRows={3}
-          radius="md"
-          disabled={!hasEntityId || addCommentMutation.isPending}
-        />
-        <Group justify="flex-end">
-          <Button
-            color="#DD4F05"
-            radius="xl"
-            onClick={handleAddComment}
-            loading={addCommentMutation.isPending}
-            disabled={!hasEntityId || !trimmedMessage}
-          >
-            Add Comment
-          </Button>
-        </Group>
-      </div>
       <Divider my="md" />
 
       {commentsQuery.isLoading && (
