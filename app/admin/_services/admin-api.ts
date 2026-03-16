@@ -347,6 +347,11 @@ export type RateListParams = Record<
   status?: "" | "active" | "schedule";
 };
 
+export type RateExportParams = {
+  search?: string;
+  status?: "" | "active" | "schedule";
+};
+
 export interface CreateRatePayload {
   fromCurrency: string;
   toCurrency: string;
@@ -683,6 +688,19 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.list, {
         params,
       }),
+
+    export: async (params?: RateExportParams) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.rate.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
 
     create: (data: CreateRatePayload) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.create, data),

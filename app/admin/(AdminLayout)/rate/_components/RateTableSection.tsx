@@ -11,6 +11,10 @@ import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useRates, type RateListItem } from "../hooks/useRates";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const headers = [
   { label: "Date and time", key: "dateTime" },
@@ -60,6 +64,38 @@ export default function RateTableSection() {
   );
 
   const { rates, isLoading, totalPages } = useRates(queryParams);
+  const exportRatesMutation = useGetExportData(
+    () =>
+      adminApi.rate.export({
+        search: debouncedSearch.trim() || undefined,
+        status: mapTabToStatus(activeTab),
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `exchange-rates-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Rates Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export rates at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const renderRow = (item: RateListItem) => [
     <div key="dateTime">{renderDateTimeCell(item.dateTime)}</div>,
@@ -108,6 +144,9 @@ export default function RateTableSection() {
             radius="xl"
             leftSection={<Upload size={16} />}
             color="orange"
+            onClick={() => exportRatesMutation.mutate()}
+            loading={exportRatesMutation.isPending}
+            disabled={exportRatesMutation.isPending}
           >
             Export
           </Button>
