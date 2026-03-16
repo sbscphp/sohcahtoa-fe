@@ -144,6 +144,7 @@ export const API_ENDPOINTS = {
     },
     rate: {
       list: "/api/admin/rate",
+      create: "/api/admin/rate",
       stats: "/api/admin/rate/stats",
     },
     outlet: {

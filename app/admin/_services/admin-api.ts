@@ -347,6 +347,16 @@ export type RateListParams = Record<
   status?: "" | "active" | "schedule";
 };
 
+export interface CreateRatePayload {
+  fromCurrency: string;
+  toCurrency: string;
+  buyRate: number;
+  sellRate: number;
+  validFrom: string;
+  validUntil: string;
+  note?: string;
+}
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -673,6 +683,9 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.list, {
         params,
       }),
+
+    create: (data: CreateRatePayload) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.create, data),
 
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),
