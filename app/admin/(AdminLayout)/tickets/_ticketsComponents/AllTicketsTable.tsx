@@ -159,15 +159,15 @@ export default function AllTicketsTable() {
 
     return [
     <Text key="id" size="sm" fw={500}>
-      ID: {item.id}
+      ID: {item.reference}
     </Text>,
     <div key="customer">
       <Text fw={500} size="sm">
         {item.customerName}
       </Text>
-      <Text size="xs" c="dimmed">
+      {/* <Text size="xs" c="dimmed">
         {item.customerEmail}
-      </Text>
+      </Text> */}
     </div>,
     <div key="date">
       <Text size="sm">{date}</Text>

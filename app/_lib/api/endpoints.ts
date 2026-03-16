@@ -142,6 +142,10 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/tickets/${id}`,
       updateStatus: (id: string) => `/api/admin/tickets/${id}/status`,
     },
+    rate: {
+      list: "/api/admin/rate",
+      stats: "/api/admin/rate/stats",
+    },
     outlet: {
       franchises: {
         list: "/api/admin/outlet/franchises",
@@ -159,6 +163,10 @@ export const API_ENDPOINTS = {
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
+    },
+    reports: {
+      modules: "/api/admin/reports/modules",
+      generate: "/api/admin/reports/generate",
     },
     management: {
       lookups: "/api/admin/management/lookups",

@@ -287,6 +287,46 @@ export interface AdminTransactionDetailsData {
   raw?: Record<string, unknown> | null;
 }
 
+export interface ReportModuleItem {
+  key: string;
+  name: string;
+  description?: string;
+}
+
+export interface GenerateReportPayload {
+  module: string;
+  startDate: string;
+  endDate: string;
+  format: "CSV" | "PDF";
+}
+
+export interface GeneratedReportFile {
+  blob: Blob;
+  fileName: string | null;
+}
+
+function extractFilenameFromContentDisposition(contentDisposition: string | null): string | null {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]).replace(/^["']|["']$/g, "");
+    } catch {
+      return utf8Match[1].replace(/^["']|["']$/g, "");
+    }
+  }
+
+  const basicMatch = contentDisposition.match(/filename\s*=\s*("?)([^";]+)\1/i);
+  if (basicMatch?.[2]) {
+    return basicMatch[2].trim();
+  }
+
+  return null;
+}
+
 export type FranchiseListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -295,6 +335,16 @@ export type FranchiseListParams = Record<
   limit?: number;
   search?: string;
   status?: string;
+};
+
+export type RateListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "active" | "schedule";
 };
 
 export const adminApi = {
@@ -617,6 +667,17 @@ export const adminApi = {
       ),
   },
 
+  // ==================== Rate ====================
+  rate: {
+    list: (params?: RateListParams) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.list, {
+        params,
+      }),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),
+  },
+
   // ==================== Outlet ====================
   outlet: {
     states: {
@@ -887,5 +948,27 @@ export const adminApi = {
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.settle(id)
       ),
+  },
+
+  // ==================== Reports ====================
+  reports: {
+    modules: () =>
+      apiClient.get<ApiResponse<ReportModuleItem[]>>(
+        API_ENDPOINTS.admin.reports.modules
+      ),
+
+    generate: async (data: GenerateReportPayload): Promise<GeneratedReportFile> => {
+      const response = await apiClient.post<Response>(
+        API_ENDPOINTS.admin.reports.generate,
+        data,
+        { returnRawResponse: true }
+      );
+
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileName = extractFilenameFromContentDisposition(contentDisposition);
+      const blob = await response.blob();
+
+      return { blob, fileName };
+    },
   },
 };

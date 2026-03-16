@@ -178,6 +178,16 @@ export const adminKeys = {
       priority?: string;
     }) => [...adminKeys.tickets.all, "list", params] as const,
   },
+  rate: {
+    all: ["admin", "rate"] as const,
+    stats: () => [...adminKeys.rate.all, "stats"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: "" | "active" | "schedule";
+    }) => [...adminKeys.rate.all, "list", params] as const,
+  },
 
   outlet: {
     all: ["admin", "outlet"] as const,
@@ -216,6 +226,11 @@ export const adminKeys = {
       [...adminKeys.transactions.lists(), params] as const,
     details: () => [...adminKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...adminKeys.transactions.details(), id] as const,
+  },
+
+  reports: {
+    all: ["admin", "reports"] as const,
+    modules: () => [...adminKeys.reports.all, "modules"] as const,
   },
   
   management: {

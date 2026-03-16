@@ -1,0 +1,177 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Group, Text, TextInput, Button, Tabs } from "@mantine/core";
+import { Search, Upload, Plus } from "lucide-react";
+import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
+import AdminTabButton from "@/app/admin/_components/AdminTabButton";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useRates, type RateListItem } from "../hooks/useRates";
+
+const headers = [
+  { label: "Date and time", key: "dateTime" },
+  { label: "Currency pair", key: "currencyPair" },
+  { label: "We buy at", key: "buyAt" },
+  { label: "We sell at", key: "sellAt" },
+  { label: "Last updated", key: "lastUpdated" },
+  { label: "Action", key: "action" },
+];
+
+const PAGE_SIZE = 5;
+
+function mapTabToStatus(tab: string): "" | "active" | "schedule" {
+  if (tab === "active") return "active";
+  if (tab === "schedule") return "schedule";
+  return "";
+}
+
+function renderDateTimeCell(value: string) {
+  const [date = "--", time = "--"] = value?.split("\n") ?? [];
+
+  return (
+    <div>
+      <Text size="sm">{date}</Text>
+      <Text size="xs" c="dimmed">
+        {time}
+      </Text>
+    </div>
+  );
+}
+
+export default function RateTableSection() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"active" | "schedule">("active");
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
+
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: PAGE_SIZE,
+      search: debouncedSearch.trim() || undefined,
+      status: mapTabToStatus(activeTab),
+    }),
+    [activeTab, debouncedSearch, page]
+  );
+
+  const { rates, isLoading, totalPages } = useRates(queryParams);
+
+  const renderRow = (item: RateListItem) => [
+    <div key="dateTime">{renderDateTimeCell(item.dateTime)}</div>,
+    <Text key="currencyPair" size="sm" fw={500}>
+      {item.currencyPair}
+    </Text>,
+    <Text key="buyAt" size="sm">
+      {item.buyAt}
+    </Text>,
+    <Text key="sellAt" size="sm">
+      {item.sellAt}
+    </Text>,
+    <div key="lastUpdated">{renderDateTimeCell(item.lastUpdated)}</div>,
+    <RowActionIcon
+      key="action"
+      onClick={() => {
+        if (!item.id) return;
+        router.push(adminRoutes.adminRateDetails(item.id));
+      }}
+    />,
+  ];
+
+  return (
+    <div className="rounded-2xl bg-white p-5 shadow-sm">
+      <Group justify="space-between" mb="md">
+        <div className="flex flex-wrap items-center gap-4">
+          <h2 className="text-lg font-semibold">All Rate</h2>
+          <TextInput
+            placeholder="Enter keyword"
+            leftSection={<Search size={16} />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
+            radius="xl"
+            w={320}
+            className="min-w-[200px] flex-1"
+          />
+        </div>
+
+        <Group gap="sm" className="flex-wrap">
+
+          <Button
+            variant="outline"
+            radius="xl"
+            leftSection={<Upload size={16} />}
+            color="orange"
+          >
+            Export
+          </Button>
+
+          <CustomButton
+            buttonType="primary"
+            onClick={() => router.push(adminRoutes.adminRateCreate())}
+            rightSection={<Plus size={16} />}
+          >
+            Add New Rate
+          </CustomButton>
+        </Group>
+      </Group>
+
+      <Tabs
+        className="mt-4!"
+        color="orange"
+        value={activeTab}
+        onChange={(value) => {
+          setActiveTab((value as "active" | "schedule") || "active");
+          setPage(1);
+        }}
+      >
+        <Tabs.List className="mb-4 border-0! before:content-none!">
+          <AdminTabButton value="active">Active</AdminTabButton>
+          <AdminTabButton value="schedule">Schedule</AdminTabButton>
+        </Tabs.List>
+
+        <Tabs.Panel value="active">
+          <DynamicTableSection
+            headers={headers}
+            data={rates}
+            loading={isLoading}
+            renderItems={renderRow}
+            emptyTitle="No Active Rates Available"
+            emptyMessage="You currently don't have any active rates available yet. Check back later."
+            pagination={{
+              page,
+              totalPages,
+              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+              onPageChange: setPage,
+            }}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="schedule">
+          <DynamicTableSection
+            headers={headers}
+            data={rates}
+            loading={isLoading}
+            renderItems={renderRow}
+            emptyTitle="No Scheduled Rates Available"
+            emptyMessage="You currently don't have any scheduled rates available yet. Check back later."
+            pagination={{
+              page,
+              totalPages,
+              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+              onPageChange: setPage,
+            }}
+          />
+        </Tabs.Panel>
+      </Tabs>
+    </div>
+  );
+}
