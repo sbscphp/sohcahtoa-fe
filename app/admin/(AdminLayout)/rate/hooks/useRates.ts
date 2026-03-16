@@ -77,9 +77,19 @@ function formatDateTime(value: unknown): string {
 
 function normalizeStatus(value: unknown): string {
   const raw = asString(value).trim().toLowerCase();
-  if (raw === "schedule" || raw === "scheduled") return "schedule";
-  if (raw === "active") return "active";
-  return raw;
+  if (raw === "schedule" || raw === "scheduled") return "Scheduled";
+  if (raw === "active") return "Active";
+  if (raw === "inactive") return "Inactive";
+  return raw ? `${raw.charAt(0).toUpperCase()}${raw.slice(1)}` : "--";
+}
+
+function parseStatus(raw: Record<string, unknown>): string {
+  const isActive = raw.isActive ?? raw.is_active;
+  if (typeof isActive === "boolean") {
+    return isActive ? "Active" : "Inactive";
+  }
+
+  return normalizeStatus(raw.status);
 }
 
 function getCurrencyPair(raw: Record<string, unknown>): string {
@@ -118,7 +128,7 @@ function parseRate(raw: Record<string, unknown>): RateListItem {
     buyAt: formatNairaValue(raw.buyAt ?? raw.buyRate ?? raw.buy_rate),
     sellAt: formatNairaValue(raw.sellAt ?? raw.sellRate ?? raw.sell_rate),
     lastUpdated: formatDateTime(raw.lastUpdated ?? raw.updatedAt ?? raw.updated_at),
-    status: normalizeStatus(raw.status),
+    status: parseStatus(raw),
   };
 }
 

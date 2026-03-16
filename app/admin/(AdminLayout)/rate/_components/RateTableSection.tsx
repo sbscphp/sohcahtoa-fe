@@ -7,6 +7,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -22,6 +23,7 @@ const headers = [
   { label: "We buy at", key: "buyAt" },
   { label: "We sell at", key: "sellAt" },
   { label: "Last updated", key: "lastUpdated" },
+  { label: "Status", key: "status" },
   { label: "Action", key: "action" },
 ];
 
@@ -109,6 +111,7 @@ export default function RateTableSection() {
       {item.sellAt}
     </Text>,
     <div key="lastUpdated">{renderDateTimeCell(item.lastUpdated)}</div>,
+    <StatusBadge key="status" status={item.status} />,
     <RowActionIcon
       key="action"
       onClick={() => {
