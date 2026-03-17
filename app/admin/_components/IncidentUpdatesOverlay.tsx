@@ -167,7 +167,15 @@ function buildTimeline(ticket: TicketDetailsViewModel | null | undefined): Timel
   // Sort ascending by timestamp
   entries.sort((a, b) => a._sortTs - b._sortTs);
 
-  return entries.map(({ _sortTs: _, ...entry }) => entry);
+  return entries.map((entry) => ({
+    id: entry.id,
+    icon: entry.icon,
+    iconBg: entry.iconBg,
+    text: entry.text,
+    date: entry.date,
+    time: entry.time,
+    highlight: entry.highlight,
+  }));
 }
 
 export default function IncidentUpdatesOverlay({
