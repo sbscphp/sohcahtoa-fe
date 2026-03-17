@@ -96,8 +96,9 @@ export default function EditTicketPage() {
     const customerName = rawCustomerName || "--";
     const customerEmail = rawCustomerEmail || "--";
 
+    const ticketCustomerId = ticketData.customerId || ticketData.customer?.id || "";
     const matchedCustomer = customers.find(
-      (customer) => customer.id === ticketData.customerId
+      (customer) => customer.id === ticketCustomerId
     );
 
     // Wait for customer options when ticket payload doesn't provide identity fields.
@@ -118,7 +119,7 @@ export default function EditTicketPage() {
             email: matchedCustomer.email,
           }
         : {
-            id: ticketData.customerId,
+            id: ticketCustomerId,
             name: customerName,
             email: customerEmail,
           },

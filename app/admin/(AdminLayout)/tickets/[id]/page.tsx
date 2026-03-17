@@ -369,15 +369,7 @@ export default function ViewTicketPage() {
       <IncidentUpdatesOverlay
         opened={updatesOverlayOpen}
         onClose={() => setUpdatesOverlayOpen(false)}
-        title={ticket?.caseType ?? "--"}
-        description={ticket?.description ?? "--"}
-        ticketId={id}
-        attachment={{
-          fileUrl: ticket?.firstAttachment?.fileUrl ?? null,
-          fileName: ticket?.firstAttachment?.fileName ?? null,
-          fileSize: ticket?.firstAttachment?.fileSize ?? null,
-          uploadedBy: "Customer",
-        }}
+        ticket={ticket}
         onAddComment={handleOverlayAddComment}
         onResolve={handleOverlayResolve}
         actionLoading={

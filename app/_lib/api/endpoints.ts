@@ -146,6 +146,8 @@ export const API_ENDPOINTS = {
       list: "/api/admin/rate",
       export: "/api/admin/rate/export",
       create: "/api/admin/rate",
+      getById: (id: string) => `/api/admin/rate/${id}`,
+      update: (id: string) => `/api/admin/rate/${id}`,
       stats: "/api/admin/rate/stats",
     },
     outlet: {

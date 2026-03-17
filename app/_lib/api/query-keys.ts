@@ -181,6 +181,7 @@ export const adminKeys = {
   rate: {
     all: ["admin", "rate"] as const,
     stats: () => [...adminKeys.rate.all, "stats"] as const,
+    detail: (id: string) => [...adminKeys.rate.all, "detail", id] as const,
     list: (params?: {
       page?: number;
       limit?: number;

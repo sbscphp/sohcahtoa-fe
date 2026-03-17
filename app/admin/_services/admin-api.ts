@@ -162,9 +162,10 @@ export interface TicketAttachment {
 export interface TicketComment {
   id: string;
   ticketId: string;
-  comment: string;
+  adminId: string | null;
+  message: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface TicketCommentAdmin {
@@ -228,8 +229,14 @@ export interface TicketDetailsResponseData {
   priority: string;
   status: string;
   assignedAgentId: string | null;
+  assignedAgent?: {
+    id: string;
+    fullName: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
+  dateAssigned?: string | null;
+  createdBy?: string | null;
   attachments: TicketAttachment[];
   comments: TicketComment[];
 }
@@ -360,6 +367,22 @@ export interface CreateRatePayload {
   validFrom: string;
   validUntil: string;
   note?: string;
+}
+
+export interface RateDetailsData {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  rate?: string | number | null;
+  buyRate: string | number;
+  sellRate: string | number;
+  source?: string | null;
+  note?: string | null;
+  validFrom: string;
+  validUntil: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
 }
 
 export const adminApi = {
@@ -704,6 +727,12 @@ export const adminApi = {
 
     create: (data: CreateRatePayload) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.create, data),
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<RateDetailsData>>(API_ENDPOINTS.admin.rate.getById(id)),
+
+    update: (id: string, data: CreateRatePayload) =>
+      apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.update(id), data),
 
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),

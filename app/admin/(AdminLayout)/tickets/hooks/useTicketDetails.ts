@@ -11,10 +11,21 @@ import {
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
 
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  adminId: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface TicketDetailsViewModel {
   id: string;
   reference: string;
   assignedAgentId: string | null;
+  assignedAgent: { id: string; fullName: string } | null;
+  dateAssigned: string | null;
+  createdBy: string | null;
   customerName: string;
   customerEmail: string;
   customerPhoneNumber: string;
@@ -25,13 +36,15 @@ export interface TicketDetailsViewModel {
   statusLabel: string;
   createdDate: string;
   createdTime: string;
+  createdAt: string | null;
+  updatedAt: string | null;
   attachments: TicketAttachment[];
   firstAttachment: TicketAttachment | null;
+  comments: TicketComment[];
 }
 
 function toDisplayLabel(value: string): string {
   if (!value) return "--";
-
   return value
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -39,15 +52,9 @@ function toDisplayLabel(value: string): string {
 }
 
 function formatDateTime(value: string) {
-  if (!value) {
-    return { createdDate: "--", createdTime: "--" };
-  }
-
+  if (!value) return { createdDate: "--", createdTime: "--" };
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return { createdDate: "--", createdTime: "--" };
-  }
-
+  if (Number.isNaN(parsed.getTime())) return { createdDate: "--", createdTime: "--" };
   return {
     createdDate: parsed.toLocaleDateString("en-US", {
       month: "short",
@@ -67,6 +74,7 @@ function toViewModel(data: TicketDetailsResponseData | null): TicketDetailsViewM
 
   const { createdDate, createdTime } = formatDateTime(data.createdAt);
   const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+  const comments = Array.isArray((data as any).comments) ? (data as any).comments : [];
   const customerName = data.customer?.fullName || data.customerName || "--";
   const customerEmail = data.customer?.email || data.customerEmail || "--";
   const customerPhoneNumber =
@@ -76,6 +84,9 @@ function toViewModel(data: TicketDetailsResponseData | null): TicketDetailsViewM
     id: data.id || "--",
     reference: data.reference || data.id || "--",
     assignedAgentId: data.assignedAgentId ?? null,
+    assignedAgent: (data as any).assignedAgent ?? null,
+    dateAssigned: (data as any).dateAssigned ?? null,
+    createdBy: (data as any).createdBy ?? null,
     customerName,
     customerEmail,
     customerPhoneNumber,
@@ -93,8 +104,11 @@ function toViewModel(data: TicketDetailsResponseData | null): TicketDetailsViewM
     statusLabel: toDisplayLabel(data.status),
     createdDate,
     createdTime,
+    createdAt: data.createdAt ?? null,
+    updatedAt: (data as any).updatedAt ?? null,
     attachments,
     firstAttachment: attachments[0] ?? null,
+    comments,
   };
 }
 
