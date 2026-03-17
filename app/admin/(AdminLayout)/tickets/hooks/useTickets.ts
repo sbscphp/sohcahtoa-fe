@@ -6,6 +6,7 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 
 export interface TicketListItem {
   id: string;
+  reference: string;
   customerName: string;
   customerEmail: string;
   createdAt: string;
@@ -61,16 +62,21 @@ function parseTicket(raw: Record<string, unknown>): TicketListItem {
 
   return {
     id: getTicketId(raw),
+    reference: asString(raw.reference) || getTicketId(raw) || "--",
     customerName: asString(raw.customerName) || asString(customer?.fullName) || asString(customer?.name) || "--",
     customerEmail: asString(raw.customerEmail) || asString(customer?.email) || "--",
     createdAt: asString(raw.createdAt) || asString(raw.date),
     assignedTo:
-      asString(raw.assignedTo) || asString(assignee?.fullName) || asString(assignee?.name) || "--",
+      asString(raw.assignedAdminName) ||
+      asString(raw.assignedTo) ||
+      asString(assignee?.fullName) ||
+      asString(assignee?.name) ||
+      "--",
     assignedRole:
       asString(raw.assignedRole) || asString(assignee?.roleName) || asString(raw.department) || "",
     status: asString(raw.status) || "--",
     priority: asString(raw.priority) || "--",
-    category: asString(raw.category) || "--",
+    category: asString(raw.caseType) || asString(raw.category) || "--",
   };
 }
 

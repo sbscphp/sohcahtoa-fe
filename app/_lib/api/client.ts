@@ -6,6 +6,7 @@ export interface ApiRequestConfig extends RequestInit {
   method?: HttpMethod;
   params?: Record<string, string | number | boolean | null | undefined>;
   skipAuth?: boolean;
+  returnRawResponse?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -119,7 +120,7 @@ class ApiClient {
    * Main request method
    */
   async request<T>(url: string, config: ApiRequestConfig = {}): Promise<T> {
-    const { params, skipAuth, ...fetchConfig } = config;
+    const { params, skipAuth, returnRawResponse, ...fetchConfig } = config;
 
     const fullUrl = this.buildUrl(url, params);
     const headers = this.buildHeaders({ ...config, skipAuth });
@@ -156,6 +157,10 @@ class ApiClient {
       }
 
       // Handle empty responses
+      if (returnRawResponse) {
+        return response as unknown as T;
+      }
+
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         // For blob responses (file downloads)

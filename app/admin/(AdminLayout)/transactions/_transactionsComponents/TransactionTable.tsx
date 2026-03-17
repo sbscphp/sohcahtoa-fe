@@ -26,8 +26,10 @@ const typeByTab = {
 
 const statusOptions = [
   { value: "All", label: "Filter By" },
+  { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
   { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Settled" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
   { value: "REQUEST_INFORMATION", label: "Request Information" },
 ];
@@ -74,7 +76,7 @@ export default function TransactionsTable() {
     <div key="date">
       <Text size="sm">{item.date}</Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id || "--"}
+        Ref:{item.reference || "--"}
       </Text>
     </div>,
 

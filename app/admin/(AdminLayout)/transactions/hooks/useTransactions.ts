@@ -24,14 +24,15 @@ export interface TransactionListItem {
   customerName: string;
   id: string;
   date: string;
+  reference: string;
   type: string;
   stage: string;
   workflow: string;
   amount: number;
-  status: "Pending" | "Settled" | "Rejected" | "More Info";
+  status: string;
 }
 
-export interface UseTransactionsParams extends AdminTransactionListParams {}
+export type UseTransactionsParams = AdminTransactionListParams;
 
 function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -47,7 +48,7 @@ function asNumber(value: unknown, fallback = 0): number {
 }
 
 function toSentenceCase(value: string): string {
-  const normalized = value.trim();
+  const normalized = value.trim().replace(/[_-]+/g, " ");
   if (!normalized) return "";
   return normalized
     .toLowerCase()
@@ -58,13 +59,9 @@ function toSentenceCase(value: string): string {
 }
 
 function normalizeStatus(value: unknown): TransactionListItem["status"] {
-  const status = String(value ?? "").trim().toLowerCase().replace(/[_-]+/g, " ");
-  if (status === "approved" || status === "settled" || status === "completed") return "Settled";
-  if (status === "rejected") return "Rejected";
-  if (status === "request information" || status === "request more info" || status === "more info") {
-    return "More Info";
-  }
-  return "Pending";
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return "Pending";
+  return toSentenceCase(normalized);
 }
 
 function formatDate(value: unknown): string {
@@ -94,10 +91,22 @@ function getId(raw: UnknownRecord): string {
 }
 
 function parseTransaction(raw: UnknownRecord): TransactionListItem {
+  const dateAndId =
+    raw.dateAndId && typeof raw.dateAndId === "object"
+      ? (raw.dateAndId as UnknownRecord)
+      : null;
+
   return {
     customerName: getCustomerName(raw),
     id: getId(raw),
-    date: formatDate(raw.createdAt ?? raw.date ?? raw.transactionDate ?? raw.updatedAt),
+    date: formatDate(
+      dateAndId?.date ?? raw.createdAt ?? raw.date ?? raw.transactionDate ?? raw.updatedAt
+    ),
+    reference:
+      asString(dateAndId?.reference) ||
+      asString(raw.reference) ||
+      asString(raw.transactionReference) ||
+      "--",
     type: toSentenceCase(asString(raw.type) || asString(raw.transactionType) || "--"),
     stage: toSentenceCase(asString(raw.step) || asString(raw.stage) || asString(raw.transactionStage) || "--"),
     workflow: toSentenceCase(asString(raw.workflow) || asString(raw.workflowStage) || "--"),
