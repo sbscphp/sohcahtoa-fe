@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import TransactionSummaryCards from "./_components/TransactionSummaryCards";
-import TransactionTableOverview, {
-  type Transaction,
-} from "./_components/TransactionTableOverview";
+import type {
+  TableFilterValues
+} from "@/app/(customer)/_components/common/table/TableFilterSheet";
+import { useTableState } from "@/app/_hooks/use-table-state";
 import { useFetchData } from "@/app/_lib/api/hooks";
-import { customerKeys } from "@/app/_lib/api/query-keys";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
-import type { TransactionListItem } from "@/app/_lib/api/types";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import { toCsvParam, toDateRangeParams } from "@/app/_lib/utils/query-format";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import TransactionSummaryCards from "./_components/TransactionSummaryCards";
+import TransactionTableOverview from "./_components/TransactionTableOverview";
+import { TX_FILTER_OPTIONS } from "./constant";
+import { mapListItemToTransaction, normalizeStage } from "./helper";
+import { agentApi } from "../../_services/agent-api";
+import { Transaction } from './types';
 
 const TAB_TO_GROUP = {
   "Buy FX": "BUY" as const,
@@ -17,61 +22,72 @@ const TAB_TO_GROUP = {
   "Receive FX": "REMITTANCE" as const,
 };
 
-const GROUP_TO_LABEL: Record<string, "Buy FX" | "Sell FX" | "Receive FX"> = {
-  BUY: "Buy FX",
-  SELL: "Sell FX",
-  REMITTANCE: "Receive FX",
-};
-
-type DisplayStatus = Transaction["status"];
-
-function mapApiStatusToDisplay(apiStatus: string): DisplayStatus {
-  const s = apiStatus?.toUpperCase() ?? "";
-  if (s === "COMPLETED" || s === "APPROVED") return "Completed";
-  if (s === "REJECTED") return "Rejected";
-  if (s === "REQUEST_MORE_INFO") return "Request More Info";
-  return "Pending";
-}
-
-function mapListItemToTransaction(
-  item: TransactionListItem
-): Transaction {
-  return {
-    id: item.id,
-    referenceNumber: item.referenceNumber,
-    date: item.createdAt,
-    type: item.type,
-    stage: item.currentStep,
-    status: mapApiStatusToDisplay(item.status),
-    transaction_type: GROUP_TO_LABEL[item.group] ?? "Buy FX",
-  };
-}
-
 export default function AgentTransactionsPage() {
   const router = useRouter();
   const [activeType, setActiveType] = useState<string>("Buy FX");
+  const group = TAB_TO_GROUP[activeType as keyof typeof TAB_TO_GROUP] ?? undefined;
 
-  const listParams = useMemo(
-    () => ({
-      page: 1,
-      limit: 20,
-      group: TAB_TO_GROUP[activeType as keyof typeof TAB_TO_GROUP] ?? undefined,
+  type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
+
+  const table = useTableState<TransactionSelectionKey>({
+    initial: {
+      q: "",
+      selections: {},
+      dateRange: null,
       sortBy: "createdAt",
-      sortOrder: "desc" as const,
-    }),
-    [activeType]
-  );
+      sortOrder: "desc",
+    }
+  });
+
+  const listParams = useMemo(() => {
+    const status = toCsvParam(table.selections.status);
+    const type = toCsvParam(table.selections.transactionType);
+    const currency = toCsvParam(table.selections.currency);
+    const { startDate, endDate } = toDateRangeParams(table.dateRange);
+
+    return {
+      q: table.searchValue || undefined,
+      status,
+      type,
+      group: type ? undefined : group,
+      currency,
+      startDate,
+      endDate,
+      sortBy: table.sortBy,
+      sortOrder: table.sortOrder,
+      page: table.page ?? 1,
+      limit: table.limit ?? 20,
+    };
+  }, [
+    group,
+    table.dateRange,
+    table.limit,
+    table.page,
+    table.searchValue,
+    table.selections,
+    table.sortBy,
+    table.sortOrder,
+  ]);
+
+
 
   const { data: apiResponse, isLoading } = useFetchData(
-    [...customerKeys.transactions.list(listParams)],
-    () => customerApi.transactions.list(listParams),
+    [...agentKeys.transactions.list(listParams)],
+    () => agentApi.transactions.list(listParams),
     true
   );
 
-  const tableRows: Transaction[] = useMemo(
+    const tableRowsRaw = useMemo(
     () => (apiResponse?.data ?? []).map(mapListItemToTransaction),
     [apiResponse?.data]
   );
+
+  const tableRows = useMemo(() => {
+    const stageValues = table.selections.stage ?? [];
+    if (!stageValues.length) return tableRowsRaw;
+    const allowed = new Set(stageValues.map(normalizeStage));
+    return tableRowsRaw.filter((t) => allowed.has(normalizeStage(t.stage ?? "")));
+  }, [table.selections.stage, tableRowsRaw]);
 
   const totalTransactions = apiResponse?.pagination?.total ?? 0;
   const completed = tableRows.filter(
@@ -85,10 +101,6 @@ export default function AgentTransactionsPage() {
 
   const handleRowClick = (transaction: Transaction) => {
     router.push(`/agent/transactions/detail/${transaction.id}`);
-  };
-
-  const handleFilterClick = () => {
-    console.log("Open filter modal");
   };
 
   const handleExportClick = () => {
@@ -110,7 +122,12 @@ export default function AgentTransactionsPage() {
         <TransactionTableOverview
           activeType={activeType}
           onTypeChange={setActiveType}
-          onFilterClick={handleFilterClick}
+          filters={TX_FILTER_OPTIONS}
+          filterValues={{ selections: table.selections, dateRange: table.dateRange }}
+          onFiltersApply={(next: TableFilterValues) => {
+            table.setSelections(next.selections ?? {});
+            table.setDateRange(next.dateRange ?? null);
+          }}
           onExportClick={handleExportClick}
           transactions={tableRows}
           pageSize={10}

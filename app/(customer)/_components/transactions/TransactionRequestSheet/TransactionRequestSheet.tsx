@@ -18,8 +18,8 @@ interface TransactionRequestSheetProps {
   onProceedToPayment?: () => void;
   /** Documents for Documentation tab (name, size, status, re-upload). */
   documents?: TransactionDocumentItem[];
-  /** Called when user clicks "View Transaction" in resubmit success modal (e.g. close sheet). */
   onViewTransaction?: () => void;
+  onOpenDocument?: (doc: TransactionDocumentItem) => void;
 }
 
 export default function TransactionRequestSheet({
@@ -34,6 +34,7 @@ export default function TransactionRequestSheet({
   onProceedToPayment,
   documents,
   onViewTransaction,
+  onOpenDocument,
 }: TransactionRequestSheetProps) {
   return (
     <Drawer
@@ -108,6 +109,7 @@ export default function TransactionRequestSheet({
             <DocumentDetail
               transactionTypeLabel={transactionTypeLabel}
               documents={documents}
+              onOpenDocument={onOpenDocument}
               onViewTransaction={onViewTransaction ?? onClose}
             />
           </Tabs.Panel>

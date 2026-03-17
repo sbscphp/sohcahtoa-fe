@@ -14,6 +14,9 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { getDisplayNameFromProfile } from "@/app/_lib/utils/account-format";
 
 type AgentSidebarProps = {
   collapsed: boolean;
@@ -33,6 +36,13 @@ const menuItems = [
 export default function AgentSidebar({ collapsed, onCollapse, onNavigate }: AgentSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const userProfile = useAtomValue(userProfileAtom);
+
+  const display = userProfile ? getDisplayNameFromProfile(userProfile) : null;
+  const displayName = display?.displayName ?? "Agent";
+  const initials = display?.initials ?? "A";
+  const email = userProfile?.email ?? "";
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
 
   return (
     <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
@@ -123,17 +133,17 @@ export default function AgentSidebar({ collapsed, onCollapse, onNavigate }: Agen
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
               <Avatar
-                src="https://placehold.co/600x400/?text=MS"
-                name="Michael Smith"
+                src={avatarUrl}
+                name={displayName}
                 color="initials"
               />
             </div>
             <div className="min-w-0 flex-1 overflow-hidden text-left">
               <p className="truncate text-xs font-medium text-body-heading-300">
-                Michael Smith
+                {displayName}
               </p>
               <p className="truncate text-xs text-body-text-100">
-                michaelsmith12@gmail.com
+                {email}
               </p>
             </div>
           </UnstyledButton>

@@ -140,9 +140,11 @@ export default function SellTransactionCreationPage() {
         : [];
       const documents = toTransactionDocuments(uploaded);
       const payload = buildTransactionPayload(transactionType, bag, documents);
+      // console.log("payload", payload);
       const created = await createTransaction.mutateAsync(payload);
       setConfirmationOpened(false);
-      router.push(`/transactions/detail/${(created as { id: string }).id}`);
+      // console.log("created", created);
+      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
     } catch (error) {
       handleApiError(error);
       setConfirmationOpened(false);

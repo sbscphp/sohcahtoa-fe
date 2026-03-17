@@ -7,10 +7,6 @@ export const AGENT_API_ENDPOINTS = {
   customers: {
     list: "/api/agent/customers",
   },
-  /**
-   * Agent initiating customer auth (Nigerian BVN + OTP flow) on behalf of a customer.
-   * Mirrors the customer BVN/OTP endpoints but is scoped under /api/agent/customer-auth.
-   */
   customerAuth: {
     nigerian: {
       verifyBvn: "/api/agent/customer-auth/verify-bvn",
@@ -20,6 +16,38 @@ export const AGENT_API_ENDPOINTS = {
       createAccount: "/api/agent/customer-auth/create-account",
     },
   },
+
+  transactions: {
+    list: "/api/agent/transactions",
+    stats: "/api/agent/transactions/stats",
+    create: "/api/agent/transactions",
+    overview: "/api/agent/transactions/totals",
+    getById: (id: string) => `/api/agent/transactions/${id}`,
+    update: (id: string) => `/api/agent/transactions/${id}`,
+    uploadDocuments: (id: string) => `/api/agent/transactions/${id}/documents`,
+    checkLimits: "/api/agent/transactions/limits/check",
+    health: "/api/agent/transactions/health",
+    rates: "/api/agent/transactions/rates",
+    calculateRate: "/api/agent/transactions/rates/calculate",
+    export: "/api/agent/transactions/export",
+  },
+
+    // Notifications
+    notifications: {
+      list: "/api/notifications",
+      unreadCount: "/api/notifications/unread/count",
+      markAsRead: (id: string) => `/api/notifications/${id}/read`,
+      markAllAsRead: "/api/notifications/read-all",
+      preferences: {
+        get: "/api/notifications/preferences",
+        update: "/api/notifications/preferences",
+      },
+      devices: {
+        list: "/api/notifications/devices",
+        register: "/api/notifications/devices",
+        unregister: "/api/notifications/devices",
+      },
+    },
 } as const;
 
 

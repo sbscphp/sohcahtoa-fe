@@ -259,4 +259,12 @@ export const agentKeys = {
     list: (params?: { page?: number; limit?: number }) =>
       [...agentKeys.transactions.lists(), params] as const,
   },
+  
+  notifications: {
+    all: ["agent", "notifications"] as const,
+    lists: () => [...agentKeys.notifications.all, "list"] as const,
+    list: (params?: { limit?: number; offset?: number }) =>
+      [...agentKeys.notifications.lists(), params] as const,
+    unreadCount: () => [...agentKeys.notifications.all, "unread-count"] as const,
+  },
 } as const;

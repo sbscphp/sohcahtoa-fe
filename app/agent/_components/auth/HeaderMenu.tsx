@@ -1,9 +1,18 @@
 import { Menu, Button, Avatar } from "@mantine/core";
 import { ChevronDown, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { getDisplayNameFromProfile } from "@/app/_lib/utils/account-format";
 
 export default function AgentHeaderMenu() {
   const router = useRouter();
+  const userProfile = useAtomValue(userProfileAtom);
+  const display = userProfile ? getDisplayNameFromProfile(userProfile) : null;
+  const displayName = display?.displayName ?? "Agent";
+  const initials = display?.initials ?? "A";
+  const avatarUrl = userProfile?.profile?.avatar || undefined;
+
   return (
     <Menu shadow="md" width={200}>
       <Menu.Target>
@@ -14,7 +23,9 @@ export default function AgentHeaderMenu() {
           className="hover:bg-gray-50"
           size="lg"
         >
-          <Avatar name="Michael Smith" color="initials" size={40} radius="xl" />
+          <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl">
+            {initials}
+          </Avatar>
         </Button>
       </Menu.Target>
 
