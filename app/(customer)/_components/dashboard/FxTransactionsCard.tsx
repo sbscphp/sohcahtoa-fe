@@ -88,7 +88,7 @@ export default function FxTransactionsCard() {
                   filtered.map((tx, i) => (
                     <TransactionListItem
                       key={`${tx.id}-${i}`}
-                      primaryText={tx.referenceNumber}
+                      primaryText={tx.referenceNumber ?? tx.id}
                       secondaryText={formatHeaderDateTime(tx.createdAt)}
                       amount={formatCurrency(Number(tx.foreignAmount ?? 0), currencyCode).formatted}
                     />
