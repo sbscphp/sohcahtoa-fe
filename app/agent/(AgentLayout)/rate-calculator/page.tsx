@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import CurrencyAmountInput from "@/app/(customer)/_components/forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -9,26 +9,12 @@ import {
   PaginatedTable,
   type PaginatedTableColumn,
 } from "@/app/(customer)/_components/common";
-
-// Simplified rate map: from USD to other (rate = units of second per 1 USD). NGN 1500 per 1 USD, etc.
-const RATE_PER_USD: Record<string, number> = {
-  NGN: 1500,
-  EUR: 0.92,
-  GBP: 0.79,
-};
-
-function getRate(fromCode: string, toCode: string): number {
-  if (fromCode === toCode) return 1;
-  if (fromCode === "USD" && RATE_PER_USD[toCode]) return RATE_PER_USD[toCode];
-  if (toCode === "USD" && RATE_PER_USD[fromCode]) return 1 / RATE_PER_USD[fromCode];
-  // Fallback USD-NGN for any pair
-  return fromCode === "USD" ? 1500 : 1 / 1500;
-}
-
-function formatRate(fromCode: string, toCode: string): string {
-  const rate = getRate(fromCode, toCode);
-  return `${fromCode}1 - ${toCode}${rate >= 1 ? Math.round(rate).toLocaleString() : rate.toFixed(4)}`;
-}
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import type { TransactionRate } from "@/app/_lib/api/types";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { Loader2 } from "lucide-react";
 
 export interface CurrencyRateRow {
   id: string;
@@ -39,56 +25,77 @@ export interface CurrencyRateRow {
   lastUpdated: string;
 }
 
-const MOCK_RATES: CurrencyRateRow[] = [
-  {
-    id: "1",
-    currencyName: "US Dollar",
-    code: "USD",
-    weBuyAt: "₦1,450 / $1",
-    weSellAt: "₦1,450 / $1",
-    lastUpdated: "12 Sep 2025, 11:00 am",
-  },
-  {
-    id: "2",
-    currencyName: "Nigerian Naira",
-    code: "NGN",
-    weBuyAt: "₦1,750 / £1",
-    weSellAt: "₦1,750 / £1",
-    lastUpdated: "13 Sep 2025, 1:30 pm",
-  },
-  {
-    id: "3",
-    currencyName: "Euro",
-    code: "EUR",
-    weBuyAt: "₦1,615 / €1",
-    weSellAt: "₦1,615 / €1",
-    lastUpdated: "14 Sep 2025, 3:45 pm",
-  },
-];
+function formatUpdatedAt(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function toRateRows(rates: TransactionRate[]): CurrencyRateRow[] {
+  return rates.map((r) => {
+    const from = getCurrencyByCode(r.fromCurrency);
+    const to = getCurrencyByCode(r.toCurrency);
+    return {
+      id: r.id,
+      currencyName: `${from?.name ?? r.fromCurrency} → ${to?.name ?? r.toCurrency}`,
+      code: `${r.fromCurrency}/${r.toCurrency}`,
+      weBuyAt: `${r.buyRate} ${r.toCurrency} / 1 ${r.fromCurrency}`,
+      weSellAt: `${r.sellRate} ${r.toCurrency} / 1 ${r.fromCurrency}`,
+      lastUpdated: formatUpdatedAt(r.validFrom),
+    };
+  });
+}
 
 export default function RateCalculatorPage() {
-  const [fromAmount, setFromAmount] = useState("1000");
-  const [fromCurrency, setFromCurrency] = useState("USD");
-  const [toCurrency, setToCurrency] = useState("NGN");
+  const [receiveAmount, setReceiveAmount] = useState("1000");
+  const [receiveCurrency, setReceiveCurrency] = useState("USD");
+  const [sendCurrency, setSendCurrency] = useState("NGN");
+  const [sendAmount, setSendAmount] = useState("");
 
-  const rate = useMemo(
-    () => getRate(fromCurrency, toCurrency),
-    [fromCurrency, toCurrency]
-  );
-  const toAmount = useMemo(() => {
-    const num = parseFloat(fromAmount.replace(/,/g, ""));
-    if (Number.isNaN(num)) return "";
-    const result = num * rate;
-    return result >= 1 ? Math.round(result).toLocaleString() : result.toFixed(4);
-  }, [fromAmount, rate]);
+  const { displayRate, recalculate, isCalculating } = useTransactionRateCalculator({
+    getValues: () => ({
+      receiveAmount,
+      receiveCurrency,
+      sendAmount,
+      sendCurrency,
+    }),
+    setSendAmount,
+    defaultLabel: "USD1 - NGN1500",
+  });
 
   const handleSwap = () => {
-    setFromAmount(toAmount.replace(/,/g, ""));
-    setFromCurrency(toCurrency);
-    setToCurrency(fromCurrency);
+    const nextReceiveAmount = sendAmount;
+    const nextReceiveCurrency = sendCurrency;
+    const nextSendCurrency = receiveCurrency;
+
+    setReceiveAmount(nextReceiveAmount);
+    setReceiveCurrency(nextReceiveCurrency);
+    setSendCurrency(nextSendCurrency);
+    recalculate(nextReceiveAmount, nextReceiveCurrency, nextSendCurrency);
   };
 
-  const exchangeRateDisplay = formatRate(fromCurrency, toCurrency);
+  const ratesParams = useMemo(
+    () => ({ fromCurrency: receiveCurrency, toCurrency: sendCurrency }),
+    [receiveCurrency, sendCurrency]
+  );
+
+  const { data: ratesResponse } = useFetchData(
+    [...customerKeys.transactions.all, "rates", ratesParams],
+    () => customerApi.transactionRates.list(ratesParams),
+    true
+  );
+
+  const rateRows = useMemo(
+    () => toRateRows(((ratesResponse as any)?.data ?? []) as TransactionRate[]),
+    [ratesResponse]
+  );
 
   const columns: PaginatedTableColumn<CurrencyRateRow>[] = [
     {
@@ -113,11 +120,18 @@ export default function RateCalculatorPage() {
           <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
             <CurrencyAmountInput
               label="From"
-              value={fromAmount}
-              onChange={setFromAmount}
-              currency={getCurrencyByCode(fromCurrency) ?? CURRENCIES[0]}
+              value={receiveAmount}
+              onChange={(v) => {
+                setReceiveAmount(v);
+                recalculate(v);
+              }}
+              currency={getCurrencyByCode(receiveCurrency) ?? CURRENCIES[0]}
               currencies={CURRENCIES}
-              onCurrencyChange={(c) => setFromCurrency(c.code)}
+              onCurrencyChange={(c) => {
+                const code = c?.code ?? CURRENCIES[0].code;
+                setReceiveCurrency(code);
+                recalculate(undefined, code);
+              }}
               placeholder="0"
             />
           </div>
@@ -141,17 +155,17 @@ export default function RateCalculatorPage() {
             <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
               <CurrencyAmountInput
                 label="To"
-                value={toAmount}
-                onChange={(v) => {
-                  const num = parseFloat(v.replace(/,/g, ""));
-                  if (Number.isNaN(num)) return;
-                  const back = rate ? num / rate : 0;
-                  setFromAmount(back >= 1 ? Math.round(back).toString() : back.toFixed(4));
-                }}
-                currency={getCurrencyByCode(toCurrency) ?? CURRENCIES[0]}
+                value={sendAmount}
+                onChange={(v) => setSendAmount(v)}
+                currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
                 currencies={CURRENCIES}
-                onCurrencyChange={(c) => setToCurrency(c.code)}
+                onCurrencyChange={(c) => {
+                  const code = c?.code ?? CURRENCIES[0].code;
+                  setSendCurrency(code);
+                  recalculate(undefined, undefined, code);
+                }}
                 placeholder="0"
+                disabled
               />
             </div>
             <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full min-h-[56px] bg-black rounded-b-3xl">
@@ -159,7 +173,7 @@ export default function RateCalculatorPage() {
                 Exchange Rate
               </span>
               <span className="font-normal text-base leading-6 text-white">
-                {exchangeRateDisplay}
+                {isCalculating ? <Loader2 className="animate-spin" /> : displayRate}
               </span>
             </div>
           </div>
@@ -174,7 +188,7 @@ export default function RateCalculatorPage() {
             List of other currency exchange based on your FX transaction
           </p>
           <PaginatedTable<CurrencyRateRow>
-            data={MOCK_RATES}
+            data={rateRows}
             columns={columns}
             pageSize={10}
             keyExtractor={(row) => row.id}

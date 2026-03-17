@@ -1,23 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TextInput, Button } from "@mantine/core";
+import { TextInput, Button, Skeleton } from "@mantine/core";
 import { Search } from "lucide-react";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
+import { CustomerInterface } from "../constant";
 
 interface AgentCustomerSelectStepProps {
-  onSubmit: (customer: unknown) => void;
+  onSubmit: (customer: CustomerInterface) => void;
   onAddCustomer: () => void;
   onBack: () => void;
+  selectedCustomer?: CustomerInterface | null;
+}
+
+function getCustomerKey(item: any): string {
+  return (item?.userId ?? "").toString();
 }
 
 export function AgentCustomerSelectStep({
   onSubmit,
   onAddCustomer,
   onBack,
-}: AgentCustomerSelectStepProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  selectedCustomer,
+}: Readonly<AgentCustomerSelectStepProps>) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(
+    selectedCustomer ? getCustomerKey(selectedCustomer) : null
+  );
   const [search, setSearch] = useState("");
 
   const { data, isLoading } = useFetchData(
@@ -27,20 +36,24 @@ export function AgentCustomerSelectStep({
   );
 
   const customers = useMemo(() => {
-    const list = (data?.data as unknown[]) || [];
+    const list = ((data?.data as unknown[]) || []) as CustomerInterface[];
+    const safe = list.filter((c) => !!c?.userId);
     if (!search.trim()) return list;
     const term = search.toLowerCase();
-    return list.filter((item: any) => {
-      const name = (item.name || item.fullName || item.customerName || "").toLowerCase();
-      const ref = (item.reference || item.refId || item.id || "").toString().toLowerCase();
-      return name.includes(term) || ref.includes(term);
+    return safe.filter((item) => {
+      return (
+        (item.fullName ?? "").toLowerCase().includes(term) ||
+        (item.userId ?? "").toLowerCase().includes(term)
+      );
     });
-  }, [data, search]);
+  }, [data?.data, search]);
+
+  const effectiveSelectedKey =
+    selectedKey ?? (selectedCustomer ? getCustomerKey(selectedCustomer) : null);
 
   const handleSelect = () => {
-    if (selectedIndex == null) return;
-    const list = (customers as unknown[]) || [];
-    const customer = list[selectedIndex];
+    if (!effectiveSelectedKey) return;
+    const customer = customers.find((item) => getCustomerKey(item) === effectiveSelectedKey);
     if (!customer) return;
     onSubmit(customer);
   };
@@ -49,10 +62,10 @@ export function AgentCustomerSelectStep({
     <div className="flex flex-col items-center gap-8 w-full max-w-[736px] mx-auto">
       {/* Header text */}
       <div className="flex flex-col items-center gap-1 text-center max-w-xl">
-        <h2 className="text-body-heading-300 text-2xl md:text-3xl font-semibold text-[#323131]">
+        <h2 className="text-body-heading-300 text-2xl md:text-3xl font-semibold">
           Select Customer
         </h2>
-        <p className="text-body-text-200 text-sm md:text-base text-[#6C6969]">
+        <p className="text-body-text-200 text-sm md:text-base">
           Select the customer from the list or add a new customer to continue with the
           transaction.
         </p>
@@ -79,7 +92,10 @@ export function AgentCustomerSelectStep({
 
           <div className="flex flex-col gap-3">
             {isLoading && (
-              <p className="text-body-text-300 text-sm">Loading customers...</p>
+              <div className="flex flex-col gap-3">
+                <Skeleton height={60} width="100%" />
+                <Skeleton height={60} width="100%" />
+              </div>
             )}
 
             {!isLoading && customers.length === 0 && (
@@ -89,22 +105,22 @@ export function AgentCustomerSelectStep({
             )}
 
             {!isLoading &&
-              customers.map((item: any, index: number) => {
-                const isActive = selectedIndex === index;
-                const name = item.name || item.fullName || item.customerName || "Unnamed";
-                const reference = item.reference || item.refId || item.id || "";
-                const customerType =
-                  item.customerType || item.type || item.residency || "Resident";
+              customers.map((item) => {
+                const key = getCustomerKey(item);
+                const isActive = effectiveSelectedKey === key;
+                const name = item.fullName || "Unnamed";
+                const userId = item.userId || "";
+                const customerType = item.customerType || "Resident";
                 const lastTransactionLabel = "Last Transaction";
                 const lastTransactionDate =
-                  item.lastTransactionDate || item.lastTransactionAt || "—";
+                  item.lastTransactionType || "—";
 
                 return (
                   <button
-                    key={reference || index}
+                    key={key}
                     type="button"
-                    onClick={() => setSelectedIndex(index)}
-                    className={`flex w-full flex-row items-start gap-4 rounded-lg border px-4 py-3 text-left transition-colors ${
+                    onClick={() => setSelectedKey(key)}
+                    className={`flex w-full flex-row items-start gap-4 rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
                       isActive
                         ? "border-primary-500 bg-[#FFF6F1]"
                         : "border-[#E1E0E0] bg-white hover:bg-gray-50"
@@ -114,21 +130,15 @@ export function AgentCustomerSelectStep({
                       <div className="flex flex-col gap-1">
                         <div className="flex flex-row items-center gap-2">
                           <span className="text-sm font-medium text-[#4D4B4B]">{name}</span>
-                          {reference && (
-                            <span className="inline-flex items-center gap-1 rounded-2xl bg-[#F2F4F7] px-2 py-0.5 text-xs font-medium text-[#344054]">
-                              <span className="h-2 w-2 rounded-full bg-[#667085]" />
-                              Ref.ID: #{reference}
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs md:text-sm text-[#8F8B8B]">
-                          {customerType}
+                          {customerType || "Resident"}
                         </p>
                       </div>
 
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-xs md:text-sm font-medium text-[#4D4B4B]">
-                          {lastTransactionLabel}
+                          {lastTransactionLabel || "Last Transaction"}
                         </span>
                         <span className="text-xs md:text-sm text-[#8F8B8B]">
                           {lastTransactionDate}
@@ -164,7 +174,7 @@ export function AgentCustomerSelectStep({
             variant="filled"
             radius="xl"
             onClick={handleSelect}
-            disabled={selectedIndex == null}
+            disabled={!effectiveSelectedKey}
             className="min-w-[120px] bg-primary-500 text-white hover:bg-primary-600"
           >
             Select

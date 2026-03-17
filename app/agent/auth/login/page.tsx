@@ -16,6 +16,7 @@ import { agentApi } from "@/app/agent/_services/agent-api";
 import { authTokensAtom } from "@/app/_lib/atoms/auth-atom";
 import { apiClient } from "@/app/_lib/api/client";
 import { clearTemporaryAuthData } from "@/app/(customer)/_utils/auth-flow";
+import { getStoredReturnPath, setAuthUserType } from "@/app/_lib/api/auth-logout";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -58,7 +59,9 @@ export default function AgentLoginPage() {
           sessionStorage.setItem("refreshToken", refreshToken);
           apiClient.setAuthTokenGetter(() => accessToken);
           clearTemporaryAuthData();
-          router.push("/agent/dashboard");
+          setAuthUserType("agent");
+          const returnPath = getStoredReturnPath("agent");
+          router.push(returnPath || "/agent/dashboard");
           return;
         }
 
@@ -109,7 +112,9 @@ export default function AgentLoginPage() {
             apiClient.setAuthTokenGetter(() => accessToken);
             clearTemporaryAuthData();
             setOtpModalOpened(false);
-            router.push("/agent/dashboard");
+            setAuthUserType("agent");
+            const returnPath = getStoredReturnPath("agent");
+            router.push(returnPath || "/agent/dashboard");
           } else {
             notifications.show({
               title: "OTP verification failed",

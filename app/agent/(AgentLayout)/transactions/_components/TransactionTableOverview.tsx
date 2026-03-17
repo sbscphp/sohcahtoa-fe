@@ -12,23 +12,22 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { IconArrowRight } from "@/components/icons/IconArrowRight";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import type {
+  TableFilterGroup,
+  TableFilterValues,
+} from "@/app/(customer)/_components/common/table/TableFilterSheet";
+import { Transaction } from "../types";
 
-export interface Transaction {
-  id: string;
-  referenceNumber?: string;
-  date: string;
-  type: string;
-  stage: string;
-  status: "Pending" | "Completed" | "Rejected" | "Request More Info" | "Approved";
-  transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
-}
 
 interface TransactionTableOverviewProps {
   activeType: string;
   onTypeChange: (type: string) => void;
   onFilterClick?: () => void;
+  filters?: TableFilterGroup[];
+  filterValues?: TableFilterValues;
+  onFiltersApply?: (values: TableFilterValues) => void;
   onExportClick?: () => void;
-  transactions: Transaction[];
+  transactions: Transaction[] | any;
   pageSize?: number;
   onRowClick?: (transaction: Transaction) => void;
   isLoading?: boolean;
@@ -45,6 +44,9 @@ export default function TransactionTableOverview({
   activeType,
   onTypeChange,
   onFilterClick,
+  filters,
+  filterValues,
+  onFiltersApply,
   onExportClick,
   transactions,
   pageSize = 10,
@@ -82,7 +84,7 @@ export default function TransactionTableOverview({
       key: "date",
       label: "Transaction Date",
       render: (transaction) => {
-        const { date, time } = formatDate(transaction.date);
+        const { date, time } = formatDate(transaction.date ?? "");
         return (
           <div className="flex flex-col gap-0">
             <p className="text-body-text-300 text-sm leading-5">{date}</p>
@@ -113,7 +115,7 @@ export default function TransactionTableOverview({
       key: "status",
       label: "Status",
       render: (transaction) => (
-        <div style={getStatusBadge(transaction.status)}>
+        <div style={getStatusBadge(transaction.status ?? "")}>
           {transaction.status}
         </div>
       ),
@@ -153,6 +155,10 @@ export default function TransactionTableOverview({
       activeFilter={activeType}
       onFilterChange={onTypeChange}
       onFilterClick={onFilterClick}
+      filters={filters}
+      filterValues={filterValues}
+      onFiltersApply={onFiltersApply}
+      filterSheetTitle="Filter By"
       onExportClick={onExportClick}
       actionButton={
         <Link href="/agent/transactions/options">

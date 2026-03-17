@@ -1,66 +1,58 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAtomValue } from "jotai";
-import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
-import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
-import { useCreateData } from "@/app/_lib/api/hooks";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
+import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import type { BTATransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
+import BTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
+import type { BTAUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
+import BTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
+import type { MedicalBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalBankDetailsStep";
+import MedicalBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalBankDetailsStep";
+import type { MedicalTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalTransactionAmountStep";
+import MedicalTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalTransactionAmountStep";
+import type { MedicalUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalUploadDocumentsStep";
+import MedicalUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalUploadDocumentsStep";
+import type { ProfessionalBodyBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyBankDetailsStep";
+import type { ProfessionalBodyTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyTransactionAmountStep";
+import ProfessionalBodyTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyTransactionAmountStep";
+import type { ProfessionalBodyUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyUploadDocumentsStep";
+import ProfessionalBodyUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyUploadDocumentsStep";
+import type { SchoolFeesBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesBankDetailsStep";
+import SchoolFeesBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesBankDetailsStep";
+import type { SchoolFeesTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesTransactionAmountStep";
+import SchoolFeesTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesTransactionAmountStep";
+import type { SchoolFeesUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesUploadDocumentsStep";
+import SchoolFeesUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesUploadDocumentsStep";
+import type { TouristTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
+import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
+import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
+import TouristUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
+import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
+import PTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
+import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
+import PTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
+import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
+import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  getStepsForTransactionType,
+  STEP_LABELS,
+  type TransactionStep,
+} from "@/app/(customer)/_utils/transaction-flow";
 import {
   buildTransactionPayload,
   toTransactionDocuments,
   type TransactionFormDataBag,
 } from "@/app/(customer)/_utils/transaction-payload";
-import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
-import {
-  type TransactionStep,
-  getStepsForTransactionType,
-  STEP_LABELS,
-} from "@/app/(customer)/_utils/transaction-flow";
-import PTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
-import PTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
-import PTAPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
-import BTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
-import BTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
-import BTAPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAPickupPointStep";
-import SchoolFeesUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesUploadDocumentsStep";
-import SchoolFeesTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesTransactionAmountStep";
-import SchoolFeesBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesBankDetailsStep";
-import MedicalUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalUploadDocumentsStep";
-import MedicalTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalTransactionAmountStep";
-import MedicalBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalBankDetailsStep";
-import ProfessionalBodyUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyUploadDocumentsStep";
-import ProfessionalBodyTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyTransactionAmountStep";
-import ProfessionalBodyBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyBankDetailsStep";
-import TouristUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
-import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
-import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
-import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
-import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
-import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
-import type { PickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
-import type { BTAUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
-import type { BTATransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
-import type { BTAPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAPickupPointStep";
-import type { SchoolFeesUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesUploadDocumentsStep";
-import type { SchoolFeesTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesTransactionAmountStep";
-import type { SchoolFeesBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/school-fees/SchoolFeesBankDetailsStep";
-import type { MedicalUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalUploadDocumentsStep";
-import type { MedicalTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalTransactionAmountStep";
-import type { MedicalBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalBankDetailsStep";
-import type { ProfessionalBodyUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyUploadDocumentsStep";
-import type { ProfessionalBodyTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyTransactionAmountStep";
-import type { ProfessionalBodyBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyBankDetailsStep";
-import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
-import type { TouristTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
-import type { TouristPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import { handleApiError } from "@/app/_lib/api/error-handler";
-import { AgentCustomerSelectStep } from "@/app/agent/(AgentLayout)/transactions/_components/AgentCustomerSelectStep";
+import { useCreateData } from "@/app/_lib/api/hooks";
 import { AgentAddCustomerModal } from "@/app/agent/(AgentLayout)/transactions/_components/AgentAddCustomerModal";
+import { AgentCustomerSelectStep } from "@/app/agent/(AgentLayout)/transactions/_components/AgentCustomerSelectStep";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { useParams, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { CustomerInterface } from "../constant";
+import { notifications } from "@mantine/notifications";
 
 const TRANSACTION_TYPE_MAP = {
   vacation: "pta",
@@ -117,20 +109,16 @@ export default function AgentTransactionCreationPage() {
     | TouristTransactionAmountFormData
     | null
   >(null);
-  const [pickupPointData, setPickupPointData] = useState<
-    PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData | null
-  >(null);
   const [bankDetailsData, setBankDetailsData] = useState<
     | SchoolFeesBankDetailsFormData
     | MedicalBankDetailsFormData
     | ProfessionalBodyBankDetailsFormData
     | null
   >(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
 
-  const queryClient = useQueryClient();
-  const userProfile = useAtomValue(userProfileAtom);
   const uploadDocuments = useUploadDocuments();
-  const createTransaction = useCreateData(customerApi.transactions.create);
+  const createTransaction = useCreateData(agentApi.transactions.create);
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -157,18 +145,11 @@ export default function AgentTransactionCreationPage() {
       | TouristTransactionAmountFormData
   ) => {
     setTransactionAmountData(data);
-    setActiveStep(
-      isSchoolFees || isMedical || isProfessionalBody
-        ? "bank-details"
-        : "pickup-point"
-    );
-  };
-
-  const handlePickupPointSubmit = (
-    data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
-  ) => {
-    setPickupPointData(data);
-    setConfirmationOpened(true);
+    if (isSchoolFees || isMedical) {
+      setActiveStep("bank-details");
+    } else {
+      setConfirmationOpened(true);
+    }
   };
 
   const handleBankDetailsSubmit = (
@@ -184,28 +165,35 @@ export default function AgentTransactionCreationPage() {
   const handleConfirmInitiate = async () => {
     if (uploadDocuments.isPending || createTransaction.isPending) return;
     const transactionType = mapUITypeToAPIType(flowType);
-    if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
+
+    // Agent must select a customer to create a transaction on their behalf
+    const customerId = selectedCustomer?.userId;
+
+    if (!transactionType || !customerId || !uploadDocumentsData || !transactionAmountData) {
       setConfirmationOpened(false);
-      router.push("/agent/dashboard");
+      notifications.show({
+        title: "Error",
+        message: "Please select a customer to create a transaction on their behalf",
+        color: "red",
+      });
+      setActiveStep("select-customer");
       return;
     }
 
     const bag: TransactionFormDataBag = {
       uploadDocumentsData: uploadDocumentsData as Record<string, unknown>,
       transactionAmountData: transactionAmountData as Record<string, unknown>,
-      pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
+      pickupPointData: null,
       bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
     };
 
-    const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
-    if (hasPickup && !pickupPointData) {
+    if ((isSchoolFees || isMedical) && !bankDetailsData) {
       setConfirmationOpened(false);
-      router.push("/agent/dashboard");
-      return;
-    }
-    if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
-      setConfirmationOpened(false);
-      router.push("/agent/dashboard");
+      notifications.show({
+        title: "Error",
+        message: "Please fill in the bank details to continue",
+        color: "red",
+      });
       return;
     }
 
@@ -214,15 +202,24 @@ export default function AgentTransactionCreationPage() {
       const uploaded = spec
         ? await uploadDocuments.mutateAsync({
             file: spec.files,
-            userId: userProfile.id,
+            userId: customerId,
             documentType: spec.documentTypes,
           })
         : [];
       const documents = toTransactionDocuments(uploaded);
       const payload = buildTransactionPayload(transactionType, bag, documents);
-      await createTransaction.mutateAsync(payload);
+      const created = await createTransaction.mutateAsync({
+        ...payload,
+        userId: customerId,
+      });
       setConfirmationOpened(false);
-      router.push("/agent/transactions");
+      const transactionId = (created as unknown as { data: { transactionId: string } })?.data
+        ?.transactionId;
+      router.push(
+        transactionId
+          ? `/agent/transactions/detail/${transactionId}`
+          : "/agent/transactions"
+      );
     } catch (error) {
       handleApiError(error);
       setConfirmationOpened(false);
@@ -232,7 +229,7 @@ export default function AgentTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
-    } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
+    } else if (activeStep === "bank-details") {
       setActiveStep("amount");
     } else if (activeStep === "select-customer") {
       router.push("/agent/transactions/new/buy");
@@ -245,11 +242,13 @@ export default function AgentTransactionCreationPage() {
     if (activeStep === "select-customer") {
       return (
         <AgentCustomerSelectStep
-          onSubmit={() => {
+          onSubmit={(customer) => {
+            setSelectedCustomer(customer);
             setActiveStep("upload-documents");
           }}
           onAddCustomer={() => setAddCustomerOpened(true)}
           onBack={handleBack}
+          selectedCustomer={selectedCustomer as any}
         />
       );
     }
@@ -272,14 +271,6 @@ export default function AgentTransactionCreationPage() {
             <TouristTransactionAmountStep
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
-              onBack={handleBack}
-            />
-          );
-        case "pickup-point":
-          return (
-            <TouristPickupPointStep
-              initialValues={pickupPointData || undefined}
-              onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
             />
           );
@@ -307,14 +298,6 @@ export default function AgentTransactionCreationPage() {
             <ProfessionalBodyTransactionAmountStep
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
-              onBack={handleBack}
-            />
-          );
-        case "bank-details":
-          return (
-            <ProfessionalBodyBankDetailsStep
-              initialValues={bankDetailsData || undefined}
-              onSubmit={handleBankDetailsSubmit}
               onBack={handleBack}
             />
           );
@@ -407,14 +390,6 @@ export default function AgentTransactionCreationPage() {
               onBack={handleBack}
             />
           );
-        case "pickup-point":
-          return (
-            <BTAPickupPointStep
-              initialValues={pickupPointData || undefined}
-              onSubmit={handlePickupPointSubmit}
-              onBack={handleBack}
-            />
-          );
         default:
           return null;
       }
@@ -434,14 +409,6 @@ export default function AgentTransactionCreationPage() {
           <PTATransactionAmountStep
             initialValues={transactionAmountData || undefined}
             onSubmit={handleTransactionAmountSubmit}
-            onBack={handleBack}
-          />
-        );
-      case "pickup-point":
-        return (
-          <PTAPickupPointStep
-            initialValues={pickupPointData || undefined}
-            onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
           />
         );
@@ -486,7 +453,7 @@ export default function AgentTransactionCreationPage() {
           onClose={() => setConfirmationOpened(false)}
           title={confirmTitle}
           description={confirmDescription}
-          confirmLabel="View Transaction"
+          confirmLabel="Create Transaction"
           cancelLabel="No, Close"
           onConfirm={handleConfirmInitiate}
           requireInfoConfirmation

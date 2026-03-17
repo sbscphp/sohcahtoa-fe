@@ -10,7 +10,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { useCreateData } from '@/app/_lib/api/hooks';
 import { customerApi } from '@/app/(customer)/_services/customer-api';
 import { handleApiError } from '@/app/_lib/api/error-handler';
-import { getStoredReturnPath } from '@/app/_lib/api/auth-logout';
+import { getStoredReturnPath, setAuthUserType } from '@/app/_lib/api/auth-logout';
 import { authTokensAtom } from '@/app/_lib/atoms/auth-atom';
 import { apiClient } from '@/app/_lib/api/client';
 import { clearTemporaryAuthData } from '@/app/(customer)/_utils/auth-flow';
@@ -53,7 +53,8 @@ export default function LoginPage() {
             clearTemporaryAuthData();
 
             // Redirect to previous path if user was logged out from a protected page
-            const returnPath = getStoredReturnPath();
+            setAuthUserType('customer');
+            const returnPath = getStoredReturnPath('customer');
             router.push(returnPath || '/dashboard');
           } else {
             handleApiError(

@@ -3,18 +3,35 @@
  * Mirrors customer/admin API patterns but scoped to agent auth flows.
  */
 
-import { apiClient, type ApiResponse } from "@/app/_lib/api/client";
+import { apiClient, ApiRequestConfig, type ApiResponse } from "@/app/_lib/api/client";
 import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
+import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type {
   ApiResponseWrapper,
   LoginRequest,
   LoginResponse,
+  NotificationPreferencesResponse,
+  NotificationsListResponse,
+  ReadAllNotificationsResponse,
   SendOtpRequestNigerian,
   SendOtpResponse,
+  UnreadCountResponse,
+  UpdateNotificationPreferencesRequest,
   ValidateOtpRequestNigerian,
   ValidateOtpResponse,
   VerifyBvnRequest,
   VerifyBvnResponse,
+  ProfileResponse,
+  TransactionListParams,
+  TransactionsListApiResponse,
+  TransactionDetailApiResponse,
+  CreateTransactionRequest,
+  UpdateTransactionRequest,
+  Transaction,
+  CheckTransactionLimitsRequest,
+  CheckTransactionLimitsResponse,
+  TransactionOverviewRequest,
+  TransactionOverviewResponse,
 } from "@/app/_lib/api/types";
 
 interface AgentLoginResponseData {
@@ -50,10 +67,6 @@ export interface AgentCreateCustomerAccountRequest {
 
 export const agentApi = {
   auth: {
-    /**
-     * Step 1 - Initiate agent login (send OTP)
-     * Mirrors /api/auth/agent/login
-     */
     login: (data: LoginRequest) =>
       apiClient.post<ApiResponse<AgentLoginResponseData | AgentLoginCompleteResponse["data"]>>(
         AGENT_API_ENDPOINTS.auth.login,
@@ -61,10 +74,7 @@ export const agentApi = {
         { skipAuth: true }
       ),
 
-    /**
-     * Step 2 - Verify OTP and complete agent login (2FA)
-     * Mirrors /api/auth/agent/verify-login
-     */
+
     verifyLogin: (data: AgentVerifyLoginPayload) =>
       apiClient.post<AgentLoginCompleteResponse>(
         AGENT_API_ENDPOINTS.auth.verifyLogin,
@@ -72,16 +82,15 @@ export const agentApi = {
         { skipAuth: true }
       ),
 
-    /**
-     * Create/set password for an agent using OTP.
-     * Mirrors /api/auth/agent/create-password
-     */
     createPassword: (data: AgentCreatePasswordPayload) =>
       apiClient.post<ApiResponse<{ message: string }>>(
         AGENT_API_ENDPOINTS.auth.createPassword,
         data,
         { skipAuth: true }
       ),
+
+    profile: () =>
+      apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile),
   },
 
   customers: {
@@ -89,10 +98,6 @@ export const agentApi = {
       apiClient.get<AgentCustomerListResponse>(AGENT_API_ENDPOINTS.customers.list),
   },
 
-  /**
-   * Agent-initiated customer auth (Nigerian BVN + OTP) while creating a transaction.
-   * Uses the /api/agent/customer-auth/* endpoints.
-   */
   customerAuth: {
     nigerian: {
       verifyBvn: (data: VerifyBvnRequest) =>
@@ -118,6 +123,58 @@ export const agentApi = {
       createAccount: (data: AgentCreateCustomerAccountRequest) =>
         apiClient.post<LoginResponse>(
           AGENT_API_ENDPOINTS.customerAuth.nigerian.createAccount,
+          data
+        ),
+    },
+  },
+
+    // ==================== Transactions ====================
+    transactions: {
+      list: (params?: TransactionListParams) =>
+        apiClient.get<TransactionsListApiResponse>(AGENT_API_ENDPOINTS.transactions.list, {
+          params: params as ApiRequestConfig["params"],
+        }),
+  
+      getById: (id: string) =>
+        apiClient.get<TransactionDetailApiResponse>(AGENT_API_ENDPOINTS.transactions.getById(id)),
+  
+      create: (data: CreateTransactionRequest & { userId: string }) =>
+        apiClient.post<Transaction>(AGENT_API_ENDPOINTS.transactions.create, data),
+  
+      update: (id: string, data: UpdateTransactionRequest) =>
+        apiClient.put<Transaction>(AGENT_API_ENDPOINTS.transactions.update(id), data),
+  
+      uploadDocuments: (id: string, formData: FormData) =>
+        apiClient.post<void>(AGENT_API_ENDPOINTS.transactions.uploadDocuments(id), formData),
+  
+      checkLimits: (data: CheckTransactionLimitsRequest) =>
+        apiClient.post<CheckTransactionLimitsResponse>(AGENT_API_ENDPOINTS.transactions.checkLimits, data),
+  
+      overview: (data?: TransactionOverviewRequest) =>
+        apiClient.post<TransactionOverviewResponse>(AGENT_API_ENDPOINTS.transactions.overview, data),
+      export: () =>
+        apiClient.get<Blob>(AGENT_API_ENDPOINTS.transactions.export),
+      stats: () =>
+        apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
+    },
+  
+  notifications: {
+    list: (params?: { limit?: number; offset?: number }) =>
+      apiClient.get<NotificationsListResponse>(AGENT_API_ENDPOINTS.notifications.list, {
+        params,
+      }),
+    unreadCount: () =>
+      apiClient.get<UnreadCountResponse>(AGENT_API_ENDPOINTS.notifications.unreadCount),
+    markAllAsRead: () =>
+      apiClient.post<ReadAllNotificationsResponse>(AGENT_API_ENDPOINTS.notifications.markAllAsRead),
+    preferences: {
+      get: () =>
+        apiClient.get<NotificationPreferencesResponse>(
+          AGENT_API_ENDPOINTS.notifications.preferences.get
+        ),
+      update: (data: UpdateNotificationPreferencesRequest) =>
+        apiClient.put<NotificationPreferencesResponse>(
+          AGENT_API_ENDPOINTS.notifications.preferences.update,
           data
         ),
     },

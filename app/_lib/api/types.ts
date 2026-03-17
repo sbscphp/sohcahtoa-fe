@@ -318,9 +318,19 @@ export interface CreateTransactionRequest {
   amount: number;
   purpose: string;
   destinationCountry: string;
+  /** Optional: when an agent creates a transaction on behalf of a customer. */
+  customerId?: string;
   bvn?: string;
   nin?: string;
   formAId?: string;
+  passportDocumentNumber?: string;
+  passportIssueDate?: string;
+  passportExpiryDate?: string;
+  visaDocumentNumber?: string;
+  returnTicketDocumentNumber?: string;
+  tinNumber?: string;
+  workPermitNumber?: string;
+  utilityBillNumber?: string;
   admissionType?: AdmissionType;
   beneficiaryDetails?: Record<string, unknown>;
   pickupLocation?: PickupLocation;
@@ -329,15 +339,12 @@ export interface CreateTransactionRequest {
 
 export interface Transaction {
   id: string;
+  referenceNumber?: string;
+  transactionId?: string;
   type: string;
-  amount: number;
-  currency: string;
-  status:
-    | "PENDING"
-    | "APPROVED"
-    | "REJECTED"
-    | "COMPLETED"
-    | "REQUEST_MORE_INFO";
+  amount?: number;
+  currency?: string;
+  status: string;
   stage: string;
   date: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
@@ -356,8 +363,9 @@ export interface TransactionListCashPickup {
 }
 
 export interface TransactionListItem {
+  transactionId?: string;
   id: string;
-  referenceNumber: string;
+  referenceNumber?: string;
   type: string;
   status: string;
   currentStep: string;
@@ -376,6 +384,12 @@ export interface TransactionListItem {
   documents: TransactionListDocument[];
   cashPickup: TransactionListCashPickup;
   group: "BUY" | "SELL" | "REMITTANCE";
+  transaction_date?: string;
+  transaction_type?: string;
+  transaction_stage?: string;
+  transaction_status?: string;
+  reference_number?: string;
+  transaction_id?: string;
 }
 
 export interface TransactionsListApiResponse {
@@ -657,6 +671,38 @@ export interface ExchangeRateResponse {
   toAmount: number;
   validUntil: string;
 }
+
+// Customer transaction exchange rate (buy/sell FX)
+export interface TransactionRate {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  buyRate: number;
+  sellRate: number;
+  validFrom: string;
+  validUntil: string;
+}
+
+export type TransactionRatesListResponse = ApiResponseWrapper<TransactionRate[]>;
+
+export interface CalculateTransactionRateRequest {
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+}
+
+export interface CalculateTransactionRateData {
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  sellRate: number;
+  buyRate: number;
+  convertedAmount: number;
+  rateValidUntil: string;
+}
+
+export type CalculateTransactionRateResponse =
+  ApiResponseWrapper<CalculateTransactionRateData>;
 
 export interface DepositInitiateRequest {
   transactionId: string;
