@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Group, Select, Stack, Text, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
@@ -61,7 +61,11 @@ export default function EditTicketPage() {
 
   const ticketData = ticketQuery.data?.data ?? null;
   const existingAttachment = ticketData?.attachments?.[0] ?? null;
-  const [isPrefilled, setIsPrefilled] = useState(false);
+  const isPrefilledRef = useRef(false);
+
+  useEffect(() => {
+    isPrefilledRef.current = false;
+  }, [id]);
 
   const form = useForm<TicketFormValues>({
     initialValues: {
@@ -81,7 +85,7 @@ export default function EditTicketPage() {
   });
 
   useEffect(() => {
-    if (!ticketData || isPrefilled) {
+    if (!ticketData || isPrefilledRef.current) {
       return;
     }
 
@@ -123,8 +127,8 @@ export default function EditTicketPage() {
       description: ticketData.description ?? "",
       attachment: null,
     });
-    setIsPrefilled(true);
-  }, [customers, form, isCustomersLoading, isPrefilled, ticketData]);
+    isPrefilledRef.current = true;
+  }, [customers, form, isCustomersLoading, ticketData]);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);

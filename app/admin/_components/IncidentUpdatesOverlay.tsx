@@ -173,17 +173,10 @@ export default function IncidentUpdatesOverlay({
                 </span>
               </Group>
 
-              <div className="relative pl-8">
-                {/* Dashed vertical line */}
-                <div
-                  className="absolute left-3 top-2 bottom-2 w-px border-l-2 border-dashed border-gray-300"
-                  aria-hidden
-                />
-
-                <div className="space-y-4">
-                  {MOCK_TIMELINE.map((entry) => (
+              <div className="">
+                {MOCK_TIMELINE.map((entry, index) => (
+                  <div key={entry.id}>
                     <div
-                      key={entry.id}
                       className={`relative rounded-lg p-4 ${entry.highlight ? "bg-amber-50 border border-amber-100" : "bg-[#F7F7F7]"
                         }`}
                     >
@@ -210,8 +203,12 @@ export default function IncidentUpdatesOverlay({
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    {index < MOCK_TIMELINE.length - 1 && (
+                      <div className="ml-8 my-1 h-5 w-px border-l-2 border-dashed border-[#D0D5DD]" />
+                    )}
+                  </div>
+                ))}
               </div>
             </Tabs.Panel>
 
