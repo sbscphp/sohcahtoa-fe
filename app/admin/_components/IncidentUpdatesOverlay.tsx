@@ -230,14 +230,6 @@ export default function IncidentUpdatesOverlay({
 
             {/* ── Timeline Panel ── */}
             <Tabs.Panel value="timeline" className="flex-1 overflow-y-auto pb-4 pt-4">
-              <Group gap="sm" mb="md">
-                <Text size="sm" c="dimmed">
-                  SLA:
-                </Text>
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
-                  02:00:00
-                </span>
-              </Group>
 
               {timeline.length === 0 ? (
                 <Text size="sm" c="dimmed" ta="center" mt="xl">
