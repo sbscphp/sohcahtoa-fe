@@ -88,7 +88,7 @@ export default function CustomerSelectModal({
         >
           <span className="flex-1 text-left text-sm text-gray-500 truncate">
             {value
-              ? `${value.name} (ID: ${value.id})`
+              ? `${value.name?.trim() ? value.name : "Customer"} (ID: ${value.id})`
               : "Search with ID or name"}
           </span>
           <Search size={16} className="shrink-0 text-orange-500" />

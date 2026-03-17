@@ -22,8 +22,17 @@ interface Pagination {
   totalPages: number;
 }
 
+interface FranchiseApiItem {
+  id: string;
+  franchiseName: string;
+  contactPerson: string;
+  email: string;
+  address: string;
+  status: string;
+}
+
 interface FranchiseListData {
-  items?: unknown;
+  items?: FranchiseApiItem[] | unknown;
   pagination?: Pagination;
 }
 
@@ -114,6 +123,7 @@ function parseFranchise(raw: Record<string, unknown>): FranchiseListItem {
       "--",
     contactName:
       asString(raw.contactName) ||
+      asString(raw.contactPerson) ||
       asString(raw.contactPersonName) ||
       asString(raw.ownerName) ||
       asString(raw.managerName) ||

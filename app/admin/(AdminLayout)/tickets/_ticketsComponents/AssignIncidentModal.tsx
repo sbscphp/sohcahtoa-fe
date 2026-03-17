@@ -2,45 +2,30 @@
 
 import { useState } from "react";
 import { Modal, Button, Group, Text, ScrollArea, Checkbox, Avatar } from "@mantine/core";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import {
+  adminApi,
+  type ManagementAdminUserItem,
+} from "@/app/admin/_services/admin-api";
+import { type ApiResponse } from "@/app/_lib/api/client";
 
 export interface AssignableUser {
   id: string;
   name: string;
   email: string;
-  roles: string[];
+  roleName: string;
+  departmentName: string;
+  isActive: boolean;
 }
 
 interface AssignIncidentModalProps {
   opened: boolean;
   onClose: () => void;
+  assignedAdminId?: string | null;
+  onAssign?: (adminId: string) => void;
+  loading?: boolean;
 }
-
-const MOCK_USERS: AssignableUser[] = [
-  {
-    id: "u1",
-    name: "Adekunle, Ibrahim",
-    email: "kibrahim@sohcahtoa.com",
-    roles: ["Internal Control"],
-  },
-  {
-    id: "u2",
-    name: "Benson, Clara",
-    email: "cbenson@sohcahtoa.com",
-    roles: ["Finance", "Head of Audit"],
-  },
-  {
-    id: "u3",
-    name: "Chukwu, David",
-    email: "dchukwu@sohcahtoa.com",
-    roles: ["IT Support", "IT Manager"],
-  },
-  {
-    id: "u4",
-    name: "Ekwueme, Fatima",
-    email: "fekwueme@sohcahtoa.com",
-    roles: ["Chief Financial Officer"],
-  },
-];
 
 function getInitials(name: string): string {
   return name
@@ -52,38 +37,72 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-const ROLE_PILL_COLORS: Record<string, string> = {
-  "Internal Control": "bg-blue-100 text-blue-700",
-  Finance: "bg-blue-100 text-blue-700",
-  "IT Support": "bg-blue-100 text-blue-700",
-  "Head of Audit": "bg-green-100 text-green-700",
-  "IT Manager": "bg-green-100 text-green-700",
-  "Chief Financial Officer": "bg-green-100 text-green-700",
-};
-
-export default function AssignIncidentModal({ opened, onClose }: AssignIncidentModalProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const toggleUser = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+function normalizeUsers(data: unknown): AssignableUser[] {
+  if (!Array.isArray(data)) {
+    return [];
   }
 
+  return data
+    .filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null
+    )
+    .map((item) => ({
+      id: typeof item.id === "string" ? item.id : "",
+      name: typeof item.fullName === "string" ? item.fullName : "--",
+      email: typeof item.email === "string" ? item.email : "--",
+      roleName:
+        typeof item.roleName === "string" && item.roleName.trim()
+          ? item.roleName
+          : "N/A",
+      departmentName:
+        typeof item.departmentName === "string" && item.departmentName.trim()
+          ? item.departmentName
+          : "N/A",
+      isActive: Boolean(item.isActive),
+    }))
+    .filter((item) => item.id);
+}
+
+export default function AssignIncidentModal({
+  opened,
+  onClose,
+  assignedAdminId = null,
+  onAssign,
+  loading = false,
+}: AssignIncidentModalProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const usersQuery = useFetchData<ApiResponse<ManagementAdminUserItem[]>>(
+    [...adminKeys.management.users.allUsers()],
+    () =>
+      adminApi.management.users.getAll() as unknown as Promise<
+        ApiResponse<ManagementAdminUserItem[]>
+      >,
+    opened
+  );
+
+  const users = normalizeUsers(usersQuery.data?.data);
+  const effectiveSelectedId = selectedId ?? assignedAdminId ?? null;
+
+  const toggleUser = (id: string) => {
+    setSelectedId((prev) => (prev === id ? null : id));
+  };
+
   const handleSelect = () => {
-    onClose();
-    setSelectedIds(new Set());
+    if (!effectiveSelectedId) {
+      return;
+    }
+
+    onAssign?.(effectiveSelectedId);
   };
 
   const handleClose = () => {
+    setSelectedId(null);
     onClose();
-    setSelectedIds(new Set());
   };
 
-  const count = selectedIds.size;
+  const count = effectiveSelectedId ? 1 : 0;
 
   return (
     <Modal
@@ -106,8 +125,21 @@ export default function AssignIncidentModal({ opened, onClose }: AssignIncidentM
     >
       <ScrollArea h={360} type="scroll">
         <div className="divide-y divide-gray-200">
-          {MOCK_USERS.map((user) => {
-            const isSelected = selectedIds.has(user.id);
+          {usersQuery.isLoading ? (
+            <Text size="sm" c="dimmed" py="md">
+              Loading users...
+            </Text>
+          ) : usersQuery.isError ? (
+            <Text size="sm" c="red" py="md">
+              Unable to load users. Please refresh and try again.
+            </Text>
+          ) : users.length === 0 ? (
+            <Text size="sm" c="dimmed" py="md">
+              No users available
+            </Text>
+          ) : (
+            users.map((user) => {
+            const isSelected = effectiveSelectedId === user.id;
             return (
               <button
                 key={user.id}
@@ -116,12 +148,14 @@ export default function AssignIncidentModal({ opened, onClose }: AssignIncidentM
                 className={`flex w-full items-center gap-3 px-2 py-3 text-left transition-colors rounded ${
                   isSelected ? "border-l-4 border-orange-500 bg-orange-50/50" : "hover:bg-gray-50"
                 }`}
+                disabled={loading}
               >
                 <Checkbox
                   checked={isSelected}
                   onChange={() => toggleUser(user.id)}
                   onClick={(e) => e.stopPropagation()}
                   color="orange"
+                  disabled={loading}
                 />
                 <Avatar
                   size="md"
@@ -138,33 +172,40 @@ export default function AssignIncidentModal({ opened, onClose }: AssignIncidentM
                     {user.email}
                   </Text>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {user.roles.map((role) => (
-                      <span
-                        key={role}
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                          ROLE_PILL_COLORS[role] ?? "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {role}
-                      </span>
-                    ))}
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
+                      {user.roleName}
+                    </span>
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700">
+                      {user.departmentName}
+                    </span>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        user.isActive
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {user.isActive ? "Active" : "Inactive"}
+                    </span>
                   </div>
                 </div>
               </button>
             );
-          })}
+          })
+          )}
         </div>
       </ScrollArea>
 
       <Group justify="flex-end" gap="sm" mt="lg">
-        <Button variant="outline" color="gray" radius="xl" onClick={handleClose}>
+        <Button variant="outline" color="gray" radius="xl" onClick={handleClose} disabled={loading}>
           No, Close
         </Button>
         <Button
           color="#DD4F05"
           radius="xl"
           onClick={handleSelect}
-          disabled={count === 0}
+          disabled={count === 0 || usersQuery.isLoading || usersQuery.isError}
+          loading={loading}
         >
           Select User ({String(count).padStart(2, "0")})
         </Button>

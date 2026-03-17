@@ -7,9 +7,54 @@ import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import EmptyState from "@/app/admin/_components/EmptyState";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
+import type { TransactionOverviewViewModel } from "./hooks/useTransactionDetails";
 
-export default function Overview({ isEmpty }: { isEmpty?: boolean }) {
+interface OverviewProps {
+  transaction: TransactionOverviewViewModel | null;
+  isLoading?: boolean;
+  isError?: boolean;
+}
+
+const loadingBasicDetails = [
+  { label: "Customer Name", value: "--" },
+  { label: "Transaction ID", value: "--" },
+  { label: "Transaction Date", value: "--" },
+  { label: "Transaction Time", value: "--" },
+  { label: "Transaction Type", value: "--" },
+  { label: "FX Type", value: "--" },
+  { label: "Transaction Stage", value: "--" },
+  { label: "Workflow Stage", value: "--" },
+  { label: "Request Status", value: "--" },
+  { label: "Customer Type", value: "--" },
+];
+
+const loadingSections = [
+  {
+    title: "Transaction Details",
+    fields: [
+      { label: "Transaction Value (FX)", value: "--" },
+      { label: "Transaction Value (₦)", value: "--" },
+      { label: "Requestor Type", value: "--" },
+      { label: "BVN Number", value: "--" },
+      { label: "TIN Number", value: "--" },
+      { label: "Form A ID", value: "--" },
+      { label: "No. of Documents", value: "--" },
+      { label: "Pick Up State", value: "--" },
+      { label: "Pick Up City", value: "--" },
+      { label: "Pickup Location", value: "--" },
+    ],
+  },
+];
+
+export default function Overview({ transaction, isLoading = false, isError = false }: OverviewProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
+  const hasData = Boolean(transaction);
+  const basicDetailsToRender = isLoading
+    ? loadingBasicDetails
+    : (transaction?.basicDetails ?? []);
+  const sectionsToRender = isLoading
+    ? loadingSections
+    : (transaction?.sections ?? []);
 
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">
@@ -17,15 +62,17 @@ export default function Overview({ isEmpty }: { isEmpty?: boolean }) {
       <Group justify="space-between" align="flex-start" mb="xl">
         <div>
           <Title order={4} className="text-body-heading-300 font-medium! text-2xl!">
-            <span className="font-medium text-body-text-50 ">Buy FX:</span>{" "}
-            Business Travel Allowance
+            <span className="font-medium text-body-text-50 ">
+              {isLoading ? "Loading" : (transaction?.titlePrefix ?? "--")}:
+            </span>{" "}
+            {isLoading ? "Transaction Details" : (transaction?.titleValue ?? "--")}
           </Title>
 
           <Group gap="xs" mt={4}>
             <Text c="dimmed" className="text-body-text-200">
-              Nov 17 2025 | 11:00am
+              {isLoading ? "-- | --" : `${transaction?.dateLabel ?? "--"} | ${transaction?.timeLabel ?? "--"}`}
             </Text>
-            <StatusBadge status="Pending" size="sm" />
+            <StatusBadge status={isLoading ? "Loading" : (transaction?.statusLabel ?? "--")} size="sm" />
           </Group>
         </div>
 
@@ -39,50 +86,41 @@ export default function Overview({ isEmpty }: { isEmpty?: boolean }) {
         </Text>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          <DetailItem label="Customer Name" value="Saliu Cairo Fatia" />
-          <DetailItem label="Transaction ID" value="6783GHA" />
-          <DetailItem label="Transaction Date" value="Nov 19 2025" />
-          <DetailItem label="Transaction Time" value="11:00 am." />
-
-          <DetailItem label="Transaction Type" value="BTA" />
-          <DetailItem label="FX Type" value="Buy FX" />
-          <DetailItem
-            label="Transaction Stage"
-            value="Documentation Review and Approval Stage"
-          />
-          <DetailItem label="Workflow Stage" value="Review Stage" />
-
-          <DetailItem label="Request Status" value="Under Review" />
-          <DetailItem label="Customer Type" value="Nigerian (Citizen)" />
+          {basicDetailsToRender.map((item) => (
+            <DetailItem
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              loading={isLoading}
+            />
+          ))}
         </div>
       </div>
 
-      {/* BTA Transaction Details */}
-      <div className="space-y-6">
-        <Text fw={600} c="orange" mb={"lg"} className="font-medium! text-lg!">
-          BTA Transaction Details
-        </Text>
+      {sectionsToRender.map((section) => (
+        <div className="space-y-6" key={section.title}>
+          <Text fw={600} c="orange" mb={"lg"} className="font-medium! text-lg!">
+            {section.title}
+          </Text>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <DetailItem label="Transaction Value (FX)" value="$4,000" />
-          <DetailItem label="Transaction Value (₦)" value="₦6,000,000" />
-          <DetailItem label="Requestor Type" value="Customer Direct" />
-          <DetailItem label="BVN Number" value="11********674" />
-
-          <DetailItem label="TIN Number" value="18*********373" />
-          <DetailItem label="Form A ID" value="89383938393" />
-          <DetailItem label="No. of Documents" value="Five (5)" />
-
-          <DetailItem label="Pick Up State" value="Lagos State" />
-          <DetailItem label="Pick Up City" value="Lagos Island" />
-          <DetailItem label="Pickup Location" value="14B SBSC Office, Lagos." />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {section.fields.map((item) => (
+              <DetailItem
+                key={`${section.title}-${item.label}`}
+                label={item.label}
+                value={item.value}
+                loading={isLoading}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
+
       <div className="space-y-6">
-        {!isEmpty && (
+        {!isLoading && (((hasData && transaction?.isEmpty) || !hasData || isError)) && (
           <EmptyState
-            title="Payment Pending"
-            description="So sorry, but transaction hasn’t received any payment from the customer/Transaction requestor"
+            title="No Overview Details Available"
+            description="This transaction does not have enough detail data to render the overview section yet."
             icon={EmptyImg}
           />
         )}

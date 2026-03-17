@@ -2,13 +2,36 @@
 
 import { Menu } from "@mantine/core";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { CURRENCIES } from "../_lib/constants";
 import { getCurrencyFlagUrl } from "../_lib/currency";
 
-export default function CurrencySelector() {
-  const [selected, setSelected] = useState<(typeof CURRENCIES)[number]>(CURRENCIES[0]);
+type CurrencyCode = (typeof CURRENCIES)[number]["code"];
+
+interface CurrencySelectorProps {
+  value?: CurrencyCode | null;
+  onChange?: (value: CurrencyCode) => void;
+}
+
+export default function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
+  const [internalSelected, setInternalSelected] = useState<(typeof CURRENCIES)[number]>(
+    CURRENCIES[0]
+  );
+
+  const selected = useMemo(() => {
+    if (value) {
+      return CURRENCIES.find((currency) => currency.code === value) ?? CURRENCIES[0];
+    }
+    return internalSelected;
+  }, [internalSelected, value]);
+
+  const handleSelect = (currency: (typeof CURRENCIES)[number]) => {
+    if (!value) {
+      setInternalSelected(currency);
+    }
+    onChange?.(currency.code);
+  };
 
   return (
     <Menu position="bottom-end" width={220} closeOnItemClick>
@@ -33,7 +56,7 @@ export default function CurrencySelector() {
         {CURRENCIES.map((currency) => (
           <Menu.Item
             key={currency.code}
-            onClick={() => setSelected(currency)}
+            onClick={() => handleSelect(currency)}
             className={selected.code === currency.code ? "bg-primary-25" : undefined}
           >
             <div className="flex items-center gap-2">
