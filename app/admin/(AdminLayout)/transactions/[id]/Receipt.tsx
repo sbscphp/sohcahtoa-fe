@@ -31,7 +31,7 @@ export default function Receipt({ isEmpty }: { isEmpty?: boolean }) {
 
         <TakeActionButton />
       </Group>
-      {isEmpty && (
+      {!isEmpty && (
         <div>
           <div className="space-y-6">
             <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
@@ -76,7 +76,7 @@ export default function Receipt({ isEmpty }: { isEmpty?: boolean }) {
 
       {/* BTA Transaction Details */}
       <div className="space-y-6 mb-6">
-        {!isEmpty && (
+        {isEmpty && (
           <EmptyState
             title="Payment Pending"
             description="So sorry, but transaction hasn’t received any payment from the customer/Transaction requestor"

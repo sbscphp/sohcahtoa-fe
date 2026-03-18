@@ -32,7 +32,7 @@ export default function Settlement({ isEmpty }: { isEmpty?: boolean }) {
         <TakeActionButton />
       </Group>
 
-      {isEmpty && (
+      {!isEmpty && (
         <div>
           <div className="space-y-6">
             <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
@@ -48,8 +48,19 @@ export default function Settlement({ isEmpty }: { isEmpty?: boolean }) {
               <DetailItem label="Total Settlement (FX)" value="$150" />
               <DetailItem label="Total Settlement (₦)" value="₦1,4500,000" />
               <DetailItem
-                label="Settlement Structure (Cash Pickup)"
+                label="Settlement Structure (Cash)"
                 value="100% ~ $1,000"
+              />
+              <DetailItem
+                label="Settlement Structure (Prepaid Card)"
+                value={<>
+                  <span>GTB Bank
+                    <br />
+                    11**************2819
+                    <br />
+                    Saliu Cairo Fatia
+                  </span>
+                </>}
               />
               <div className="space-y-1">
                 <Text size="xs" className="text-body-text-50!" mb={4}>
@@ -57,40 +68,40 @@ export default function Settlement({ isEmpty }: { isEmpty?: boolean }) {
                 </Text>
                 <StatusBadge status="Completed" size="sm" />
               </div>
+
+              <div className="space-y-6 md:col-span-2">
+                <DetailItem label="Settlement Receipt" value={
+                  <div className="flex gap-2 mt-3 p-2 border border-gray-300 rounded-md cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
+                        <File size={16} color="#DD4F05" />
+                      </div>
+                      <div>
+                        <Text fw={500} className="text-body-heading-300">
+                          Settlement Receipt
+                        </Text>
+                        <Text size="xs" className="text-body-text-50!">
+                          200 KB
+                        </Text>
+                      </div>
+                    </div>
+                    <ArrowUpRight
+                      size={16}
+                      color="#DD4F05"
+                      className="mt-2 ml-auto"
+                    />
+                  </div>} />
+
+              </div>
             </div>
           </div>
 
-          <div className="space-y-6 mt-10 mb-5 max-w-[70%]">
-            <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
-              Payment Receipt
-            </Text>
-            <div className="flex gap-2 mb-2 p-2 border border-gray-300 rounded-md cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
-                  <File size={16} color="#DD4F05" />
-                </div>
-                <div>
-                  <Text fw={500} className="text-body-heading-300">
-                    Settlement Receipt
-                  </Text>
-                  <Text size="xs" className="text-body-text-50!">
-                    200 KB
-                  </Text>
-                </div>
-              </div>
-              <ArrowUpRight
-                size={16}
-                color="#DD4F05"
-                className="mt-2 ml-auto"
-              />
-            </div>
-          </div>
         </div>
       )}
 
       {/* BTA Transaction Details */}
       <div className="space-y-6 mb-6">
-        {!isEmpty && (
+        {isEmpty && (
           <EmptyState
             title="Settlement is pending"
             description="Transaction Settlement process is pending for now."
