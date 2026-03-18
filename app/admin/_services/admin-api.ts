@@ -348,6 +348,28 @@ export interface WorkflowStatsData {
   rejected: number;
 }
 
+export type AdminWorkflowActionsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  status?: "Pending" | "Rejected" | "Approved";
+  module?: string;
+  search?: string;
+};
+
+export interface AdminWorkflowActionListItem {
+  id: string;
+  module: string;
+  workflowAction: string;
+  actionNeeded: string;
+  status: string;
+  dateInitiated: string;
+  escalationMinutes: number;
+  title: string;
+}
+
 export interface AdminTransactionDetailsPayload {
   transactionValueFx?: number | string | null;
   transactionValueNgn?: number | string | null;
@@ -1159,5 +1181,11 @@ export const adminApi = {
   workflow: {
     getStats: () =>
       apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
+
+    listActions: (params?: AdminWorkflowActionsListParams) =>
+      apiClient.get<ApiResponse<AdminWorkflowActionListItem[]>>(
+        "/api/admin/workflow/actions",
+        { params }
+      ),
   },
 };

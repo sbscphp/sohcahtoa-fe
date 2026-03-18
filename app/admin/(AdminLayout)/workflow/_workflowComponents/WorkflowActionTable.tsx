@@ -6,124 +6,15 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { Group, TextInput, Select, Button, Text, Tabs } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { ListFilter, Search, Upload } from "lucide-react";
+import {
+  mapWorkflowTabToApiStatus,
+  useWorkflowActions,
+  type WorkflowActionTableRow,
+} from "../hooks/useWorkflowActions";
 
-type WorkflowActionStatus = "Pending" | "Completed" | "Rejected";
 type FilterTab = "all" | "pending" | "completed" | "rejected";
-
-export interface WorkflowActionRow {
-  id: string;
-  dateInitiated: string;
-  timeInitiated: string;
-  escalationPeriod: string;
-  escalationMinutes: number;
-  module: string;
-  workflowAction: string;
-  actionNeeded: string;
-  status: WorkflowActionStatus;
-}
-
-export const WORKFLOW_ACTION_DATA: WorkflowActionRow[] = [
-  {
-    id: "WA001",
-    dateInitiated: "Nov 26",
-    timeInitiated: "11:00 am",
-    escalationPeriod: "2 mins",
-    escalationMinutes: 2,
-    module: "User Management",
-    workflowAction: "Edit User",
-    actionNeeded: "Review",
-    status: "Pending",
-  },
-  {
-    id: "WA002",
-    dateInitiated: "Nov 26",
-    timeInitiated: "11:00 am",
-    escalationPeriod: "5 mins",
-    escalationMinutes: 5,
-    module: "Outlet Management",
-    workflowAction: "Create Franchise",
-    actionNeeded: "Approve",
-    status: "Pending",
-  },
-  {
-    id: "WA003",
-    dateInitiated: "Nov 26",
-    timeInitiated: "11:00 am",
-    escalationPeriod: "10 mins",
-    escalationMinutes: 10,
-    module: "Settlement",
-    workflowAction: "Settle Transaction",
-    actionNeeded: "Approve",
-    status: "Pending",
-  },
-  {
-    id: "WA004",
-    dateInitiated: "Nov 26",
-    timeInitiated: "11:00 am",
-    escalationPeriod: "40 mins",
-    escalationMinutes: 40,
-    module: "Transaction",
-    workflowAction: "Documentation",
-    actionNeeded: "Approve",
-    status: "Pending",
-  },
-  {
-    id: "WA005",
-    dateInitiated: "Nov 26",
-    timeInitiated: "11:00 am",
-    escalationPeriod: "18 mins",
-    escalationMinutes: 18,
-    module: "Outlet Management",
-    workflowAction: "Delete Outlet",
-    actionNeeded: "Approve",
-    status: "Pending",
-  },
-  {
-    id: "WA006",
-    dateInitiated: "Nov 26",
-    timeInitiated: "11:00 am",
-    escalationPeriod: "12 mins",
-    escalationMinutes: 12,
-    module: "Transaction",
-    workflowAction: "Settlement",
-    actionNeeded: "Review",
-    status: "Pending",
-  },
-  {
-    id: "WA007",
-    dateInitiated: "Nov 25",
-    timeInitiated: "10:30 am",
-    escalationPeriod: "30 mins",
-    escalationMinutes: 30,
-    module: "User Management",
-    workflowAction: "Create User",
-    actionNeeded: "Approve",
-    status: "Completed",
-  },
-  {
-    id: "WA008",
-    dateInitiated: "Nov 25",
-    timeInitiated: "09:00 am",
-    escalationPeriod: "15 mins",
-    escalationMinutes: 15,
-    module: "Settlement",
-    workflowAction: "Batch Settlement",
-    actionNeeded: "Review",
-    status: "Completed",
-  },
-  {
-    id: "WA009",
-    dateInitiated: "Nov 24",
-    timeInitiated: "02:00 pm",
-    escalationPeriod: "25 mins",
-    escalationMinutes: 25,
-    module: "Transaction",
-    workflowAction: "Refund Request",
-    actionNeeded: "Approve",
-    status: "Rejected",
-  },
-];
 
 const workflowActionHeaders = [
   { label: "Date Initiated", key: "dateInitiated" },
@@ -141,29 +32,23 @@ export default function WorkflowActionTable() {
   const [filter, setFilter] = useState("Filter By");
   const [activeTab, setActiveTab] = useState<FilterTab>("pending");
   const pageSize = 6;
+  const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const filteredData = useMemo(() => {
-    return WORKFLOW_ACTION_DATA.filter((w) => {
-      const matchesSearch =
-        w.id.toLowerCase().includes(search.toLowerCase()) ||
-        w.module.toLowerCase().includes(search.toLowerCase()) ||
-        w.workflowAction.toLowerCase().includes(search.toLowerCase()) ||
-        w.actionNeeded.toLowerCase().includes(search.toLowerCase());
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: pageSize,
+      search: debouncedSearch.trim() || undefined,
+      status: mapWorkflowTabToApiStatus(activeTab),
+      module: filter !== "Filter By" && filter !== "All" ? filter : undefined,
+    }),
+    [activeTab, debouncedSearch, filter, page]
+  );
 
-      const matchesTab = activeTab === "all" || w.status.toLowerCase() === activeTab;
-      const matchesFilter = filter === "Filter By" || filter === "All" || w.module === filter;
+  const { actions, isLoading, isFetching, isError, totalPages } = useWorkflowActions(queryParams);
+  const safeTotalPages = Math.max(1, totalPages);
 
-      return matchesSearch && matchesTab && matchesFilter;
-    });
-  }, [search, activeTab, filter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
-
-  const renderRow = (item: WorkflowActionRow) => [
+  const renderRow = (item: WorkflowActionTableRow) => [
     <div key="date">
       <Text size="sm">{item.dateInitiated}</Text>
       <Text size="xs" c="dimmed">
@@ -198,9 +83,12 @@ export default function WorkflowActionTable() {
   ];
 
   const moduleOptions = useMemo(() => {
-    const modules = [...new Set(WORKFLOW_ACTION_DATA.map((w) => w.module))];
+    const modules = [...new Set(actions.map((action) => action.module).filter(Boolean))];
+    if (filter !== "Filter By" && filter !== "All" && !modules.includes(filter)) {
+      modules.unshift(filter);
+    }
     return ["Filter By", "All", ...modules];
-  }, []);
+  }, [actions, filter]);
 
   return (
     <div className="my-5 rounded-lg bg-white p-5">
@@ -256,19 +144,24 @@ export default function WorkflowActionTable() {
 
       <DynamicTableSection
         headers={workflowActionHeaders}
-        data={paginatedData}
-        loading={false}
+        data={actions}
+        loading={isLoading || isFetching}
         renderItems={renderRow}
         emptyTitle="No Workflow Actions Found"
         emptyMessage="There are currently no workflow actions to display."
         pagination={{
           page,
-          totalPages,
-          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
           onPageChange: setPage,
         }}
       />
+      {isError ? (
+        <Text c="red" size="sm" mt="sm">
+          Unable to load workflow actions right now. Please try again.
+        </Text>
+      ) : null}
     </div>
   );
 }
