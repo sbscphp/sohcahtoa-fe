@@ -172,6 +172,12 @@ export const API_ENDPOINTS = {
       modules: "/api/admin/reports/modules",
       generate: "/api/admin/reports/generate",
     },
+    regulatory: {
+      compliance: {
+        reports: "/api/admin/regulatory/compliance/reports",
+        reportById: (id: string) => `/api/admin/regulatory/compliance/reports/${id}`,
+      },
+    },
     management: {
       lookups: "/api/admin/management/lookups",
       modules: "/api/admin/management/modules",

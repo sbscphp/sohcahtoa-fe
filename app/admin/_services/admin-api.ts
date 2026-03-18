@@ -262,11 +262,55 @@ export type AdminTransactionListParams = Record<
   sortOrder?: "asc" | "desc";
 };
 
+export type AdminComplianceReportsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "PENDING" | "SUCCESS" | "FAILED" | "COMPLETED";
+  fileType?: string;
+  channel?: string;
+};
+
+export interface AdminComplianceReportListItem {
+  id: string;
+  reportName: string;
+  reportingDate: string;
+  fileType: string;
+  status: string;
+  channel: string;
+  reference: string;
+  url: string | null;
+  createdAt: string;
+}
+
+export interface AdminComplianceReportDetailsData {
+  reportName: string;
+  type: string;
+  fileType: string;
+  channel: string;
+  status: string;
+  reference: string;
+  submittedOn: string;
+  reportDate: string;
+  endDate: string | null;
+  fileUrl: string | null;
+  fileSize: string | number | null;
+}
+
 export interface AdminTransactionStatsData {
   underReview: number;
   rejected: number;
   requestInformation: number;
   approved: number;
+}
+
+export interface WorkflowStatsData {
+  pending: number;
+  completed: number;
+  rejected: number;
 }
 
 export interface AdminTransactionDetailsPayload {
@@ -1030,5 +1074,27 @@ export const adminApi = {
 
       return { blob, fileName };
     },
+  },
+
+  // ==================== Regulatory ====================
+  regulatory: {
+    compliance: {
+      list: (params?: AdminComplianceReportsListParams) =>
+        apiClient.get<ApiResponse<AdminComplianceReportListItem[]>>(
+          API_ENDPOINTS.admin.regulatory.compliance.reports,
+          { params }
+        ),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<AdminComplianceReportDetailsData>>(
+          API_ENDPOINTS.admin.regulatory.compliance.reportById(id)
+        ),
+    },
+  },
+
+  // ==================== Workflow ====================
+  workflow: {
+    getStats: () =>
+      apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
   },
 };

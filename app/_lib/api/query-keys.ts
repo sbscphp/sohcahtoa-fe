@@ -233,7 +233,25 @@ export const adminKeys = {
     all: ["admin", "reports"] as const,
     modules: () => [...adminKeys.reports.all, "modules"] as const,
   },
-  
+
+  regulatory: {
+    all: ["admin", "regulatory"] as const,
+    compliance: {
+      all: () => [...adminKeys.regulatory.all, "compliance"] as const,
+      reports: {
+        all: () => [...adminKeys.regulatory.compliance.all(), "reports"] as const,
+        list: (params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }) => [...adminKeys.regulatory.compliance.reports.all(), "list", params] as const,
+        detail: (id: string) =>
+          [...adminKeys.regulatory.compliance.reports.all(), "detail", id] as const,
+      },
+    },
+  },
+
   management: {
     all: ["admin", "management"] as const,
     lookups: (query: "role" | "department" | "branch") =>
