@@ -18,13 +18,16 @@ interface Pagination {
   totalPages: number;
 }
 
-interface ComplianceListResponse extends ApiResponse<AdminComplianceReportListItem[]> {
-  metadata?: {
-    pagination?: Partial<Pagination>;
-  } | null;
+interface ComplianceListMetadata extends Record<string, unknown> {
+  pagination?: Partial<Pagination>;
 }
 
-interface ComplianceDetailResponse extends ApiResponse<AdminComplianceReportDetailsData> {}
+interface ComplianceListResponse
+  extends Omit<ApiResponse<AdminComplianceReportListItem[]>, "metadata"> {
+  metadata: ComplianceListMetadata | null;
+}
+
+type ComplianceDetailResponse = ApiResponse<AdminComplianceReportDetailsData>;
 
 export interface ComplianceReportRowItem {
   id: string;

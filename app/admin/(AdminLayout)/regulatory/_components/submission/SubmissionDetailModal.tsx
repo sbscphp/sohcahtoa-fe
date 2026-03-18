@@ -26,14 +26,12 @@ export function SubmissionDetailModal({
       onClose={onClose}
       title={
         <div>
-          <Text fw={600}>Report summary</Text>
-          <Text size="xs" c="dimmed">
-            Breakdown of this compliance report
-          </Text>
+          <Text fw={700}>TRMS submissions details</Text>
         </div>
       }
       radius="lg"
       size="lg"
+      pb={0}
       centered
     >
       <Stack gap="sm"  className="mt-10">
