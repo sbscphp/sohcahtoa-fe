@@ -4,22 +4,119 @@ import {
   Modal,
   Text,
   Group,
-  Badge,
   Button,
   Stack,
   Divider,
+  Center,
+  Loader,
 } from "@mantine/core";
 import { Download } from "lucide-react";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { useTrmsSubmissionDetails } from "../../hooks/useTrmsSubmissions";
 
 interface SubmissionDetailModalProps {
   opened: boolean;
   onClose: () => void;
+  transactionId: string | null;
 }
 
 export function SubmissionDetailModal({
   opened,
   onClose,
+  transactionId,
 }: SubmissionDetailModalProps) {
+  const { details, isLoading, isFetching, isError } = useTrmsSubmissionDetails(
+    opened ? transactionId ?? undefined : undefined
+  );
+
+  const hasReportFile = Boolean(details?.fileUrl);
+
+  const resolveFileUrl = (fileUrl: string): string => {
+    if (!fileUrl) return "";
+    if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "https://sohcahtoa-dev.clocksurewise.com";
+
+    try {
+      return new URL(fileUrl, apiBaseUrl).toString();
+    } catch {
+      return fileUrl;
+    }
+  };
+
+  const handleDownload = () => {
+    if (!details?.fileUrl) return;
+    const resolvedUrl = resolveFileUrl(details.fileUrl);
+    if (!resolvedUrl) return;
+    window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const renderBody = () => {
+    if (isLoading || isFetching) {
+      return (
+        <Center py="xl">
+          <Stack align="center" gap="xs">
+            <Loader color="orange" />
+            <Text size="sm" c="dimmed">
+              Loading TRMS submission details...
+            </Text>
+          </Stack>
+        </Center>
+      );
+    }
+
+    if (isError) {
+      return (
+        <Center py="xl">
+          <Text size="sm" c="red">
+            Unable to load this TRMS submission right now. Please try again.
+          </Text>
+        </Center>
+      );
+    }
+
+    if (!details) {
+      return (
+        <Center py="xl">
+          <Text size="sm" c="dimmed">
+            No TRMS submission details available.
+          </Text>
+        </Center>
+      );
+    }
+
+    return (
+      <Stack gap="sm" className="mt-10">
+        <DetailRow label="Name" value={details.applicantName} />
+        <Divider />
+
+        <DetailRow label="Transaction ID" value={details.transactionId} />
+        <Divider />
+
+        <DetailRow label="Type" value={details.type} />
+        <Divider />
+
+        <DetailRow label="Currency Pair" value={details.currencyPair} />
+        <Divider />
+
+        <DetailRow label="Amount" value={details.amount} />
+        <Divider />
+
+        <DetailRow label="Documents" value={details.documentsLabel} />
+        <Divider />
+
+        <DetailRow label="Status" value={<StatusBadge status={details.status} />} />
+        <Divider />
+
+        <DetailRow label="Form A ID" value={details.formAId} />
+        <Divider />
+
+        <DetailRow label="Submitted On" value={details.submittedOnLabel} />
+      </Stack>
+    );
+  };
+
   return (
     <Modal
       opened={opened}
@@ -34,49 +131,20 @@ export function SubmissionDetailModal({
       pb={0}
       centered
     >
-      <Stack gap="sm"  className="mt-10">
-        <DetailRow label="Name" value="Ade Musa" />
-        <Divider />
+      {renderBody()}
 
-        <DetailRow label="Transaction ID:" value="TX-7281902" />
-        <Divider />
-
-        <DetailRow label="Type" value="PTA" />
-        <Divider />
-
-        <DetailRow label="Currency Pair" value="USD/NGN" />
-        <Divider />
-        <DetailRow label="Amount" value=" $4,000" />
-        <Divider />
-
-        <DetailRow label="Documents" value="2 files uploaded" />
-        <Divider />
-
-        <DetailRow
-          label="Status"
-          value={
-            <Badge color="green" variant="light" radius="xl">
-              Success
-            </Badge>
-          }
-        />
-        <Divider />
-
-        <DetailRow label="REF code" value="FNW-2025-02-12-1140" />
-        <Divider />
-
-        <DetailRow label="Submitted On" value="12 Feb 2025, 10:40 AM" />
-        <Divider />
-
-      </Stack>
-
-      {/* Footer */}
       <Group justify="flex-end" mt="xl">
         <Button variant="outline" radius="xl" onClick={onClose}>
           Close
         </Button>
 
-        <Button rightSection={<Download size={16} />} color="orange" radius="xl">
+        <Button
+          rightSection={<Download size={16} />}
+          color="orange"
+          radius="xl"
+          onClick={handleDownload}
+          disabled={!hasReportFile || isLoading || isFetching}
+        >
           Download report
         </Button>
       </Group>
@@ -100,9 +168,9 @@ function DetailRow({
         {label}
       </Text>
 
-      <Text size="sm" fw={500}>
+      <div className="text-right">
         {value}
-      </Text>
+      </div>
     </Group>
   );
 }

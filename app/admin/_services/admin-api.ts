@@ -300,6 +300,41 @@ export interface AdminComplianceReportDetailsData {
   fileSize: string | number | null;
 }
 
+export type AdminTrmsSubmissionsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "BUSY" | "AWAITING_VERIFICATION" | "APPROVED" | "REJECTED";
+};
+
+export interface AdminTrmsSubmissionListItem {
+  id: string;
+  transactionId: string;
+  customerName: string;
+  currencyPair: string;
+  type: string;
+  amount: string;
+  documents: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminTrmsSubmissionDetailsData {
+  applicantName: string;
+  transactionId: string;
+  type: string;
+  currencyPair: string;
+  amount: string;
+  documents: number;
+  status: string;
+  formAId: string | null;
+  submittedOn: string;
+  fileUrl: string | null;
+}
+
 export interface AdminTransactionStatsData {
   underReview: number;
   rejected: number;
@@ -1088,6 +1123,34 @@ export const adminApi = {
       getById: (id: string) =>
         apiClient.get<ApiResponse<AdminComplianceReportDetailsData>>(
           API_ENDPOINTS.admin.regulatory.compliance.reportById(id)
+        ),
+    },
+    trms: {
+      list: (params?: AdminTrmsSubmissionsListParams) =>
+        apiClient.get<ApiResponse<AdminTrmsSubmissionListItem[]>>(
+          API_ENDPOINTS.admin.regulatory.trms.list,
+          { params }
+        ),
+
+      export: async (params?: {
+        search?: string;
+        status?: "" | "BUSY" | "AWAITING_VERIFICATION" | "APPROVED" | "REJECTED";
+      }) => {
+        const response = await apiClient.post<Blob | string>(
+          API_ENDPOINTS.admin.regulatory.trms.export,
+          params ?? {}
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
+      getByTransactionId: (transactionId: string) =>
+        apiClient.get<ApiResponse<AdminTrmsSubmissionDetailsData>>(
+          API_ENDPOINTS.admin.regulatory.trms.details(transactionId)
         ),
     },
   },

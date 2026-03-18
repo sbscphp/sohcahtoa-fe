@@ -250,6 +250,17 @@ export const adminKeys = {
           [...adminKeys.regulatory.compliance.reports.all(), "detail", id] as const,
       },
     },
+    trms: {
+      all: () => [...adminKeys.regulatory.all, "trms"] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      }) => [...adminKeys.regulatory.trms.all(), "list", params] as const,
+      detail: (transactionId: string) =>
+        [...adminKeys.regulatory.trms.all(), "detail", transactionId] as const,
+    },
   },
 
   management: {

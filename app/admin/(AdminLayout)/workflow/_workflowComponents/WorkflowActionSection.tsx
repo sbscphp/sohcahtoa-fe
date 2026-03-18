@@ -12,8 +12,6 @@ export default function WorkflowActionSection() {
   const completed = stats?.completed ?? 0;
   const rejected = stats?.rejected ?? 0;
 
-  const formatCount = (value: number) => value.toString().padStart(2, "0");
-
   return (
     <>
       {/* Stats Cards */}
@@ -21,19 +19,19 @@ export default function WorkflowActionSection() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Pending Actions"
-            value={isLoading ? "--" : formatCount(pending)}
+            value={isLoading ? "--" : pending}
             icon={<AlertCircle className="h-5 w-5 text-orange-600" />}
             iconBg="bg-orange-100"
           />
           <StatCard
             title="Completed Actions"
-            value={isLoading ? "--" : formatCount(completed)}
+            value={isLoading ? "--" : completed}
             icon={<CheckCircle className="h-5 w-5 text-green-600" />}
             iconBg="bg-green-100"
           />
           <StatCard
             title="Rejected Actions"
-            value={isLoading ? "--" : formatCount(rejected)}
+            value={isLoading ? "--" : rejected}
             icon={<XCircle className="h-5 w-5 text-red-600" />}
             iconBg="bg-red-100"
           />
