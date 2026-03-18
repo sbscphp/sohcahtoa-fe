@@ -43,32 +43,30 @@ export default function Receipt({ isEmpty }: { isEmpty?: boolean }) {
               <DetailItem label="Receipt Transaction ID" value="u8336734HHAAA" />
               <DetailItem label="Date" value="Nov 19 2025" />
               <DetailItem label="Time" value="1:00 pm" />
-            </div>
-          </div>
+              <div className="space-y-6 md:col-span-3">
+                <DetailItem label="Payment Receipt" value={
+                  <div className="flex gap-2 mt-3 p-2 border border-gray-300 rounded-md cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
+                        <File size={16} color="#DD4F05" />
+                      </div>
+                      <div>
+                        <Text fw={500} className="text-body-heading-300">
+                          Receipt of Payment
+                        </Text>
+                        <Text size="xs" className="text-body-text-50!">
+                          200 KB
+                        </Text>
+                      </div>
+                    </div>
+                    <ArrowUpRight
+                      size={16}
+                      color="#DD4F05"
+                      className="mt-2 ml-auto"
+                    />
+                  </div>} />
 
-          <div className="space-y-6 mt-10 mb-5 max-w-[70%]">
-            <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
-              Payment Receipt
-            </Text>
-            <div className="flex gap-2 mb-2 p-2 border border-gray-300 rounded-md cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
-                  <File size={16} color="#DD4F05" />
-                </div>
-                <div>
-                  <Text fw={500} className="text-body-heading-300">
-                    Receipt of Payment
-                  </Text>
-                  <Text size="xs" className="text-body-text-50!">
-                    200 KB
-                  </Text>
-                </div>
               </div>
-              <ArrowUpRight
-                size={16}
-                color="#DD4F05"
-                className="mt-2 ml-auto"
-              />
             </div>
           </div>
         </div>
