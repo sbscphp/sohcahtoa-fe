@@ -25,6 +25,12 @@ export interface ApiError {
   data?: unknown;
 }
 
+export interface ApiDownloadResponse {
+  blob: Blob;
+  filename?: string;
+  contentDisposition?: string;
+}
+
 class ApiClient {
   private baseUrl: string;
   private getAuthToken?: () => string | null;
@@ -148,7 +154,7 @@ class ApiClient {
         const error = await this.handleError(response);
 
         // Handle 401 Unauthorized - log user out
-        if (response.status === 401 && !skipAuth && typeof window !== "undefined") {
+        if (response.status === 401 && !skipAuth && globalThis.window !== undefined) {
           performLogout();
         }
 
@@ -157,7 +163,7 @@ class ApiClient {
 
       // Handle empty responses
       const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
+      if (!contentType?.includes("application/json")) {
         // For blob responses (file downloads)
         if (contentType?.includes("application/octet-stream") || contentType?.includes("application/zip")) {
           return response.blob() as unknown as T;
@@ -179,6 +185,47 @@ class ApiClient {
         status: 0,
         data: error,
       } as ApiError;
+    }
+  }
+
+  /**
+   * Download endpoint that returns a file (e.g. CSV export).
+   * Uses the same auth + 401 logout behavior as other requests, but returns blob + filename from headers.
+   */
+  async download(url: string, config: Omit<ApiRequestConfig, "body"> = {}): Promise<ApiDownloadResponse> {
+    const { params, skipAuth, ...fetchConfig } = config;
+
+    const fullUrl = this.buildUrl(url, params);
+    const headers = this.buildHeaders({ ...config, skipAuth });
+
+    try {
+      const response = await fetch(fullUrl, {
+        ...fetchConfig,
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        const error = await this.handleError(response);
+        if (response.status === 401 && !skipAuth && globalThis.window !== undefined) {
+          performLogout();
+        }
+        throw error;
+      }
+
+      const contentDisposition = response.headers.get("content-disposition") ?? undefined;
+      const filename = contentDisposition
+        ? /filename="?([^"]+)"?/i.exec(contentDisposition)?.[1]
+        : undefined;
+      const blob = await response.blob();
+
+      return { blob, filename, contentDisposition };
+    } catch (error) {
+      if (error && typeof error === "object" && "status" in error) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "Network error";
+      throw { message, status: 0, data: error } as ApiError;
     }
   }
 

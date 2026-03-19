@@ -1,4 +1,5 @@
 import { TableFilterGroup } from "../../_components/common/table/TableFilterSheet";
+import { FilterTabOption } from "../../_components/common/table/TableWrapper";
 
 export const TX_FILTER_OPTIONS: TableFilterGroup[] = [
     {
@@ -39,3 +40,9 @@ export const TX_FILTER_OPTIONS: TableFilterGroup[] = [
     },
     { label: "Filter By Date", key: "dateRange", type: "dateRange" },
 ];
+
+export const FILTER_OPTIONS: FilterTabOption[] = [
+    { value: "Buy FX", label: "Buy FX" },
+    { value: "Sell FX", label: "Sell FX" },
+    { value: "Receive FX", label: "Receive FX" },
+  ];

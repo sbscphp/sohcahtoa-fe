@@ -8,17 +8,23 @@ import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
 import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type {
   ApiResponseWrapper,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
   NotificationPreferencesResponse,
   NotificationsListResponse,
   ReadAllNotificationsResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   SendOtpRequestNigerian,
   SendOtpResponse,
   UnreadCountResponse,
   UpdateNotificationPreferencesRequest,
   ValidateOtpRequestNigerian,
   ValidateOtpResponse,
+  VerifyResetOtpRequest,
+  VerifyResetOtpResponse,
   VerifyBvnRequest,
   VerifyBvnResponse,
   ProfileResponse,
@@ -89,6 +95,27 @@ export const agentApi = {
         { skipAuth: true }
       ),
 
+    forgotPassword: (data: ForgotPasswordRequest) =>
+      apiClient.post<ForgotPasswordResponse>(
+        AGENT_API_ENDPOINTS.auth.forgotPassword,
+        data,
+        { skipAuth: true }
+      ),
+
+    verifyResetOtp: (data: VerifyResetOtpRequest) =>
+      apiClient.post<VerifyResetOtpResponse>(
+        AGENT_API_ENDPOINTS.auth.verifyResetOtp,
+        data,
+        { skipAuth: true }
+      ),
+
+    resetPassword: (data: ResetPasswordRequest) =>
+      apiClient.post<ResetPasswordResponse>(
+        AGENT_API_ENDPOINTS.auth.resetPassword,
+        data,
+        { skipAuth: true }
+      ),
+
     profile: () =>
       apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile),
   },
@@ -152,8 +179,10 @@ export const agentApi = {
   
       overview: (data?: TransactionOverviewRequest) =>
         apiClient.post<TransactionOverviewResponse>(AGENT_API_ENDPOINTS.transactions.overview, data),
-      export: () =>
-        apiClient.get<Blob>(AGENT_API_ENDPOINTS.transactions.export),
+      export: (params?: TransactionListParams) =>
+        apiClient.download(AGENT_API_ENDPOINTS.transactions.export, {
+          params: params as ApiRequestConfig["params"],
+        }),
       stats: () =>
         apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
     },

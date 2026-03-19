@@ -210,13 +210,7 @@ export default function CustomerTable({
         </Group>
       </div>
 
-      {paginatedData.length === 0 ? (
-        <EmptyState
-          title="No data available yet"
-          description="You currently have not have any data available yet. Check back Later."
-        />
-      ) : (
-        <DynamicTableSection
+      <DynamicTableSection
           headers={customerHeaders}
           data={paginatedData}
           loading={loading}
@@ -231,7 +225,6 @@ export default function CustomerTable({
             onPageChange: setPage,
           }}
         />
-      )}
     </div>
   );
 }

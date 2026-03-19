@@ -255,6 +255,7 @@ export const agentKeys = {
   
   transactions: {
     all: ["agent", "transactions"] as const,
+    stats: () => [...agentKeys.transactions.all, "stats"] as const,
     lists: () => [...agentKeys.transactions.all, "list"] as const,
     list: (params?: { page?: number; limit?: number }) =>
       [...agentKeys.transactions.lists(), params] as const,

@@ -9,15 +9,18 @@ export interface ProofOfFundPromptProps {
 }
 
 /**
- * Shown when transaction amount (USD) is greater than $10,000.
+ * Shown when transaction amount (USD) is $10,000 or above.
  * Prompts user to upload proof of fund; clicking the link typically opens ProofOfFundModal.
  */
-export default function ProofOfFundPrompt({ show, onUploadClick }: ProofOfFundPromptProps) {
+export default function ProofOfFundPrompt({
+  show,
+  onUploadClick,
+}: Readonly<ProofOfFundPromptProps>) {
   if (!show) return null;
 
   return (
     <div className="text-body-text-200 text-sm text-right">
-      <span>Amount is higher than $ 10,000. Please </span>
+      <span>Amount is $10,000 or above. Please </span>
       <Anchor
         component="button"
         type="button"

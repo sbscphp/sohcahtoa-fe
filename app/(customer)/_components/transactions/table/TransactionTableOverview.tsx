@@ -28,6 +28,7 @@ export interface Transaction {
 }
 
 interface TransactionTableOverviewProps {
+  filterOptions: FilterTabOption[];
   activeType: string;
   onTypeChange: (type: string) => void;
   onFilterClick?: () => void;
@@ -42,13 +43,8 @@ interface TransactionTableOverviewProps {
   skeletonRowCount?: number;
 }
 
-const FILTER_OPTIONS: FilterTabOption[] = [
-  { value: "Buy FX", label: "Buy FX" },
-  { value: "Sell FX", label: "Sell FX" },
-  { value: "Receive FX", label: "Receive FX" },
-];
-
-export default function TransactionTableOverview({
+export default function  TransactionTableOverview({
+  filterOptions,
   activeType,
   onTypeChange,
   onFilterClick,
@@ -146,7 +142,7 @@ export default function TransactionTableOverview({
     
       <TableWrapper
       title="All Transactions"
-      filterOptions={FILTER_OPTIONS}
+      filterOptions={filterOptions}
       activeFilter={activeType}
       onFilterChange={onTypeChange}
       onFilterClick={onFilterClick}

@@ -1,5 +1,5 @@
-import type { DocumentType } from "./transaction-document-requirements";
-import type { TransactionType } from "./transaction-document-requirements";
+import type { DocumentType, TransactionType } from "./transaction-document-requirements";
+import { isAmountOver10k } from "@/app/(customer)/_components/transactions/forms/amount-step-utils";
 
 export interface DocumentUploadSpec {
   files: File[];
@@ -94,6 +94,103 @@ export function getDocumentUploadSpec(
       break;
     default:
       return null;
+  }
+
+  if (spec.files.length === 0) return null;
+  return spec;
+}
+
+type AmountStepData = Record<string, unknown>;
+
+function toTextFile(name: string, content: string): File {
+  return new File([content], name, { type: "text/plain" });
+}
+
+function hasFileArray(value: unknown): value is File[] {
+  return Array.isArray(value) && value.every((v) => v instanceof File);
+}
+
+function isSellFxType(transactionType: TransactionType): boolean {
+  return (
+    transactionType === "RESIDENT_FX" ||
+    transactionType === "EXPATRIATE_FX" ||
+    transactionType === "TOURIST_FX"
+  );
+}
+
+function getStringField(data: AmountStepData, key: string): string {
+  const v = data[key];
+  return typeof v === "string" ? v : "";
+}
+
+function readSignature(data: AmountStepData): {
+  mode: "initials" | "upload";
+  initials: string;
+  file: File | null;
+} {
+  const mode = data.sourceOfFundsSignatureMode === "upload" ? "upload" : "initials";
+  if (mode === "upload") {
+    return {
+      mode,
+      initials: "",
+      file: data.sourceOfFundsSignatureFile instanceof File ? data.sourceOfFundsSignatureFile : null,
+    };
+  }
+  const initials =
+    typeof data.sourceOfFundsInitials === "string" ? data.sourceOfFundsInitials.trim() : "";
+  return { mode, initials, file: null };
+}
+
+/**
+ * Additional documents for SELL transactions >= $10,000 (Resident/Expatriate/Tourist sell).
+ * Reads from transaction amount step data.
+ */
+export function getSellOver10kDocumentUploadSpec(
+  transactionType: TransactionType,
+  amountStepData: AmountStepData | null
+): DocumentUploadSpec | null {
+  if (!amountStepData || typeof amountStepData !== "object") return null;
+
+  if (!isSellFxType(transactionType)) return null;
+
+  const receiveAmount = getStringField(amountStepData, "receiveAmount");
+  const receiveCurrency = getStringField(amountStepData, "receiveCurrency");
+  const sendAmount = getStringField(amountStepData, "sendAmount");
+  const sendCurrency = getStringField(amountStepData, "sendCurrency");
+  if (!isAmountOver10k(receiveAmount, receiveCurrency, sendAmount, sendCurrency)) return null;
+
+  const signature = readSignature(amountStepData);
+
+  const spec: DocumentUploadSpec = { files: [], documentTypes: [] };
+
+  const proofFilesRaw = amountStepData.proofOfFundsFiles;
+  if (hasFileArray(proofFilesRaw)) {
+    for (const f of proofFilesRaw) {
+      spec.files.push(f);
+      spec.documentTypes.push("PROOF_OF_FUNDS");
+    }
+  }
+
+  const declarationBody = [
+    "SOURCE OF FUNDS DECLARATION",
+    "",
+    "I declare that the source of funds/income stated in this form is true and correct to the best of my knowledge. I understand that providing false information may result in rejection of my transaction and reporting to the relevant authorities.",
+    "",
+    signature.mode === "upload"
+      ? `Signature: uploaded file (${signature.file?.name ?? "unknown"})`
+      : `Signature: initials (${signature.initials || "N/A"})`,
+    "",
+  ].join("\n");
+
+  spec.files.push(toTextFile("source-of-funds-declaration.txt", declarationBody));
+  spec.documentTypes.push("SOURCE_OF_FUNDS_DECLARATION");
+
+  if (signature.mode === "upload" && signature.file) {
+    spec.files.push(signature.file);
+    spec.documentTypes.push("DIGITAL_SIGNATURE");
+  } else if (signature.mode === "initials" && signature.initials) {
+    spec.files.push(toTextFile("digital-signature.txt", signature.initials));
+    spec.documentTypes.push("DIGITAL_SIGNATURE");
   }
 
   if (spec.files.length === 0) return null;

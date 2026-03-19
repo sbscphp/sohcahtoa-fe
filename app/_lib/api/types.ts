@@ -755,6 +755,7 @@ export interface TransactionListParams extends PaginationParams {
   type?: string;
   group?: "BUY" | "SELL" | "REMITTANCE";
   currency?: string;
+  stage?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;
