@@ -133,10 +133,22 @@ export const API_ENDPOINTS = {
       list: "/api/admin/tickets",
       export: "/api/admin/tickets/export",
       create: "/api/admin/tickets",
+      update: (id: string) => `/api/admin/tickets/${id}`,
+      assign: (id: string) => `/api/admin/tickets/${id}/assign`,
+      comments: (id: string) => `/api/admin/tickets/${id}/comments`,
+      statuses: "/api/admin/tickets/statuses",
       stats: "/api/admin/tickets/stats",
       caseTypes: "/api/admin/tickets/case-types",
       getById: (id: string) => `/api/admin/tickets/${id}`,
       updateStatus: (id: string) => `/api/admin/tickets/${id}/status`,
+    },
+    rate: {
+      list: "/api/admin/rate",
+      export: "/api/admin/rate/export",
+      create: "/api/admin/rate",
+      getById: (id: string) => `/api/admin/rate/${id}`,
+      update: (id: string) => `/api/admin/rate/${id}`,
+      stats: "/api/admin/rate/stats",
     },
     outlet: {
       franchises: {
@@ -150,16 +162,22 @@ export const API_ENDPOINTS = {
     transactions: {
       list: "/api/admin/transactions",
       stats: "/api/admin/transactions/stats",
+      getById: (id: string) => `/api/admin/transactions/${id}`,
       review: (id: string) => `/api/admin/transactions/${id}/review`,
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
+    },
+    reports: {
+      modules: "/api/admin/reports/modules",
+      generate: "/api/admin/reports/generate",
     },
     management: {
       lookups: "/api/admin/management/lookups",
       modules: "/api/admin/management/modules",
       users: {
         list: "/api/admin/management/users",
+        all: "/api/admin/management/users/all",
         export: "/api/admin/management/users/export",
         create: "/api/admin/management/add-user",
         stats: "/api/admin/management/users/stats",

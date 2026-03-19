@@ -162,25 +162,81 @@ export interface TicketAttachment {
 export interface TicketComment {
   id: string;
   ticketId: string;
-  comment: string;
+  adminId: string | null;
+  message: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+}
+
+export interface TicketCommentAdmin {
+  id: string;
+  fullName: string;
+}
+
+export interface TicketCommentItem {
+  id: string;
+  message: string;
+  createdAt: string;
+  admin: TicketCommentAdmin | null;
+}
+
+export interface AddTicketCommentPayload {
+  message: string;
+}
+
+export type TicketStatusCode =
+  | "OPEN"
+  | "IN_PROGRESS"
+  | "RESOLVED"
+  | "REOPENED"
+  | "CLOSED";
+
+export interface TicketStatusOptionItem {
+  status: TicketStatusCode;
+  note: string;
+  condition?: string;
+}
+
+export interface AssignTicketPayload {
+  adminId: string;
+}
+
+export interface ManagementAdminUserItem {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  roleName: string | null;
+  departmentName: string | null;
 }
 
 export interface TicketDetailsResponseData {
   id: string;
   reference: string;
   customerId: string;
-  customerName: string | null;
-  customerEmail: string | null;
-  customerPhoneNumber: string | null;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhoneNumber?: string | null;
+  customer?: {
+    id: string;
+    fullName: string | null;
+    email: string | null;
+    phoneNumber: string | null;
+  } | null;
   caseType: string;
   description: string | null;
   priority: string;
   status: string;
   assignedAgentId: string | null;
+  assignedAgent?: {
+    id: string;
+    fullName: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
+  dateAssigned?: string | null;
+  createdBy?: string | null;
   attachments: TicketAttachment[];
   comments: TicketComment[];
 }
@@ -213,6 +269,71 @@ export interface AdminTransactionStatsData {
   approved: number;
 }
 
+export interface AdminTransactionDetailsPayload {
+  transactionValueFx?: number | string | null;
+  transactionValueNgn?: number | string | null;
+  requesterType?: string | null;
+  bvnNumber?: string | null;
+  numberOfDocuments?: number | string | null;
+  pickupLocation?: string | null;
+}
+
+export interface AdminTransactionDetailsData {
+  id: string;
+  reference: string;
+  date: string;
+  time: string;
+  customerName: string;
+  customerType: string;
+  transactionType: string;
+  fxType: string;
+  transactionStage: string;
+  workflowStage: string;
+  requestStatus: string;
+  details: AdminTransactionDetailsPayload | null;
+  raw?: Record<string, unknown> | null;
+}
+
+export interface ReportModuleItem {
+  key: string;
+  name: string;
+  description?: string;
+}
+
+export interface GenerateReportPayload {
+  module: string;
+  startDate: string;
+  endDate: string;
+  format: "CSV" | "PDF";
+}
+
+export interface GeneratedReportFile {
+  blob: Blob;
+  fileName: string | null;
+}
+
+function extractFilenameFromContentDisposition(contentDisposition: string | null): string | null {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]).replace(/^["']|["']$/g, "");
+    } catch {
+      return utf8Match[1].replace(/^["']|["']$/g, "");
+    }
+  }
+
+  const basicMatch = contentDisposition.match(/filename\s*=\s*("?)([^";]+)\1/i);
+  if (basicMatch?.[2]) {
+    return basicMatch[2].trim();
+  }
+
+  return null;
+}
+
 export type FranchiseListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -222,6 +343,47 @@ export type FranchiseListParams = Record<
   search?: string;
   status?: string;
 };
+
+export type RateListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "active" | "schedule";
+};
+
+export type RateExportParams = {
+  search?: string;
+  status?: "" | "active" | "schedule";
+};
+
+export interface CreateRatePayload {
+  fromCurrency: string;
+  toCurrency: string;
+  buyRate: number;
+  sellRate: number;
+  validFrom: string;
+  validUntil: string;
+  note?: string;
+}
+
+export interface RateDetailsData {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  rate?: string | number | null;
+  buyRate: string | number;
+  sellRate: string | number;
+  source?: string | null;
+  note?: string | null;
+  validFrom: string;
+  validUntil: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+}
 
 export const adminApi = {
   // ==================== Auth ====================
@@ -500,15 +662,40 @@ export const adminApi = {
     create: (data: FormData) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.create, data),
 
+    update: (id: string, data: FormData) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.update(id), data),
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.tickets.stats),
 
     getCaseTypes: () =>
       apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.tickets.caseTypes),
 
+    getStatuses: () =>
+      apiClient.get<ApiResponse<TicketStatusOptionItem[]>>(
+        API_ENDPOINTS.admin.tickets.statuses
+      ),
+
     getById: (id: string) =>
       apiClient.get<ApiResponse<TicketDetailsResponseData>>(
         API_ENDPOINTS.admin.tickets.getById(id)
+      ),
+
+    getComments: (id: string) =>
+      apiClient.get<ApiResponse<TicketCommentItem[]>>(
+        API_ENDPOINTS.admin.tickets.comments(id)
+      ),
+
+    addComment: (id: string, data: AddTicketCommentPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.tickets.comments(id),
+        data
+      ),
+
+    assign: (id: string, data: AssignTicketPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.tickets.assign(id),
+        data
       ),
 
     updateStatus: (id: string, data: UpdateTicketStatusPayload) =>
@@ -516,6 +703,39 @@ export const adminApi = {
         API_ENDPOINTS.admin.tickets.updateStatus(id),
         data
       ),
+  },
+
+  // ==================== Rate ====================
+  rate: {
+    list: (params?: RateListParams) =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.list, {
+        params,
+      }),
+
+    export: async (params?: RateExportParams) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.rate.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    create: (data: CreateRatePayload) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.create, data),
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<RateDetailsData>>(API_ENDPOINTS.admin.rate.getById(id)),
+
+    update: (id: string, data: CreateRatePayload) =>
+      apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.update(id), data),
+
+    getStats: () =>
+      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),
   },
 
   // ==================== Outlet ====================
@@ -566,6 +786,11 @@ export const adminApi = {
     },
 
     users: {
+      getAll: () =>
+        apiClient.get<ApiResponse<ManagementAdminUserItem[]>>(
+          API_ENDPOINTS.admin.management.users.all
+        ),
+
       list: (params?: { page?: number; limit?: number; search?: string }) =>
         apiClient.get<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.management.users.list,
@@ -756,6 +981,11 @@ export const adminApi = {
         API_ENDPOINTS.admin.transactions.stats
       ),
 
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<AdminTransactionDetailsData>>(
+        API_ENDPOINTS.admin.transactions.getById(id)
+      ),
+
     review: (id: string, data: { notes?: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.review(id),
@@ -778,5 +1008,27 @@ export const adminApi = {
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.settle(id)
       ),
+  },
+
+  // ==================== Reports ====================
+  reports: {
+    modules: () =>
+      apiClient.get<ApiResponse<ReportModuleItem[]>>(
+        API_ENDPOINTS.admin.reports.modules
+      ),
+
+    generate: async (data: GenerateReportPayload): Promise<GeneratedReportFile> => {
+      const response = await apiClient.post<Response>(
+        API_ENDPOINTS.admin.reports.generate,
+        data,
+        { returnRawResponse: true }
+      );
+
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileName = extractFilenameFromContentDisposition(contentDisposition);
+      const blob = await response.blob();
+
+      return { blob, fileName };
+    },
   },
 };

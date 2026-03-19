@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useParams } from "next/navigation";
 import { useSetHeaderContent } from "../../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../../_components/HeaderTabs";
 import Overview from "./Overview";
 import Receipt from "./Receipt";
 import Settlement from "./Settlement";
+import { useTransactionDetails } from "./hooks/useTransactionDetails";
 
 export const TRANSACTION_TABS = [
   { value: "overview", label: "Overview" },
@@ -17,6 +19,9 @@ export type TransactionTabValue = (typeof TRANSACTION_TABS)[number]["value"];
 
 export default function ViewTransactionPage() {
   const [activeTab, setActiveTab] = useState<TransactionTabValue>("overview");
+  const params = useParams<{ id: string }>();
+  const transactionId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const { overview, isLoading, isError } = useTransactionDetails(transactionId);
 
   const headerContent = useMemo(
     () => (
@@ -33,7 +38,9 @@ export default function ViewTransactionPage() {
 
   return (
     <div>
-      {activeTab === "overview" && <Overview />}
+      {activeTab === "overview" && (
+        <Overview transaction={overview} isLoading={isLoading} isError={isError} />
+      )}
       {activeTab === "receipt" && <Receipt />}
       {activeTab === "transaction-settlement" && <Settlement />}
     </div>

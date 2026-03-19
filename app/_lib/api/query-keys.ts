@@ -165,8 +165,10 @@ export const adminKeys = {
   tickets: {
     all: ["admin", "tickets"] as const,
     stats: () => [...adminKeys.tickets.all, "stats"] as const,
+    statuses: () => [...adminKeys.tickets.all, "statuses"] as const,
     caseTypes: () => [...adminKeys.tickets.all, "case-types"] as const,
     detail: (id: string) => [...adminKeys.tickets.all, "detail", id] as const,
+    comments: (id: string) => [...adminKeys.tickets.all, "comments", id] as const,
     list: (params?: {
       page?: number;
       limit?: number;
@@ -175,6 +177,17 @@ export const adminKeys = {
       category?: string;
       priority?: string;
     }) => [...adminKeys.tickets.all, "list", params] as const,
+  },
+  rate: {
+    all: ["admin", "rate"] as const,
+    stats: () => [...adminKeys.rate.all, "stats"] as const,
+    detail: (id: string) => [...adminKeys.rate.all, "detail", id] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: "" | "active" | "schedule";
+    }) => [...adminKeys.rate.all, "list", params] as const,
   },
 
   outlet: {
@@ -215,6 +228,11 @@ export const adminKeys = {
     details: () => [...adminKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...adminKeys.transactions.details(), id] as const,
   },
+
+  reports: {
+    all: ["admin", "reports"] as const,
+    modules: () => [...adminKeys.reports.all, "modules"] as const,
+  },
   
   management: {
     all: ["admin", "management"] as const,
@@ -223,6 +241,7 @@ export const adminKeys = {
     modules: () => [...adminKeys.management.all, "modules"] as const,
     users: {
       all: () => [...adminKeys.management.all, "users"] as const,
+      allUsers: () => [...adminKeys.management.users.all(), "all"] as const,
       stats: () => [...adminKeys.management.users.all(), "stats"] as const,
       details: () => [...adminKeys.management.users.all(), "detail"] as const,
       detail: (id: string) => [...adminKeys.management.users.details(), id] as const,
