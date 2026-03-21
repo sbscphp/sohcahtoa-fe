@@ -82,14 +82,9 @@ export default function RateCalculatorPage() {
     recalculate(nextReceiveAmount, nextReceiveCurrency, nextSendCurrency);
   };
 
-  const ratesParams = useMemo(
-    () => ({ fromCurrency: receiveCurrency, toCurrency: sendCurrency }),
-    [receiveCurrency, sendCurrency]
-  );
-
   const { data: ratesResponse } = useFetchData(
-    [...customerKeys.transactions.all, "rates", ratesParams],
-    () => customerApi.transactionRates.list(ratesParams),
+    [...customerKeys.transactions.all, "rates"],
+    () => customerApi.transactionRates.list(),
     true
   );
 

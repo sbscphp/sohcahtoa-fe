@@ -5,36 +5,47 @@ import { Card, Text, Group, Stack, Anchor, Badge, Divider } from "@mantine/core"
 import { useRouter, useParams } from "next/navigation";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
-import { ArrowUpRight, Download, Edit } from "lucide-react";
+import { ArrowUpRight, Edit } from "lucide-react";
+import { useFetchSingleData } from "@/app/_lib/api/hooks";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import type { AgentCustomerDetailsResponse } from "@/app/_lib/api/types";
+import {
+  formatHeaderDateTime,
+  formatShortDate,
+} from "@/app/utils/helper/formatLocalDate";
 import { TransactionHistoryModal } from "../_components/TransactionHistoryModal";
+import DocumentViewerModal from "@/app/agent/_components/modal/DocumentViewerModal";
 
 export default function ViewCustomerDetailsPage() {
   const router = useRouter();
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const [transactionHistoryOpened, setTransactionHistoryOpened] = useState(false);
-
-  // Mock customer data - replace with actual API call
-  const customer = {
-    fullName: "Fiyinfoluwa Familua",
-    email: "fiyinfoluwa@sohcatoa.com",
-    phone: "+234 90 4747 2791",
-    dateOnboarded: "3 Jun 2025",
-    transactionsCompleted: 12,
-    status: "Pending",
-    idType: "Resident",
-    bvn: "2223334355",
-    tin: "876r245623",
-    formAId: "23456786543",
-    registeredDate: "24 Jan 2025",
-    registeredTime: "11:00am",
-  };
+  const [documentViewer, setDocumentViewer] = useState<{
+    url: string;
+    filename: string;
+  } | null>(null);
+  const customerId = params?.id ?? "";
+  const { data, isLoading } = useFetchSingleData<AgentCustomerDetailsResponse>(
+    customerId ? [...agentKeys.customers.detail(customerId)] : [],
+    () => agentApi.customers.getById(customerId),
+    !!customerId
+  );
+  const customer = data?.data;
 
   const documents = [
-    { name: "Form A", file: "Doc.pdf" },
-    { name: "Utility Bill", file: "Doc.pdf" },
-    { name: "Visa", file: "Doc.pdf" },
-    { name: "Return Ticket", file: "Doc.pdf" },
-  ];
+    { label: "Form A", key: "FormA" },
+    { label: "Utility Bill", key: "utilityBill" },
+    { label: "Visa", key: "Visa" },
+    { label: "Return Ticket", key: "ReturnTicket" },
+  ] as const;
+
+  const registeredLabel = customer?.registeredAt
+    ? formatHeaderDateTime(customer.registeredAt)
+    : "—";
+  const status = customer?.totalTransactionsCompleted
+    ? "Repeat Customer"
+    : "New Customer";
 
   return (
     <div className="space-y-6">
@@ -67,12 +78,12 @@ export default function ViewCustomerDetailsPage() {
               Customer Details Overview
             </Text>
             <Text size="sm" c="dimmed">
-              Registered: {customer.registeredDate} | {customer.registeredTime}
+              Registered: {registeredLabel}
             </Text>
           </div>
 
           <Group gap="xs">
-            <CustomButton
+            {/* <CustomButton
               buttonType="secondary"
               leftSection={<Edit size={16} />}
               onClick={() => {
@@ -81,7 +92,7 @@ export default function ViewCustomerDetailsPage() {
               }}
             >
               Edit
-            </CustomButton>
+            </CustomButton> */}
             <CustomButton
               buttonType="primary"
               rightSection={<ArrowUpRight size={16} />}
@@ -100,20 +111,37 @@ export default function ViewCustomerDetailsPage() {
             Personal Details
           </Text>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailItem label="Full Name" value={customer.fullName} />
-            <DetailItem label="Email Address" value={customer.email} />
-            <DetailItem label="Phone Number" value={customer.phone} />
-            <DetailItem label="Date Onboarded" value={customer.dateOnboarded} />
+            <DetailItem
+              label="Full Name"
+              value={customer?.fullName ?? "—"}
+              loading={isLoading}
+            />
+            <DetailItem
+              label="Email Address"
+              value={customer?.email ?? "—"}
+              loading={isLoading}
+            />
+            <DetailItem label="Phone Number" value="—" loading={isLoading} />
+            <DetailItem
+              label="Date Onboarded"
+              value={
+                customer?.dateOnboarded
+                  ? formatShortDate(customer.dateOnboarded)
+                  : "—"
+              }
+              loading={isLoading}
+            />
             <DetailItem
               label="Transactions Completed"
-              value={customer.transactionsCompleted.toString()}
+              value={String(customer?.totalTransactionsCompleted ?? 0)}
+              loading={isLoading}
             />
             <div className="space-y-1">
               <Text size="xs" className="text-body-text-50!" mb={4}>
                 Status
               </Text>
               <Badge color="orange" variant="light" size="sm">
-                {customer.status}
+                {status}
               </Badge>
             </div>
           </div>
@@ -127,30 +155,63 @@ export default function ViewCustomerDetailsPage() {
             ID Details
           </Text>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailItem label="ID Type" value={customer.idType} />
-            <DetailItem label="BVN" value={customer.bvn} />
-            <DetailItem label="TIN" value={customer.tin} />
-            <DetailItem label="Form A ID" value={customer.formAId} />
-            {documents.map((doc) => (
-              <div key={doc.name} className="space-y-1">
-                <Text size="xs" className="text-body-text-50!" mb={4}>
-                  {doc.name}
-                </Text>
-                <Group gap="xs">
-                  <Text fw={500} size="sm">
-                    {doc.file}
+            <DetailItem
+              label="Customer ID"
+              value={customer?.userId ?? customerId}
+              loading={isLoading}
+            />
+            <DetailItem
+              label="ID Type"
+              value={customer?.idDetails.idType ?? "—"}
+              loading={isLoading}
+            />
+            <DetailItem
+              label="BVN"
+              value={customer?.idDetails.bvn ?? "—"}
+              loading={isLoading}
+            />
+            <DetailItem
+              label="TIN"
+              value={customer?.idDetails.tin ?? "—"}
+              loading={isLoading}
+            />
+            <DetailItem
+              label="Form A ID"
+              value={customer?.idDetails.formAId ?? "—"}
+              loading={isLoading}
+            />
+            {documents.map((doc) => {
+              const file = customer?.files?.[doc.key];
+
+              return (
+                <div key={doc.key} className="space-y-1">
+                  <Text size="xs" className="text-body-text-50!" mb={4}>
+                    {doc.label}
                   </Text>
-                  <Anchor
-                    href="#"
-                    size="sm"
-                    className="text-primary-400 flex items-center gap-1"
-                  >
-                    <Download size={14} />
-                    Download
-                  </Anchor>
-                </Group>
-              </div>
-            ))}
+                  <Group gap="xs">
+                    <Text fw={500} size="sm">
+                      {isLoading ? "Loading..." : file?.fileName ?? "Not uploaded"}
+                    </Text>
+                    {file?.fileUrl ? (
+                      <Anchor
+                        href="#"
+                        size="sm"
+                        className="text-primary-400 flex items-center gap-1"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setDocumentViewer({
+                            url: file.fileUrl,
+                            filename: file.fileName,
+                          });
+                        }}
+                      >
+                        View
+                      </Anchor>
+                    ) : null}
+                  </Group>
+                </div>
+              );
+            })}
           </div>
         </Stack>
       </Card>
@@ -158,7 +219,13 @@ export default function ViewCustomerDetailsPage() {
       <TransactionHistoryModal
         opened={transactionHistoryOpened}
         onClose={() => setTransactionHistoryOpened(false)}
-        customerId={params.id as string}
+        customerId={customerId}
+      />
+      <DocumentViewerModal
+        opened={documentViewer !== null}
+        onClose={() => setDocumentViewer(null)}
+        fileUrl={documentViewer?.url ?? null}
+        filename={documentViewer?.filename}
       />
     </div>
   );

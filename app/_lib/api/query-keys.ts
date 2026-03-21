@@ -271,6 +271,28 @@ export const adminKeys = {
 
 export const agentKeys = {
   all: ["agent"] as const,
+
+  customers: {
+    all: ["agent", "customers"] as const,
+    stats: () => [...agentKeys.customers.all, "stats"] as const,
+    lists: () => [...agentKeys.customers.all, "list"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      lastTransactionType?: string;
+      customerType?: string;
+      fromDate?: string;
+      toDate?: string;
+      search?: string;
+    }) => [...agentKeys.customers.lists(), params] as const,
+    details: () => [...agentKeys.customers.all, "detail"] as const,
+    detail: (userId: string) => [...agentKeys.customers.details(), userId] as const,
+    transactions: (
+      userId: string,
+      params?: { page?: number; limit?: number }
+    ) => [...agentKeys.customers.detail(userId), "transactions", params] as const,
+  },
   
   transactions: {
     all: ["agent", "transactions"] as const,

@@ -11,7 +11,7 @@ import {
 } from "@/app/(customer)/_components/common";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
-import type { TransactionRate } from "@/app/_lib/api/types";
+import type { TransactionRate, TransactionRatesListResponse } from "@/app/_lib/api/types";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { Loader2 } from "lucide-react";
@@ -81,19 +81,14 @@ export default function RateCalculatorPage() {
     recalculate(nextReceiveAmount, nextReceiveCurrency, nextSendCurrency);
   };
 
-  const ratesParams = useMemo(
-    () => ({ fromCurrency: receiveCurrency, toCurrency: sendCurrency }),
-    [receiveCurrency, sendCurrency]
-  );
-
-  const { data: ratesResponse } = useFetchData(
-    [...customerKeys.transactions.all, "rates", ratesParams],
-    () => customerApi.transactionRates.list(ratesParams),
+  const { data: ratesResponse } = useFetchData<TransactionRatesListResponse>(
+    [...customerKeys.transactions.all, "rates"],
+    () => customerApi.transactionRates.list(),
     true
   );
 
   const rateRows = useMemo(
-    () => toRateRows(((ratesResponse as any)?.data ?? []) as TransactionRate[]),
+    () => toRateRows((ratesResponse?.data ?? []) as TransactionRate[]),
     [ratesResponse]
   );
 
