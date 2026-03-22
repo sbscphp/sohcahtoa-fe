@@ -21,7 +21,7 @@ export default function ViewTransactionPage() {
   const [activeTab, setActiveTab] = useState<TransactionTabValue>("overview");
   const params = useParams<{ id: string }>();
   const transactionId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const { overview, isLoading, isError } = useTransactionDetails(transactionId);
+  const { overview, receipt, settlement, isLoading, isError } = useTransactionDetails(transactionId);
 
   const headerContent = useMemo(
     () => (
@@ -41,8 +41,12 @@ export default function ViewTransactionPage() {
       {activeTab === "overview" && (
         <Overview transaction={overview} isLoading={isLoading} isError={isError} />
       )}
-      {activeTab === "receipt" && <Receipt />}
-      {activeTab === "transaction-settlement" && <Settlement />}
+      {activeTab === "receipt" && (
+        <Receipt transaction={receipt} isLoading={isLoading} isError={isError} />
+      )}
+      {activeTab === "transaction-settlement" && (
+        <Settlement transaction={settlement} isLoading={isLoading} isError={isError} />
+      )}
     </div>
   );
 }
