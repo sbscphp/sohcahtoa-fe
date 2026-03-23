@@ -1,4 +1,6 @@
 import type { AdminComplianceDashboardData } from "@/app/admin/_services/admin-api";
+import { Loader } from "@mantine/core";
+import type { ReactNode } from "react";
 
 interface ComplianceInsightsProps {
   insights: AdminComplianceDashboardData["insights"];
@@ -18,24 +20,27 @@ function formatCurrency(value: number): string {
 }
 
 export default function ComplianceInsights({ insights, loading = false }: ComplianceInsightsProps) {
+  const loadingValue = <Loader size="xs" color="orange" />;
   const display = {
-    slaRate: loading ? "--" : formatPercent(insights.sla.complianceRate),
-    onTime: loading ? "--" : formatCount(insights.sla.onTime),
-    late: loading ? "--" : formatCount(insights.sla.late),
-    missed: loading ? "--" : formatCount(insights.sla.missed),
-    trend: loading ? "--" : `${insights.sla.trend.delta >= 0 ? "+" : ""}${insights.sla.trend.delta}%`,
-    target: loading ? "--" : formatPercent(insights.sla.target),
-    passed: loading ? "--" : formatCount(insights.screening.passed),
-    flagged: loading ? "--" : formatCount(insights.screening.flagged),
-    rejected: loading ? "--" : formatCount(insights.screening.rejected),
-    pendingReview: loading ? "--" : formatCount(insights.screening.pendingReview),
-    totalScreened: loading ? "--" : formatCount(insights.screening.totalScreened),
-    pta: loading ? "--" : formatCurrency(insights.fxSold.PTA),
-    bta: loading ? "--" : formatCurrency(insights.fxSold.BTA),
-    school: loading ? "--" : formatCurrency(insights.fxSold.School),
-    medical: loading ? "--" : formatCurrency(insights.fxSold.Medical),
-    imports: loading ? "--" : formatCurrency(insights.fxSold.Imports),
-    total: loading ? "--" : formatCurrency(insights.fxSold.total),
+    slaRate: loading ? loadingValue : formatPercent(insights.sla.complianceRate),
+    onTime: loading ? loadingValue : formatCount(insights.sla.onTime),
+    late: loading ? loadingValue : formatCount(insights.sla.late),
+    missed: loading ? loadingValue : formatCount(insights.sla.missed),
+    trend: loading
+      ? loadingValue
+      : `${insights.sla.trend.delta >= 0 ? "+" : ""}${insights.sla.trend.delta}%`,
+    target: loading ? loadingValue : formatPercent(insights.sla.target),
+    passed: loading ? loadingValue : formatCount(insights.screening.passed),
+    flagged: loading ? loadingValue : formatCount(insights.screening.flagged),
+    rejected: loading ? loadingValue : formatCount(insights.screening.rejected),
+    pendingReview: loading ? loadingValue : formatCount(insights.screening.pendingReview),
+    totalScreened: loading ? loadingValue : formatCount(insights.screening.totalScreened),
+    pta: loading ? loadingValue : formatCurrency(insights.fxSold.PTA),
+    bta: loading ? loadingValue : formatCurrency(insights.fxSold.BTA),
+    school: loading ? loadingValue : formatCurrency(insights.fxSold.School),
+    medical: loading ? loadingValue : formatCurrency(insights.fxSold.Medical),
+    imports: loading ? loadingValue : formatCurrency(insights.fxSold.Imports),
+    total: loading ? loadingValue : formatCurrency(insights.fxSold.total),
   };
 
   return (
@@ -143,7 +148,7 @@ function Metric({
   color,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   color: string;
 }) {
   return (
@@ -154,7 +159,7 @@ function Metric({
   );
 }
 
-function FxItem({ label, value }: { label: string; value: string }) {
+function FxItem({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <p className="text-xs text-gray-500">{label}</p>

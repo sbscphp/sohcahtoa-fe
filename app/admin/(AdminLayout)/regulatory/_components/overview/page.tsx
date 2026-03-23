@@ -5,6 +5,7 @@ import { SiDocusaurus } from "react-icons/si";
 import ComplianceInsights from "./ComplianceInsights";
 import ComplianceTable from "./ComplianceTable";
 import { useComplianceDashboard } from "../../hooks/useComplianceDashboard";
+import { Loader } from "@mantine/core";
 
 export default function OverviewPage() {
   const { dashboard, isLoading } = useComplianceDashboard();
@@ -23,7 +24,8 @@ export default function OverviewPage() {
   );
   const overview = dashboard.overview;
 
-  const statValue = (value: number) => (isLoading ? "--" : value.toLocaleString("en-US"));
+  const statValue = (value: number) =>
+    isLoading ? <Loader size="xs" color="orange" /> : value.toLocaleString("en-US");
 
   return (
     <>
