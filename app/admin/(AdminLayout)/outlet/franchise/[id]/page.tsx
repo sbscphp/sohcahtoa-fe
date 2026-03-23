@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Text,
@@ -8,6 +8,8 @@ import {
   Button,
   Menu,
   Divider,
+  Skeleton,
+  Alert,
 } from "@mantine/core";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -16,8 +18,11 @@ import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import FormModal, { type FormField } from "@/app/admin/_components/FormModal";
 import { FranchiseDetailTabbedTables } from "./_franchiseDetailComponents/FranchiseDetailTabbedTables";
-
-type FranchiseStatus = "Active" | "Deactivated";
+import {
+  useFranchiseDetails,
+  formatFranchiseStatusForBadge,
+  formatFranchiseCreatedAt,
+} from "../../hooks/useFranchiseDetails";
 
 const EDIT_FRANCHISE_STATES = [
   { value: "Lagos State", label: "Lagos State" },
@@ -30,6 +35,7 @@ const EDIT_FRANCHISE_STATES = [
   { value: "Delta", label: "Delta" },
   { value: "Ogun", label: "Ogun" },
   { value: "Anambra", label: "Anambra" },
+  { value: "Osun", label: "Osun" },
 ];
 
 const editFranchiseFields: FormField[] = [
@@ -46,7 +52,23 @@ export default function FranchiseDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
-  const [status, setStatus] = useState<FranchiseStatus>("Active");
+  if (!id) {
+    return (
+      <Alert color="red" title="Invalid franchise">
+        Missing franchise id in the URL.
+      </Alert>
+    );
+  }
+
+  return <FranchiseDetailPageInner key={id} franchiseId={id} />;
+}
+
+function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
+  const { franchise, isLoading, isError, error } = useFranchiseDetails(franchiseId);
+
+  /** Local override after mock deactivate/reactivate until refetch is wired; cleared when franchise id from route changes */
+  const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
+  const effectiveIsActive = activeOverride ?? franchise?.isActive ?? true;
 
   const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false);
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
@@ -57,34 +79,29 @@ export default function FranchiseDetailPage() {
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
   const [editSuccessOpen, setEditSuccessOpen] = useState(false);
-  const [pendingEditData, setPendingEditData] = useState<Record<string, any> | null>(null);
+  const [pendingEditData, setPendingEditData] = useState<Record<string, unknown> | null>(null);
   const [editLoading, setEditLoading] = useState(false);
 
-  const franchise = {
-    id: id || "2223334355",
-    name: "Name of Franchise",
-    dateCreated: "Nov 17 2025 | 11:00am",
-    branch: "Lagos Branch",
-    contactName: "Adekunle Dimeji",
-    noOfAgents: 12,
-    email: "adekunle@sohcatoa.com",
-    phone: "+234 90 4747 2791",
-    status,
-  };
+  const editFormInitialValues = useMemo(
+    () => ({
+      franchiseName: franchise?.franchiseName ?? "",
+      state: franchise?.state ?? "",
+      address: franchise?.address ?? "",
+      contactPerson: franchise?.contactPerson ?? "",
+      emailAddress: franchise?.email ?? "",
+      phoneNumber1: franchise?.phoneNumber ?? "",
+      phoneNumber2: franchise?.altPhoneNumber ?? "",
+    }),
+    [franchise]
+  );
 
-  const editFormInitialValues = {
-    franchiseName: franchise.name,
-    state: "Lagos State",
-    address: "No 14 B, Karimu Kotun, VI. Lagos",
-    contactPerson: franchise.contactName,
-    emailAddress: franchise.email,
-    phoneNumber1: franchise.phone,
-    phoneNumber2: "+234 000000000",
-  };
+  const branchStatsSummary = useMemo(() => {
+    if (!franchise?.branchStats) return "--";
+    const { total, active, pending, deactivated } = franchise.branchStats;
+    return `${total} total (${active} active, ${pending} pending, ${deactivated} deactivated)`;
+  }, [franchise]);
 
-  const isActive = status === "Active";
-
-  const handleEditSubmit = (data: Record<string, any>) => {
+  const handleEditSubmit = (data: Record<string, unknown>) => {
     setPendingEditData(data);
     setEditModalOpened(false);
     setEditConfirmOpen(true);
@@ -105,7 +122,7 @@ export default function FranchiseDetailPage() {
   const handleDeactivateConfirm = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    setStatus("Deactivated");
+    setActiveOverride(false);
     setDeactivateConfirmOpen(false);
     setDeactivateSuccessOpen(true);
     setLoading(false);
@@ -114,78 +131,113 @@ export default function FranchiseDetailPage() {
   const handleReactivateConfirm = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    setStatus("Active");
+    setActiveOverride(true);
     setReactivateConfirmOpen(false);
     setReactivateSuccessOpen(true);
     setLoading(false);
   };
 
+  const statusBadgeLabel = franchise ? formatFranchiseStatusForBadge(franchise.status) : "--";
+  const createdLabel = franchise ? formatFranchiseCreatedAt(franchise.createdAt) : "--";
+
   return (
     <div className="space-y-6">
+      {isError && (
+        <Alert color="red" title="Could not load franchise">
+          {error?.message ?? "Unable to load franchise details. Please try again."}
+        </Alert>
+      )}
+
       {/* Header card */}
       <div className="rounded-2xl bg-white shadow-sm">
         <div className="flex flex-col gap-6 p-6 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <Text size="xl" fw={600} className="text-gray-900">
-                {franchise.name}
-              </Text>
-              <Group gap={8} className="flex-wrap text-sm text-gray-600">
-                <span>Date Created: {franchise.dateCreated}</span>
-                <StatusBadge status={franchise.status} />
-              </Group>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton height={32} width="60%" />
+              <Skeleton height={20} width="40%" />
+              <Divider className="my-2" />
+              <Skeleton height={24} width={180} />
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} height={56} />
+                ))}
+              </div>
             </div>
+          ) : franchise ? (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
+                  <Text size="xl" fw={600} className="text-gray-900">
+                    {franchise.franchiseName}
+                  </Text>
+                  <Group gap={8} className="flex-wrap text-sm text-gray-600">
+                    <span>Date Created: {createdLabel}</span>
+                    <StatusBadge status={statusBadgeLabel} />
+                  </Group>
+                </div>
 
-            <Group gap="sm">
-              <CustomButton buttonType="secondary" size="md" radius="xl">
-                View Updates
-              </CustomButton>
-              <Menu position="bottom-end" shadow="md" width={160}>
-                <Menu.Target>
-                  <Button radius="xl" size="md" color="#DD4F05">
-                    Take Action
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item onClick={() => setEditModalOpened(true)}>
-                    Edit
-                  </Menu.Item>
-                  <Menu.Divider />
-                  <Menu.Item
-                    onClick={() =>
-                      isActive ? setDeactivateConfirmOpen(true) : setReactivateConfirmOpen(true)
-                    }
-                  >
-                    {isActive ? "Deactivate" : "Reactivate"}
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
-          </div>
+                <Group gap="sm">
+                  <CustomButton buttonType="secondary" size="md" radius="xl">
+                    View Updates
+                  </CustomButton>
+                  <Menu position="bottom-end" shadow="md" width={160}>
+                    <Menu.Target>
+                      <Button radius="xl" size="md" color="#DD4F05">
+                        Take Action
+                      </Button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={() => setEditModalOpened(true)}>
+                        Edit
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        onClick={() =>
+                          effectiveIsActive
+                            ? setDeactivateConfirmOpen(true)
+                            : setReactivateConfirmOpen(true)
+                        }
+                      >
+                        {effectiveIsActive ? "Deactivate" : "Reactivate"}
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              </div>
 
-          <Divider className="my-2" />
+              <Divider className="my-2" />
 
-          {/* Franchise Details */}
-          <section className="space-y-4">
-            <Text fw={600} className="text-orange-500">
-              Franchise Details
+              <section className="space-y-4">
+                <Text fw={600} className="text-orange-500">
+                  Franchise Details
+                </Text>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailItem label="Franchise ID" value={franchise.id} />
+                  <DetailItem label="State" value={franchise.state} />
+                  <DetailItem label="Address" value={franchise.address} />
+                  <DetailItem label="Contact Person" value={franchise.contactPerson} />
+                  <DetailItem label="Branches" value={branchStatsSummary} />
+                  <DetailItem label="Email Address" value={franchise.email} />
+                  <DetailItem label="Phone Number" value={franchise.phoneNumber} />
+                  <DetailItem
+                    label="Alt Phone"
+                    value={franchise.altPhoneNumber?.trim() ? franchise.altPhoneNumber : "--"}
+                  />
+                </div>
+              </section>
+            </>
+          ) : !isError ? (
+            <Text c="dimmed" size="sm">
+              No franchise data found.
             </Text>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <DetailItem label="Franchise ID" value={franchise.id} />
-              <DetailItem label="Branch" value={franchise.branch} />
-              <DetailItem label="Contact Person" value={franchise.contactName} />
-              <DetailItem label="No of Agents" value={String(franchise.noOfAgents)} />
-              <DetailItem label="Email Address" value={franchise.email} />
-              <DetailItem label="Phone Number" value={franchise.phone} />
-            </div>
-          </section>
+          ) : null}
         </div>
       </div>
 
-      <FranchiseDetailTabbedTables franchiseId={id} />
+      <FranchiseDetailTabbedTables franchiseId={franchiseId} />
 
-      {/* Edit franchise modal */}
       <FormModal
+        key={franchise?.id ?? "edit"}
         opened={editModalOpened}
         onClose={() => setEditModalOpened(false)}
         title="Edit Franchise Details"
@@ -198,7 +250,6 @@ export default function FranchiseDetailPage() {
         size="lg"
       />
 
-      {/* Edit save confirmation */}
       <ConfirmationModal
         opened={editConfirmOpen}
         onClose={() => setEditConfirmOpen(false)}
@@ -211,7 +262,6 @@ export default function FranchiseDetailPage() {
         loading={editLoading}
       />
 
-      {/* Edit success */}
       <SuccessModal
         opened={editSuccessOpen}
         onClose={() => setEditSuccessOpen(false)}
@@ -223,7 +273,6 @@ export default function FranchiseDetailPage() {
         onSecondaryClick={() => setEditSuccessOpen(false)}
       />
 
-      {/* Deactivate confirmation */}
       <ConfirmationModal
         opened={deactivateConfirmOpen}
         onClose={() => setDeactivateConfirmOpen(false)}
@@ -236,7 +285,6 @@ export default function FranchiseDetailPage() {
         loading={loading}
       />
 
-      {/* Reactivate confirmation */}
       <ConfirmationModal
         opened={reactivateConfirmOpen}
         onClose={() => setReactivateConfirmOpen(false)}
@@ -249,7 +297,6 @@ export default function FranchiseDetailPage() {
         loading={loading}
       />
 
-      {/* Deactivate success */}
       <SuccessModal
         opened={deactivateSuccessOpen}
         onClose={() => setDeactivateSuccessOpen(false)}
@@ -261,7 +308,6 @@ export default function FranchiseDetailPage() {
         onSecondaryClick={() => setDeactivateSuccessOpen(false)}
       />
 
-      {/* Reactivate success */}
       <SuccessModal
         opened={reactivateSuccessOpen}
         onClose={() => setReactivateSuccessOpen(false)}

@@ -135,6 +135,29 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export interface FranchiseBranchStats {
+  total: number;
+  active: number;
+  deactivated: number;
+  pending: number;
+}
+
+export interface FranchiseDetailsData {
+  id: string;
+  franchiseName: string;
+  contactPerson: string;
+  email: string;
+  phoneNumber: string;
+  altPhoneNumber: string;
+  state: string;
+  address: string;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  branchStats: FranchiseBranchStats;
+}
+
 export interface BranchStatsData {
   total: number;
   active: number;
@@ -875,6 +898,9 @@ export const adminApi = {
 
       getStats: () =>
         apiClient.get<ApiResponse<FranchiseStatsData>>(API_ENDPOINTS.admin.outlet.franchises.stats),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<FranchiseDetailsData>>(API_ENDPOINTS.admin.outlet.franchises.getById(id)),
     },
     branches: {
       getStats: () =>

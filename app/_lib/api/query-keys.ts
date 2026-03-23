@@ -199,6 +199,7 @@ export const adminKeys = {
     franchises: {
       all: () => [...adminKeys.outlet.all, "franchises"] as const,
       stats: () => [...adminKeys.outlet.franchises.all(), "stats"] as const,
+      detail: (id: string) => [...adminKeys.outlet.franchises.all(), "detail", id] as const,
       list: (params?: {
         page?: number;
         limit?: number;

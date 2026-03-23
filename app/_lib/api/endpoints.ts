@@ -156,6 +156,7 @@ export const API_ENDPOINTS = {
         create: "/api/admin/outlet/franchises",
         export: "/api/admin/outlet/franchises/export",
         stats: "/api/admin/outlet/franchises/stats",
+        getById: (id: string) => `/api/admin/outlet/franchises/${id}`,
       },
       branches: {
         stats: "/api/admin/outlet/branches/stats",
