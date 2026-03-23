@@ -29,12 +29,15 @@ interface AgentTransactionsTableProps {
 }
 
 interface ApiTransactionItem {
-  id?: string;
-  actionDate?: string;
-  actionTime?: string;
+  transactionId?: string;
+  referenceNumber?: string;
   type?: string;
-  transactionValue?: number | string;
   status?: string;
+  stage?: string;
+  value?: number | string;
+  currency?: string;
+  pickup?: unknown | null;
+  createdAt?: string;
 }
 
 interface AgentTransactionsResponse {
@@ -65,21 +68,47 @@ function parseNumber(value: unknown): number {
   return 0;
 }
 
-function toStatus(value?: string): TransactionStatus {
-  const normalized = (value ?? "").toLowerCase();
-  if (normalized === "pending") return "Pending";
-  if (normalized === "rejected") return "Rejected";
-  return "Posted";
+function mapApiStatusToUi(value?: string): TransactionStatus {
+  const normalized = (value ?? "").toUpperCase().trim();
+  if (normalized === "REJECTED") return "Rejected";
+  if (normalized === "AWAITING_VERIFICATION") return "Pending";
+  if (normalized === "SETTLED") return "Posted";
+  // Fallback: treat unknown statuses as pending.
+  return "Pending";
+}
+
+function formatDate(value?: string): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("en-NG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatTime(value?: string): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleTimeString("en-NG", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 function mapTransaction(item: ApiTransactionItem): AgentTransaction {
   return {
-    id: item.id ?? "—",
-    actionDate: item.actionDate ?? "—",
-    actionTime: item.actionTime ?? "—",
+    id: item.transactionId ?? "—",
+    actionDate: formatDate(item.createdAt),
+    actionTime: formatTime(item.createdAt),
     type: item.type ?? "—",
-    transactionValue: parseNumber(item.transactionValue),
-    status: toStatus(item.status),
+    // Temporary mapping: UI expects NGN formatting, but API returns `value` + `currency`.
+    // We'll still format `value` numerically for now.
+    transactionValue: parseNumber(item.value),
+    status: mapApiStatusToUi(item.status),
   };
 }
 
@@ -92,8 +121,19 @@ export default function AgentTransactionsTable({
   const [statusFilter, setStatusFilter] = useState<string | null>("All");
   const [page, setPage] = useState(1);
   const pageSize = 20;
-  const statusParam =
-    !statusFilter || statusFilter === "All" ? undefined : statusFilter;
+  const uiStatus =
+    !statusFilter || statusFilter === "All"
+      ? undefined
+      : (statusFilter as TransactionStatus);
+
+  const apiStatus =
+    uiStatus === "Pending"
+      ? "AWAITING_VERIFICATION"
+      : uiStatus === "Posted"
+        ? "SETTLED"
+        : uiStatus === "Rejected"
+          ? "REJECTED"
+          : undefined;
 
   const query = useFetchDataSeperateLoading<AgentTransactionsResponse>(
     agentId
@@ -101,7 +141,7 @@ export default function AgentTransactionsTable({
           ...adminKeys.agent.transactions(agentId, {
             page,
             limit: pageSize,
-            status: statusParam,
+            status: apiStatus,
           }),
         ]
       : [],
@@ -109,7 +149,7 @@ export default function AgentTransactionsTable({
       adminApi.agent.transactions(agentId, {
         page,
         limit: pageSize,
-        status: statusParam,
+        status: apiStatus,
       }) as unknown as Promise<AgentTransactionsResponse>,
     !!agentId
   );
@@ -133,11 +173,11 @@ export default function AgentTransactionsTable({
         tx.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         tx.type.toLowerCase().includes(debouncedSearch.toLowerCase());
 
-      const matchesStatus = !statusParam || tx.status === statusParam;
+      const matchesStatus = !uiStatus || tx.status === uiStatus;
 
       return matchesSearch && matchesStatus;
     });
-  }, [entries, debouncedSearch, statusParam]);
+  }, [entries, debouncedSearch, uiStatus]);
 
   const totalPages = Math.max(1, query.data?.metadata?.pagination?.totalPages ?? 1);
 
