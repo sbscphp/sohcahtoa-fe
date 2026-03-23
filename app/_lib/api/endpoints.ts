@@ -182,6 +182,9 @@ export const API_ENDPOINTS = {
         reports: "/api/admin/regulatory/compliance/reports",
         reportById: (id: string) => `/api/admin/regulatory/compliance/reports/${id}`,
       },
+      logs: {
+        audit: "/api/admin/regulatory/logs/audit",
+      },
       trms: {
         stats: "/api/admin/regulatory/trms/stats",
         list: "/api/admin/regulatory/trms/list",

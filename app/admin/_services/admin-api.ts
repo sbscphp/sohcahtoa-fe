@@ -365,6 +365,26 @@ export interface AdminComplianceDashboardData {
   };
 }
 
+export type AdminRegulatoryAuditLogsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  severity?: "" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
+};
+
+export interface AdminRegulatoryAuditLogListItem {
+  id: string;
+  timestamp: string;
+  userOrSystem: string;
+  actionPerformed: string;
+  actionResult: string;
+  channel: string;
+  auditId: string;
+}
+
 export type AdminTrmsSubmissionsListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1230,6 +1250,15 @@ export const adminApi = {
         apiClient.get<ApiResponse<AdminComplianceReportDetailsData>>(
           API_ENDPOINTS.admin.regulatory.compliance.reportById(id)
         ),
+    },
+    logs: {
+      audit: {
+        list: (params?: AdminRegulatoryAuditLogsListParams) =>
+          apiClient.get<ApiResponse<AdminRegulatoryAuditLogListItem[]>>(
+            API_ENDPOINTS.admin.regulatory.logs.audit,
+            { params }
+          ),
+      },
     },
     trms: {
       list: (params?: AdminTrmsSubmissionsListParams) =>

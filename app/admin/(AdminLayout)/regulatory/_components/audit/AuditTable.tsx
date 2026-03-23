@@ -1,167 +1,127 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
+import { useDebouncedValue } from "@mantine/hooks";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { AuditDetailModal } from "./AuditDetailModal";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { useAuditLogs, type AuditLogRowItem } from "../../hooks/useAuditLogs";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface AuditLog {
-  timestamp: string;
-  user: string;
-  actionPerformed: string;
-  module: string;
-  affectedReportId: string;
-}
+const pageSize = 5;
+type SeverityFilter = "" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
 
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const auditLogs: AuditLog[] = [
-  {
-    timestamp: "2025-09-15 09:00 AM",
-    user: "System Auto",
-    actionPerformed: "Generated new Daily FX Report",
-    module: "Rate Management",
-    affectedReportId: "REP-2025012",
-  },
-  {
-    timestamp: "2025-09-15 09:00 AM",
-    user: "Compliance Officer",
-    actionPerformed: "Reviewed report before submission",
-    module: "FN Reports",
-    affectedReportId: "REP-2025012",
-  },
-  {
-    timestamp: "2025-09-15 09:00 AM",
-    user: "FN Integration",
-    actionPerformed: "Submitted report to FN Window",
-    module: "API Service",
-    affectedReportId: "REP-2025012",
-  },
-  {
-    timestamp: "2025-09-15 09:00 AM",
-    user: "Admin",
-    actionPerformed: "Updated FX Allocation Rate",
-    module: "Rate Management",
-    affectedReportId: "-----",
-  },
-  {
-    timestamp: "2025-09-15 09:00 AM",
-    user: "FN Integration",
-    actionPerformed: "Report failed submission",
-    module: "CBN Export",
-    affectedReportId: "REP-2025009",
-  },
+const severityOptions = [
+  { value: "", label: "Filter By" },
+  { value: "INFO", label: "INFO" },
+  { value: "WARNING", label: "WARNING" },
+  { value: "ERROR", label: "ERROR" },
+  { value: "CRITICAL", label: "CRITICAL" },
 ];
 
-/* --------------------------------------------
- Component
---------------------------------------------- */
 export default function AuditLogTable() {
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("All");
-  const [ isOpen, setIsOpen ] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const filteredData = useMemo(() => {
-    return auditLogs.filter((log) => {
-      const matchesSearch =
-        log.user.toLowerCase().includes(search.toLowerCase()) ||
-        log.actionPerformed.toLowerCase().includes(search.toLowerCase()) ||
-        log.module.toLowerCase().includes(search.toLowerCase()) ||
-        log.affectedReportId.toLowerCase().includes(search.toLowerCase());
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: pageSize,
+      search: debouncedSearch.trim() || undefined,
+      severity: severityFilter || undefined,
+    }),
+    [debouncedSearch, page, severityFilter]
+  );
 
-      const matchesSort = sortBy === "All" || log.module === sortBy;
+  const { logs, isLoading, isFetching, totalPages } = useAuditLogs(queryParams);
+  const safeTotalPages = Math.max(1, totalPages);
 
-      return matchesSearch && matchesSort;
-    });
-  }, [search, sortBy]);
-
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
-
-  /* --------------------------------------------
- Table Headers
---------------------------------------------- */
   const headers = [
     { label: "Timestamp", key: "timestamp" },
-    { label: "User / System", key: "user" },
+    { label: "User / System", key: "userOrSystem" },
     { label: "Action Performed", key: "actionPerformed" },
-    { label: "Module / Section", key: "module" },
-    { label: "Affected Report ID", key: "affectedReportId" },
+    { label: "Channel", key: "channel" },
+    { label: "Audit ID", key: "auditId" },
+    { label: "Severity", key: "actionResult" },
     { label: "Action", key: "action" },
   ];
 
-  /* --------------------------------------------
- Row Renderer
---------------------------------------------- */
-  const renderRow = (item: AuditLog) => [
-    <Text size="sm" key="timestamp">{item.timestamp}</Text>,
-    <Text size="sm" key="user">{item.user}</Text>,
-    <Text size="sm" key="action">{item.actionPerformed}</Text>,
-    <Text size="sm" key="module" c="dimmed">{item.module}</Text>,
-    <Text size="sm" key="report">{item.affectedReportId}</Text>,
-        <RowActionIcon key="action" onClick={() => setIsOpen(true)} />,
-,
+  const renderRow = (item: AuditLogRowItem) => [
+    <Text size="sm" key="timestamp">
+      {item.timestamp}
+    </Text>,
+    <Text size="sm" key="userOrSystem">
+      {item.userOrSystem}
+    </Text>,
+    <Text size="sm" key="actionPerformed">
+      {item.actionPerformed}
+    </Text>,
+    <Text size="sm" key="channel" c="dimmed">
+      {item.channel}
+    </Text>,
+    <Text size="sm" key="auditId">
+      {item.auditId}
+    </Text>,
+    <StatusBadge key="actionResult" status={item.actionResult} />,
+    <RowActionIcon key="action" onClick={() => setIsOpen(true)} />,
   ];
 
   return (
     <div className="my-5 p-5 rounded-lg bg-white">
-      {/* Header */}
       <Group justify="space-between" mb="md">
         <TextInput
-            placeholder="Enter keyword"
-            leftSection={<Search size={16} color="#DD4F05" />}
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            radius="xl"
-            w={280}
-          />
+          placeholder="Enter keyword"
+          leftSection={<Search size={16} color="#DD4F05" />}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.currentTarget.value);
+            setPage(1);
+          }}
+          radius="xl"
+          w={280}
+        />
 
         <Group>
-          
-
           <Select
-            value={sortBy}
-            onChange={(value) => setSortBy(value!)}
-            data={["All", "Rate Management", "FN Reports", "API Service", "CBN Export"]}
+            value={severityFilter}
+            onChange={(value) => {
+                setSeverityFilter((value as SeverityFilter) ?? "");
+              setPage(1);
+            }}
+            data={severityOptions}
             radius="xl"
             w={150}
             rightSection={<ListFilter size={16} />}
           />
 
           <Button
+            variant="outline"
             color="#E36C2F"
             radius="xl"
             rightSection={<Upload size={16} />}
+            disabled
           >
             Export
           </Button>
         </Group>
       </Group>
 
-      {/* Table */}
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={logs}
+        loading={isLoading || isFetching}
         renderItems={renderRow}
         emptyTitle="No Audit Logs Found"
         emptyMessage="System and user activities will appear here."
         pagination={{
           page,
-          totalPages,
-          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
           onPageChange: setPage,
         }}

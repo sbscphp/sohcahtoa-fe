@@ -256,6 +256,18 @@ export const adminKeys = {
           [...adminKeys.regulatory.compliance.reports.all(), "detail", id] as const,
       },
     },
+    logs: {
+      all: () => [...adminKeys.regulatory.all, "logs"] as const,
+      audit: {
+        all: () => [...adminKeys.regulatory.logs.all(), "audit"] as const,
+        list: (params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          severity?: string;
+        }) => [...adminKeys.regulatory.logs.audit.all(), "list", params] as const,
+      },
+    },
     trms: {
       all: () => [...adminKeys.regulatory.all, "trms"] as const,
       stats: () => [...adminKeys.regulatory.trms.all(), "stats"] as const,
