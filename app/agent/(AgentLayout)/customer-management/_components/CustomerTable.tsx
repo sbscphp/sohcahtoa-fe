@@ -2,23 +2,13 @@
 
 import { ActionButton } from "@/app/admin/_components/ActionButton";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import EmptyState from "@/app/admin/_components/EmptyState";
+import type { AgentCustomerSummary } from "@/app/_lib/api/types";
 import SearchInput from "@/app/admin/_components/SearchInput";
 import { formatLocalDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import { Badge, Button, Group, Select, Text } from "@mantine/core";
 import { ArrowUpRight, ListFilter, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-
-// Shape from /api/agent/customers
-interface AgentCustomerSummary {
-  userId: string;
-  fullName: string;
-  customerType: string;
-  lastTransactionType: string | null;
-  registeredAt: string;
-  kycStatus: string;
-}
 
 interface Customer {
   customerName: string;
@@ -48,12 +38,12 @@ const getKYCStatusColor = (status: string) => {
 };
 
 const mapApiCustomerToTable = (item: AgentCustomerSummary): Customer => {
-  const type: Customer["customerType"] =
-    item.customerType === "NIGERIAN_CITIZEN"
-      ? "Resident"
-      : item.customerType === "EXPATRIATE"
-      ? "Expatriate"
-      : "Tourist";
+  let type: Customer["customerType"] = "Tourist";
+  if (item.customerType === "NIGERIAN_CITIZEN") {
+    type = "Resident";
+  } else if (item.customerType === "EXPATRIATE") {
+    type = "Expatriate";
+  }
 
   let kyc: Customer["kycStatus"] = "Pending";
   if (item.kycStatus === "VERIFIED" || item.kycStatus === "APPROVED") {
@@ -76,7 +66,7 @@ const mapApiCustomerToTable = (item: AgentCustomerSummary): Customer => {
 export default function CustomerTable({
   customers = [],
   loading = false,
-}: CustomerTableProps) {
+}: Readonly<CustomerTableProps>) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [search, setSearch] = useState("");
@@ -180,7 +170,7 @@ export default function CustomerTable({
             {/* Filter */}
             <Select
               value={filter}
-              onChange={(value) => setFilter(value!)}
+              onChange={(value) => setFilter(value ?? "Filter By")}
               data={["Filter By", "All", "Pending", "Approved", "Rejected"]}
               radius="xl"
               w={120}
@@ -210,13 +200,7 @@ export default function CustomerTable({
         </Group>
       </div>
 
-      {paginatedData.length === 0 ? (
-        <EmptyState
-          title="No data available yet"
-          description="You currently have not have any data available yet. Check back Later."
-        />
-      ) : (
-        <DynamicTableSection
+      <DynamicTableSection
           headers={customerHeaders}
           data={paginatedData}
           loading={loading}
@@ -231,7 +215,6 @@ export default function CustomerTable({
             onPageChange: setPage,
           }}
         />
-      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateData } from "@/app/_lib/api/hooks";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { agentApi } from "@/app/agent/_services/agent-api";
 
 import { AgentAuthLayout } from "@/app/agent/_components/auth/AuthLayout";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -37,9 +37,9 @@ export default function AgentForgotPasswordPage() {
   const [passwordCreatedModalOpened, setPasswordCreatedModalOpened] =
     useState(false);
 
-  const forgotPasswordMutation = useCreateData(customerApi.auth.forgotPassword);
-  const verifyResetOtpMutation = useCreateData(customerApi.auth.verifyResetOtp);
-  const resetPasswordMutation = useCreateData(customerApi.auth.resetPassword);
+  const forgotPasswordMutation = useCreateData(agentApi.auth.forgotPassword);
+  const verifyResetOtpMutation = useCreateData(agentApi.auth.verifyResetOtp);
+  const resetPasswordMutation = useCreateData(agentApi.auth.resetPassword);
 
   useEffect(() => {
     if (currentStep === "otp" && timeLeft > 0) {
@@ -54,8 +54,12 @@ export default function AgentForgotPasswordPage() {
     forgotPasswordMutation.mutate(
       { email: values.email },
       {
-        onSuccess: () => {
-          setOtpSentModalOpened(true);
+        onSuccess: (response) => {
+          if (response.success) {
+            setOtpSentModalOpened(true);
+          } else {
+            setOtpErrorModalOpened(true);
+          }
         },
         onError: () => {
           setOtpErrorModalOpened(true);
@@ -72,8 +76,12 @@ export default function AgentForgotPasswordPage() {
     resetPasswordMutation.mutate(
       { resetToken, newPassword: values.password },
       {
-        onSuccess: () => {
-          setPasswordCreatedModalOpened(true);
+        onSuccess: (response) => {
+          if (response.success) {
+            setPasswordCreatedModalOpened(true);
+          } else {
+            setOtpErrorModalOpened(true);
+          }
         },
         onError: () => {
           setOtpErrorModalOpened(true);
@@ -117,8 +125,9 @@ export default function AgentForgotPasswordPage() {
       { email: userEmail, otp },
       {
         onSuccess: (response) => {
-          if (response.success && response.data) {
-            setResetToken(response.data.resetToken);
+          const resetTokenFromResponse = response.data?.resetToken;
+          if (response.success && resetTokenFromResponse) {
+            setResetToken(resetTokenFromResponse);
             setOtpSuccessModalOpened(true);
           } else {
             setOtpErrorModalOpened(true);

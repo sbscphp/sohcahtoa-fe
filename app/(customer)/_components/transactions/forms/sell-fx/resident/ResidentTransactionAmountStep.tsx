@@ -27,6 +27,7 @@ export type ResidentTransactionAmountFormData = z.infer<typeof transactionAmount
   sourceOfFundsSignatureMode?: "initials" | "upload";
   sourceOfFundsInitials?: string;
   sourceOfFundsSignatureFile?: FileWithPath | null;
+  proofOfFundsFiles?: File[];
 };
 
 interface ResidentTransactionAmountStepProps {
@@ -41,7 +42,7 @@ export default function ResidentTransactionAmountStep({
   onSubmit,
   onBack,
   exchangeRate = "USD1 - NGN1500",
-}: ResidentTransactionAmountStepProps) {
+}: Readonly<ResidentTransactionAmountStepProps>) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">("initials");
   const [sourceOfFundsInitials, setSourceOfFundsInitials] = useState(initialValues?.sourceOfFundsInitials ?? "");
@@ -49,6 +50,8 @@ export default function ResidentTransactionAmountStep({
     initialValues?.sourceOfFundsSignatureFile ?? null
   );
   const [sourceOfFundsError, setSourceOfFundsError] = useState<string | null>(null);
+  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(initialValues?.proofOfFundsFiles ?? []);
+  const [proofOfFundsError, setProofOfFundsError] = useState<string | null>(null);
 
   const form = useForm<ResidentTransactionAmountFormData>({
     mode: "uncontrolled",
@@ -69,25 +72,35 @@ export default function ResidentTransactionAmountStep({
     form.values.sendCurrency
   );
 
+  const validateOver10kRequirements = () => {
+    if (!over10k) return true;
+    if (!proofOfFundsFiles.length) {
+      setProofOfFundsError("Please upload at least one proof of fund document");
+      return false;
+    }
+    const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
+    const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
+    if (!hasInitials && !hasSignature) {
+      setSourceOfFundsError(
+        sourceOfFundsMode === "initials"
+          ? "Please enter your initials for the source of funds declaration"
+          : "Please upload your signature for the source of funds declaration"
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = form.onSubmit((values) => {
     setSourceOfFundsError(null);
-    if (over10k) {
-      const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
-      const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
-      if (!hasInitials && !hasSignature) {
-        setSourceOfFundsError(
-          sourceOfFundsMode === "initials"
-            ? "Please enter your initials for the source of funds declaration"
-            : "Please upload your signature for the source of funds declaration"
-        );
-        return;
-      }
-    }
+    setProofOfFundsError(null);
+    if (!validateOver10kRequirements()) return;
     onSubmit({
       ...values,
       sourceOfFundsSignatureMode: over10k ? sourceOfFundsMode : undefined,
       sourceOfFundsInitials: over10k && sourceOfFundsMode === "initials" ? sourceOfFundsInitials.trim() : undefined,
       sourceOfFundsSignatureFile: over10k && sourceOfFundsMode === "upload" ? sourceOfFundsSignatureFile : undefined,
+      proofOfFundsFiles: over10k ? proofOfFundsFiles : undefined,
     });
   });
 
@@ -124,13 +137,18 @@ export default function ResidentTransactionAmountStep({
             currencies={CURRENCIES}
             onCurrencyChange={(c) => form.setFieldValue("sendCurrency", c.code)}
             placeholder="0"
-            error={form.errors.sendAmount?.toString() || undefined}
+            error={typeof form.errors.sendAmount === "string" ? form.errors.sendAmount : undefined}
           />
           <div className="w-full">
             <ProofOfFundPrompt
               show={over10k}
               onUploadClick={() => setProofModalOpen(true)}
             />
+            {over10k && proofOfFundsError && (
+              <p className="text-red-600 text-xs mt-1 text-right">
+                {proofOfFundsError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -151,7 +169,7 @@ export default function ResidentTransactionAmountStep({
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
-            console.log("Proof of fund attached", files);
+            setProofOfFundsFiles(files);
             setProofModalOpen(false);
           }}
         />
@@ -177,7 +195,7 @@ export default function ResidentTransactionAmountStep({
                 getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
               }
               placeholder="0"
-              error={form.errors.receiveAmount?.toString() || undefined}
+              error={typeof form.errors.receiveAmount === "string" ? form.errors.receiveAmount : undefined}
               showDropdown={false}
             />
           </div>

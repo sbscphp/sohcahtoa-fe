@@ -199,6 +199,19 @@ export interface ResetPasswordResponseData {
 export type ResetPasswordResponse =
   ApiResponseWrapper<ResetPasswordResponseData>;
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirm: string;
+}
+
+export interface ChangePasswordResponseData {
+  message: string;
+}
+
+export type ChangePasswordResponse =
+  ApiResponseWrapper<ChangePasswordResponseData>;
+
 export interface LoginResponseData {
   accessToken: string;
   refreshToken: string;
@@ -276,6 +289,114 @@ export interface UserProfile {
 }
 
 export type ProfileResponse = ApiResponseWrapper<UserProfile>;
+
+// ==================== Agent Customer Types ====================
+
+export interface PaginationMetadata {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface AgentCustomerListParams extends PaginationParams {
+  status?: string;
+  lastTransactionType?: string;
+  customerType?: string;
+  fromDate?: string;
+  toDate?: string;
+  search?: string;
+}
+
+export interface AgentCustomerSummary {
+  userId: string;
+  fullName: string;
+  customerType: string;
+  lastTransactionType: string | null;
+  registeredAt: string;
+  kycStatus: string;
+}
+
+export interface AgentCustomerListResponse
+  extends ApiResponseWrapper<AgentCustomerSummary[]> {
+  metadata: ApiResponseWrapper<unknown>["metadata"] & {
+    pagination: PaginationMetadata;
+  };
+}
+
+export interface AgentCustomerStats {
+  totalCustomers: number;
+  verifiedCustomers: number;
+  repeatCustomers: number;
+  pendingKyc: number;
+}
+
+export type AgentCustomerStatsResponse =
+  ApiResponseWrapper<AgentCustomerStats>;
+
+export interface AgentCustomerFile {
+  id: string;
+  documentType: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+export interface AgentCustomerIdDetails {
+  idType: string | null;
+  bvn: string | null;
+  tin: string | null;
+  formAId: string | null;
+}
+
+export interface AgentCustomerDetails {
+  userId: string;
+  registeredAt: string;
+  fullName: string;
+  email: string;
+  dateOnboarded: string;
+  totalTransactionsCompleted: number;
+  idDetails: AgentCustomerIdDetails;
+  files: Record<string, AgentCustomerFile | null>;
+}
+
+export type AgentCustomerDetailsResponse =
+  ApiResponseWrapper<AgentCustomerDetails>;
+
+export interface AgentCustomerUpdateRequest {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+}
+
+export interface AgentCustomerUpdateData {
+  userId: string;
+  fullName: string;
+  phoneNumber: string;
+  customerType: string;
+  kycStatus: string;
+}
+
+export type AgentCustomerUpdateResponse =
+  ApiResponseWrapper<AgentCustomerUpdateData>;
+
+export interface AgentCustomerTransaction {
+  transactionId: string;
+  transactionDate: string;
+  transactionType: string;
+  transactionStatus: string;
+  transactionReferenceNumber: string;
+  currency: string;
+  foreignAmount: number;
+}
+
+export interface AgentCustomerTransactionsResponse
+  extends ApiResponseWrapper<AgentCustomerTransaction[]> {
+  metadata: ApiResponseWrapper<unknown>["metadata"] & {
+    pagination: PaginationMetadata;
+  };
+}
 
 // ==================== Transaction Types ====================
 
@@ -755,6 +876,7 @@ export interface TransactionListParams extends PaginationParams {
   type?: string;
   group?: "BUY" | "SELL" | "REMITTANCE";
   currency?: string;
+  stage?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;

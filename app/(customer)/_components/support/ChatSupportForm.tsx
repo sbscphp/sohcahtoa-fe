@@ -74,7 +74,7 @@ export default function ChatSupportForm() {
     formData.append("category", values.category);
     formData.append("description", values.description);
     if (values.attachment) {
-      formData.append("file", values.attachment, values.attachment.name);
+      formData.append("attachment", values.attachment, values.attachment.name);
     }
 
     createTicket.mutate(formData, {

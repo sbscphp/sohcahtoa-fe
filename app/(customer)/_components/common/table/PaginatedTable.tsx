@@ -18,6 +18,10 @@ interface PaginatedTableProps<T> {
   data: T[];
   columns: PaginatedTableColumn<T>[];
   pageSize?: number;
+  /** Controlled pagination (server-side). When provided, component won't slice data. */
+  page?: number;
+  onPageChange?: (page: number) => void;
+  totalPages?: number;
   onRowClick?: (item: T) => void;
   keyExtractor?: (item: T, index: number) => string | number;
   /** Title for the empty state */
@@ -34,16 +38,32 @@ export default function PaginatedTable<T>({
   data,
   columns,
   pageSize = 10,
+  page: controlledPage,
+  onPageChange,
+  totalPages: controlledTotalPages,
   onRowClick,
   keyExtractor,
   emptyTitle = "No Data available",
   emptyMessage = "No data found",
   isLoading = false,
   skeletonRowCount = 4,
-}: PaginatedTableProps<T>) {
+}: Readonly<PaginatedTableProps<T>>) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(data.length / pageSize);
-  const paginatedData = data.slice((page - 1) * pageSize, page * pageSize);
+  const [skeletonKeys] = useState(() =>
+    Array.from({ length: skeletonRowCount }, () => {
+      const uuid =
+        typeof globalThis.crypto?.randomUUID === "function"
+          ? globalThis.crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`;
+      return `skeleton-${uuid}`;
+    })
+  );
+  const isControlled = typeof controlledPage === "number" && typeof onPageChange === "function";
+  const currentPage = isControlled ? controlledPage : page;
+  const totalPages = controlledTotalPages ?? Math.ceil(data.length / pageSize);
+  const paginatedData = isControlled
+    ? data
+    : data.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const getKey = (item: T, index: number) => {
     if (keyExtractor) {
@@ -89,11 +109,11 @@ export default function PaginatedTable<T>({
           </Table.Thead>
           <Table.Tbody>
             {showSkeleton &&
-              Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
-                <Table.Tr key={`skeleton-${rowIndex}`} className="border-b border-gray-100!">
+              skeletonKeys.map((rowKey, rowIndex) => (
+                <Table.Tr key={rowKey} className="border-b border-gray-100!">
                   {columns.map((column) => (
                     <Table.Td
-                      key={column.key}
+                      key={`${column.key}-${rowIndex}`}
                       className="py-4 px-6! h-18! border-0!"
                       style={{ textAlign: column.align ?? "left" }}
                     >
@@ -134,7 +154,13 @@ export default function PaginatedTable<T>({
                     >
                       {column.render
                         ? column.render(item, index)
-                        : String((item as Record<string, unknown>)[column.key] ?? "")}
+                        : (() => {
+                            const v = (item as Record<string, unknown>)[column.key];
+                            if (v == null) return "";
+                            if (typeof v === "string") return v;
+                            if (typeof v === "number" || typeof v === "boolean") return String(v);
+                            return "";
+                          })()}
                     </Table.Td>
                   ))}
                 </Table.Tr>
@@ -146,8 +172,11 @@ export default function PaginatedTable<T>({
       {!isLoading && totalPages > 1 && (
         <div className="flex justify-center">
           <Pagination
-            value={page}
-            onChange={setPage}
+            value={currentPage}
+            onChange={(next) => {
+              if (isControlled) onPageChange(next);
+              else setPage(next);
+            }}
             total={totalPages}
             size="sm"
             radius="md"

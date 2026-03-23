@@ -197,6 +197,11 @@ export const customerApi = {
 
     overview: (data?: TransactionOverviewRequest) =>
       apiClient.post<TransactionOverviewResponse>(API_ENDPOINTS.transactions.overview, data),
+
+    export: (params?: TransactionListParams) =>
+      apiClient.download(API_ENDPOINTS.transactions.export, {
+        params: params as ApiRequestConfig["params"],
+      }),
   },
 
   // ==================== Notifications ====================

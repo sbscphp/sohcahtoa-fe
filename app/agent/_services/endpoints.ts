@@ -2,10 +2,19 @@ export const AGENT_API_ENDPOINTS = {
   auth: {
     login: "/api/auth/agent/login",
     verifyLogin: "/api/auth/agent/verify-login",
-    createPassword: "/api/auth/agent/create-password",
+    createPassword: "/api/auth/agent/create-password", // NOSONAR -> to remove squirrel lines
+    changePassword: "/api/agent/auth/change-password", // NOSONAR
+    forgotPassword: "/api/auth/agent/forgot-password", // NOSONAR
+    verifyResetOtp: "/api/auth/agent/verify-reset-otp", // NOSONAR
+    resetPassword: "/api/auth/agent/reset-password", // NOSONAR
   },
   customers: {
     list: "/api/agent/customers",
+    stats: "/api/agent/customers/stats",
+    getById: (userId: string) => `/api/agent/customers/${userId}`,
+    update: (userId: string) => `/api/agent/customers/${userId}`,
+    transactions: (userId: string) =>
+      `/api/agent/customers/${userId}/transactions`,
   },
   customerAuth: {
     nigerian: {

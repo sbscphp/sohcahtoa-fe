@@ -7,24 +7,41 @@ import { apiClient, ApiRequestConfig, type ApiResponse } from "@/app/_lib/api/cl
 import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
 import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type {
-  ApiResponseWrapper,
+  AgentCustomerDetailsResponse,
+  AgentCustomerListParams,
+  AgentCustomerListResponse,
+  AgentCustomerStatsResponse,
+  AgentCustomerTransactionsResponse,
+  AgentCustomerUpdateRequest,
+  AgentCustomerUpdateResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
   NotificationPreferencesResponse,
   NotificationsListResponse,
   ReadAllNotificationsResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   SendOtpRequestNigerian,
   SendOtpResponse,
   UnreadCountResponse,
   UpdateNotificationPreferencesRequest,
   ValidateOtpRequestNigerian,
   ValidateOtpResponse,
+  VerifyResetOtpRequest,
+  VerifyResetOtpResponse,
   VerifyBvnRequest,
   VerifyBvnResponse,
   ProfileResponse,
+  CalculateTransactionRateRequest,
+  CalculateTransactionRateResponse,
   TransactionListParams,
   TransactionsListApiResponse,
   TransactionDetailApiResponse,
+  TransactionRatesListResponse,
   CreateTransactionRequest,
   UpdateTransactionRequest,
   Transaction,
@@ -54,9 +71,6 @@ export interface AgentCreatePasswordPayload {
   password: string;
   confirmPassword: string;
 }
-
-// Shape of /api/agent/customers response – keep generic until backend is finalized
-export type AgentCustomerListResponse = ApiResponseWrapper<unknown[]>;
 
 // Payload for /api/agent/customer-auth/create-account (agent-initiated customer creation)
 export interface AgentCreateCustomerAccountRequest {
@@ -89,13 +103,60 @@ export const agentApi = {
         { skipAuth: true }
       ),
 
+    changePassword: (data: ChangePasswordRequest) =>
+      apiClient.post<ChangePasswordResponse>(
+        AGENT_API_ENDPOINTS.auth.changePassword,
+        data
+      ),
+
+    forgotPassword: (data: ForgotPasswordRequest) =>
+      apiClient.post<ForgotPasswordResponse>(
+        AGENT_API_ENDPOINTS.auth.forgotPassword,
+        data,
+        { skipAuth: true }
+      ),
+
+    verifyResetOtp: (data: VerifyResetOtpRequest) =>
+      apiClient.post<VerifyResetOtpResponse>(
+        AGENT_API_ENDPOINTS.auth.verifyResetOtp,
+        data,
+        { skipAuth: true }
+      ),
+
+    resetPassword: (data: ResetPasswordRequest) =>
+      apiClient.post<ResetPasswordResponse>(
+        AGENT_API_ENDPOINTS.auth.resetPassword,
+        data,
+        { skipAuth: true }
+      ),
+
     profile: () =>
       apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile),
   },
 
   customers: {
-    list: () =>
-      apiClient.get<AgentCustomerListResponse>(AGENT_API_ENDPOINTS.customers.list),
+    list: (params?: AgentCustomerListParams) =>
+      apiClient.get<AgentCustomerListResponse>(AGENT_API_ENDPOINTS.customers.list, {
+        params: params as ApiRequestConfig["params"],
+      }),
+    stats: () =>
+      apiClient.get<AgentCustomerStatsResponse>(AGENT_API_ENDPOINTS.customers.stats),
+    getById: (userId: string) =>
+      apiClient.get<AgentCustomerDetailsResponse>(
+        AGENT_API_ENDPOINTS.customers.getById(userId)
+      ),
+    update: (userId: string, data: AgentCustomerUpdateRequest) =>
+      apiClient.patch<AgentCustomerUpdateResponse>(
+        AGENT_API_ENDPOINTS.customers.update(userId),
+        data
+      ),
+    transactions: (userId: string, params?: { page?: number; limit?: number }) =>
+      apiClient.get<AgentCustomerTransactionsResponse>(
+        AGENT_API_ENDPOINTS.customers.transactions(userId),
+        {
+          params: params as ApiRequestConfig["params"],
+        }
+      ),
   },
 
   customerAuth: {
@@ -152,8 +213,19 @@ export const agentApi = {
   
       overview: (data?: TransactionOverviewRequest) =>
         apiClient.post<TransactionOverviewResponse>(AGENT_API_ENDPOINTS.transactions.overview, data),
-      export: () =>
-        apiClient.get<Blob>(AGENT_API_ENDPOINTS.transactions.export),
+      rates: (params?: { fromCurrency?: string; toCurrency?: string }) =>
+        apiClient.get<TransactionRatesListResponse>(AGENT_API_ENDPOINTS.transactions.rates, {
+          params: params as ApiRequestConfig["params"],
+        }),
+      calculateRate: (data: CalculateTransactionRateRequest) =>
+        apiClient.post<CalculateTransactionRateResponse>(
+          AGENT_API_ENDPOINTS.transactions.calculateRate,
+          data
+        ),
+      export: (params?: TransactionListParams) =>
+        apiClient.download(AGENT_API_ENDPOINTS.transactions.export, {
+          params: params as ApiRequestConfig["params"],
+        }),
       stats: () =>
         apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
     },

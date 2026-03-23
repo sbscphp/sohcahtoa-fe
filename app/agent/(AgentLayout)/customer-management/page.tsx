@@ -1,45 +1,46 @@
 "use client";
 
-import { CustomerStatCards } from "./_components/CustomerStatCards";
-import CustomerTable from "./_components/CustomerTable";
-import { useMemo } from "react";
+import type {
+  AgentCustomerListResponse,
+  AgentCustomerStatsResponse,
+} from "@/app/_lib/api/types";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
-
-interface AgentCustomerSummary {
-  userId: string;
-  fullName: string;
-  customerType: string;
-  lastTransactionType: string | null;
-  registeredAt: string;
-  kycStatus: string;
-}
+import { useMemo } from "react";
+import { CustomerStatCards } from "./_components/CustomerStatCards";
+import CustomerTable from "./_components/CustomerTable";
 
 export default function CustomerManagementPage() {
-  const { data, isLoading } = useFetchData(
+  const { data: customerResponse, isLoading } =
+    useFetchData<AgentCustomerListResponse>(
     ["agent", "customers"],
     () => agentApi.customers.list(),
     true
   );
 
-  const customers = useMemo(
-    () => ((data?.data as AgentCustomerSummary[]) || []),
-    [data]
+  const { data: statsResponse } = useFetchData<AgentCustomerStatsResponse>(
+    ["agent", "customers", "stats"],
+    () => agentApi.customers.stats(),
+    true
   );
 
-  const totalCustomers = customers.length;
-  const verifiedCustomers = customers.filter(
-    (item) => item.kycStatus === "VERIFIED"
-  ).length;
-  const pendingKYC = customers.filter(
-    (item) => item.kycStatus !== "VERIFIED"
-  ).length;
+  const customers = useMemo(
+    () => customerResponse?.data ?? [],
+    [customerResponse]
+  );
+  const stats = statsResponse?.data;
+
+  const totalCustomers = stats?.totalCustomers;
+  const verifiedCustomers = stats?.verifiedCustomers
+  const repeatCustomers = stats?.repeatCustomers;
+  const pendingKYC = stats?.pendingKyc;
 
   return (
     <div className="space-y-6">
       <CustomerStatCards
         totalCustomers={totalCustomers}
         verifiedCustomers={verifiedCustomers}
+        repeatCustomers={repeatCustomers}
         pendingKYC={pendingKYC}
       />
       <CustomerTable customers={customers} loading={isLoading} />

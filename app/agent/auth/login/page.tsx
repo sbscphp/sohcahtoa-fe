@@ -18,8 +18,10 @@ import { apiClient } from "@/app/_lib/api/client";
 import { clearTemporaryAuthData } from "@/app/(customer)/_utils/auth-flow";
 import { getStoredReturnPath, setAuthUserType } from "@/app/_lib/api/auth-logout";
 
+const emailSchema = z.email();
+
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: emailSchema,
   password: z.string().min(1, "Password is required"),
 });
 
@@ -141,7 +143,7 @@ export default function AgentLoginPage() {
   const handleResendOtp = async () => {
     // Mock resend OTP - replace with actual API call
     console.log("Resending OTP...");
-    return Promise.resolve(true);
+    return true;
   };
 
   return (
@@ -158,21 +160,18 @@ export default function AgentLoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="block text-heading-200 text-sm font-medium">
-              Email Address
-            </label>
             <TextInput
+              label="Email Address"
               placeholder="Enter email address"
               size="lg"
               {...form.getInputProps("email")}
+              error={form.errors.email}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block text-heading-200 text-sm font-medium">
-              Password
-            </label>
             <PasswordInput
+              label="Password"
               placeholder="Enter password"
               size="lg"
               {...form.getInputProps("password")}

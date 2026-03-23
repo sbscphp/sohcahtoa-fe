@@ -1,21 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
 import {
   PaginatedTable,
   type PaginatedTableColumn
 } from "@/app/(customer)/_components/common";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { ActionIcon } from "@mantine/core";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { CircleArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { IconArrowRight } from "@/components/icons/IconArrowRight";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { customerKeys } from "@/app/_lib/api/query-keys";
-import type { SupportTicket } from "@/app/_lib/api/types";
+import type { SupportTicket, SupportTicketListResponse } from "@/app/_lib/api/types";
 import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
+import { useTableState } from "@/app/_hooks/use-table-state";
 
 export interface SupportRequestRow {
   id: string;
@@ -41,14 +39,25 @@ function getCategoryLabel(category: string): string {
 export default function SupportHistorySection() {
   const router = useRouter();
 
+  const table = useTableState({
+    initial: { page: 1, limit: 10 },
+  });
+
+  const listParams = {
+    page: table.page ?? 1,
+    limit: table.limit ?? 10,
+  };
+
   const { data, isLoading } = useFetchData(
-    [...customerKeys.support.tickets.list({ page: 1, limit: 50 })],
-    () => customerApi.support.tickets.list({ page: 1, limit: 50 }),
+    [...customerKeys.support.tickets.list(listParams)],
+    () => customerApi.support.tickets.list(listParams),
     true
   );
 
+  const typed = data as unknown as SupportTicketListResponse | undefined;
+
   const rows: SupportRequestRow[] =
-    data?.data?.map((t: SupportTicket) => ({
+    typed?.data?.map((t: SupportTicket) => ({
       id: t.id,
       categoryDescription: getCategoryLabel(t.category),
       date: formatHeaderDateTime(t.createdAt) || t.createdAt,
@@ -128,7 +137,10 @@ export default function SupportHistorySection() {
         data={rows}
         columns={columns}
         isLoading={isLoading}
-        pageSize={10}
+        pageSize={listParams.limit}
+        page={listParams.page}
+        totalPages={typed?.pagination?.totalPages ?? 1}
+        onPageChange={(next) => table.setPage(next)}
         keyExtractor={(row) => row.id}
         emptyMessage="No support requests yet."
         onRowClick={(row) => goToViewSupport(row.id)}
