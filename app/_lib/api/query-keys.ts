@@ -258,6 +258,7 @@ export const adminKeys = {
     },
     trms: {
       all: () => [...adminKeys.regulatory.all, "trms"] as const,
+      stats: () => [...adminKeys.regulatory.trms.all(), "stats"] as const,
       list: (params?: {
         page?: number;
         limit?: number;

@@ -400,6 +400,13 @@ export interface AdminTrmsSubmissionDetailsData {
   fileUrl: string | null;
 }
 
+export interface AdminTrmsDashboardData {
+  submittedReports: number;
+  pendingSubmissions: number;
+  failedSubmissions: number;
+  rejectedReports: number;
+}
+
 export interface AdminTransactionStatsData {
   underReview: number;
   rejected: number;
@@ -1250,6 +1257,11 @@ export const adminApi = {
       getByTransactionId: (transactionId: string) =>
         apiClient.get<ApiResponse<AdminTrmsSubmissionDetailsData>>(
           API_ENDPOINTS.admin.regulatory.trms.details(transactionId)
+        ),
+
+      stats: () =>
+        apiClient.get<ApiResponse<AdminTrmsDashboardData>>(
+          API_ENDPOINTS.admin.regulatory.trms.stats
         ),
     },
   },
