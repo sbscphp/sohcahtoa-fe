@@ -75,13 +75,11 @@ export default function AgentLoginPage() {
           return;
         }
 
-        // Normal 2FA login: open OTP modal to complete verify-login
         if (data?.requiresVerification) {
           setOtpModalOpened(true);
           return;
         }
 
-        // Fallback: show OTP modal (backend likely sent an OTP)
         setOtpModalOpened(true);
       },
       onError: (error) => {
@@ -141,7 +139,6 @@ export default function AgentLoginPage() {
   };
 
   const handleResendOtp = async () => {
-    // Mock resend OTP - replace with actual API call
     console.log("Resending OTP...");
     return true;
   };

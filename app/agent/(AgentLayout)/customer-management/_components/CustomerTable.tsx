@@ -8,7 +8,8 @@ import { formatLocalDate, formatShortTime } from "@/app/utils/helper/formatLocal
 import { Badge, Button, Group, Select, Text } from "@mantine/core";
 import { ArrowUpRight, ListFilter, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import type { AgentCustomerUiStatusFilter } from "../hooks/useAgentCustomers";
 
 interface Customer {
   customerName: string;
@@ -22,6 +23,13 @@ interface Customer {
 interface CustomerTableProps {
   customers?: AgentCustomerSummary[];
   loading?: boolean;
+  page: number;
+  totalPages: number;
+  search: string;
+  filter: AgentCustomerUiStatusFilter;
+  onSearchChange: (value: string) => void;
+  onFilterChange: (value: AgentCustomerUiStatusFilter) => void;
+  onPageChange: (page: number) => void;
 }
 
 const getKYCStatusColor = (status: string) => {
@@ -66,41 +74,20 @@ const mapApiCustomerToTable = (item: AgentCustomerSummary): Customer => {
 export default function CustomerTable({
   customers = [],
   loading = false,
+  page,
+  totalPages,
+  search,
+  filter,
+  onSearchChange,
+  onFilterChange,
+  onPageChange,
 }: Readonly<CustomerTableProps>) {
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Filter By");
   const router = useRouter();
 
   const allCustomers = useMemo(
     () => customers.map(mapApiCustomerToTable),
     [customers]
   );
-
-  const filteredData = useMemo(() => {
-    return allCustomers.filter((customer) => {
-      const matchesSearch =
-        customer.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        customer.id.includes(search) ||
-        customer.customerType.toLowerCase().includes(search.toLowerCase());
-
-      const matchesFilter =
-        filter === "Filter By" ||
-        filter === "All" ||
-        customer.kycStatus === filter;
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter, allCustomers]);
-
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [page, filteredData]);
 
   const customerHeaders = [
     { label: "Customer Name", key: "customerName" },
@@ -162,7 +149,7 @@ export default function CustomerTable({
             <SearchInput
               placeholder="Enter keyword"
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => onSearchChange(e.currentTarget.value)}
             />
           </div>
 
@@ -170,7 +157,9 @@ export default function CustomerTable({
             {/* Filter */}
             <Select
               value={filter}
-              onChange={(value) => setFilter(value ?? "Filter By")}
+              onChange={(value) =>
+                onFilterChange((value ?? "Filter By") as AgentCustomerUiStatusFilter)
+              }
               data={["Filter By", "All", "Pending", "Approved", "Rejected"]}
               radius="xl"
               w={120}
@@ -202,7 +191,7 @@ export default function CustomerTable({
 
       <DynamicTableSection
           headers={customerHeaders}
-          data={paginatedData}
+          data={allCustomers}
           loading={loading}
           renderItems={renderCustomerRow}
           emptyTitle="No Customers Found"
@@ -210,9 +199,9 @@ export default function CustomerTable({
           pagination={{
             page,
             totalPages,
-            onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
-            onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
-            onPageChange: setPage,
+            onNext: () => onPageChange(Math.min(page + 1, totalPages)),
+            onPrevious: () => onPageChange(Math.max(page - 1, 1)),
+            onPageChange,
           }}
         />
     </div>

@@ -27,7 +27,7 @@ type AgentSidebarProps = {
 const menuItems = [
   { icon: LayoutGrid, label: "Dashboard", href: "/agent/dashboard" },
   { icon: CreditCard, label: "Transactions", href: "/agent/transactions" },
-  { icon: Building2, label: "FX Inventory", href: "/agent/fx-inventory" },
+  // { icon: Building2, label: "FX Inventory", href: "/agent/fx-inventory" },
   { icon: Users, label: "Customer Management", href: "/agent/customer-management" },
   { icon: Calculator, label: "Rate Calculator", href: "/agent/rate-calculator" },
   { icon: Settings, label: "Settings", href: "/agent/settings" },

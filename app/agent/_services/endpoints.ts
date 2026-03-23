@@ -1,6 +1,7 @@
 export const AGENT_API_ENDPOINTS = {
   auth: {
     login: "/api/auth/agent/login",
+    profile: "/api/agent/auth/profile",
     verifyLogin: "/api/auth/agent/verify-login",
     createPassword: "/api/auth/agent/create-password", // NOSONAR -> to remove squirrel lines
     changePassword: "/api/agent/auth/change-password", // NOSONAR
@@ -36,9 +37,17 @@ export const AGENT_API_ENDPOINTS = {
     uploadDocuments: (id: string) => `/api/agent/transactions/${id}/documents`,
     checkLimits: "/api/agent/transactions/limits/check",
     health: "/api/agent/transactions/health",
-    rates: "/api/agent/transactions/rates",
-    calculateRate: "/api/agent/transactions/rates/calculate",
     export: "/api/agent/transactions/export",
+  },
+
+  rates: {
+    list: "/api/agent/rates",
+    calculate: "/api/agent/rates/calculate",
+  },
+
+  dashboard: {
+    recentTransactions: "/api/agent/dashboard/recent-transactions",
+    transactionsByType: "/api/agent/dashboard/transactions-by-type",
   },
 
     // Notifications

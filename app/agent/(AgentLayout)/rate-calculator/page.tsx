@@ -10,10 +10,10 @@ import {
   type PaginatedTableColumn,
 } from "@/app/(customer)/_components/common";
 import { useFetchData } from "@/app/_lib/api/hooks";
-import { customerKeys } from "@/app/_lib/api/query-keys";
+import { agentKeys } from "@/app/_lib/api/query-keys";
 import type { TransactionRate, TransactionRatesListResponse } from "@/app/_lib/api/types";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
-import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { useAgentTransactionRateCalculator } from "@/app/agent/_hooks/use-transaction-rate";
 import { Loader2 } from "lucide-react";
 
 export interface CurrencyRateRow {
@@ -59,7 +59,7 @@ export default function RateCalculatorPage() {
   const [sendCurrency, setSendCurrency] = useState("NGN");
   const [sendAmount, setSendAmount] = useState("");
 
-  const { displayRate, recalculate, isCalculating } = useTransactionRateCalculator({
+  const { displayRate, recalculate, isCalculating } = useAgentTransactionRateCalculator({
     getValues: () => ({
       receiveAmount,
       receiveCurrency,
@@ -82,8 +82,8 @@ export default function RateCalculatorPage() {
   };
 
   const { data: ratesResponse } = useFetchData<TransactionRatesListResponse>(
-    [...customerKeys.transactions.all, "rates"],
-    () => customerApi.transactionRates.list(),
+    [...agentKeys.rates.list()],
+    () => agentApi.rates.list(),
     true
   );
 

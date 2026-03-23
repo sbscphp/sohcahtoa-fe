@@ -1,39 +1,44 @@
 "use client";
 
 import type {
-  AgentCustomerListResponse,
+  AgentCustomerSummary,
   AgentCustomerStatsResponse,
 } from "@/app/_lib/api/types";
+import { useTable } from "@/app/_hooks/use-table";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
-import { useMemo } from "react";
 import { CustomerStatCards } from "./_components/CustomerStatCards";
 import CustomerTable from "./_components/CustomerTable";
+import { useAgentCustomers } from "./hooks/useAgentCustomers";
 
 export default function CustomerManagementPage() {
-  const { data: customerResponse, isLoading } =
-    useFetchData<AgentCustomerListResponse>(
-    ["agent", "customers"],
-    () => agentApi.customers.list(),
-    true
-  );
+  const table = useTable<"status">({
+    initial: {
+      q: "",
+      selections: {},
+      page: 1,
+      limit: 10,
+    },
+  });
+
+  const {
+    customers,
+    statusFilter,
+    isLoading,
+    totalPages,
+  } = useAgentCustomers(table);
 
   const { data: statsResponse } = useFetchData<AgentCustomerStatsResponse>(
     ["agent", "customers", "stats"],
     () => agentApi.customers.stats(),
     true
   );
-
-  const customers = useMemo(
-    () => customerResponse?.data ?? [],
-    [customerResponse]
-  );
   const stats = statsResponse?.data;
 
-  const totalCustomers = stats?.totalCustomers;
-  const verifiedCustomers = stats?.verifiedCustomers
-  const repeatCustomers = stats?.repeatCustomers;
-  const pendingKYC = stats?.pendingKyc;
+  const totalCustomers = stats?.totalCustomers ?? 0;
+  const verifiedCustomers = stats?.verifiedCustomers ?? 0;
+  const repeatCustomers = stats?.repeatCustomers ?? 0;
+  const pendingKYC = stats?.pendingKyc ?? 0;
 
   return (
     <div className="space-y-6">
@@ -43,7 +48,23 @@ export default function CustomerManagementPage() {
         repeatCustomers={repeatCustomers}
         pendingKYC={pendingKYC}
       />
-      <CustomerTable customers={customers} loading={isLoading} />
+      <CustomerTable
+        customers={customers as AgentCustomerSummary[]}
+        loading={isLoading}
+        page={table.page ?? 1}
+        totalPages={totalPages}
+        search={table.searchValue}
+        filter={statusFilter}
+        onSearchChange={(value) => {
+          table.setSearch(value);
+        }}
+        onFilterChange={(value) => {
+          table.setSelections(
+            value === "Filter By" || value === "All" ? {} : { status: [value] }
+          );
+        }}
+        onPageChange={table.setPage}
+      />
     </div>
   );
 }

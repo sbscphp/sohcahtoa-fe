@@ -5,9 +5,12 @@
 
 import { apiClient, ApiRequestConfig, type ApiResponse } from "@/app/_lib/api/client";
 import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
-import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type {
+  AgentAuthProfileResponse,
   AgentCustomerDetailsResponse,
+  AgentDashboardRange,
+  AgentDashboardRecentTransactionsResponse,
+  AgentDashboardTransactionsByTypeResponse,
   AgentCustomerListParams,
   AgentCustomerListResponse,
   AgentCustomerStatsResponse,
@@ -35,7 +38,6 @@ import type {
   VerifyResetOtpResponse,
   VerifyBvnRequest,
   VerifyBvnResponse,
-  ProfileResponse,
   CalculateTransactionRateRequest,
   CalculateTransactionRateResponse,
   TransactionListParams,
@@ -131,7 +133,7 @@ export const agentApi = {
       ),
 
     profile: () =>
-      apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile),
+      apiClient.get<AgentAuthProfileResponse>(AGENT_API_ENDPOINTS.auth.profile),
   },
 
   customers: {
@@ -156,6 +158,39 @@ export const agentApi = {
         {
           params: params as ApiRequestConfig["params"],
         }
+      ),
+  },
+
+  dashboard: {
+    recentTransactions: (params?: {
+      page?: number;
+      limit?: number;
+      type?: string;
+    }) =>
+      apiClient.get<AgentDashboardRecentTransactionsResponse>(
+        AGENT_API_ENDPOINTS.dashboard.recentTransactions,
+        {
+          params: params as ApiRequestConfig["params"],
+        }
+      ),
+    transactionsByType: (range: AgentDashboardRange) =>
+      apiClient.get<AgentDashboardTransactionsByTypeResponse>(
+        AGENT_API_ENDPOINTS.dashboard.transactionsByType,
+        {
+          params: { range },
+        }
+      ),
+  },
+
+  rates: {
+    list: (params?: { fromCurrency?: string; toCurrency?: string }) =>
+      apiClient.get<TransactionRatesListResponse>(AGENT_API_ENDPOINTS.rates.list, {
+        params: params as ApiRequestConfig["params"],
+      }),
+    calculate: (data: CalculateTransactionRateRequest) =>
+      apiClient.post<CalculateTransactionRateResponse>(
+        AGENT_API_ENDPOINTS.rates.calculate,
+        data
       ),
   },
 
@@ -213,15 +248,6 @@ export const agentApi = {
   
       overview: (data?: TransactionOverviewRequest) =>
         apiClient.post<TransactionOverviewResponse>(AGENT_API_ENDPOINTS.transactions.overview, data),
-      rates: (params?: { fromCurrency?: string; toCurrency?: string }) =>
-        apiClient.get<TransactionRatesListResponse>(AGENT_API_ENDPOINTS.transactions.rates, {
-          params: params as ApiRequestConfig["params"],
-        }),
-      calculateRate: (data: CalculateTransactionRateRequest) =>
-        apiClient.post<CalculateTransactionRateResponse>(
-          AGENT_API_ENDPOINTS.transactions.calculateRate,
-          data
-        ),
       export: (params?: TransactionListParams) =>
         apiClient.download(AGENT_API_ENDPOINTS.transactions.export, {
           params: params as ApiRequestConfig["params"],

@@ -292,6 +292,60 @@ export type ProfileResponse = ApiResponseWrapper<UserProfile>;
 
 // ==================== Agent Customer Types ====================
 
+export interface AgentAuthProfile {
+  id: string;
+  email: string;
+  phone_number: string | null;
+  date_joined: string;
+  last_active: string;
+  gender: string | null;
+  date_of_birth: string | null;
+  bvn: string | null;
+  tin: string | null;
+  [key: string]: string | number | boolean | null;
+}
+
+export type AgentAuthProfileResponse = ApiResponseWrapper<AgentAuthProfile>;
+
+export interface AgentDashboardRecentTransaction {
+  transactionId: string;
+  timestamp: string;
+  amount: number;
+  currency: string;
+}
+
+export interface AgentDashboardRecentTransactionsResponse
+  extends ApiResponseWrapper<AgentDashboardRecentTransaction[]> {
+  pagination: PaginationMetadata;
+}
+
+export type AgentDashboardRange =
+  | "today"
+  | "this_week"
+  | "last_30_days"
+  | "last_3_months"
+  | "last_year";
+
+export interface AgentDashboardTransactionsByTypeSegment {
+  transactionType: string;
+  count: number;
+  totalAmount: number;
+  percentageOfVolume: number;
+}
+
+export interface AgentDashboardTransactionsByTypeData {
+  range: AgentDashboardRange | string;
+  rangeStart: string;
+  rangeEnd: string;
+  amountBasis: string;
+  totalTransactionCount: number;
+  totalVolume: number;
+  segments: AgentDashboardTransactionsByTypeSegment[];
+}
+
+export type AgentDashboardTransactionsByTypeResponse =
+  ApiResponseWrapper<AgentDashboardTransactionsByTypeData>;
+
 export interface PaginationMetadata {
   page: number;
   limit: number;

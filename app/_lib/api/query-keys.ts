@@ -272,6 +272,12 @@ export const adminKeys = {
 export const agentKeys = {
   all: ["agent"] as const,
 
+  rates: {
+    all: ["agent", "rates"] as const,
+    list: (params?: { fromCurrency?: string; toCurrency?: string }) =>
+      [...agentKeys.rates.all, "list", params] as const,
+  },
+
   customers: {
     all: ["agent", "customers"] as const,
     stats: () => [...agentKeys.customers.all, "stats"] as const,
