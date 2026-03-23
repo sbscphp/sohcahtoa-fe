@@ -329,6 +329,42 @@ export interface AdminComplianceReportDetailsData {
   fileSize: string | number | null;
 }
 
+export interface AdminComplianceDashboardData {
+  overview: {
+    submittedReports: number;
+    pendingSubmissions: number;
+    failedSubmissions: number;
+    rejectedReports: number;
+  };
+  insights: {
+    sla: {
+      complianceRate: number;
+      onTime: number;
+      late: number;
+      missed: number;
+      trend: {
+        delta: number;
+      };
+      target: number;
+    };
+    screening: {
+      passed: number;
+      flagged: number;
+      rejected: number;
+      pendingReview: number;
+      totalScreened: number;
+    };
+    fxSold: {
+      PTA: number;
+      BTA: number;
+      School: number;
+      Medical: number;
+      Imports: number;
+      total: number;
+    };
+  };
+}
+
 export type AdminTrmsSubmissionsListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1172,6 +1208,11 @@ export const adminApi = {
   // ==================== Regulatory ====================
   regulatory: {
     compliance: {
+      dashboard: () =>
+        apiClient.get<ApiResponse<AdminComplianceDashboardData>>(
+          API_ENDPOINTS.admin.regulatory.compliance.dashboard
+        ),
+
       list: (params?: AdminComplianceReportsListParams) =>
         apiClient.get<ApiResponse<AdminComplianceReportListItem[]>>(
           API_ENDPOINTS.admin.regulatory.compliance.reports,

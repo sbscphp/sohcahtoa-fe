@@ -243,6 +243,7 @@ export const adminKeys = {
     all: ["admin", "regulatory"] as const,
     compliance: {
       all: () => [...adminKeys.regulatory.all, "compliance"] as const,
+      dashboard: () => [...adminKeys.regulatory.compliance.all(), "dashboard"] as const,
       reports: {
         all: () => [...adminKeys.regulatory.compliance.all(), "reports"] as const,
         list: (params?: {

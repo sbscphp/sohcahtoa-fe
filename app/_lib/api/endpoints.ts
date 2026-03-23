@@ -178,6 +178,7 @@ export const API_ENDPOINTS = {
     },
     regulatory: {
       compliance: {
+        dashboard: "/api/admin/regulatory/compliance/dashboard",
         reports: "/api/admin/regulatory/compliance/reports",
         reportById: (id: string) => `/api/admin/regulatory/compliance/reports/${id}`,
       },

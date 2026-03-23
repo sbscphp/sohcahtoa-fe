@@ -1,4 +1,43 @@
-export default function ComplianceInsights() {
+import type { AdminComplianceDashboardData } from "@/app/admin/_services/admin-api";
+
+interface ComplianceInsightsProps {
+  insights: AdminComplianceDashboardData["insights"];
+  loading?: boolean;
+}
+
+function formatCount(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
+function formatPercent(value: number): string {
+  return `${value.toLocaleString("en-US")}%`;
+}
+
+function formatCurrency(value: number): string {
+  return `$${value.toLocaleString("en-US")}`;
+}
+
+export default function ComplianceInsights({ insights, loading = false }: ComplianceInsightsProps) {
+  const display = {
+    slaRate: loading ? "--" : formatPercent(insights.sla.complianceRate),
+    onTime: loading ? "--" : formatCount(insights.sla.onTime),
+    late: loading ? "--" : formatCount(insights.sla.late),
+    missed: loading ? "--" : formatCount(insights.sla.missed),
+    trend: loading ? "--" : `${insights.sla.trend.delta >= 0 ? "+" : ""}${insights.sla.trend.delta}%`,
+    target: loading ? "--" : formatPercent(insights.sla.target),
+    passed: loading ? "--" : formatCount(insights.screening.passed),
+    flagged: loading ? "--" : formatCount(insights.screening.flagged),
+    rejected: loading ? "--" : formatCount(insights.screening.rejected),
+    pendingReview: loading ? "--" : formatCount(insights.screening.pendingReview),
+    totalScreened: loading ? "--" : formatCount(insights.screening.totalScreened),
+    pta: loading ? "--" : formatCurrency(insights.fxSold.PTA),
+    bta: loading ? "--" : formatCurrency(insights.fxSold.BTA),
+    school: loading ? "--" : formatCurrency(insights.fxSold.School),
+    medical: loading ? "--" : formatCurrency(insights.fxSold.Medical),
+    imports: loading ? "--" : formatCurrency(insights.fxSold.Imports),
+    total: loading ? "--" : formatCurrency(insights.fxSold.total),
+  };
+
   return (
     <div className="bg-white rounded-xl p-6 my-6">
       {/* Header */}
@@ -14,30 +53,36 @@ export default function ComplianceInsights() {
 
           <p className="text-sm text-gray-500">
             SLA compliance rate{" "}
-            <span className="text-orange-600 font-semibold">92 %</span>
+            <span className="text-orange-600 font-semibold">{display.slaRate}</span>
           </p>
 
           <div className="grid grid-cols-2 gap-4">
             <Metric
               label="On-time submissions"
-              value="426"
+              value={display.onTime}
               color="text-green-600"
             />
             <Metric
               label="Late submissions"
-              value="28"
+              value={display.late}
               color="text-orange-500"
             />
             <Metric
               label="Missed"
-              value="6"
+              value={display.missed}
               color="text-red-600"
             />
           </div>
 
           <div className="bg-[#F1F1F1] rounded-md px-4 py-2 flex justify-between text-xs">
-            <span >Trend ; <span className="text-green-600">+3% </span> vs last week</span>
-            <span className="font-medium">Target - 90%</span>
+            <span>
+              Trend ;{" "}
+              <span className={insights.sla.trend.delta >= 0 ? "text-green-600" : "text-red-600"}>
+                {display.trend}{" "}
+              </span>
+              vs last week
+            </span>
+            <span className="font-medium">Target - {display.target}</span>
           </div>
         </div>
 
@@ -48,20 +93,20 @@ export default function ComplianceInsights() {
           </h3>
 
           <div className="grid grid-cols-3 gap-4">
-            <Metric label="Passed" value="1200" color="text-green-600" />
-            <Metric label="Flagged" value="24" color="text-orange-500" />
-            <Metric label="Rejected" value="24" color="text-red-600" />
+            <Metric label="Passed" value={display.passed} color="text-green-600" />
+            <Metric label="Flagged" value={display.flagged} color="text-orange-500" />
+            <Metric label="Rejected" value={display.rejected} color="text-red-600" />
           </div>
 
           <Metric
             label="Pending review"
-            value="10"
+            value={display.pendingReview}
             color="text-red-600"
           />
 
           <div className="bg-[#F1F1F1] rounded-md px-4 py-2 flex justify-between text-xs">
             <span>Total screened</span>
-            <span className="font-semibold text-orange-600">1259</span>
+            <span className="font-semibold text-orange-600">{display.totalScreened}</span>
           </div>
         </div>
 
@@ -72,16 +117,16 @@ export default function ComplianceInsights() {
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
-            <FxItem label="PTA" value="$150,000" />
-            <FxItem label="BTA" value="$200,000" />
-            <FxItem label="School" value="$140,000" />
-            <FxItem label="Medical" value="$320,000" />
-            <FxItem label="Imports" value="$500,000" />
+            <FxItem label="PTA" value={display.pta} />
+            <FxItem label="BTA" value={display.bta} />
+            <FxItem label="School" value={display.school} />
+            <FxItem label="Medical" value={display.medical} />
+            <FxItem label="Imports" value={display.imports} />
           </div>
 
           <div className="bg-[#F1F1F1] rounded-md px-4 py-2 flex justify-between text-xs">
             <span>Total (FX) Sold</span>
-            <span className="font-semibold">$1,310,000</span>
+            <span className="font-semibold">{display.total}</span>
           </div>
         </div>
       </div>
