@@ -206,6 +206,10 @@ export const adminKeys = {
         status?: string;
       }) => [...adminKeys.outlet.franchises.all(), "list", params] as const,
     },
+    branches: {
+      all: () => [...adminKeys.outlet.all, "branches"] as const,
+      stats: () => [...adminKeys.outlet.branches.all(), "stats"] as const,
+    },
   },
   
   transactions: {

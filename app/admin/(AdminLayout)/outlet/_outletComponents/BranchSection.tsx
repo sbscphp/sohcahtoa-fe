@@ -5,10 +5,11 @@ import StatCard from "@/app/admin/_components/StatCard";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { Group, TextInput, Select, Button, Text } from "@mantine/core";
+import { Group, TextInput, Select, Button, Text, Skeleton } from "@mantine/core";
 import { ListFilter, Plus, Search, Upload, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useBranchStats } from "../hooks/useBranchStats";
 
 type OutletStatus = "Active" | "Pending" | "Deactivated";
 
@@ -45,12 +46,8 @@ export default function BranchSection() {
   const [filter, setFilter] = useState("Filter By");
   const pageSize = 6;
 
-  const stats = useMemo(() => {
-    const total = BRANCH_DATA.length;
-    const active = BRANCH_DATA.filter((b) => b.status === "Active").length;
-    const deactivated = BRANCH_DATA.filter((b) => b.status === "Deactivated").length;
-    return { total, active, deactivated };
-  }, []);
+  const { stats, isLoading: isStatsLoading } = useBranchStats();
+  const isStatsEmpty = !isStatsLoading && !stats;
 
   const filteredData = useMemo(() => {
     return BRANCH_DATA.filter((b) => {
@@ -103,24 +100,35 @@ export default function BranchSection() {
     <>
       <div className="w-full rounded-xl bg-white p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            title="No. of Branches"
-            value={stats.total}
-            icon={<Building2 className="h-5 w-5 text-orange-600" />}
-            iconBg="bg-orange-100"
-          />
-          <StatCard
-            title="Active Branches"
-            value={stats.active}
-            icon={<Building2 className="h-5 w-5 text-green-600" />}
-            iconBg="bg-green-100"
-          />
-          <StatCard
-            title="Deactivated Branches"
-            value={stats.deactivated}
-            icon={<Building2 className="h-5 w-5 text-pink-600" />}
-            iconBg="bg-[#FFE4E8]"
-          />
+          {isStatsLoading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} height={90} radius="md" />
+            ))
+          ) : (
+            <>
+              <StatCard
+                title="No. of Branches"
+                value={stats?.total ?? 0}
+                icon={<Building2 className="h-5 w-5 text-orange-600" />}
+                iconBg="bg-orange-100"
+                isEmpty={isStatsEmpty}
+              />
+              <StatCard
+                title="Active Branches"
+                value={stats?.active ?? 0}
+                icon={<Building2 className="h-5 w-5 text-green-600" />}
+                iconBg="bg-green-100"
+                isEmpty={isStatsEmpty}
+              />
+              <StatCard
+                title="Deactivated Branches"
+                value={stats?.deactivated ?? 0}
+                icon={<Building2 className="h-5 w-5 text-pink-600" />}
+                iconBg="bg-[#FFE4E8]"
+                isEmpty={isStatsEmpty}
+              />
+            </>
+          )}
         </div>
       </div>
 

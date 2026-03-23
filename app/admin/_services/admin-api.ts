@@ -135,6 +135,12 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export interface BranchStatsData {
+  total: number;
+  active: number;
+  deactivated: number;
+}
+
 export interface CreateFranchisePayload {
   franchiseName: string;
   state: string;
@@ -869,6 +875,10 @@ export const adminApi = {
 
       getStats: () =>
         apiClient.get<ApiResponse<FranchiseStatsData>>(API_ENDPOINTS.admin.outlet.franchises.stats),
+    },
+    branches: {
+      getStats: () =>
+        apiClient.get<ApiResponse<BranchStatsData>>(API_ENDPOINTS.admin.outlet.branches.stats),
     },
   },
 

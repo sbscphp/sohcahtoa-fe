@@ -157,6 +157,9 @@ export const API_ENDPOINTS = {
         export: "/api/admin/outlet/franchises/export",
         stats: "/api/admin/outlet/franchises/stats",
       },
+      branches: {
+        stats: "/api/admin/outlet/branches/stats",
+      },
       states: "/api/admin/outlet/states",
     },
     transactions: {
