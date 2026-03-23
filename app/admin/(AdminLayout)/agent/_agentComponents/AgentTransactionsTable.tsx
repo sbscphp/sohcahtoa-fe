@@ -21,6 +21,8 @@ interface AgentTransaction {
   actionTime: string;
   type: string;
   transactionValue: number;
+  transactionCurrency?: string;
+  referenceNumber?: string;
   status: TransactionStatus;
 }
 
@@ -53,11 +55,13 @@ interface AgentTransactionsResponse {
   } | null;
 }
 
-const formatNaira = (amount: number): string =>
-  `₦ ${amount.toLocaleString("en-NG", {
+function formatValue(amount: number, currency?: string): string {
+  const formatted = amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  });
+  return currency ? `${formatted} ${currency}` : formatted;
+}
 
 function parseNumber(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -73,6 +77,7 @@ function mapApiStatusToUi(value?: string): TransactionStatus {
   if (normalized === "REJECTED") return "Rejected";
   if (normalized === "AWAITING_VERIFICATION") return "Pending";
   if (normalized === "SETTLED") return "Posted";
+  if (normalized === "POSTED") return "Posted";
   // Fallback: treat unknown statuses as pending.
   return "Pending";
 }
@@ -105,9 +110,9 @@ function mapTransaction(item: ApiTransactionItem): AgentTransaction {
     actionDate: formatDate(item.createdAt),
     actionTime: formatTime(item.createdAt),
     type: item.type ?? "—",
-    // Temporary mapping: UI expects NGN formatting, but API returns `value` + `currency`.
-    // We'll still format `value` numerically for now.
     transactionValue: parseNumber(item.value),
+    transactionCurrency: item.currency,
+    referenceNumber: item.referenceNumber,
     status: mapApiStatusToUi(item.status),
   };
 }
@@ -171,7 +176,8 @@ export default function AgentTransactionsTable({
     return entries.filter((tx) => {
       const matchesSearch =
         tx.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        tx.type.toLowerCase().includes(debouncedSearch.toLowerCase());
+        tx.type.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        (tx.referenceNumber?.toLowerCase().includes(debouncedSearch.toLowerCase()) ?? false);
 
       const matchesStatus = !uiStatus || tx.status === uiStatus;
 
@@ -199,13 +205,15 @@ export default function AgentTransactionsTable({
       {tx.type}
     </Text>,
     <Text key="transactionValue" size="sm" fw={500}>
-      {formatNaira(tx.transactionValue)}
+      {formatValue(tx.transactionValue, tx.transactionCurrency)}
     </Text>,
     <StatusBadge key="actionEffect" status={tx.status} />,
     <RowActionIcon
       key="action"
       onClick={() => {
-        router.push(adminRoutes.adminAgentTransactions(tx.id));
+        router.push(
+          adminRoutes.adminAgentTransactionDetails(agentId, tx.id)
+        );
       }}
     />,
   ];

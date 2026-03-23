@@ -11,7 +11,12 @@ const adminDashboard = () => `${admin()}/dashboard`;
 // Agent routes
 const adminAgent = () => `${admin()}/agent`;
 const adminAgentDetails = (id: string | number = ':id') => `${adminAgent()}/${id}`;
-const adminAgentTransactions = (id: string | number = ':id') => `${adminAgent()}/transactions/${id}`;
+const adminAgentTransactions = (id: string | number = ':id') =>
+  `${adminAgent()}/transactions/${id}`;
+const adminAgentTransactionDetails = (
+  agentId: string | number = ':agentId',
+  transactionId: string | number = ':transactionId'
+) => `${adminAgent()}/${agentId}/transactions/${transactionId}`;
 
 // Customer routes
 const adminCustomer = () => `${admin()}/customer`;
@@ -80,6 +85,7 @@ export const adminRoutes = {
   adminAgent,
   adminAgentDetails,
   adminAgentTransactions,
+  adminAgentTransactionDetails,
   
   // Customers
   adminCustomer,
