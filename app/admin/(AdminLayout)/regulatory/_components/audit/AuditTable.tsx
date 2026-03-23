@@ -26,6 +26,7 @@ export default function AuditLogTable() {
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("");
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedAuditLogId, setSelectedAuditLogId] = useState<string | null>(null);
   const [debouncedSearch] = useDebouncedValue(search, 350);
 
   const queryParams = useMemo(
@@ -51,6 +52,16 @@ export default function AuditLogTable() {
     { label: "Action", key: "action" },
   ];
 
+  const openDetails = (id: string) => {
+    setSelectedAuditLogId(id);
+    setIsOpen(true);
+  };
+
+  const closeDetails = () => {
+    setIsOpen(false);
+    setSelectedAuditLogId(null);
+  };
+
   const renderRow = (item: AuditLogRowItem) => [
     <Text size="sm" key="timestamp">
       {item.timestamp}
@@ -68,7 +79,7 @@ export default function AuditLogTable() {
       {item.auditId}
     </Text>,
     <StatusBadge key="actionResult" status={item.actionResult} />,
-    <RowActionIcon key="action" onClick={() => setIsOpen(true)} />,
+    <RowActionIcon key="action" onClick={() => openDetails(item.id)} />,
   ];
 
   return (
@@ -126,7 +137,7 @@ export default function AuditLogTable() {
           onPageChange: setPage,
         }}
       />
-      <AuditDetailModal opened={isOpen} onClose={() => setIsOpen(false)} />
+      <AuditDetailModal opened={isOpen} onClose={closeDetails} auditLogId={selectedAuditLogId} />
     </div>
   );
 }

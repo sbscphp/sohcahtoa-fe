@@ -4,23 +4,108 @@ import {
   Modal,
   Text,
   Group,
-  Badge,
   Button,
   Stack,
   Divider,
+  Center,
+  Loader,
 } from "@mantine/core";
 import { Download } from "lucide-react";
-
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { useRegulatoryLogDetails } from "../../hooks/useRegulatoryLogs";
 
 interface RegulatorySummaryModalProps {
   opened: boolean;
   onClose: () => void;
+  regulatoryLogId: string | null;
 }
 
 export function RegulatoryDetailModal({
   opened,
   onClose,
+  regulatoryLogId,
 }: RegulatorySummaryModalProps) {
+  const { details, isLoading, isFetching, isError } = useRegulatoryLogDetails(
+    opened ? regulatoryLogId ?? undefined : undefined
+  );
+  const hasReportFile = Boolean(details?.fileUrl);
+
+  const resolveFileUrl = (fileUrl: string): string => {
+    if (!fileUrl) return "";
+    if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "https://sohcahtoa-dev.clocksurewise.com";
+
+    try {
+      return new URL(fileUrl, apiBaseUrl).toString();
+    } catch {
+      return fileUrl;
+    }
+  };
+
+  const handleDownload = () => {
+    if (!details?.fileUrl) return;
+    const resolvedUrl = resolveFileUrl(details.fileUrl);
+    if (!resolvedUrl) return;
+    window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const renderBody = () => {
+    if (isLoading || isFetching) {
+      return (
+        <Center py="xl">
+          <Stack align="center" gap="xs">
+            <Loader color="orange" />
+            <Text size="sm" c="dimmed">
+              Loading regulatory log details...
+            </Text>
+          </Stack>
+        </Center>
+      );
+    }
+
+    if (isError) {
+      return (
+        <Center py="xl">
+          <Text size="sm" c="red">
+            Unable to load this regulatory log right now. Please try again.
+          </Text>
+        </Center>
+      );
+    }
+
+    if (!details) {
+      return (
+        <Center py="xl">
+          <Text size="sm" c="dimmed">
+            No regulatory log details available.
+          </Text>
+        </Center>
+      );
+    }
+
+    return (
+      <Stack gap="sm">
+        <DetailRow label="Timestamp" value={details.timestamp} />
+        <Divider />
+        <DetailRow label="Source" value={details.source} />
+        <Divider />
+        <DetailRow label="Description" value={details.description} />
+        <Divider />
+        <DetailRow label="Duplicate" value={details.duplicateLabel} />
+        <Divider />
+        <DetailRow label="Response" value={details.response} />
+        <Divider />
+        <DetailRow label="Result" value={<StatusBadge status={details.result} />} />
+        <Divider />
+        <DetailRow label="Regulatory ID" value={details.regulatoryId} />
+        <Divider />
+        <DetailRow label="Channel" value={details.channel} />
+      </Stack>
+    );
+  };
+
   return (
     <Modal
       opened={opened}
@@ -37,50 +122,20 @@ export function RegulatoryDetailModal({
       size="lg"
       centered
     >
-      <Stack gap="sm">
-        <DetailRow label="Timestamp:" value="Oct 22, 2025 – 09:15 AM" />
-        <Divider />
+      {renderBody()}
 
-        <DetailRow label="Event submissions:" value=" Report submission" />
-        <Divider />
-
-        <DetailRow label="Submitted to :" value="FN Window" />
-        <Divider />
-
-        <DetailRow label="Reference ID :" value="FNW-007777" />
-        <Divider />
-        
-        <DetailRow label="Endpoint:" value="/api/v1/fnwindow/upload" />
-        <Divider />
-
-        <DetailRow label="Message:" value="Report successfully uploaded to FN Window." />
-        <Divider />
-
-        <DetailRow
-          label="Status"
-          value={
-            <Badge color="green" variant="light" radius="xl">
-              Success
-            </Badge>
-          }
-        />
-        <Divider />
-
-
-        <DetailRow label="REF code" value="FNW-2025-02-12-1140" />
-        <Divider />
-
-        <DetailRow label="Response:" value="200 OK – Report successfully uploaded" />
-        <Divider />
-      </Stack>
-
-      {/* Footer */}
       <Group justify="flex-end" mt="xl">
         <Button variant="outline" radius="xl" onClick={onClose}>
           Close
         </Button>
 
-        <Button rightSection={<Download size={16} />} color="orange" radius="xl">
+        <Button
+          rightSection={<Download size={16} />}
+          color="orange"
+          radius="xl"
+          onClick={handleDownload}
+          disabled={!hasReportFile || isLoading || isFetching}
+        >
           Download log file
         </Button>
       </Group>
@@ -103,10 +158,7 @@ function DetailRow({
       <Text size="sm" c="dimmed">
         {label}
       </Text>
-
-      <Text size="sm" fw={500}>
-        {value}
-      </Text>
+      <div className="text-right">{value}</div>
     </Group>
   );
 }

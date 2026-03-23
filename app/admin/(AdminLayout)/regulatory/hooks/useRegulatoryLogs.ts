@@ -6,9 +6,9 @@ import { useFetchDataSeperateLoading, useFetchSingleData } from "@/app/_lib/api/
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import {
   adminApi,
-  type AdminRegulatoryAuditLogDetailsData,
-  type AdminRegulatoryAuditLogListItem,
-  type AdminRegulatoryAuditLogsListParams,
+  type AdminRegulatoryLogDetailsData,
+  type AdminRegulatoryLogListItem,
+  type AdminRegulatoryLogsListParams,
 } from "@/app/admin/_services/admin-api";
 
 interface Pagination {
@@ -18,36 +18,39 @@ interface Pagination {
   totalPages: number;
 }
 
-interface AuditLogsListMetadata extends Record<string, unknown> {
+interface RegulatoryLogsListMetadata extends Record<string, unknown> {
   pagination?: Partial<Pagination>;
 }
 
-interface AuditLogsListResponse extends Omit<ApiResponse<AdminRegulatoryAuditLogListItem[]>, "metadata"> {
-  metadata: AuditLogsListMetadata | null;
+interface RegulatoryLogsListResponse
+  extends Omit<ApiResponse<AdminRegulatoryLogListItem[]>, "metadata"> {
+  metadata: RegulatoryLogsListMetadata | null;
 }
-type AuditLogDetailsResponse = ApiResponse<AdminRegulatoryAuditLogDetailsData>;
+type RegulatoryDetailsResponse = ApiResponse<AdminRegulatoryLogDetailsData>;
 
 type UnknownRecord = Record<string, unknown>;
+export type RegulatoryStatusFilter = "" | "PENDING" | "COMPLETED" | "FAILED";
 
-export interface AuditLogRowItem {
+export interface RegulatoryLogRowItem {
   id: string;
   timestamp: string;
   userOrSystem: string;
   actionPerformed: string;
   actionResult: string;
   channel: string;
-  auditId: string;
+  regulatoryId: string;
 }
 
-export interface AuditLogDetailViewModel {
+export interface RegulatoryLogDetailViewModel {
   timestamp: string;
   source: string;
   description: string;
   duplicateLabel: string;
+  response: string;
   result: string;
-  auditId: string;
+  regulatoryId: string;
+  channel: string;
   fileUrl: string;
-  user: string;
 }
 
 function asString(value: unknown, fallback = ""): string {
@@ -96,16 +99,11 @@ function formatDateTime(value: unknown): string {
 function normalizeActionResult(value: unknown): string {
   const normalized = asString(value).trim().toUpperCase();
   if (!normalized) return "--";
-  if (normalized === "INFO") return "Info";
-  if (normalized === "WARNING") return "Warning";
-  if (normalized === "ERROR") return "Error";
-  if (normalized === "CRITICAL") return "Critical";
+  if (normalized === "SUCCESS") return "Completed";
   return toTitleCase(normalized);
 }
 
-function normalizeDetail(
-  value: AdminRegulatoryAuditLogDetailsData | null
-): AuditLogDetailViewModel | null {
+function normalizeDetail(value: AdminRegulatoryLogDetailsData | null): RegulatoryLogDetailViewModel | null {
   if (!value) return null;
   const data = asRecord(value);
   return {
@@ -113,16 +111,15 @@ function normalizeDetail(
     source: asString(data.source, "--"),
     description: asString(data.description, "--"),
     duplicateLabel: typeof data.duplicate === "boolean" ? (data.duplicate ? "Yes" : "No") : "--",
+    response: normalizeActionResult(data.response),
     result: normalizeActionResult(data.result),
-    auditId: asString(data.auditId, "--"),
+    regulatoryId: asString(data.regulatoryId, "--"),
+    channel: asString(data.channel, "--"),
     fileUrl: asString(data.fileUrl, ""),
-    user: asString(data.user, "--"),
   };
 }
 
-function normalizeListItem(
-  item: AdminRegulatoryAuditLogListItem | UnknownRecord
-): AuditLogRowItem {
+function normalizeListItem(item: AdminRegulatoryLogListItem | UnknownRecord): RegulatoryLogRowItem {
   const record = asRecord(item);
   return {
     id: asString(record.id),
@@ -131,14 +128,14 @@ function normalizeListItem(
     actionPerformed: asString(record.actionPerformed, "--"),
     actionResult: normalizeActionResult(record.actionResult),
     channel: asString(record.channel, "--"),
-    auditId: asString(record.auditId, "--"),
+    regulatoryId: asString(record.regulatoryId, "--"),
   };
 }
 
-function normalizeListResponse(data: unknown): AuditLogRowItem[] {
+function normalizeListResponse(data: unknown): RegulatoryLogRowItem[] {
   if (Array.isArray(data)) {
     return data
-      .filter((item): item is AdminRegulatoryAuditLogListItem | UnknownRecord => Boolean(item))
+      .filter((item): item is AdminRegulatoryLogListItem | UnknownRecord => Boolean(item))
       .map(normalizeListItem);
   }
 
@@ -155,7 +152,7 @@ function normalizeListResponse(data: unknown): AuditLogRowItem[] {
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) {
       return candidate
-        .filter((item): item is AdminRegulatoryAuditLogListItem | UnknownRecord => Boolean(item))
+        .filter((item): item is AdminRegulatoryLogListItem | UnknownRecord => Boolean(item))
         .map(normalizeListItem);
     }
   }
@@ -163,7 +160,7 @@ function normalizeListResponse(data: unknown): AuditLogRowItem[] {
   return [];
 }
 
-function parsePagination(response?: AuditLogsListResponse | null) {
+function parsePagination(response?: RegulatoryLogsListResponse | null) {
   const pagination = response?.metadata?.pagination;
   if (!pagination) return null;
   return {
@@ -174,11 +171,21 @@ function parsePagination(response?: AuditLogsListResponse | null) {
   };
 }
 
-export function useAuditLogs(params: AdminRegulatoryAuditLogsListParams = {}) {
-  const query = useFetchDataSeperateLoading<AuditLogsListResponse>(
-    [...adminKeys.regulatory.logs.audit.list(params)],
+export function mapRegulatoryFilterToApiStatus(
+  value: RegulatoryStatusFilter
+): AdminRegulatoryLogsListParams["status"] | undefined {
+  if (value === "COMPLETED") return "SUCCESS";
+  if (!value) return undefined;
+  return value as AdminRegulatoryLogsListParams["status"];
+}
+
+export function useRegulatoryLogs(params: AdminRegulatoryLogsListParams = {}) {
+  const query = useFetchDataSeperateLoading<RegulatoryLogsListResponse>(
+    [...adminKeys.regulatory.logs.regulatory.list(params)],
     () =>
-      adminApi.regulatory.logs.audit.list(params) as unknown as Promise<AuditLogsListResponse>,
+      adminApi.regulatory.logs.regulatory.list(
+        params
+      ) as unknown as Promise<RegulatoryLogsListResponse>,
     true
   );
 
@@ -197,11 +204,11 @@ export function useAuditLogs(params: AdminRegulatoryAuditLogsListParams = {}) {
   };
 }
 
-export function useAuditLogDetails(id?: string) {
-  const query = useFetchSingleData<AuditLogDetailsResponse>(
-    [...adminKeys.regulatory.logs.audit.detail(id ?? "")],
+export function useRegulatoryLogDetails(id?: string) {
+  const query = useFetchSingleData<RegulatoryDetailsResponse>(
+    [...adminKeys.regulatory.logs.regulatory.detail(id ?? "")],
     () =>
-      adminApi.regulatory.logs.audit.getById(id ?? "") as unknown as Promise<AuditLogDetailsResponse>,
+      adminApi.regulatory.logs.regulatory.getById(id ?? "") as unknown as Promise<RegulatoryDetailsResponse>,
     Boolean(id)
   );
 

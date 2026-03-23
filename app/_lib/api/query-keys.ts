@@ -266,6 +266,19 @@ export const adminKeys = {
           search?: string;
           severity?: string;
         }) => [...adminKeys.regulatory.logs.audit.all(), "list", params] as const,
+        detail: (id: string) =>
+          [...adminKeys.regulatory.logs.audit.all(), "detail", id] as const,
+      },
+      regulatory: {
+        all: () => [...adminKeys.regulatory.logs.all(), "regulatory"] as const,
+        list: (params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }) => [...adminKeys.regulatory.logs.regulatory.all(), "list", params] as const,
+        detail: (id: string) =>
+          [...adminKeys.regulatory.logs.regulatory.all(), "detail", id] as const,
       },
     },
     trms: {

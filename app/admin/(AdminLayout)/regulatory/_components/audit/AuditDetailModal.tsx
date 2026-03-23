@@ -4,23 +4,106 @@ import {
   Modal,
   Text,
   Group,
-  Badge,
   Button,
   Stack,
   Divider,
+  Center,
+  Loader,
 } from "@mantine/core";
 import { Download } from "lucide-react";
-
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { useAuditLogDetails } from "../../hooks/useAuditLogs";
 
 interface AuditSummaryModalProps {
   opened: boolean;
   onClose: () => void;
+  auditLogId: string | null;
 }
 
 export function AuditDetailModal({
   opened,
   onClose,
+  auditLogId,
 }: AuditSummaryModalProps) {
+  const { details, isLoading, isFetching, isError } = useAuditLogDetails(
+    opened ? auditLogId ?? undefined : undefined
+  );
+  const hasReportFile = Boolean(details?.fileUrl);
+
+  const resolveFileUrl = (fileUrl: string): string => {
+    if (!fileUrl) return "";
+    if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "https://sohcahtoa-dev.clocksurewise.com";
+
+    try {
+      return new URL(fileUrl, apiBaseUrl).toString();
+    } catch {
+      return fileUrl;
+    }
+  };
+
+  const handleDownload = () => {
+    if (!details?.fileUrl) return;
+    const resolvedUrl = resolveFileUrl(details.fileUrl);
+    if (!resolvedUrl) return;
+    window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const renderBody = () => {
+    if (isLoading || isFetching) {
+      return (
+        <Center py="xl">
+          <Stack align="center" gap="xs">
+            <Loader color="orange" />
+            <Text size="sm" c="dimmed">
+              Loading audit log details...
+            </Text>
+          </Stack>
+        </Center>
+      );
+    }
+
+    if (isError) {
+      return (
+        <Center py="xl">
+          <Text size="sm" c="red">
+            Unable to load this audit log right now. Please try again.
+          </Text>
+        </Center>
+      );
+    }
+
+    if (!details) {
+      return (
+        <Center py="xl">
+          <Text size="sm" c="dimmed">
+            No audit log details available.
+          </Text>
+        </Center>
+      );
+    }
+
+    return (
+      <Stack gap="sm">
+        <DetailRow label="Timestamp" value={details.timestamp} />
+        <Divider />
+        <DetailRow label="Source" value={details.source} />
+        <Divider />
+        <DetailRow label="Description" value={details.description} />
+        <Divider />
+        <DetailRow label="Duplicate" value={details.duplicateLabel} />
+        <Divider />
+        <DetailRow label="Result" value={<StatusBadge status={details.result} />} />
+        <Divider />
+        <DetailRow label="Audit ID" value={details.auditId} />
+        <Divider />
+        <DetailRow label="User" value={details.user} />
+      </Stack>
+    );
+  };
+
   return (
     <Modal
       opened={opened}
@@ -37,40 +120,20 @@ export function AuditDetailModal({
       size="lg"
       centered
     >
-      <Stack gap="sm">
-        <DetailRow label="Timestamp:" value="Oct 22, 2025 – 09:15 AM" />
-        <Divider />
+      {renderBody()}
 
-        <DetailRow label="Action" value="Report generated successfully" />
-        <Divider />
-
-        <DetailRow label="Performed by:" value=" System Auto" />
-        <Divider />
-
-        <DetailRow label="Module:" value="Rate management " />
-        <Divider />
-
-        <DetailRow label="Report ID: " value="REP-2025-012" />
-        <Divider />
-
-        <DetailRow
-          label="Status"
-          value={
-            <Badge color="green" variant="light" radius="xl">
-              Success
-            </Badge>
-          }
-        />
-        <Divider />
-      </Stack>
-
-      {/* Footer */}
       <Group justify="flex-end" mt="xl">
         <Button variant="outline" radius="xl" onClick={onClose}>
           Close
         </Button>
 
-        <Button rightSection={<Download size={16} />} color="orange" radius="xl">
+        <Button
+          rightSection={<Download size={16} />}
+          color="orange"
+          radius="xl"
+          onClick={handleDownload}
+          disabled={!hasReportFile || isLoading || isFetching}
+        >
           Download log file
         </Button>
       </Group>
@@ -93,10 +156,7 @@ function DetailRow({
       <Text size="sm" c="dimmed">
         {label}
       </Text>
-
-      <Text size="sm" fw={500}>
-        {value}
-      </Text>
+      <div className="text-right">{value}</div>
     </Group>
   );
 }

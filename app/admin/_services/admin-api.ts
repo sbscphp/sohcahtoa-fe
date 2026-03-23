@@ -385,6 +385,49 @@ export interface AdminRegulatoryAuditLogListItem {
   auditId: string;
 }
 
+export interface AdminRegulatoryAuditLogDetailsData {
+  timestamp: string;
+  source: string;
+  description: string;
+  duplicate: boolean;
+  result: string;
+  auditId: string;
+  fileUrl: string | null;
+  user: string;
+}
+
+export type AdminRegulatoryLogsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "PENDING" | "SUCCESS" | "FAILED" | "COMPLETED";
+};
+
+export interface AdminRegulatoryLogListItem {
+  id: string;
+  timestamp: string;
+  userOrSystem: string;
+  actionPerformed: string;
+  actionResult: string;
+  channel: string;
+  regulatoryId: string;
+}
+
+export interface AdminRegulatoryLogDetailsData {
+  timestamp: string;
+  source: string;
+  description: string;
+  duplicate: boolean;
+  response: string;
+  result: string;
+  regulatoryId: string;
+  channel: string;
+  fileUrl: string | null;
+}
+
 export type AdminTrmsSubmissionsListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1257,6 +1300,21 @@ export const adminApi = {
           apiClient.get<ApiResponse<AdminRegulatoryAuditLogListItem[]>>(
             API_ENDPOINTS.admin.regulatory.logs.audit,
             { params }
+          ),
+        getById: (id: string) =>
+          apiClient.get<ApiResponse<AdminRegulatoryAuditLogDetailsData>>(
+            API_ENDPOINTS.admin.regulatory.logs.auditById(id)
+          ),
+      },
+      regulatory: {
+        list: (params?: AdminRegulatoryLogsListParams) =>
+          apiClient.get<ApiResponse<AdminRegulatoryLogListItem[]>>(
+            API_ENDPOINTS.admin.regulatory.logs.regulatory,
+            { params }
+          ),
+        getById: (id: string) =>
+          apiClient.get<ApiResponse<AdminRegulatoryLogDetailsData>>(
+            API_ENDPOINTS.admin.regulatory.logs.regulatoryById(id)
           ),
       },
     },
