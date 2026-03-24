@@ -9,8 +9,6 @@ import {
   Avatar,
   Tabs,
   Popover,
-  Modal,
-  Textarea,
 } from "@mantine/core";
 import Connector from "../../../_components/assets/Connector.png";
 import Image from "next/image";
@@ -18,8 +16,8 @@ import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
+import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { exclamation } from "@/app/assets/asset";
 import { ArrowUpRight, Check, ChevronDown, ChevronUp, Info, X } from "lucide-react";
 import React from "react";
 import { useState } from "react";
@@ -136,14 +134,11 @@ export default function TakeActionOverlay({
   );
   const [completeApprovalOpen, setCompleteApprovalOpen] = useState(false);
   const [approvalSuccessOpen, setApprovalSuccessOpen] = useState(false);
-  const [approvalComment, setApprovalComment] = useState("");
 
   const [resubmissionOpen, setResubmissionOpen] = useState(false);
-  const [resubmissionComment, setResubmissionComment] = useState("");
   const [resubmissionSuccessOpen, setResubmissionSuccessOpen] = useState(false);
 
   const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectComment, setRejectComment] = useState("");
   const [rejectSuccessOpen, setRejectSuccessOpen] = useState(false);
 
   const toggleUserExpansion = (userName: string) => {
@@ -160,55 +155,46 @@ export default function TakeActionOverlay({
 
   const openCompleteApprovalFlow = () => {
     setTakeActionPopoverKey(null);
-    setApprovalComment("");
     setCompleteApprovalOpen(true);
   };
 
   const closeCompleteApproval = () => {
     setCompleteApprovalOpen(false);
-    setApprovalComment("");
   };
 
-  const submitCompleteApproval = () => {
-    if (!approvalComment.trim()) return;
+  const submitCompleteApproval = (comment: string) => {
+    void comment;
     setCompleteApprovalOpen(false);
-    setApprovalComment("");
     setApprovalSuccessOpen(true);
   };
 
   const openResubmissionFlow = () => {
     setTakeActionPopoverKey(null);
-    setResubmissionComment("");
     setResubmissionOpen(true);
   };
 
   const closeResubmission = () => {
     setResubmissionOpen(false);
-    setResubmissionComment("");
   };
 
-  const submitResubmission = () => {
-    if (!resubmissionComment.trim()) return;
+  const submitResubmission = (comment: string) => {
+    void comment;
     setResubmissionOpen(false);
-    setResubmissionComment("");
     setResubmissionSuccessOpen(true);
   };
 
   const openRejectFlow = () => {
     setTakeActionPopoverKey(null);
-    setRejectComment("");
     setRejectOpen(true);
   };
 
   const closeReject = () => {
     setRejectOpen(false);
-    setRejectComment("");
   };
 
-  const submitReject = () => {
-    if (!rejectComment.trim()) return;
+  const submitReject = (comment: string) => {
+    void comment;
     setRejectOpen(false);
-    setRejectComment("");
     setRejectSuccessOpen(true);
   };
 
@@ -528,212 +514,35 @@ export default function TakeActionOverlay({
       </div>
     </Drawer>
 
-    <Modal
+    <ApprovalActionConfirmModal
       opened={completeApprovalOpen}
       onClose={closeCompleteApproval}
-      withCloseButton={false}
-      centered
-      radius="lg"
-      padding="xl"
-      zIndex={4000}
-      overlayProps={{ opacity: 0.3, blur: 2 }}
-    >
-      <div className="flex flex-col items-center space-y-5">
-        <div className="flex items-center justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0E5]">
-            <Image src={exclamation} alt="" width={40} height={40} />
-          </div>
-        </div>
-        <h2 className="text-center text-xl font-bold text-body-heading-300!">
-          Complete Document Approval ?
-        </h2>
-        <p className="px-2 text-center text-body-text-100! text-sm leading-relaxed">
-          You are about to approve this document. Once confirmed, your approval will be
-          recorded and the document will be marked as completed in the workflow.
-        </p>
-        <div className="w-full space-y-1.5 text-left">
-          <Text size="sm" fw={500} className="text-body-heading-300">
-            Comment{" "}
-            <span className="text-red-500" aria-hidden>
-              *
-            </span>
-          </Text>
-          <Textarea
-            placeholder="Start Typing"
-            value={approvalComment}
-            onChange={(e) => setApprovalComment(e.currentTarget.value)}
-            minRows={4}
-            radius="md"
-            classNames={{
-              input:
-                "border border-[#CCCACA]! text-sm",
-            }}
-          />
-        </div>
-        <div className="mt-2 w-full space-y-3">
-          <Button
-            fullWidth
-            radius="xl"
-            size="md"
-            color="orange"
-            onClick={submitCompleteApproval}
-            disabled={!approvalComment.trim()}
-            className="font-medium! text-sm!"
-          >
-            Yes, Complete Document Approval
-          </Button>
-          <Button
-            fullWidth
-            radius="xl"
-            size="md"
-            variant="outline"
-            color="gray"
-            onClick={closeCompleteApproval}
-            className="border-text-50! border! font-semibold! text-sm!"
-          >
-            No, Close
-          </Button>
-        </div>
-      </div>
-    </Modal>
+      title="Complete Document Approval ?"
+      message="You are about to approve this document. Once confirmed, your approval will be recorded and the document will be marked as completed in the workflow."
+      primaryButtonText="Yes, Complete Document Approval"
+      secondaryButtonText="No, Close"
+      onConfirm={submitCompleteApproval}
+    />
 
-    <Modal
+    <ApprovalActionConfirmModal
       opened={resubmissionOpen}
       onClose={closeResubmission}
-      withCloseButton={false}
-      centered
-      radius="lg"
-      padding="xl"
-      zIndex={4000}
-      overlayProps={{ opacity: 0.3, blur: 2 }}
-    >
-      <div className="flex flex-col items-center space-y-5">
-        <div className="flex items-center justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0E5]">
-            <Image src={exclamation} alt="" width={40} height={40} />
-          </div>
-        </div>
-        <h2 className="text-center text-xl font-bold text-body-heading-300!">
-          Request for Document resubmission ?
-        </h2>
-        <p className="px-2 text-center text-body-text-100! text-sm leading-relaxed">
-          You are about to request a resubmission of this document. Once confirmed, the
-          document will be returned to the submitter along with your comments for
-          correction and resubmission
-        </p>
-        <div className="w-full space-y-1.5 text-left">
-          <Text size="sm" fw={500} className="text-body-heading-300">
-            Comment{" "}
-            <span className="text-red-500" aria-hidden>
-              *
-            </span>
-          </Text>
-          <Textarea
-            placeholder="Start Typing"
-            value={resubmissionComment}
-            onChange={(e) => setResubmissionComment(e.currentTarget.value)}
-            minRows={4}
-            radius="md"
-            classNames={{
-              input: "border border-[#CCCACA]! text-sm",
-            }}
-          />
-        </div>
-        <div className="mt-2 w-full space-y-3">
-          <Button
-            fullWidth
-            radius="xl"
-            size="md"
-            color="orange"
-            onClick={submitResubmission}
-            disabled={!resubmissionComment.trim()}
-            className="font-medium! text-sm!"
-          >
-            Yes, Request For Document Resubmission
-          </Button>
-          <Button
-            fullWidth
-            radius="xl"
-            size="md"
-            variant="outline"
-            color="gray"
-            onClick={closeResubmission}
-            className="border-text-50! border! font-semibold! text-sm!"
-          >
-            No, Close
-          </Button>
-        </div>
-      </div>
-    </Modal>
+      title="Request for Document resubmission ?"
+      message="You are about to request a resubmission of this document. Once confirmed, the document will be returned to the submitter along with your comments for correction and resubmission"
+      primaryButtonText="Yes, Request For Document Resubmission"
+      secondaryButtonText="No, Close"
+      onConfirm={submitResubmission}
+    />
 
-    <Modal
+    <ApprovalActionConfirmModal
       opened={rejectOpen}
       onClose={closeReject}
-      withCloseButton={false}
-      centered
-      radius="lg"
-      padding="xl"
-      zIndex={4000}
-      overlayProps={{ opacity: 0.3, blur: 2 }}
-    >
-      <div className="flex flex-col items-center space-y-5">
-        <div className="flex items-center justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0E5]">
-            <Image src={exclamation} alt="" width={40} height={40} />
-          </div>
-        </div>
-        <h2 className="text-center text-xl font-bold text-body-heading-300!">
-          Reject Document?
-        </h2>
-        <p className="px-2 text-center text-body-text-100! text-sm leading-relaxed">
-          You are about to reject this document. Once confirmed, your rejection and
-          comments will be recorded, and the document will be marked as rejected in the
-          workflow
-        </p>
-        <div className="w-full space-y-1.5 text-left">
-          <Text size="sm" fw={500} className="text-body-heading-300">
-            Comment{" "}
-            <span className="text-red-500" aria-hidden>
-              *
-            </span>
-          </Text>
-          <Textarea
-            placeholder="Start Typing"
-            value={rejectComment}
-            onChange={(e) => setRejectComment(e.currentTarget.value)}
-            minRows={4}
-            radius="md"
-            classNames={{
-              input: "border border-[#CCCACA]! text-sm",
-            }}
-          />
-        </div>
-        <div className="mt-2 w-full space-y-3">
-          <Button
-            fullWidth
-            radius="xl"
-            size="md"
-            color="orange"
-            onClick={submitReject}
-            disabled={!rejectComment.trim()}
-            className="font-medium! text-sm!"
-          >
-            Yes, Reject Document
-          </Button>
-          <Button
-            fullWidth
-            radius="xl"
-            size="md"
-            variant="outline"
-            color="gray"
-            onClick={closeReject}
-            className="border-text-50! border! font-semibold! text-sm!"
-          >
-            No, Close
-          </Button>
-        </div>
-      </div>
-    </Modal>
+      title="Reject Document?"
+      message="You are about to reject this document. Once confirmed, your rejection and comments will be recorded, and the document will be marked as rejected in the workflow"
+      primaryButtonText="Yes, Reject Document"
+      secondaryButtonText="No, Close"
+      onConfirm={submitReject}
+    />
 
     <SuccessModal
       opened={approvalSuccessOpen}
