@@ -156,6 +156,20 @@ export default function TakeActionOverlay({
     }
   );
 
+  const completeReviewMutation = useCreateData(
+    (variables: { transactionId: string; notes: string }) =>
+      adminApi.transactions.approve(variables.transactionId, { notes: variables.notes }),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionDetail();
+        setTransactionCompleteReviewOpen(false);
+        setTransactionCompleteReviewSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to complete transaction review."),
+    }
+  );
+
   const openCompleteApprovalFlow = () => {
     if (!selectedDocumentId) return;
     setTakeActionPopoverKey(null);
@@ -218,9 +232,11 @@ export default function TakeActionOverlay({
   };
 
   const submitTransactionCompleteReview = (comment: string) => {
-    void comment;
-    setTransactionCompleteReviewOpen(false);
-    setTransactionCompleteReviewSuccessOpen(true);
+    if (!transactionId) return;
+    completeReviewMutation.mutate({
+      transactionId,
+      notes: comment,
+    });
   };
 
   const openRequestMoreInfo = () => {
@@ -624,6 +640,7 @@ export default function TakeActionOverlay({
         primaryButtonText="Yes, Complete Approval"
         secondaryButtonText="No, Close"
         onConfirm={submitTransactionCompleteReview}
+        isLoading={completeReviewMutation.isPending}
       />
 
       <ApprovalActionConfirmModal
