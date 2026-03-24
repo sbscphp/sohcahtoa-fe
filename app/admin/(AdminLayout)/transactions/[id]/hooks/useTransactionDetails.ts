@@ -58,7 +58,7 @@ export interface TransactionActionDocumentViewModel {
   fileSize: string;
   url: string;
   documentType: string;
-  status: string;
+  verificationStatus: string;
 }
 
 export interface TransactionReceiptViewModel {
@@ -475,7 +475,11 @@ function extractActionDocuments(
         fileSize: formatFileSize(source.fileSize),
         url,
         documentType: formatEnum(source.documentType),
-        status: pickString(formatEnum(source.status), "No Action"),
+        verificationStatus: pickString(
+          formatEnum(source.verificationStatus),
+          formatEnum(source.status),
+          "No Action"
+        ),
       };
     })
     .filter((item): item is TransactionActionDocumentViewModel => Boolean(item));

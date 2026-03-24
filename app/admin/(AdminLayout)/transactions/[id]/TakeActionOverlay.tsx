@@ -429,7 +429,7 @@ export default function TakeActionOverlay({
                             radius="xl"
                             bg="#F2F4F7"
                             color="#344054"
-                            status={doc.status}
+                            status={doc.verificationStatus}
                           />
 
                           <Popover
