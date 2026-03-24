@@ -3,13 +3,14 @@
 import { Button, Modal, Text, Textarea } from "@mantine/core";
 import Image from "next/image";
 import { exclamation } from "@/app/assets/asset";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 export interface ApprovalActionConfirmModalProps {
   opened: boolean;
   onClose: () => void;
   title: string;
-  message: string;
+  message: ReactNode;
   primaryButtonText: string;
   secondaryButtonText: string;
   onConfirm: (comment: string) => void;
@@ -70,9 +71,9 @@ export function ApprovalActionConfirmModal({
         <h2 className="text-center text-xl font-bold text-body-heading-300!">
           {title}
         </h2>
-        <p className="px-2 text-center text-body-text-100! text-sm leading-relaxed">
+        <div className="w-full space-y-3 px-2 text-center text-body-text-100! text-sm leading-relaxed">
           {message}
-        </p>
+        </div>
         <div className="w-full space-y-1.5 text-left">
           <Text size="sm" fw={500} className="text-body-heading-300">
             Comment{" "}

@@ -141,6 +141,16 @@ export default function TakeActionOverlay({
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectSuccessOpen, setRejectSuccessOpen] = useState(false);
 
+  const [transactionCompleteReviewOpen, setTransactionCompleteReviewOpen] =
+    useState(false);
+  const [
+    transactionCompleteReviewSuccessOpen,
+    setTransactionCompleteReviewSuccessOpen,
+  ] = useState(false);
+  const [requestMoreInfoOpen, setRequestMoreInfoOpen] = useState(false);
+  const [requestMoreInfoSuccessOpen, setRequestMoreInfoSuccessOpen] =
+    useState(false);
+
   const toggleUserExpansion = (userName: string) => {
     setExpandedUsers((prev) => {
       const newSet = new Set(prev);
@@ -198,11 +208,41 @@ export default function TakeActionOverlay({
     setRejectSuccessOpen(true);
   };
 
+  const openTransactionCompleteReview = () => {
+    setTransactionCompleteReviewOpen(true);
+  };
+
+  const closeTransactionCompleteReview = () => {
+    setTransactionCompleteReviewOpen(false);
+  };
+
+  const submitTransactionCompleteReview = (comment: string) => {
+    void comment;
+    setTransactionCompleteReviewOpen(false);
+    setTransactionCompleteReviewSuccessOpen(true);
+  };
+
+  const openRequestMoreInfo = () => {
+    setRequestMoreInfoOpen(true);
+  };
+
+  const closeRequestMoreInfo = () => {
+    setRequestMoreInfoOpen(false);
+  };
+
+  const submitRequestMoreInfo = (comment: string) => {
+    void comment;
+    setRequestMoreInfoOpen(false);
+    setRequestMoreInfoSuccessOpen(true);
+  };
+
   const navigateToTransactionsList = () => {
     router.push(adminRoutes.adminTransactions());
     setApprovalSuccessOpen(false);
     setResubmissionSuccessOpen(false);
     setRejectSuccessOpen(false);
+    setTransactionCompleteReviewSuccessOpen(false);
+    setRequestMoreInfoSuccessOpen(false);
   };
 
   return (
@@ -503,10 +543,23 @@ export default function TakeActionOverlay({
         {/* Sticky Footer */}
         <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <Group justify="center" gap="md">
-            <Button color="#DD4F05" radius="xl" size="lg" className="font-medium! text-sm!">
+            <Button
+              color="#DD4F05"
+              radius="xl"
+              size="lg"
+              className="font-medium! text-sm!"
+              onClick={openTransactionCompleteReview}
+            >
               Complete Review
             </Button>
-            <Button variant="outline" radius="xl" size="lg" color="dark" className="font-medium! text-sm!">
+            <Button
+              variant="outline"
+              radius="xl"
+              size="lg"
+              color="dark"
+              className="font-medium! text-sm!"
+              onClick={openRequestMoreInfo}
+            >
               Request More Info
             </Button>
           </Group>
@@ -544,6 +597,38 @@ export default function TakeActionOverlay({
       onConfirm={submitReject}
     />
 
+    <ApprovalActionConfirmModal
+      opened={transactionCompleteReviewOpen}
+      onClose={closeTransactionCompleteReview}
+      title="Complete Approval ?"
+      message="You are about to mark this application as fully approved. Once confirmed, the process will be completed, and no further reviews or changes can be made"
+      primaryButtonText="Yes, Complete Approval"
+      secondaryButtonText="No, Close"
+      onConfirm={submitTransactionCompleteReview}
+    />
+
+    <ApprovalActionConfirmModal
+      opened={requestMoreInfoOpen}
+      onClose={closeRequestMoreInfo}
+      title="Request More Information?"
+      message={
+        <>
+          <p>
+            Are you sure you want to request more information? Please add your
+            comments based on this application/request.
+          </p>
+          <p>
+            <span className="font-semibold text-primary-400">Note: </span>
+            your comments will not be sent to the customer but to the approving
+            officer, who will use them to make the final decision.
+          </p>
+        </>
+      }
+      primaryButtonText="Yes, Complete Review"
+      secondaryButtonText="No, Close"
+      onConfirm={submitRequestMoreInfo}
+    />
+
     <SuccessModal
       opened={approvalSuccessOpen}
       onClose={() => setApprovalSuccessOpen(false)}
@@ -579,6 +664,34 @@ export default function TakeActionOverlay({
       onPrimaryClick={navigateToTransactionsList}
       secondaryButtonText="Close"
       onSecondaryClick={() => setRejectSuccessOpen(false)}
+      icon={<DocumentApprovalSuccessIcon />}
+      zIndex={4100}
+    />
+
+    <SuccessModal
+      opened={transactionCompleteReviewSuccessOpen}
+      onClose={() => setTransactionCompleteReviewSuccessOpen(false)}
+      title="Action Approval Completed"
+      message="The request/application has been successfully approved and the process is now complete"
+      primaryButtonText="View More Action Approval"
+      onPrimaryClick={navigateToTransactionsList}
+      secondaryButtonText="Close"
+      onSecondaryClick={() =>
+        setTransactionCompleteReviewSuccessOpen(false)
+      }
+      icon={<DocumentApprovalSuccessIcon />}
+      zIndex={4100}
+    />
+
+    <SuccessModal
+      opened={requestMoreInfoSuccessOpen}
+      onClose={() => setRequestMoreInfoSuccessOpen(false)}
+      title="More Information Requested"
+      message="Your request for more information has been submitted successfully and passed on to the next review/approval officer"
+      primaryButtonText="View More Action Approval"
+      onPrimaryClick={navigateToTransactionsList}
+      secondaryButtonText="Close"
+      onSecondaryClick={() => setRequestMoreInfoSuccessOpen(false)}
       icon={<DocumentApprovalSuccessIcon />}
       zIndex={4100}
     />
