@@ -4,7 +4,7 @@ import { Button, Modal, Text, Textarea } from "@mantine/core";
 import Image from "next/image";
 import { exclamation } from "@/app/assets/asset";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface ApprovalActionConfirmModalProps {
   opened: boolean;
@@ -41,9 +41,16 @@ export function ApprovalActionConfirmModal({
     if (isLoading) return;
     const trimmed = comment.trim();
     if (!trimmed) return;
-    setComment("");
     onConfirm(trimmed);
   };
+
+  useEffect(() => {
+    if (!opened && comment !== "") {
+      setTimeout(() => {
+        setComment("");
+      }, 0);
+    }
+  }, [opened, comment]);
 
   const handleSecondary = () => {
     handleModalClose();

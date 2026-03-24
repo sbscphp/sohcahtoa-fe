@@ -157,6 +157,7 @@ export default function TakeActionOverlay({
     {
       onSuccess: async () => {
         await invalidateTransactionDetail();
+        setCompleteApprovalOpen(false);
         setApprovalSuccessOpen(true);
       },
       onError: (error) =>
@@ -173,7 +174,8 @@ export default function TakeActionOverlay({
       ),
     {
       onSuccess: async () => {
-        await invalidateTransactionDetail();
+        await invalidateTransactionDetail();        
+        setResubmissionOpen(false);
         setResubmissionSuccessOpen(true);
       },
       onError: (error) =>
@@ -193,7 +195,6 @@ export default function TakeActionOverlay({
 
   const submitCompleteApproval = (comment: string) => {
     if (!transactionId || !selectedDocumentId) return;
-    setCompleteApprovalOpen(false);
     approveDocumentMutation.mutate({
       transactionId,
       documentId: selectedDocumentId,
@@ -213,7 +214,6 @@ export default function TakeActionOverlay({
 
   const submitResubmission = (comment: string) => {
     if (!transactionId || !selectedDocumentId) return;
-    setResubmissionOpen(false);
     requestInfoMutation.mutate({
       transactionId,
       documentId: selectedDocumentId,
