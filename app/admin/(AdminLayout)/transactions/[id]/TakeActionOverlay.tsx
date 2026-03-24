@@ -98,6 +98,25 @@ function DocumentApprovalSuccessIcon() {
   );
 }
 
+function getDocumentStatusBadgeStyle(status: string) {
+  const normalized = status.trim().toUpperCase().replace(/\s+/g, "_");
+
+  if (normalized === "VERIFIED") {
+    return { bg: "#ECFDF3", color: "#027A48" };
+  }
+
+  if (normalized === "REQUIRES_MANUAL_REVIEW") {
+    return { bg: "#F4F3FF", color: "#6941C6" };
+  }
+
+  if (normalized === "PENDING") {
+    return { bg: "#FFFAEB", color: "#B54708" };
+  }
+
+  // Fallback for unknown/new statuses from backend.
+  return { bg: "#F2F4F7", color: "#344054" };
+}
+
 export default function TakeActionOverlay({
   opened,
   onClose,
@@ -397,6 +416,9 @@ export default function TakeActionOverlay({
                   <div className="rounded-lg border border-[#E1E0E0] overflow-hidden divide-y divide-[#E1E0E0]">
                     {documents.map((doc) => {
                       const docKey = doc.id;
+                      const badgeStyle = getDocumentStatusBadgeStyle(
+                        doc.verificationStatus
+                      );
                       return (
                         <Group
                           key={doc.id}
@@ -427,8 +449,8 @@ export default function TakeActionOverlay({
                             <StatusBadge
                               variant="light"
                               radius="xl"
-                              bg="#F2F4F7"
-                              color="#344054"
+                              bg={badgeStyle.bg}
+                              color={badgeStyle.color}
                               status={doc.verificationStatus}
                             />
 
