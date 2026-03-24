@@ -8,10 +8,15 @@ import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 import { ArrowUpRight, File } from "lucide-react";
-import type { TransactionSettlementViewModel } from "./hooks/useTransactionDetails";
+import type {
+  TransactionActionDocumentViewModel,
+  TransactionSettlementViewModel,
+} from "./hooks/useTransactionDetails";
 
 interface SettlementProps {
   transaction: TransactionSettlementViewModel | null;
+  actionDocuments?: TransactionActionDocumentViewModel[];
+  transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
 }
@@ -30,6 +35,8 @@ const loadingFields = [
 
 export default function Settlement({
   transaction,
+  actionDocuments = [],
+  transactionId,
   isLoading = false,
   isError = false,
 }: SettlementProps) {
@@ -56,7 +63,7 @@ export default function Settlement({
           </Group>
         </div>
 
-        <TakeActionButton />
+        <TakeActionButton transactionId={transactionId} documents={actionDocuments} />
       </Group>
 
       <div className="space-y-6">

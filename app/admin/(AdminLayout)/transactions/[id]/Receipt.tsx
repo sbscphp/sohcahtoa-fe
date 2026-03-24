@@ -8,10 +8,15 @@ import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 import { ArrowUpRight, File } from "lucide-react";
-import type { TransactionReceiptViewModel } from "./hooks/useTransactionDetails";
+import type {
+  TransactionActionDocumentViewModel,
+  TransactionReceiptViewModel,
+} from "./hooks/useTransactionDetails";
 
 interface ReceiptProps {
   transaction: TransactionReceiptViewModel | null;
+  actionDocuments?: TransactionActionDocumentViewModel[];
+  transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
 }
@@ -25,6 +30,8 @@ const loadingFields = [
 
 export default function Receipt({
   transaction,
+  actionDocuments = [],
+  transactionId,
   isLoading = false,
   isError = false,
 }: ReceiptProps) {
@@ -51,7 +58,7 @@ export default function Receipt({
           </Group>
         </div>
 
-        <TakeActionButton />
+        <TakeActionButton transactionId={transactionId} documents={actionDocuments} />
       </Group>
 
       <div className="space-y-6">

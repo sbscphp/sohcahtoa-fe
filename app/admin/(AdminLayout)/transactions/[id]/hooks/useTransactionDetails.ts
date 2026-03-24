@@ -51,6 +51,16 @@ export interface TransactionDocumentViewModel {
   url: string;
 }
 
+export interface TransactionActionDocumentViewModel {
+  id: string;
+  title: string;
+  fileName: string;
+  fileSize: string;
+  url: string;
+  documentType: string;
+  status: string;
+}
+
 export interface TransactionReceiptViewModel {
   titlePrefix: string;
   titleValue: string;
@@ -438,6 +448,39 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
   };
 }
 
+function extractActionDocuments(
+  raw: Record<string, unknown>
+): TransactionActionDocumentViewModel[] {
+  const documents = Array.isArray(raw.documents)
+    ? raw.documents.filter((item) => item && typeof item === "object")
+    : [];
+
+  return documents
+    .map((item) => asRecord(item))
+    .map((source): TransactionActionDocumentViewModel | null => {
+      const id = pickString(source.id, source.documentId, source.uuid);
+      const url = pickString(source.fileUrl, source.url);
+      if (id === "--" || url === "--") return null;
+
+      return {
+        id,
+        title: pickString(
+          source.title,
+          source.documentName,
+          source.fileName,
+          source.documentType,
+          "Document"
+        ),
+        fileName: pickString(source.fileName, source.documentName, "document"),
+        fileSize: formatFileSize(source.fileSize),
+        url,
+        documentType: formatEnum(source.documentType),
+        status: pickString(formatEnum(source.status), "No Action"),
+      };
+    })
+    .filter((item): item is TransactionActionDocumentViewModel => Boolean(item));
+}
+
 export function useTransactionDetails(transactionId?: string) {
   const query = useFetchData<ApiResponse<AdminTransactionDetailsData>>(
     [...adminKeys.transactions.detail(transactionId ?? "")],
@@ -451,11 +494,16 @@ export function useTransactionDetails(transactionId?: string) {
   const overview = useMemo(() => buildOverview(query.data?.data ?? null), [query.data?.data]);
   const receipt = useMemo(() => buildReceipt(query.data?.data ?? null), [query.data?.data]);
   const settlement = useMemo(() => buildSettlement(query.data?.data ?? null), [query.data?.data]);
+  const actionDocuments = useMemo(
+    () => extractActionDocuments(asRecord(query.data?.data?.raw)),
+    [query.data?.data?.raw]
+  );
 
   return {
     overview,
     receipt,
     settlement,
+    actionDocuments,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

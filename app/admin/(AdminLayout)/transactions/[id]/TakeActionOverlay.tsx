@@ -10,15 +10,22 @@ import {
   Tabs,
   Popover,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import Connector from "../../../_components/assets/Connector.png";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { ArrowUpRight, Check, ChevronDown, ChevronUp, Info, X } from "lucide-react";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { TransactionActionDocumentViewModel } from "./hooks/useTransactionDetails";
+import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
 import React from "react";
 import { useState } from "react";
 
@@ -35,18 +42,6 @@ interface WorkflowUser {
   date: string;
   time: string;
   comment: string;
-}
-interface DocumentItem {
-  title: string;
-  size: string;
-}
-
-interface DocumentationUser {
-  name: string;
-  role: string;
-  initials: string;
-  color: string;
-  documents: DocumentItem[];
 }
 
 const workflowUsers: WorkflowUser[] = [
@@ -85,31 +80,11 @@ const workflowUsers: WorkflowUser[] = [
   },
 ];
 
-const documentationUsers: DocumentationUser[] = [
-  {
-    name: "Moshood Aremu",
-    role: "Finance Manager",
-    initials: "MA",
-    color: "#F97316",
-    documents: [],
-  },
-  {
-    name: "Kofoworola Hameed",
-    role: "Head of Settlement",
-    initials: "JI",
-    color: "#22C55E",
-    documents: [
-      { title: "Return Visa", size: "100 KB" },
-      { title: "FX Transaction Receipt", size: "100 KB" },
-      { title: "BTA Document Issued by CBN", size: "100 KB" },
-      { title: "My passport", size: "100 KB" },
-    ],
-  },
-];
-
 interface TakeActionOverlayProps {
   opened: boolean;
   onClose: () => void;
+  transactionId?: string;
+  documents?: TransactionActionDocumentViewModel[];
 }
 
 function DocumentApprovalSuccessIcon() {
@@ -126,12 +101,15 @@ function DocumentApprovalSuccessIcon() {
 export default function TakeActionOverlay({
   opened,
   onClose,
+  transactionId,
+  documents = [],
 }: TakeActionOverlayProps) {
   const router = useRouter();
-  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
   const [takeActionPopoverKey, setTakeActionPopoverKey] = useState<string | null>(
     null
   );
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [completeApprovalOpen, setCompleteApprovalOpen] = useState(false);
   const [approvalSuccessOpen, setApprovalSuccessOpen] = useState(false);
 
@@ -151,19 +129,60 @@ export default function TakeActionOverlay({
   const [requestMoreInfoSuccessOpen, setRequestMoreInfoSuccessOpen] =
     useState(false);
 
-  const toggleUserExpansion = (userName: string) => {
-    setExpandedUsers((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(userName)) {
-        newSet.delete(userName);
-      } else {
-        newSet.add(userName);
-      }
-      return newSet;
+  const handleMutationError = (error: Error, defaultMessage: string) => {
+    const apiResponse = (error as unknown as ApiError).data as
+      | ApiResponse
+      | undefined;
+    notifications.show({
+      color: "red",
+      title: "Action failed",
+      message: apiResponse?.error?.message ?? error.message ?? defaultMessage,
     });
   };
 
+  const invalidateTransactionDetail = async () => {
+    if (!transactionId) return;
+    await queryClient.invalidateQueries({
+      queryKey: adminKeys.transactions.detail(transactionId),
+    });
+  };
+
+  const approveDocumentMutation = useCreateData(
+    (variables: { transactionId: string; documentId: string; notes: string }) =>
+      adminApi.transactions.approveDocument(
+        variables.transactionId,
+        variables.documentId,
+        { notes: variables.notes }
+      ),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionDetail();
+        setApprovalSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to approve transaction document."),
+    }
+  );
+
+  const requestInfoMutation = useCreateData(
+    (variables: { transactionId: string; documentId: string; comment: string }) =>
+      adminApi.transactions.requestDocumentInfo(
+        variables.transactionId,
+        variables.documentId,
+        { comment: variables.comment }
+      ),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionDetail();
+        setResubmissionSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to request more information."),
+    }
+  );
+
   const openCompleteApprovalFlow = () => {
+    if (!selectedDocumentId) return;
     setTakeActionPopoverKey(null);
     setCompleteApprovalOpen(true);
   };
@@ -173,12 +192,17 @@ export default function TakeActionOverlay({
   };
 
   const submitCompleteApproval = (comment: string) => {
-    void comment;
+    if (!transactionId || !selectedDocumentId) return;
     setCompleteApprovalOpen(false);
-    setApprovalSuccessOpen(true);
+    approveDocumentMutation.mutate({
+      transactionId,
+      documentId: selectedDocumentId,
+      notes: comment,
+    });
   };
 
   const openResubmissionFlow = () => {
+    if (!selectedDocumentId) return;
     setTakeActionPopoverKey(null);
     setResubmissionOpen(true);
   };
@@ -188,9 +212,13 @@ export default function TakeActionOverlay({
   };
 
   const submitResubmission = (comment: string) => {
-    void comment;
+    if (!transactionId || !selectedDocumentId) return;
     setResubmissionOpen(false);
-    setResubmissionSuccessOpen(true);
+    requestInfoMutation.mutate({
+      transactionId,
+      documentId: selectedDocumentId,
+      comment,
+    });
   };
 
   const openRejectFlow = () => {
@@ -356,185 +384,155 @@ export default function TakeActionOverlay({
             </Tabs.Panel>
 
             <Tabs.Panel value="receipt" className="flex-1 overflow-y-auto pb-32 pt-4">
-              <div className="space-y-6">
-                {documentationUsers.map((user, index) => (
-                  <div key={index} className="space-y-4">
-                    {/* User Header */}
-                    <Group className="bg-[#F7F7F7] p-4 rounded-lg" gap="sm">
-                      <Avatar radius="xl" size="md" color={user.color}>
-                        {user.initials}
-                      </Avatar>
+              {documents.length === 0 ? (
+                <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
+                  <Text fw={600} className="text-body-heading-300">
+                    No documents available
+                  </Text>
+                  <Text size="sm" className="text-body-text-200 mt-1">
+                    There are no uploaded documents for this transaction yet.
+                  </Text>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-[#E1E0E0] overflow-hidden divide-y divide-[#E1E0E0]">
+                  {documents.map((doc) => {
+                    const docKey = doc.id;
+                    return (
+                      <Group
+                        key={doc.id}
+                        justify="space-between"
+                        className="px-4 py-3 bg-white"
+                        wrap="nowrap"
+                      >
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <Text size="sm" fw={500} className="text-body-heading-300">
+                            {doc.title}
+                          </Text>
+                          <Text size="xs" c="dimmed" className="text-body-text-50!">
+                            {doc.fileSize}
+                          </Text>
 
-                      <div className="flex-1 min-w-0">
-                        <Text fw={500} className="text-body-heading-300">
-                          {user.name}
-                        </Text>
-                        <Text size="xs" c="dimmed" className="text-body-text-50!">
-                          {user.role}
-                        </Text>
-                      </div>
-                    </Group>
-
-                    {/* Documents Header */}
-                    <Group
-                      justify="space-between"
-                      className="bg-[#FBE6D9] px-4 py-3 rounded-lg cursor-pointer border border-[#FBE6D9] hover:bg-[#F9DDCE] transition-colors"
-                      onClick={() => toggleUserExpansion(user.name)}
-                    >
-                      <Text size="sm" fw={500} className="text-primary-400">
-                        {user.documents.length} Documents
-                      </Text>
-
-                      <span className="text-primary-400">
-                        {expandedUsers.has(user.name) ? (
-                          <ChevronUp size={16} />
-                        ) : (
-                          <ChevronDown size={16} />
-                        )}
-                      </span>
-                    </Group>
-
-                    {/* Documents List */}
-                    {expandedUsers.has(user.name) && user.documents.length > 0 && (
-                      <div className="rounded-lg border border-[#E1E0E0] overflow-hidden divide-y divide-[#E1E0E0]">
-                        {user.documents.map((doc, docIndex) => {
-                          const docKey = `${index}-${docIndex}`;
-                          return (
-                          <Group
-                            key={docIndex}
-                            justify="space-between"
-                            className="px-4 py-3 bg-white"
-                            wrap="nowrap"
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="cursor-pointer flex items-center gap-1 underline text-body-text-200 hover:text-primary-400 mt-2 text-xs"
                           >
-                            <div className="flex flex-col gap-1 min-w-0 flex-1">
-                              <Text size="sm" fw={500} className="text-body-heading-300">
-                                {doc.title}
-                              </Text>
-                              <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                {doc.size}
-                              </Text>
+                            View Document
+                            <ArrowUpRight size={14} className="text-primary-400" />
+                          </a>
+                        </div>
 
+                        <div className="text-right flex flex-col items-end gap-3 shrink-0">
+                          <StatusBadge
+                            variant="light"
+                            radius="xl"
+                            bg="#F2F4F7"
+                            color="#344054"
+                            status={doc.status}
+                          />
+
+                          <Popover
+                            width={360}
+                            position="bottom-end"
+                            shadow="md"
+                            withinPortal
+                            zIndex={3200}
+                            opened={takeActionPopoverKey === docKey}
+                            onClose={() => setTakeActionPopoverKey(null)}
+                          >
+                            <Popover.Target>
                               <Text
+                                component="span"
                                 size="xs"
-                                className="cursor-pointer flex items-center gap-1 underline text-body-text-200 hover:text-primary-400 mt-2"
+                                className="cursor-pointer underline flex items-center gap-1 text-body-text-200 hover:text-primary-400"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDocumentId(doc.id);
+                                  setTakeActionPopoverKey((k) =>
+                                    k === docKey ? null : docKey
+                                  );
+                                }}
                               >
-                                View Document{" "}
-                                <ArrowUpRight size={14} className="text-primary-400" />
+                                Take Action{" "}
+                                <ChevronDown size={14} className="text-primary-400" />
                               </Text>
-                            </div>
-
-                            <div className="text-right flex flex-col items-end gap-3 shrink-0">
-                              <StatusBadge
-                                variant="light"
-                                radius="xl"
-                                bg="#F2F4F7"
-                                color="#344054"
-                                status="No Action"
-                              />
-
-                              <Popover
-                                width={360}
-                                position="bottom-end"
-                                shadow="md"
-                                withinPortal
-                                zIndex={3200}
-                                opened={takeActionPopoverKey === docKey}
-                                onClose={() => setTakeActionPopoverKey(null)}
-                              >
-                                <Popover.Target>
-                                  <Text
-                                    component="span"
-                                    size="xs"
-                                    className="cursor-pointer underline flex items-center gap-1 text-body-text-200 hover:text-primary-400"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setTakeActionPopoverKey((k) =>
-                                        k === docKey ? null : docKey
-                                      );
-                                    }}
-                                  >
-                                    Take Action{" "}
-                                    <ChevronDown size={14} className="text-primary-400" />
-                                  </Text>
-                                </Popover.Target>
-                                <Popover.Dropdown
-                                  p={0}
-                                  className="rounded-xl border border-[#E1E0E0] shadow-lg overflow-hidden"
+                            </Popover.Target>
+                            <Popover.Dropdown
+                              p={0}
+                              className="rounded-xl border border-[#E1E0E0] shadow-lg overflow-hidden"
+                            >
+                              <div className="p-4 border-b border-[#EAECF0]">
+                                <Text fw={700} className="text-body-heading-300 text-sm">
+                                  Take Action
+                                </Text>
+                                <Text size="xs" className="text-body-text-200 mt-0.5">
+                                  Take action with ease
+                                </Text>
+                              </div>
+                              <div className="divide-y divide-[#EAECF0]">
+                                <button
+                                  type="button"
+                                  className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                  onClick={openCompleteApprovalFlow}
                                 >
-                                  <div className="p-4 border-b border-[#EAECF0]">
-                                    <Text fw={700} className="text-body-heading-300 text-sm">
-                                      Take Action
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DD4F05]">
+                                    <Check className="h-5 w-5 text-white" strokeWidth={2.5} />
+                                  </span>
+                                  <span className="min-w-0">
+                                    <Text fw={600} size="sm" className="text-body-heading-300">
+                                      Complete Approval
                                     </Text>
-                                    <Text size="xs" className="text-body-text-200 mt-0.5">
-                                      Take action with ease
+                                    <Text size="xs" className="text-body-text-200 mt-1 leading-relaxed">
+                                      Accept the document as valid and move the application
+                                      forward in the workflow.
                                     </Text>
-                                  </div>
-                                  <div className="divide-y divide-[#EAECF0]">
-                                    <button
-                                      type="button"
-                                      className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                      onClick={openCompleteApprovalFlow}
-                                    >
-                                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DD4F05]">
-                                        <Check className="h-5 w-5 text-white" strokeWidth={2.5} />
-                                      </span>
-                                      <span className="min-w-0">
-                                        <Text fw={600} size="sm" className="text-body-heading-300">
-                                          Complete Approval
-                                        </Text>
-                                        <Text size="xs" className="text-body-text-200 mt-1 leading-relaxed">
-                                          Accept the document as valid and move the application
-                                          forward in the workflow.
-                                        </Text>
-                                      </span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                      onClick={openResubmissionFlow}
-                                    >
-                                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DD4F05]">
-                                        <Info className="h-5 w-5 text-white" strokeWidth={2.5} />
-                                      </span>
-                                      <span className="min-w-0">
-                                        <Text fw={600} size="sm" className="text-body-heading-300">
-                                          Request Resubmission
-                                        </Text>
-                                        <Text size="xs" className="text-body-text-200 mt-1 leading-relaxed">
-                                          Send the application back to the customer for correction
-                                          or replacement of the document.
-                                        </Text>
-                                      </span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                      onClick={openRejectFlow}
-                                    >
-                                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F04438]">
-                                        <X className="h-5 w-5 text-white" strokeWidth={2.5} />
-                                      </span>
-                                      <span className="min-w-0">
-                                        <Text fw={600} size="sm" className="text-body-heading-300">
-                                          Reject Document
-                                        </Text>
-                                        <Text size="xs" className="text-body-text-200 mt-1 leading-relaxed">
-                                          Decline the document if it fails compliance/requirements.
-                                        </Text>
-                                      </span>
-                                    </button>
-                                  </div>
-                                </Popover.Dropdown>
-                              </Popover>
-                            </div>
-                          </Group>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                  onClick={openResubmissionFlow}
+                                >
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DD4F05]">
+                                    <Info className="h-5 w-5 text-white" strokeWidth={2.5} />
+                                  </span>
+                                  <span className="min-w-0">
+                                    <Text fw={600} size="sm" className="text-body-heading-300">
+                                      Request Resubmission
+                                    </Text>
+                                    <Text size="xs" className="text-body-text-200 mt-1 leading-relaxed">
+                                      Send the application back to the customer for correction
+                                      or replacement of the document.
+                                    </Text>
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                  onClick={openRejectFlow}
+                                >
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F04438]">
+                                    <X className="h-5 w-5 text-white" strokeWidth={2.5} />
+                                  </span>
+                                  <span className="min-w-0">
+                                    <Text fw={600} size="sm" className="text-body-heading-300">
+                                      Reject Document
+                                    </Text>
+                                    <Text size="xs" className="text-body-text-200 mt-1 leading-relaxed">
+                                      Decline the document if it fails compliance/requirements.
+                                    </Text>
+                                  </span>
+                                </button>
+                              </div>
+                            </Popover.Dropdown>
+                          </Popover>
+                        </div>
+                      </Group>
+                    );
+                  })}
+                </div>
+              )}
             </Tabs.Panel>
           </Tabs>
 
@@ -575,6 +573,7 @@ export default function TakeActionOverlay({
       primaryButtonText="Yes, Complete Document Approval"
       secondaryButtonText="No, Close"
       onConfirm={submitCompleteApproval}
+      isLoading={approveDocumentMutation.isPending}
     />
 
     <ApprovalActionConfirmModal
@@ -585,6 +584,7 @@ export default function TakeActionOverlay({
       primaryButtonText="Yes, Request For Document Resubmission"
       secondaryButtonText="No, Close"
       onConfirm={submitResubmission}
+      isLoading={requestInfoMutation.isPending}
     />
 
     <ApprovalActionConfirmModal

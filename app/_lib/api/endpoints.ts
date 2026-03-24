@@ -169,6 +169,10 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/transactions/${id}`,
       review: (id: string) => `/api/admin/transactions/${id}/review`,
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,
+      approveDocument: (id: string, documentId: string) =>
+        `/api/admin/transactions/${id}/documents/${documentId}/approve`,
+      requestDocumentInfo: (id: string, documentId: string) =>
+        `/api/admin/transactions/${id}/documents/${documentId}/request-info`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },
