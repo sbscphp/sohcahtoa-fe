@@ -20,6 +20,8 @@ interface SuccessModalProps {
   /** Visual style for the secondary button. Defaults to `"outline"`. */
   secondaryButtonVariant?: "filled" | "outline";
   icon?: React.ReactNode;
+  /** Stack above drawers/overlays that raise z-index (e.g. admin drawer at 3000). */
+  zIndex?: number;
 }
 
 export function SuccessModal({
@@ -34,6 +36,7 @@ export function SuccessModal({
   onSecondaryClick,
   secondaryButtonVariant = "outline",
   icon,
+  zIndex,
 }: SuccessModalProps) {
   const handlePrimaryClick = () => {
     if (onPrimaryClick) {
@@ -59,6 +62,7 @@ export function SuccessModal({
       centered
       withCloseButton={false}
       radius="lg"
+      zIndex={zIndex}
     >
       <div className="space-y-4 pb-5 text-center">
         {/* Success Icon */}
