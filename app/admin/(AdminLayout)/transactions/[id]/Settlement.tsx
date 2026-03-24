@@ -11,11 +11,13 @@ import { ArrowUpRight, File } from "lucide-react";
 import type {
   TransactionActionDocumentViewModel,
   TransactionSettlementViewModel,
+  TransactionWorkflowHistoryItemViewModel,
 } from "./hooks/useTransactionDetails";
 
 interface SettlementProps {
   transaction: TransactionSettlementViewModel | null;
   actionDocuments?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -36,6 +38,7 @@ const loadingFields = [
 export default function Settlement({
   transaction,
   actionDocuments = [],
+  workflowHistory = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -63,7 +66,11 @@ export default function Settlement({
           </Group>
         </div>
 
-        <TakeActionButton transactionId={transactionId} documents={actionDocuments} />
+        <TakeActionButton
+          transactionId={transactionId}
+          documents={actionDocuments}
+          workflowHistory={workflowHistory}
+        />
       </Group>
 
       <div className="space-y-6">

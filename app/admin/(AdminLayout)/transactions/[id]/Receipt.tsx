@@ -11,11 +11,13 @@ import { ArrowUpRight, File } from "lucide-react";
 import type {
   TransactionActionDocumentViewModel,
   TransactionReceiptViewModel,
+  TransactionWorkflowHistoryItemViewModel,
 } from "./hooks/useTransactionDetails";
 
 interface ReceiptProps {
   transaction: TransactionReceiptViewModel | null;
   actionDocuments?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -31,6 +33,7 @@ const loadingFields = [
 export default function Receipt({
   transaction,
   actionDocuments = [],
+  workflowHistory = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -58,7 +61,11 @@ export default function Receipt({
           </Group>
         </div>
 
-        <TakeActionButton transactionId={transactionId} documents={actionDocuments} />
+        <TakeActionButton
+          transactionId={transactionId}
+          documents={actionDocuments}
+          workflowHistory={workflowHistory}
+        />
       </Group>
 
       <div className="space-y-6">

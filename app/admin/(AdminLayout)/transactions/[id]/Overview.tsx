@@ -10,11 +10,13 @@ import Image from "next/image";
 import type {
   TransactionActionDocumentViewModel,
   TransactionOverviewViewModel,
+  TransactionWorkflowHistoryItemViewModel,
 } from "./hooks/useTransactionDetails";
 
 interface OverviewProps {
   transaction: TransactionOverviewViewModel | null;
   actionDocuments?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -54,6 +56,7 @@ const loadingSections = [
 export default function Overview({
   transaction,
   actionDocuments = [],
+  workflowHistory = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -87,7 +90,11 @@ export default function Overview({
           </Group>
         </div>
 
-        <TakeActionButton transactionId={transactionId} documents={actionDocuments} />
+        <TakeActionButton
+          transactionId={transactionId}
+          documents={actionDocuments}
+          workflowHistory={workflowHistory}
+        />
       </Group>
 
       {/* Basic Details */}

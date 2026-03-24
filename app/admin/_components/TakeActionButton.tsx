@@ -3,7 +3,10 @@
 import { Button } from "@mantine/core";
 import { useState } from "react";
 import TakeActionOverlay from "../(AdminLayout)/transactions/[id]/TakeActionOverlay";
-import type { TransactionActionDocumentViewModel } from "../(AdminLayout)/transactions/[id]/hooks/useTransactionDetails";
+import type {
+  TransactionActionDocumentViewModel,
+  TransactionWorkflowHistoryItemViewModel,
+} from "../(AdminLayout)/transactions/[id]/hooks/useTransactionDetails";
 
 interface TakeActionButtonProps {
   /** Button text - defaults to "Take Action" */
@@ -22,6 +25,7 @@ interface TakeActionButtonProps {
   onClose?: () => void;
   transactionId?: string;
   documents?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
 }
 
 export default function TakeActionButton({
@@ -34,6 +38,7 @@ export default function TakeActionButton({
   onClose,
   transactionId,
   documents = [],
+  workflowHistory = [],
 }: TakeActionButtonProps) {
   const [opened, setOpened] = useState(false);
 
@@ -64,6 +69,7 @@ export default function TakeActionButton({
         onClose={handleClose}
         transactionId={transactionId}
         documents={documents}
+        workflowHistory={workflowHistory}
       />
     </>
   );

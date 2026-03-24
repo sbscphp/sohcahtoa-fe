@@ -61,6 +61,17 @@ export interface TransactionActionDocumentViewModel {
   verificationStatus: string;
 }
 
+export interface TransactionWorkflowHistoryItemViewModel {
+  id: string;
+  actorLabel: string;
+  actionLabel: string;
+  statusLabel: string;
+  date: string;
+  time: string;
+  comment: string;
+  documentType: string;
+}
+
 export interface TransactionReceiptViewModel {
   titlePrefix: string;
   titleValue: string;
@@ -485,6 +496,58 @@ function extractActionDocuments(
     .filter((item): item is TransactionActionDocumentViewModel => Boolean(item));
 }
 
+function getWorkflowStatusLabel(action: unknown): string {
+  const actionText = asString(action).toUpperCase();
+  if (actionText.includes("REJECT")) return "Rejected";
+  if (actionText.includes("APPROV") || actionText.includes("VERIF")) {
+    return "Review Completed";
+  }
+  if (actionText.includes("REQUEST") || actionText.includes("MORE_INFO")) {
+    return "Review Pending";
+  }
+  return "Review Pending";
+}
+
+function extractWorkflowHistory(
+  raw: Record<string, unknown>
+): TransactionWorkflowHistoryItemViewModel[] {
+  const history = Array.isArray(raw.history)
+    ? raw.history.filter((item) => item && typeof item === "object").map((item) => asRecord(item))
+    : [];
+
+  const sortedHistory = history.sort((a, b) => {
+    const aCreatedAt = pickString(a.createdAt);
+    const bCreatedAt = pickString(b.createdAt);
+    const aTs =
+      aCreatedAt !== "--" ? new Date(aCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
+    const bTs =
+      bCreatedAt !== "--" ? new Date(bCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
+    return (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs) -
+      (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs);
+  });
+
+  return sortedHistory
+    .map((source): TransactionWorkflowHistoryItemViewModel | null => {
+      const id = pickString(source.id);
+      if (id === "--") return null;
+
+      const metadata = asRecord(source.metadata);
+      const createdAt = pickString(source.createdAt);
+
+      return {
+        id,
+        actorLabel: pickString(source.performedBy, "Unknown"),
+        actionLabel: formatEnum(source.action),
+        statusLabel: getWorkflowStatusLabel(source.action),
+        date: formatDate(createdAt),
+        time: formatTime(createdAt),
+        comment: pickString(source.notes, "No notes provided"),
+        documentType: pickString(formatEnum(metadata.documentType), "--"),
+      };
+    })
+    .filter((item): item is TransactionWorkflowHistoryItemViewModel => Boolean(item));
+}
+
 export function useTransactionDetails(transactionId?: string) {
   const query = useFetchData<ApiResponse<AdminTransactionDetailsData>>(
     [...adminKeys.transactions.detail(transactionId ?? "")],
@@ -502,12 +565,17 @@ export function useTransactionDetails(transactionId?: string) {
     () => extractActionDocuments(asRecord(query.data?.data?.raw)),
     [query.data?.data?.raw]
   );
+  const workflowHistory = useMemo(
+    () => extractWorkflowHistory(asRecord(query.data?.data?.raw)),
+    [query.data?.data?.raw]
+  );
 
   return {
     overview,
     receipt,
     settlement,
     actionDocuments,
+    workflowHistory,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

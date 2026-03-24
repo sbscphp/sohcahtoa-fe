@@ -24,67 +24,20 @@ import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminApi } from "@/app/admin/_services/admin-api";
-import type { TransactionActionDocumentViewModel } from "./hooks/useTransactionDetails";
+import type {
+  TransactionActionDocumentViewModel,
+  TransactionWorkflowHistoryItemViewModel,
+} from "./hooks/useTransactionDetails";
 import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
 import React from "react";
 import { useState } from "react";
-
-interface WorkflowUser {
-  name: string;
-  role: string;
-  status:
-  | "Review Pending"
-  | "Approval Pending"
-  | "Review Completed"
-  | "Rejected";
-  initials: string;
-  color: string;
-  date: string;
-  time: string;
-  comment: string;
-}
-
-const workflowUsers: WorkflowUser[] = [
-  {
-    name: "Sodiq Olajide",
-    role: "Lead of Internal Control",
-    status: "Review Completed",
-    initials: "BC",
-    color: "#F5B89C",
-    date: "April 11",
-    time: "11:00 am",
-    comment:
-      "This is the comment box, and it very long and it can be very long like this, but only collect the insight of the admin person, as inputted when they completed their action",
-  },
-  {
-    name: "Moshood Aremu",
-    role: "Finance Manager",
-    status: "Review Completed",
-    initials: "MA",
-    color: "#F5B89C",
-    date: "April 11",
-    time: "11:00 am",
-    comment:
-      "This is the comment box, and it very long and it can be very long like this, but only collect the insight of the admin person, as inputted when they completed their action",
-  },
-  {
-    name: "Jide Jadeosola",
-    role: "Head of Settlement",
-    status: "Rejected",
-    initials: "JI",
-    color: "#A6F4C5",
-    date: "April 11",
-    time: "11:00 am",
-    comment:
-      "This is the comment box, for when the action approval (line) was rejected",
-  },
-];
 
 interface TakeActionOverlayProps {
   opened: boolean;
   onClose: () => void;
   transactionId?: string;
   documents?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
 }
 
 function DocumentApprovalSuccessIcon() {
@@ -122,6 +75,7 @@ export default function TakeActionOverlay({
   onClose,
   transactionId,
   documents = [],
+  workflowHistory = [],
 }: TakeActionOverlayProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -345,61 +299,82 @@ export default function TakeActionOverlay({
               </Tabs.List>
 
               <Tabs.Panel value="overview" className="flex-1 overflow-y-auto pb-4 pt-4">
-                <div className="space-y-5">
-                  {workflowUsers.map((user, index) => (
-                    <React.Fragment key={index}>
-                      <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
-                        {/* Header Row */}
-                        <Group justify="space-between" align="flex-start" wrap="nowrap">
-                          <Group align="flex-start" gap="sm" wrap="nowrap">
-                            <Avatar radius="xl" size="md" color={user.color}>
-                              {user.initials}
-                            </Avatar>
+                {workflowHistory.length === 0 ? (
+                  <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
+                    <Text fw={600} className="text-body-heading-300">
+                      No workflow history available
+                    </Text>
+                    <Text size="sm" className="text-body-text-200 mt-1">
+                      No workflow actions have been recorded for this transaction yet.
+                    </Text>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {workflowHistory.map((item, index) => (
+                      <React.Fragment key={item.id}>
+                        <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+                          {/* Header Row */}
+                          <Group justify="space-between" align="flex-start" wrap="nowrap">
+                            <Group align="flex-start" gap="sm" wrap="nowrap">
+                              <Avatar radius="xl" size="md" color="#F5B89C">
+                                {item.actorLabel.slice(0, 2).toUpperCase()}
+                              </Avatar>
 
-                            <div className="min-w-0 space-y-1">
-                              <Text fw={500} className="text-body-heading-300">
-                                {user.name}
-                              </Text>
-                              <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                {user.role}
-                              </Text>
+                              <div className="min-w-0 space-y-1">
+                                <Text fw={500} className="text-body-heading-300 break-all">
+                                  {item.actorLabel}
+                                </Text>
+                                <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                  {item.documentType === "--"
+                                    ? item.actionLabel
+                                    : `${item.documentType} • ${item.actionLabel}`}
+                                </Text>
 
-                              {/* Date & Time */}
-                              <Group gap={6} mt={4}>
-                                <Text size="xs" c="dimmed" className="text-body-text-200 border-r border-[#E1E0E0] pr-3">
-                                  📅 {user.date}
-                                </Text>
-                                <Text size="xs" c="dimmed" className="text-body-text-200">
-                                  ⏰ {user.time}
-                                </Text>
-                              </Group>
+                                {/* Date & Time */}
+                                <Group gap={6} mt={4}>
+                                  <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+                                  >
+                                    📅 {item.date}
+                                  </Text>
+                                  <Text size="xs" c="dimmed" className="text-body-text-200">
+                                    ⏰ {item.time}
+                                  </Text>
+                                </Group>
+                              </div>
+                            </Group>
+
+                            {/* Status */}
+                            <div className="text-right shrink-0">
+                              <StatusBadge status={item.statusLabel} size="xs" />
+                              <Text
+                                size="xs"
+                                c="dimmed"
+                                className="text-body-text-50! block mt-1"
+                              >
+                                Action Taken
+                              </Text>
                             </div>
                           </Group>
 
-                          {/* Status */}
-                          <div className="text-right shrink-0">
-                            <StatusBadge status={user.status} size="xs" />
-                            <Text size="xs" c="dimmed" className="text-body-text-50! block mt-1">
-                              Action Taken
+                          {/* Comment Box */}
+                          <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+                            <Text size="xs" className="text-body-text-200 leading-relaxed">
+                              {item.comment}
                             </Text>
                           </div>
-                        </Group>
-
-                        {/* Comment Box */}
-                        <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
-                          <Text size="xs" className="text-body-text-200 leading-relaxed">
-                            {user.comment}
-                          </Text>
                         </div>
-                      </div>
 
-                      {/* Connector */}
-                      {index < workflowUsers.length - 1 && (
-                        <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
+                        {/* Connector */}
+                        {index < workflowHistory.length - 1 && (
+                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
               </Tabs.Panel>
 
               <Tabs.Panel value="receipt" className="flex-1 overflow-y-auto pb-32 pt-4">
