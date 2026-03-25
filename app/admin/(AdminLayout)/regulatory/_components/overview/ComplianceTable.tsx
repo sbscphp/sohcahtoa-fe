@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useDebouncedValue } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { adminApi } from "@/app/admin/_services/admin-api";
 import { ReportSummaryModal } from "./ComplianceSummaryModal";
 import {
   mapComplianceFilterToApiStatus,
@@ -32,6 +36,42 @@ export default function ComplianceTable() {
   const [debouncedSearch] = useDebouncedValue(search, 350);
 
   const mappedStatus = mapComplianceFilterToApiStatus(statusFilter);
+
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      status: mappedStatus || undefined,
+    }),
+    [debouncedSearch, mappedStatus]
+  );
+
+  const exportComplianceMutation = useGetExportData(
+    () => adminApi.regulatory.compliance.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = objectUrl;
+        link.download = `compliance-reports-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export compliance reports failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export compliance reports right now. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const { reports, isLoading, isFetching, totalPages } = useComplianceReports({
     page,
@@ -127,7 +167,9 @@ export default function ComplianceTable() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
-              disabled
+              onClick={() => exportComplianceMutation.mutate()}
+              loading={exportComplianceMutation.isPending}
+              disabled={exportComplianceMutation.isPending}
             >
               Export
             </Button>

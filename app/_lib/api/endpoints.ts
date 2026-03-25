@@ -186,6 +186,7 @@ export const API_ENDPOINTS = {
       compliance: {
         dashboard: "/api/admin/regulatory/compliance/dashboard",
         reports: "/api/admin/regulatory/compliance/reports",
+        reportsExport: "/api/admin/regulatory/compliance/reports/export",
         reportById: (id: string) => `/api/admin/regulatory/compliance/reports/${id}`,
       },
       logs: {

@@ -303,6 +303,11 @@ export type AdminComplianceReportsListParams = Record<
   channel?: string;
 };
 
+export type AdminComplianceReportsExportParams = {
+  search?: string;
+  status?: "" | "PENDING" | "SUCCESS" | "FAILED";
+};
+
 export interface AdminComplianceReportListItem {
   id: string;
   reportName: string;
@@ -1314,6 +1319,19 @@ export const adminApi = {
         apiClient.get<ApiResponse<AdminComplianceReportDetailsData>>(
           API_ENDPOINTS.admin.regulatory.compliance.reportById(id)
         ),
+
+      export: async (params?: AdminComplianceReportsExportParams) => {
+        const response = await apiClient.post<Blob | string>(
+          API_ENDPOINTS.admin.regulatory.compliance.reportsExport,
+          params ?? {}
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
     },
     logs: {
       audit: {
