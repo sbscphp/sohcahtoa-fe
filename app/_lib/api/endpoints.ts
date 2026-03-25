@@ -182,6 +182,9 @@ export const API_ENDPOINTS = {
       modules: "/api/admin/reports/modules",
       generate: "/api/admin/reports/generate",
     },
+    settlement: {
+      stats: "/api/admin/settlement/stats",
+    },
     regulatory: {
       compliance: {
         dashboard: "/api/admin/regulatory/compliance/dashboard",

@@ -239,6 +239,11 @@ export const adminKeys = {
     modules: () => [...adminKeys.reports.all, "modules"] as const,
   },
 
+  settlement: {
+    all: ["admin", "settlement"] as const,
+    stats: () => [...adminKeys.settlement.all, "stats"] as const,
+  },
+
   regulatory: {
     all: ["admin", "regulatory"] as const,
     compliance: {

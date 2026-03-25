@@ -626,6 +626,12 @@ export interface RateDetailsData {
   isActive?: boolean;
 }
 
+export interface SettlementDashboardStats {
+  currentBalance: number;
+  pendingReconciliation: number;
+  totalEscrowAccounts: number;
+}
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -1299,6 +1305,14 @@ export const adminApi = {
 
       return { blob, fileName };
     },
+  },
+
+  // ==================== Settlement ====================
+  settlement: {
+    getStats: () =>
+      apiClient.get<ApiResponse<SettlementDashboardStats>>(
+        API_ENDPOINTS.admin.settlement.stats
+      ),
   },
 
   // ==================== Regulatory ====================
