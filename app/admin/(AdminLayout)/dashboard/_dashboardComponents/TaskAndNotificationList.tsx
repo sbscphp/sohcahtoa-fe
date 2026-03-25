@@ -4,6 +4,7 @@ import { Card, Group, Text, Stack } from "@mantine/core";
 import { Notification } from "../../../_types/dashboard";
 import { ArrowUpRight } from "lucide-react";
 import ListItem from "./ListItem";
+import EmptySection from "../../../_components/EmptySection";
 
 export function TaskAndNotificationList({
   data,
@@ -23,9 +24,11 @@ export function TaskAndNotificationList({
       </Group>
 
       {data.length === 0 ? (
-        <Text size="sm" c="dimmed">
-          No tasks or notifications yet.
-        </Text>
+        <EmptySection
+          format="secondary"
+          title="No tasks or notifications yet."
+          description="There are currently no tasks or notifications to display."
+        />
       ) : (
         <Stack gap="md">
           {data.map((item) => (
