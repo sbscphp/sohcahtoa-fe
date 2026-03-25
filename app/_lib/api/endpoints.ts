@@ -187,6 +187,7 @@ export const API_ENDPOINTS = {
       stats: "/api/admin/settlement/stats",
       discrepancies: "/api/admin/settlement/discrepancies",
       pendingReconciliations: "/api/admin/settlement/pending-reconciliations",
+      escrowAccounts: "/api/admin/settlement/escrow-accounts",
     },
     regulatory: {
       compliance: {

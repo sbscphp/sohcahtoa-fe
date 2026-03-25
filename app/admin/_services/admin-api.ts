@@ -1338,6 +1338,11 @@ export const adminApi = {
         API_ENDPOINTS.admin.settlement.pendingReconciliations,
         { params }
       ),
+
+    listEscrowAccounts: () =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.escrowAccounts
+      ),
   },
 
   // ==================== Regulatory ====================

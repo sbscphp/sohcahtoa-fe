@@ -250,6 +250,7 @@ export const adminKeys = {
         "pending-reconciliations",
         params,
       ] as const,
+    escrowAccounts: () => [...adminKeys.settlement.all, "escrow-accounts"] as const,
   },
 
   regulatory: {
