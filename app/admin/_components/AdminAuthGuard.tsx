@@ -37,8 +37,8 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     apiClient.setAuthTokenGetter(() => accessToken);
   }, [accessToken]);
 
-  // Track token expiry and clear session + redirect when it expires.
-  useTokenExpiry(accessToken);
+  // Refresh tokens near/at expiry; clear session only when refresh fails.
+  const { isRefreshing } = useTokenExpiry(adminUser, accessToken);
 
   // Redirect once hydration confirms there is no active session.
   useEffect(() => {
@@ -47,7 +47,7 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     }
   }, [hydrated, adminUser, router]);
 
-  if (!hydrated || !adminUser) {
+  if (!hydrated || !adminUser || isRefreshing) {
     return null;
   }
 
