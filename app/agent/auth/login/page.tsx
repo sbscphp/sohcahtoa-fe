@@ -16,9 +16,12 @@ import { agentApi } from "@/app/agent/_services/agent-api";
 import { authTokensAtom } from "@/app/_lib/atoms/auth-atom";
 import { apiClient } from "@/app/_lib/api/client";
 import { clearTemporaryAuthData } from "@/app/(customer)/_utils/auth-flow";
+import { getStoredReturnPath, setAuthUserType } from "@/app/_lib/api/auth-logout";
+
+const emailSchema = z.email();
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: emailSchema,
   password: z.string().min(1, "Password is required"),
 });
 
@@ -58,7 +61,9 @@ export default function AgentLoginPage() {
           sessionStorage.setItem("refreshToken", refreshToken);
           apiClient.setAuthTokenGetter(() => accessToken);
           clearTemporaryAuthData();
-          router.push("/agent/dashboard");
+          setAuthUserType("agent");
+          const returnPath = getStoredReturnPath("agent");
+          router.push(returnPath || "/agent/dashboard");
           return;
         }
 
@@ -70,13 +75,11 @@ export default function AgentLoginPage() {
           return;
         }
 
-        // Normal 2FA login: open OTP modal to complete verify-login
         if (data?.requiresVerification) {
           setOtpModalOpened(true);
           return;
         }
 
-        // Fallback: show OTP modal (backend likely sent an OTP)
         setOtpModalOpened(true);
       },
       onError: (error) => {
@@ -109,7 +112,9 @@ export default function AgentLoginPage() {
             apiClient.setAuthTokenGetter(() => accessToken);
             clearTemporaryAuthData();
             setOtpModalOpened(false);
-            router.push("/agent/dashboard");
+            setAuthUserType("agent");
+            const returnPath = getStoredReturnPath("agent");
+            router.push(returnPath || "/agent/dashboard");
           } else {
             notifications.show({
               title: "OTP verification failed",
@@ -134,9 +139,8 @@ export default function AgentLoginPage() {
   };
 
   const handleResendOtp = async () => {
-    // Mock resend OTP - replace with actual API call
     console.log("Resending OTP...");
-    return Promise.resolve(true);
+    return true;
   };
 
   return (
@@ -153,21 +157,18 @@ export default function AgentLoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="block text-heading-200 text-sm font-medium">
-              Email Address
-            </label>
             <TextInput
+              label="Email Address"
               placeholder="Enter email address"
               size="lg"
               {...form.getInputProps("email")}
+              error={form.errors.email}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block text-heading-200 text-sm font-medium">
-              Password
-            </label>
             <PasswordInput
+              label="Password"
               placeholder="Enter password"
               size="lg"
               {...form.getInputProps("password")}

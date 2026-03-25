@@ -31,7 +31,11 @@ export type DocumentType =
   | "STATEMENT_OF_RESULT"
   | "DEGREE"
   | "RECEIPT"
-  | "WORK_PERMIT";
+  | "WORK_PERMIT"
+  // Additional docs for SELL transactions >= $10,000
+  | "PROOF_OF_FUNDS"
+  | "SOURCE_OF_FUNDS_DECLARATION"
+  | "DIGITAL_SIGNATURE";
 
 export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, DocumentType[]> = {
   PTA: ["BVN", "NIN", "PASSPORT", "VISA", "RETURN_TICKET", "FORM_A_DOCUMENT"],

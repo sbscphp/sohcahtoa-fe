@@ -28,12 +28,12 @@ const SETTINGS_OPTIONS_WITH_LINKS = [
     description: "See all your recent update and alerts",
     href: "/agent/settings/notifications",
   },
-  {
-    icon: FileCheck,
-    title: "KYC and compliance",
-    description: "Reach out for help with technical, experience and FX issue",
-    href: "/agent/settings/kyc-compliance",
-  },
+  // {
+  //   icon: FileCheck,
+  //   title: "KYC and compliance",
+  //   description: "Reach out for help with technical, experience and FX issue",
+  //   href: "/agent/settings/kyc-compliance",
+  // },
   {
     icon: Shield,
     title: "Account Security",

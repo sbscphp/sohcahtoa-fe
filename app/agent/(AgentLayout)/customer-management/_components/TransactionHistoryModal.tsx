@@ -1,24 +1,18 @@
 "use client";
 
-import { Modal, Text, Stack, Button, Group } from "@mantine/core";
+import { useMemo } from "react";
+import { Modal, Text, Stack, Group } from "@mantine/core";
 import { ArrowUpRight, RotateCcw } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
-
-interface Transaction {
-  id: string;
-  date: string;
-  time: string;
-  amount: string;
-  currency: string;
-}
-
-const mockTransactions: Transaction[] = [
-  { id: "GHA67AGHA", date: "April 11, 2025", time: "04:00 PM", amount: "2000", currency: "₵" },
-  { id: "GHA67AGHA", date: "April 11, 2025", time: "04:00 PM", amount: "2000", currency: "$" },
-  { id: "GHA67AGHA", date: "April 11, 2025", time: "04:00 PM", amount: "2000", currency: "₦" },
-  { id: "GHA68AGHB", date: "April 11, 2025", time: "05:30 PM", amount: "2500", currency: "$" },
-  { id: "GHA69AGHC", date: "April 11, 2025", time: "06:15 PM", amount: "3000", currency: "$" },
-];
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import type { AgentCustomerTransactionsResponse } from "@/app/_lib/api/types";
+import {
+  formatLocalDate,
+  formatShortTime,
+} from "@/app/utils/helper/formatLocalDate";
+import Loader from "@/components/loader";
 
 interface TransactionHistoryModalProps {
   opened: boolean;
@@ -30,32 +24,50 @@ export function TransactionHistoryModal({
   opened,
   onClose,
   customerId,
-}: TransactionHistoryModalProps) {
+}: Readonly<TransactionHistoryModalProps>) {
+  const { data, isLoading } = useFetchData<AgentCustomerTransactionsResponse>(
+    customerId && opened
+      ? [...agentKeys.customers.transactions(customerId, { page: 1, limit: 20 })]
+      : [],
+    () => agentApi.customers.transactions(customerId, { page: 1, limit: 20 }),
+    !!customerId && opened
+  );
+
+  const transactions = useMemo(() => data?.data ?? [], [data]);
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      title=""
+      title={  <div>
+        <Text fw={600} size="xl" mb="xs">
+          Transaction History
+        </Text>
+        <Text size="sm" c="dimmed">
+          Track and manage customer&apos;s transaction history here.
+        </Text>
+      </div>}
       size="lg"
       centered
       radius="lg"
     >
       <Stack gap="lg">
-        {/* Header */}
-        <div>
-          <Text fw={600} size="xl" mb="xs">
-            Transaction History
-          </Text>
-          <Text size="sm" c="dimmed">
-            Track and manage customer's transaction history here.
-          </Text>
-        </div>
-
         {/* Transaction List */}
         <div className="max-h-[400px] overflow-y-auto space-y-4">
-          {mockTransactions.map((transaction, index) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <Loader fullPage />
+            </div>
+          ) : null}
+          {!isLoading && transactions.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              No transactions found for this customer yet.
+            </Text>
+          ) : null}
+
+          {transactions.map((transaction) => (
             <Group
-              key={index}
+              key={transaction.transactionId}
               justify="space-between"
               className="py-3 border-b border-gray-100 last:border-0"
             >
@@ -65,15 +77,17 @@ export function TransactionHistoryModal({
                 </div>
                 <div>
                   <Text fw={500} size="sm">
-                    {transaction.id}
+                    {transaction.transactionReferenceNumber}
                   </Text>
                   <Text size="xs" c="dimmed">
-                    {transaction.date} • {transaction.time}
+                    {transaction.transactionType} •{" "}
+                    {formatLocalDate(transaction.transactionDate, "d MMM yyyy")} •{" "}
+                    {formatShortTime(transaction.transactionDate)}
                   </Text>
                 </div>
               </Group>
               <Text fw={600} size="sm">
-                {transaction.currency} {transaction.amount}
+                {transaction.currency} {transaction.foreignAmount}
               </Text>
             </Group>
           ))}

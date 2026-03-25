@@ -177,7 +177,7 @@ export default function TransactionCreationPage() {
     const transactionType = mapUITypeToAPIType(flowType);
     if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
       setConfirmationOpened(false);
-      router.push("/dashboard");
+      router.push("/transactions/new/sell");
       return;
     }
 
@@ -191,12 +191,12 @@ export default function TransactionCreationPage() {
     const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
     if (hasPickup && !pickupPointData) {
       setConfirmationOpened(false);
-      router.push("/dashboard");
+      router.push("/transactions/new/sell");
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
       setConfirmationOpened(false);
-      router.push("/dashboard");
+      router.push("/transactions/new/sell");
       return;
     }
 
@@ -212,10 +212,12 @@ export default function TransactionCreationPage() {
         : [];
       console.log("uploaded", uploaded);
       const documents = toTransactionDocuments(uploaded);
+      console.log("documents", documents);
       const payload = buildTransactionPayload(transactionType, bag, documents);
-      await createTransaction.mutateAsync(payload);
+      console.log("payload", payload);
+      const created = await createTransaction.mutateAsync(payload);
       setConfirmationOpened(false);
-      router.push("/transactions");
+      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
     } catch (error) {
       handleApiError(error);
       setConfirmationOpened(false);

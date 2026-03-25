@@ -70,6 +70,9 @@ import type {
   SupportTicketDetailResponse,
   TransactionOverviewRequest,
   TransactionOverviewResponse,
+  TransactionRatesListResponse,
+  CalculateTransactionRateRequest,
+  CalculateTransactionRateResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -194,6 +197,11 @@ export const customerApi = {
 
     overview: (data?: TransactionOverviewRequest) =>
       apiClient.post<TransactionOverviewResponse>(API_ENDPOINTS.transactions.overview, data),
+
+    export: (params?: TransactionListParams) =>
+      apiClient.download(API_ENDPOINTS.transactions.export, {
+        params: params as ApiRequestConfig["params"],
+      }),
   },
 
   // ==================== Notifications ====================
@@ -318,5 +326,19 @@ export const customerApi = {
 
     getSettlement: (transactionId: string) =>
       apiClient.get<unknown>(API_ENDPOINTS.payments.settlement(transactionId)),
+  },
+
+  // ==================== Transaction FX Rates ====================
+  transactionRates: {
+    list: (params?: { fromCurrency?: string; toCurrency?: string }) =>
+      apiClient.get<TransactionRatesListResponse>(API_ENDPOINTS.transactions.rates, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    calculate: (data: CalculateTransactionRateRequest) =>
+      apiClient.post<CalculateTransactionRateResponse>(
+        API_ENDPOINTS.transactions.calculateRate,
+        data,
+      ),
   },
 };

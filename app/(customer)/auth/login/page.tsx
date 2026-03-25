@@ -10,10 +10,15 @@ import { ArrowUpRight } from 'lucide-react';
 import { useCreateData } from '@/app/_lib/api/hooks';
 import { customerApi } from '@/app/(customer)/_services/customer-api';
 import { handleApiError } from '@/app/_lib/api/error-handler';
-import { getStoredReturnPath } from '@/app/_lib/api/auth-logout';
+import { getStoredReturnPath, setAuthUserType } from '@/app/_lib/api/auth-logout';
 import { authTokensAtom } from '@/app/_lib/atoms/auth-atom';
 import { apiClient } from '@/app/_lib/api/client';
 import { clearTemporaryAuthData } from '@/app/(customer)/_utils/auth-flow';
+import { z } from 'zod';
+
+const emailSchema = z.string().refine((val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+  message: "Invalid email address",
+});
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,10 +26,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const isEmailValid = emailSchema.safeParse(email).success;
 
   const loginMutation = useCreateData(customerApi.auth.login);
 
   const handleLogin = () => {
+    if (!isEmailValid) {
+      setError('Please enter a valid email address');
+      return;
+    }
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -53,7 +63,8 @@ export default function LoginPage() {
             clearTemporaryAuthData();
 
             // Redirect to previous path if user was logged out from a protected page
-            const returnPath = getStoredReturnPath();
+            setAuthUserType('customer');
+            const returnPath = getStoredReturnPath('customer');
             router.push(returnPath || '/dashboard');
           } else {
             handleApiError(
@@ -84,15 +95,13 @@ export default function LoginPage() {
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="block text-heading-200 text-sm font-medium">
-              Email Address
-            </label>
             <TextInput
+              label="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter email address"
               size="lg"
-              error={error && !email ? error : undefined}
+              error={error && (!email || !isEmailValid) ? error : undefined}
             />
           </div>
 

@@ -4,8 +4,14 @@ import Link from "next/link";
 import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { Avatar, Popover, Text } from "@mantine/core";
+import { useRouter } from "next/navigation";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import NotificationsPanel from "@/app/(customer)/_components/notifications/NotificationsPanel";
 import TransactionHeader from "@/app/(customer)/_components/transactions/TransactionHeader";
 import AgentHeaderMenu from "../auth/HeaderMenu";
+import { useState } from 'react';
 
 type BreadcrumbItem = {
   label: string;
@@ -30,6 +36,14 @@ export default function AgentHeader({
   transactionTitle,
 }: AgentHeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const { data: unreadCountResponse } = useFetchData(
+    agentKeys.notifications.unreadCount() as unknown as unknown[],
+    () => agentApi.notifications.unreadCount()
+  );
+
+  const unreadCount = unreadCountResponse?.data?.count || 0;
 
   return (
     <header className="h-16 bg-white border-b border-gray-50 px-6 flex items-center justify-between w-full relative">
@@ -71,26 +85,32 @@ export default function AgentHeader({
 
       <div className="flex items-center gap-3">
         {/* Notifications */}
-        <Popover position="bottom-end" shadow="md" withArrow>
+        <Popover
+          position="bottom-end"
+          shadow="md"
+          withArrow
+          opened={notificationsOpen}
+          onClose={() => setNotificationsOpen(false)}
+        >
           <Popover.Target>
             <button
               type="button"
+              onClick={() => setNotificationsOpen((v: boolean) => !v)}
               className="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-50 transition-colors hover:bg-gray-50"
             >
               <Bell size={16} className="text-body-text-300" />
-              <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
-                2
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
           </Popover.Target>
-          <Popover.Dropdown
-            className="rounded-2xl border border-gray-100 p-0"
-            p={0}
-            m={0}
-          >
-            <Text size="sm" p="md">
-              Notifications
-            </Text>
+          <Popover.Dropdown className="rounded-2xl border border-gray-100 p-0" p={0} m={0}>
+            <NotificationsPanel
+              viewAllHref="/agent/settings/notifications"
+              onViewAllClick={() => setNotificationsOpen(false)}
+            />
           </Popover.Dropdown>
         </Popover>
 

@@ -27,19 +27,16 @@ import {
   type PaymentDetailsData,
   type TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
-import TransactionRequestSheet from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
+import TransactionRequestSheet, { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
 import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
 import Loader from "@/components/loader";
 import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import EmptyState from "@/app/admin/_components/EmptyState";
 
-/** Full detail payload for a transaction (from API). Type/label come from backend. */
 export interface TransactionDetailPayload {
   id: string;
   date: string;
-  /** Transaction type code (e.g. from API) – not used for display. */
   type: string;
-  /** Display title for the transaction type – from API (e.g. "Personal Travel Allowance (PTA)"). */
   transactionTypeLabel: string;
   stage: string;
   status: string;
@@ -48,6 +45,7 @@ export interface TransactionDetailPayload {
   requiredDocuments: RequiredDocumentsData;
   paymentDetails?: PaymentDetailsData;
   settlement?: TransactionSettlementData;
+  documentsForSheet?: unknown;
 }
 
 export default function TransactionDetailPage() {
@@ -186,6 +184,15 @@ export default function TransactionDetailPage() {
         onProceedToPayment={() => {
           console.log("Proceed to payment");
           // Navigate to payment page or open payment modal
+        }}
+        documents={payload.documentsForSheet as unknown as TransactionDocumentItem[]}
+        onOpenDocument={(doc) => {
+          if (doc.url) {
+            setDocumentViewer({
+              url: doc.url,
+              filename: doc.fileName ?? doc.name,
+            });
+          }
         }}
         onViewTransaction={() => setUpdatesSheetOpen(false)}
       />

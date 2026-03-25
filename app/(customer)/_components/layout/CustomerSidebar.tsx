@@ -46,7 +46,7 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
 
   const handlePerformLogout = useCallback(() => {
     closeLogoutModal();
-    performLogout(router);
+    performLogout(router, "customer");
   }, [router, closeLogoutModal]);
 
   const handleLogout = async () => {

@@ -23,7 +23,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   request_more_info: { bg: "#F4E8FF", textColor: "#7C3AED" },
 };
 
-function normalizeStatus(status: string): string {
+export function normalizeStatus(status: string): string {
   return status.trim().toLowerCase().replace(/\s+/g, "_");
 }
 

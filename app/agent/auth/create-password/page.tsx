@@ -73,7 +73,17 @@ export default function CreatePasswordPage() {
       },
       {
         onSuccess: (response) => {
-          setShowSuccessModal(true);
+          if (response.success) {
+            setShowSuccessModal(true);
+            return;
+          }
+          notifications.show({
+            title: "Password creation failed",
+            message:
+              response.error?.message ||
+              "We were unable to set your password. Please try again.",
+            color: "red",
+          });
         },
         onError: (error) => {
           notifications.show({

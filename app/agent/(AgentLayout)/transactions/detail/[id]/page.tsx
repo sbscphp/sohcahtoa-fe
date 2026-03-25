@@ -13,7 +13,7 @@ import {
 } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
-import { customerKeys } from "@/app/_lib/api/query-keys";
+import { agentKeys, customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
@@ -32,6 +32,7 @@ import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentVie
 import Loader from "@/components/loader";
 import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import EmptyState from "@/app/admin/_components/EmptyState";
+import { agentApi } from "@/app/agent/_services/agent-api";
 
 /** Full detail payload for a transaction (from API). Type/label come from backend. */
 export interface TransactionDetailPayload {
@@ -55,7 +56,7 @@ export default function AgentTransactionDetailPage() {
 
   const { data: apiResponse, isLoading: apiLoading } = useFetchSingleData(
     [...customerKeys.transactions.detail(id)],
-    () => customerApi.transactions.getById(id),
+    () => agentApi.transactions.getById(id),
     !!id
   );
 
