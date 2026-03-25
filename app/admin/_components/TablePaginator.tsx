@@ -13,6 +13,7 @@ export interface TablePaginatorProps {
   onNext: () => void;
   onPrevious: () => void;
   onPageChange?: (page: number) => void;
+  mode?: "mobile" | "desktop";
 }
 
 type PageItem =
@@ -80,6 +81,55 @@ function buildPageItems(current: number, total: number): PageItem[] {
 }
 
 /* --------------------------------------------
+ Sub-components
+--------------------------------------------- */
+function PageNumbers({
+  page,
+  totalPages,
+  onPageChange,
+}: Pick<TablePaginatorProps, "page" | "totalPages" | "onPageChange">) {
+  return (
+    <Group gap={6}>
+      {buildPageItems(page, totalPages).map((item, i) => {
+        if (item.type === "ellipsis") {
+          return (
+            <Text key={`ellipsis-${i}`} size="sm" c="dimmed" px={4}>
+              …
+            </Text>
+          );
+        }
+
+        const isActive = item.page === page;
+        return (
+          <ActionIcon
+            key={`page-${item.page}-${i}`}
+            radius="md"
+            size="lg"
+            variant={isActive ? "filled" : "subtle"}
+            color={isActive ? "#F8DCCD" : "gray"}
+            c={isActive ? "#DD4F05" : "#667085"}
+            onClick={() => onPageChange?.(item.page)}
+            title={item.label !== String(item.page) ? `Jump to page ${item.page}` : undefined}
+          >
+            <Text size="xs" fw={isActive ? 700 : 400}>
+              {item.label}
+            </Text>
+          </ActionIcon>
+        );
+      })}
+    </Group>
+  );
+}
+
+function PageCounter({ page, totalPages }: Pick<TablePaginatorProps, "page" | "totalPages">) {
+  return (
+    <Text size="sm" c="dimmed">
+      Page {page} of {totalPages}
+    </Text>
+  );
+}
+
+/* --------------------------------------------
  Component
 --------------------------------------------- */
 export default function TablePaginator({
@@ -88,55 +138,50 @@ export default function TablePaginator({
   onNext,
   onPrevious,
   onPageChange,
+  mode,
 }: TablePaginatorProps) {
+  // Explicit override: force one layout regardless of screen size
+  const isForcedMobile = mode === "mobile";
+  const isForcedDesktop = mode === "desktop";
+
   return (
     <Group justify="space-between" mt="lg">
+      {/* Previous */}
       <Button
         variant="default"
         leftSection={<ArrowLeft size={16} />}
         disabled={page === 1}
         onClick={onPrevious}
       >
-        Previous
+        {/* Hide label on mobile unless desktop is forced */}
+        {!isForcedMobile && <span className={isForcedDesktop ? undefined : "hidden sm:inline"}>Previous</span>}
       </Button>
 
-      <Group gap={6}>
-        {buildPageItems(page, totalPages).map((item, i) => {
-          if (item.type === "ellipsis") {
-            return (
-              <Text key={`ellipsis-${i}`} size="sm" c="dimmed" px={4}>
-                …
-              </Text>
-            );
-          }
+      {/* Center: conditionally render based on mode, with responsive fallback */}
+      {isForcedMobile ? (
+        <PageCounter page={page} totalPages={totalPages} />
+      ) : isForcedDesktop ? (
+        <PageNumbers page={page} totalPages={totalPages} onPageChange={onPageChange} />
+      ) : (
+        // Responsive: no forced mode — CSS controls visibility
+        <>
+          <span className="sm:hidden">
+            <PageCounter page={page} totalPages={totalPages} />
+          </span>
+          <span className="hidden sm:block">
+            <PageNumbers page={page} totalPages={totalPages} onPageChange={onPageChange} />
+          </span>
+        </>
+      )}
 
-          const isActive = item.page === page;
-          return (
-            <ActionIcon
-              key={`page-${item.page}-${i}`}
-              radius="md"
-              size="lg"
-              variant={isActive ? "filled" : "subtle"}
-              color={isActive ? "#F8DCCD" : "gray"}
-              c={isActive ? "#DD4F05" : "#667085"}
-              onClick={() => onPageChange?.(item.page)}
-              title={item.label !== String(item.page) ? `Jump to page ${item.page}` : undefined}
-            >
-              <Text size="xs" fw={isActive ? 700 : 400}>
-                {item.label}
-              </Text>
-            </ActionIcon>
-          );
-        })}
-      </Group>
-
+      {/* Next */}
       <Button
         variant="default"
         rightSection={<ArrowRight size={16} />}
         disabled={page === totalPages}
         onClick={onNext}
       >
-        Next
+        {!isForcedMobile && <span className={isForcedDesktop ? undefined : "hidden sm:inline"}>Next</span>}
       </Button>
     </Group>
   );

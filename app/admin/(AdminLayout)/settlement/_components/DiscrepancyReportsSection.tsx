@@ -1,32 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import { Card, Text } from "@mantine/core";
 import DynamicTableSection from "../../../_components/DynamicTableSection";
 import { PriorityBadge } from "./SettlementDashboardShared";
-import { discrepancyData } from "./settlementDashboardMockData";
+import {
+  useSettlementDiscrepancies,
+  type SettlementDiscrepancyListItem,
+} from "../hooks/useSettlementDiscrepancies";
+
+const PAGE_SIZE = 10;
+
+const headers = [
+  { label: "Title/ID", key: "title" },
+  { label: "Outlet", key: "outlet" },
+  { label: "Flagged Date", key: "date" },
+  { label: "Priority", key: "priority" },
+];
 
 export function DiscrepancyReportsSection() {
-  const headers = [
-    { label: "Title/ID", key: "title" },
-    { label: "Outlet", key: "outlet" },
-    { label: "Flagged Date", key: "date" },
-    { label: "Priority", key: "priority" },
-  ];
+  const [page, setPage] = useState(1);
 
-  const renderItems = (item: (typeof discrepancyData)[number]) => [
+  const {
+    discrepancies,
+    totalPages,
+    isLoading,
+  } = useSettlementDiscrepancies({ page, limit: PAGE_SIZE });
+
+  const renderItems = (item: SettlementDiscrepancyListItem) => [
     <div key="title">
       <Text size="sm" fw={600} c="dark">{item.title}</Text>
-      <Text size="xs" c="dimmed">{item.id}</Text>
+      <Text size="xs" c="dimmed">{item.displayId}</Text>
     </div>,
     <div key="outlet">
       <Text size="sm" fw={500} c="dark">{item.outlet}</Text>
-      <Text size="xs" c="dimmed">{item.type}</Text>
+      {item.outletKind ? (
+        <Text size="xs" c="dimmed">{item.outletKind}</Text>
+      ) : null}
     </div>,
     <div key="date">
-      <Text size="sm" fw={500} c="dark">{item.date}</Text>
-      <Text size="xs" c="dimmed">{item.time}</Text>
+      <Text size="sm" fw={500} c="dark">{item.flaggedDate}</Text>
+      <Text size="xs" c="dimmed">{item.flaggedTime}</Text>
     </div>,
-    <PriorityBadge key="priority" level={item.priority} />
+    <PriorityBadge key="priority" level={item.priority} />,
   ];
 
   return (
@@ -34,9 +50,18 @@ export function DiscrepancyReportsSection() {
       <Text fw={700} size="lg" mb="lg">Discrepancy Reports</Text>
       <DynamicTableSection
         headers={headers}
-        data={discrepancyData}
+        data={discrepancies}
+        loading={isLoading}
         renderItems={renderItems}
-        pagination={{ page: 1, totalPages: 5, onNext: () => {}, onPrevious: () => {} }}
+        emptyTitle="No discrepancy reports"
+        emptyMessage="There are no discrepancy reports to display yet. New reports will appear here when available."
+        pagination={{
+          page,
+          totalPages: Math.max(totalPages, 1),
+          onNext: () => setPage((p) => Math.min(p + 1, Math.max(totalPages, 1))),
+          onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+          onPageChange: setPage,
+        }}
       />
     </Card>
   );

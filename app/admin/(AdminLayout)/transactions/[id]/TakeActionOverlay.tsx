@@ -42,17 +42,6 @@ interface TakeActionOverlayProps {
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
 }
 
-function DocumentApprovalSuccessIcon() {
-  return (
-    <div className="relative flex h-[100px] w-[100px] items-center justify-center">
-      <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#12B76A]" />
-      <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#12B76A]">
-        <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden />
-      </div>
-    </div>
-  );
-}
-
 function getDocumentStatusBadgeStyle(status: string) {
   const normalized = status.trim().toUpperCase().replace(/\s+/g, "_");
 
@@ -783,7 +772,6 @@ export default function TakeActionOverlay({
         onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setApprovalSuccessOpen(false)}
-        icon={<DocumentApprovalSuccessIcon />}
         zIndex={4100}
       />
 
@@ -796,7 +784,6 @@ export default function TakeActionOverlay({
         onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setResubmissionSuccessOpen(false)}
-        icon={<DocumentApprovalSuccessIcon />}
         zIndex={4100}
       />
 
@@ -809,7 +796,6 @@ export default function TakeActionOverlay({
         onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setRejectSuccessOpen(false)}
-        icon={<DocumentApprovalSuccessIcon />}
         zIndex={4100}
       />
 
@@ -824,7 +810,6 @@ export default function TakeActionOverlay({
         onSecondaryClick={() =>
           setTransactionCompleteReviewSuccessOpen(false)
         }
-        icon={<DocumentApprovalSuccessIcon />}
         zIndex={4100}
       />
 
@@ -837,7 +822,6 @@ export default function TakeActionOverlay({
         onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setRequestMoreInfoSuccessOpen(false)}
-        icon={<DocumentApprovalSuccessIcon />}
         zIndex={4100}
       />
     </>

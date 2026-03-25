@@ -1313,6 +1313,12 @@ export const adminApi = {
       apiClient.get<ApiResponse<SettlementDashboardStats>>(
         API_ENDPOINTS.admin.settlement.stats
       ),
+
+    listDiscrepancies: (params?: { page?: number; limit?: number }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.discrepancies,
+        { params }
+      ),
   },
 
   // ==================== Regulatory ====================
