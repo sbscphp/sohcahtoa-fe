@@ -24,6 +24,7 @@ interface TakeActionButtonProps {
   /** Callback when overlay closes */
   onClose?: () => void;
   transactionId?: string;
+  transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
 }
@@ -37,6 +38,7 @@ export default function TakeActionButton({
   onOpen,
   onClose,
   transactionId,
+  transactionStatusLabel,
   documents = [],
   workflowHistory = [],
 }: TakeActionButtonProps) {
@@ -68,6 +70,7 @@ export default function TakeActionButton({
         opened={opened}
         onClose={handleClose}
         transactionId={transactionId}
+        transactionStatusLabel={transactionStatusLabel}
         documents={documents}
         workflowHistory={workflowHistory}
       />

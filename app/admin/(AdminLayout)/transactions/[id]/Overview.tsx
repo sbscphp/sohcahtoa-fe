@@ -92,6 +92,9 @@ export default function Overview({
 
         <TakeActionButton
           transactionId={transactionId}
+          transactionStatusLabel={
+            isLoading ? undefined : transaction?.statusLabel
+          }
           documents={actionDocuments}
           workflowHistory={workflowHistory}
         />

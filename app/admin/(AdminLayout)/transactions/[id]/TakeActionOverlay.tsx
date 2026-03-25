@@ -29,13 +29,15 @@ import type {
   TransactionWorkflowHistoryItemViewModel,
 } from "./hooks/useTransactionDetails";
 import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { useState } from "react";
 
 interface TakeActionOverlayProps {
   opened: boolean;
   onClose: () => void;
   transactionId?: string;
+  /** Tab header status (e.g. from overview/receipt/settlement); hides transaction-level footer actions when Approved. */
+  transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
 }
@@ -70,14 +72,34 @@ function getDocumentStatusBadgeStyle(status: string) {
   return { bg: "#F2F4F7", color: "#344054" };
 }
 
+function normalizeStatusForComparison(status: string): string {
+  return status.trim().toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+/** Document list uses formatted labels (e.g. "Verified"); backend may send APPROVED / VERIFIED. */
+function isDocumentVerificationApproved(verificationStatus: string): boolean {
+  const n = normalizeStatusForComparison(verificationStatus);
+  if (!n || n === "--") return false;
+  return n === "VERIFIED" || n === "APPROVED";
+}
+
+/** Header status uses title-case labels (e.g. "Approved"). */
+function isTransactionStatusApproved(statusLabel: string | undefined): boolean {
+  if (!statusLabel || statusLabel.trim() === "" || statusLabel === "--") return false;
+  return normalizeStatusForComparison(statusLabel) === "APPROVED";
+}
+
 export default function TakeActionOverlay({
   opened,
   onClose,
   transactionId,
+  transactionStatusLabel,
   documents = [],
   workflowHistory = [],
 }: TakeActionOverlayProps) {
   const router = useRouter();
+  const hideTransactionFooter =
+    isTransactionStatusApproved(transactionStatusLabel);
   const queryClient = useQueryClient();
   const [takeActionPopoverKey, setTakeActionPopoverKey] = useState<string | null>(
     null
@@ -102,6 +124,28 @@ export default function TakeActionOverlay({
   const [requestMoreInfoSuccessOpen, setRequestMoreInfoSuccessOpen] =
     useState(false);
 
+  // Ref attached to the open Popover dropdown so we can exclude it from outside-click detection
+  const popoverDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!takeActionPopoverKey) return; // no popover open → nothing to do
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // If the click is inside the dropdown, let Mantine handle it normally
+      if (
+        popoverDropdownRef.current &&
+        popoverDropdownRef.current.contains(e.target as Node)
+      ) {
+        return;
+      }
+      setTakeActionPopoverKey(null);
+    };
+
+    document.addEventListener("mousedown", handleMouseDown, true); // capture phase
+    return () => document.removeEventListener("mousedown", handleMouseDown, true);
+  }, [takeActionPopoverKey]);
+  
+  
   const handleMutationError = (error: Error, defaultMessage: string) => {
     const apiResponse = (error as unknown as ApiError).data as
       | ApiResponse
@@ -429,6 +473,9 @@ export default function TakeActionOverlay({
                   <div className="rounded-lg border border-[#E1E0E0] overflow-hidden divide-y divide-[#E1E0E0]">
                     {documents.map((doc) => {
                       const docKey = doc.id;
+                      const docActionsHidden = isDocumentVerificationApproved(
+                        doc.verificationStatus
+                      );
                       const badgeStyle = getDocumentStatusBadgeStyle(
                         doc.verificationStatus
                       );
@@ -467,123 +514,160 @@ export default function TakeActionOverlay({
                               status={doc.verificationStatus}
                             />
 
-                            <Popover
-                              width={360}
-                              position="bottom-end"
-                              shadow="md"
-                              withinPortal
-                              zIndex={3200}
-                              closeOnClickOutside={true}
-                              closeOnEscape={true}
-                              opened={takeActionPopoverKey === docKey && selectedDocumentId !== null}
-                              onClose={() => setTakeActionPopoverKey(null)}
-                            >
-                              <Popover.Target>
-                                <Text
-                                  component="span"
-                                  size="xs"
-                                  className="cursor-pointer underline flex items-center gap-1 text-body-text-200 hover:text-primary-400"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedDocumentId(doc.id);
-                                    setTakeActionPopoverKey((k) =>
-                                      k === docKey ? null : docKey
-                                    );
-                                  }}
-                                >
-                                  Take Action{" "}
-                                  <ChevronDown size={14} className="text-primary-400" />
-                                </Text>
-                              </Popover.Target>
-
-                              <Popover.Dropdown
-                                p={0}
-                                className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
+                            {!docActionsHidden && (
+                              <Popover
+                                width={360}
+                                position="bottom-end"
+                                shadow="md"
+                                withinPortal
+                                zIndex={3200}
+                                closeOnClickOutside={true}
+                                closeOnEscape={true}
+                                opened={
+                                  takeActionPopoverKey === docKey &&
+                                  selectedDocumentId !== null
+                                }
+                                onClose={() => setTakeActionPopoverKey(null)}
                               >
-                                {/* Header */}
-                                <div className="px-5 py-4 border-b border-[#EAECF0]">
-                                  <Text fw={700} className="text-body-heading-300">
-                                    Take Action
+                                <Popover.Target>
+                                  <Text
+                                    component="span"
+                                    size="xs"
+                                    className="cursor-pointer underline flex items-center gap-1 text-body-text-200 hover:text-primary-400"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedDocumentId(doc.id);
+                                      setTakeActionPopoverKey((k) =>
+                                        k === docKey ? null : docKey
+                                      );
+                                    }}
+                                  >
+                                    Take Action{" "}
+                                    <ChevronDown
+                                      size={14}
+                                      className="text-primary-400"
+                                    />
                                   </Text>
-                                  <Text size="sm" className="text-body-text-200! mt-0.5">
-                                    Take action with ease
-                                  </Text>
-                                </div>
+                                </Popover.Target>
 
-                                {/* Actions */}
-                                <div className="divide-y divide-[#EAECF0]">
-
-                                  {/* Complete Approval */}
-                                  <button
-                                    type="button"
-                                    className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                    onClick={openCompleteApprovalFlow}
-                                  >
-                                    <span
-                                      className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
-                                      style={{ borderRadius: "30% 70% 60% 40% / 40% 40% 60% 60%" }}
+                                <Popover.Dropdown
+                                  p={0}
+                                  ref={popoverDropdownRef}
+                                  className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
+                                >
+                                  {/* Header */}
+                                  <div className="px-5 py-4 border-b border-[#EAECF0]">
+                                    <Text fw={700} className="text-body-heading-300">
+                                      Take Action
+                                    </Text>
+                                    <Text
+                                      size="sm"
+                                      className="text-body-text-200! mt-0.5"
                                     >
-                                      <Check className="h-5 w-5 text-[#DD4F05]" strokeWidth={2.5} />
-                                    </span>
-                                    <span className="min-w-0 pt-0.5">
-                                      <Text fw={600} className="text-body-heading-300">
-                                        Complete Approval
-                                      </Text>
-                                      <Text size="sm" className="text-body-text-200! mt-1 leading-relaxed">
-                                        Accept the document as valid and move the application
-                                        forward in the workflow.
-                                      </Text>
-                                    </span>
-                                  </button>
+                                      Take action with ease
+                                    </Text>
+                                  </div>
 
-                                  {/* Request Resubmission */}
-                                  <button
-                                    type="button"
-                                    className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                    onClick={openResubmissionFlow}
-                                  >
-                                    <span
-                                      className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
-                                      style={{ borderRadius: "40% 60% 70% 30% / 60% 40% 60% 40%" }}
+                                  {/* Actions */}
+                                  <div className="divide-y divide-[#EAECF0]">
+                                    {/* Complete Approval */}
+                                    <button
+                                      type="button"
+                                      className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                      onClick={openCompleteApprovalFlow}
                                     >
-                                      <Info className="h-5 w-5 text-[#DD4F05]" strokeWidth={2.5} />
-                                    </span>
-                                    <span className="min-w-0 pt-0.5">
-                                      <Text fw={600} className="text-body-heading-300">
-                                        Request Resubmission
-                                      </Text>
-                                      <Text size="sm" className="text-body-text-200! mt-1 leading-relaxed">
-                                        Send the application back to the customer for correction
-                                        or replacement of the document.
-                                      </Text>
-                                    </span>
-                                  </button>
+                                      <span
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                                        style={{
+                                          borderRadius:
+                                            "30% 70% 60% 40% / 40% 40% 60% 60%",
+                                        }}
+                                      >
+                                        <Check
+                                          className="h-5 w-5 text-[#DD4F05]"
+                                          strokeWidth={2.5}
+                                        />
+                                      </span>
+                                      <span className="min-w-0 pt-0.5">
+                                        <Text fw={600} className="text-body-heading-300">
+                                          Complete Approval
+                                        </Text>
+                                        <Text
+                                          size="sm"
+                                          className="text-body-text-200! mt-1 leading-relaxed"
+                                        >
+                                          Accept the document as valid and move the application
+                                          forward in the workflow.
+                                        </Text>
+                                      </span>
+                                    </button>
 
-                                  {/* Reject Document */}
-                                  <button
-                                    type="button"
-                                    className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                    onClick={openRejectFlow}
-                                  >
-                                    <span
-                                      className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
-                                      style={{ borderRadius: "50% 50% 40% 60% / 40% 60% 40% 60%" }}
+                                    {/* Request Resubmission */}
+                                    <button
+                                      type="button"
+                                      className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                      onClick={openResubmissionFlow}
                                     >
-                                      <X className="h-5 w-5 text-[#F04438]" strokeWidth={2.5} />
-                                    </span>
-                                    <span className="min-w-0 pt-0.5">
-                                      <Text fw={600} className="text-body-heading-300">
-                                        Reject Document
-                                      </Text>
-                                      <Text size="sm" className="text-body-text-200! mt-1 leading-relaxed">
-                                        Decline the document if it fails compliance/requirements.
-                                      </Text>
-                                    </span>
-                                  </button>
+                                      <span
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                                        style={{
+                                          borderRadius:
+                                            "40% 60% 70% 30% / 60% 40% 60% 40%",
+                                        }}
+                                      >
+                                        <Info
+                                          className="h-5 w-5 text-[#DD4F05]"
+                                          strokeWidth={2.5}
+                                        />
+                                      </span>
+                                      <span className="min-w-0 pt-0.5">
+                                        <Text fw={600} className="text-body-heading-300">
+                                          Request Resubmission
+                                        </Text>
+                                        <Text
+                                          size="sm"
+                                          className="text-body-text-200! mt-1 leading-relaxed"
+                                        >
+                                          Send the application back to the customer for correction
+                                          or replacement of the document.
+                                        </Text>
+                                      </span>
+                                    </button>
 
-                                </div>
-                              </Popover.Dropdown>
-                            </Popover>
+                                    {/* Reject Document */}
+                                    <button
+                                      type="button"
+                                      className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                      onClick={openRejectFlow}
+                                    >
+                                      <span
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
+                                        style={{
+                                          borderRadius:
+                                            "50% 50% 40% 60% / 40% 60% 40% 60%",
+                                        }}
+                                      >
+                                        <X
+                                          className="h-5 w-5 text-[#F04438]"
+                                          strokeWidth={2.5}
+                                        />
+                                      </span>
+                                      <span className="min-w-0 pt-0.5">
+                                        <Text fw={600} className="text-body-heading-300">
+                                          Reject Document
+                                        </Text>
+                                        <Text
+                                          size="sm"
+                                          className="text-body-text-200! mt-1 leading-relaxed"
+                                        >
+                                          Decline the document if it fails compliance/requirements.
+                                        </Text>
+                                      </span>
+                                    </button>
+                                  </div>
+                                </Popover.Dropdown>
+                              </Popover>
+                            )}
                           </div>
                         </Group>
                       );
@@ -596,29 +680,31 @@ export default function TakeActionOverlay({
           </div>
 
           {/* Sticky Footer */}
-          <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-            <Group justify="center" gap="md">
-              <Button
-                color="#DD4F05"
-                radius="xl"
-                size="lg"
-                className="font-medium! text-sm!"
-                onClick={openTransactionCompleteReview}
-              >
-                Complete Review
-              </Button>
-              <Button
-                variant="outline"
-                radius="xl"
-                size="lg"
-                color="dark"
-                className="font-medium! text-sm!"
-                onClick={openRequestMoreInfo}
-              >
-                Request More Info
-              </Button>
-            </Group>
-          </div>
+          {!hideTransactionFooter && (
+            <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+              <Group justify="center" gap="md">
+                <Button
+                  color="#DD4F05"
+                  radius="xl"
+                  size="lg"
+                  className="font-medium! text-sm!"
+                  onClick={openTransactionCompleteReview}
+                >
+                  Complete Review
+                </Button>
+                <Button
+                  variant="outline"
+                  radius="xl"
+                  size="lg"
+                  color="dark"
+                  className="font-medium! text-sm!"
+                  onClick={openRequestMoreInfo}
+                >
+                  Request More Info
+                </Button>
+              </Group>
+            </div>
+          )}
         </div>
       </Drawer>
 

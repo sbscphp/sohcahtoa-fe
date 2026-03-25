@@ -63,6 +63,9 @@ export default function Receipt({
 
         <TakeActionButton
           transactionId={transactionId}
+          transactionStatusLabel={
+            isLoading ? undefined : transaction?.statusLabel
+          }
           documents={actionDocuments}
           workflowHistory={workflowHistory}
         />
