@@ -1289,6 +1289,16 @@ export const adminApi = {
         data
       ),
 
+    rejectDocument: (
+      id: string,
+      documentId: string,
+      data: { reason: string; notes: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.rejectDocument(id, documentId),
+        data
+      ),
+
     reject: (id: string, data: { reason: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.reject(id),

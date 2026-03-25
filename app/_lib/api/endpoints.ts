@@ -176,6 +176,8 @@ export const API_ENDPOINTS = {
         `/api/admin/transactions/${id}/documents/${documentId}/approve`,
       requestDocumentInfo: (id: string, documentId: string) =>
         `/api/admin/transactions/${id}/documents/${documentId}/request-info`,
+      rejectDocument: (id: string, documentId: string) =>
+        `/api/admin/transactions/${id}/documents/${documentId}/reject`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },

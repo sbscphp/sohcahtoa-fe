@@ -189,6 +189,24 @@ export default function TakeActionOverlay({
     }
   );
 
+  const rejectDocumentMutation = useCreateData(
+    (variables: { transactionId: string; documentId: string; reason: string }) =>
+      adminApi.transactions.rejectDocument(
+        variables.transactionId,
+        variables.documentId,
+        { reason: variables.reason, notes: "" }
+      ),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionDetail();
+        setRejectOpen(false);
+        setRejectSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to reject transaction document."),
+    }
+  );
+
   const completeReviewMutation = useCreateData(
     (variables: { transactionId: string; notes: string }) =>
       adminApi.transactions.approve(variables.transactionId, { notes: variables.notes }),
@@ -271,9 +289,12 @@ export default function TakeActionOverlay({
   };
 
   const submitReject = (comment: string) => {
-    void comment;
-    setRejectOpen(false);
-    setRejectSuccessOpen(true);
+    if (!transactionId || !selectedDocumentId) return;
+    rejectDocumentMutation.mutate({
+      transactionId,
+      documentId: selectedDocumentId,
+      reason: comment,
+    });
   };
 
   const openTransactionCompleteReview = () => {
@@ -727,6 +748,7 @@ export default function TakeActionOverlay({
         primaryButtonText="Yes, Reject Document"
         secondaryButtonText="No, Close"
         onConfirm={submitReject}
+        isLoading={rejectDocumentMutation.isPending}
       />
 
       <ApprovalActionConfirmModal
