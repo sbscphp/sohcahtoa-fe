@@ -1,10 +1,3 @@
-export const pendingReconData = [
-  { id: "#23374", location: "Abuja (franchise)", priority: "High", time: "Overdue 2 hours", isOverdue: true },
-  { id: "#23374", location: "Abuja (franchise)", priority: "Medium", time: "12:00 pm, Friday", isOverdue: false },
-  { id: "#23374", location: "Abuja (franchise)", priority: "Low", time: "12:00 pm, Friday", isOverdue: false },
-  { id: "#23374", location: "Abuja (franchise)", priority: "Low", time: "12:00 pm, Friday", isOverdue: false },
-];
-
 export const transactionData = [
   { id: "GHA67AGHA", amount: "$400", date: "Nov 16 2025", time: "11:00 am", status: "Confirmed" },
   { id: "GHA67AGHA", amount: "$500", date: "Nov 21 2025", time: "4:30 pm", status: "Pending approval" },

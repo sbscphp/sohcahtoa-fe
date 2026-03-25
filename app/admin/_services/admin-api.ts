@@ -1332,6 +1332,12 @@ export const adminApi = {
         API_ENDPOINTS.admin.settlement.discrepancies,
         { params }
       ),
+
+    listPendingReconciliations: (params?: { page?: number; limit?: number }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.pendingReconciliations,
+        { params }
+      ),
   },
 
   // ==================== Regulatory ====================

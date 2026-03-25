@@ -244,6 +244,12 @@ export const adminKeys = {
     stats: () => [...adminKeys.settlement.all, "stats"] as const,
     discrepancies: (params?: { page?: number; limit?: number }) =>
       [...adminKeys.settlement.all, "discrepancies", params] as const,
+    pendingReconciliations: (params?: { page?: number; limit?: number }) =>
+      [
+        ...adminKeys.settlement.all,
+        "pending-reconciliations",
+        params,
+      ] as const,
   },
 
   regulatory: {
