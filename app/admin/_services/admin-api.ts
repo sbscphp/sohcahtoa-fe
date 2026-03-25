@@ -1230,6 +1230,19 @@ export const adminApi = {
         params,
       }),
 
+    export: async (params?: AdminTransactionListParams) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.transactions.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
     getStats: () =>
       apiClient.get<ApiResponse<AdminTransactionStatsData>>(
         API_ENDPOINTS.admin.transactions.stats

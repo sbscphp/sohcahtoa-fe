@@ -165,6 +165,7 @@ export const API_ENDPOINTS = {
     },
     transactions: {
       list: "/api/admin/transactions",
+      export: "/api/admin/transactions/export",
       stats: "/api/admin/transactions/stats",
       getById: (id: string) => `/api/admin/transactions/${id}`,
       review: (id: string) => `/api/admin/transactions/${id}/review`,

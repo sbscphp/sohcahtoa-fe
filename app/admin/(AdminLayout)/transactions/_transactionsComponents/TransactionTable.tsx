@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
@@ -14,6 +14,10 @@ import {
   useTransactions,
   type TransactionListItem,
 } from "../hooks/useTransactions";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { notifications } from "@mantine/notifications";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
 
 const pageSize = 5;
@@ -42,6 +46,17 @@ export default function TransactionsTable() {
   const [debouncedSearch] = useDebouncedValue(search, 350);
   const router = useRouter();
 
+  const exportParams = useMemo(
+    () => ({
+      page,
+      limit: pageSize,
+      search: debouncedSearch || undefined,
+      status: statusFilter !== "All" ? statusFilter : undefined,
+      type: typeByTab[activeTab],
+    }),
+    [activeTab, debouncedSearch, page, statusFilter]
+  );
+
   const { transactions, isLoading, isFetching, totalPages } = useTransactions({
     page,
     limit: pageSize,
@@ -51,6 +66,38 @@ export default function TransactionsTable() {
   });
 
   const safeTotalPages = Math.max(1, totalPages);
+
+  const exportTransactionsMutation = useGetExportData(
+    () => adminApi.transactions.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-transactions-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as
+          | ApiResponse
+          | undefined;
+
+        notifications.show({
+          title: "Export Transactions Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export transactions at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const transactionHeaders = [
     { label: "Customer Name", key: "customer" },
@@ -141,7 +188,9 @@ export default function TransactionsTable() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
-              disabled
+              onClick={() => exportTransactionsMutation.mutate()}
+              loading={exportTransactionsMutation.isPending}
+              disabled={exportTransactionsMutation.isPending}
             >
               Export
             </Button>
