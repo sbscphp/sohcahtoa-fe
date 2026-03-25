@@ -170,6 +170,26 @@ export default function TakeActionOverlay({
     }
   );
 
+  const transactionRequestMoreInfoMutation = useCreateData(
+    (variables: { transactionId: string; notes: string }) =>
+      adminApi.transactions.requestTransactionInfo(variables.transactionId, {
+        notes: variables.notes,
+        fields: [],
+      }),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionDetail();
+        setRequestMoreInfoOpen(false);
+        setRequestMoreInfoSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(
+          error,
+          "Unable to request more information for this transaction."
+        ),
+    }
+  );
+
   const openCompleteApprovalFlow = () => {
     if (!selectedDocumentId) return;
     setTakeActionPopoverKey(null);
@@ -248,9 +268,11 @@ export default function TakeActionOverlay({
   };
 
   const submitRequestMoreInfo = (comment: string) => {
-    void comment;
-    setRequestMoreInfoOpen(false);
-    setRequestMoreInfoSuccessOpen(true);
+    if (!transactionId) return;
+    transactionRequestMoreInfoMutation.mutate({
+      transactionId,
+      notes: comment,
+    });
   };
 
   const navigateToTransactionsList = () => {
@@ -660,9 +682,10 @@ export default function TakeActionOverlay({
             </p>
           </>
         }
-        primaryButtonText="Yes, Complete Review"
+        primaryButtonText="Yes, Request More Information"
         secondaryButtonText="No, Close"
         onConfirm={submitRequestMoreInfo}
+        isLoading={transactionRequestMoreInfoMutation.isPending}
       />
 
       <SuccessModal

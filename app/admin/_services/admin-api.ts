@@ -1241,6 +1241,15 @@ export const adminApi = {
         data
       ),
 
+    requestTransactionInfo: (
+      id: string,
+      data: { notes: string; fields: string[] }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.requestTransactionInfo(id),
+        data
+      ),
+
     approveDocument: (id: string, documentId: string, data: { notes: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.approveDocument(id, documentId),
