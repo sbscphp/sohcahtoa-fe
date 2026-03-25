@@ -5,6 +5,7 @@
 import { apiClient, type ApiResponse } from "@/app/_lib/api/client";
 import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type { AdminUser } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import type { AdminDashboardData } from "@/app/admin/_types/dashboard";
 
 // ==================== Response Data Types ====================
 
@@ -677,7 +678,9 @@ export const adminApi = {
   // ==================== Dashboard ====================
   dashboard: {
     getStats: () =>
-      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.dashboard),
+      apiClient.get<ApiResponse<AdminDashboardData>>(
+        API_ENDPOINTS.admin.dashboard
+      ),
 
     getPendingApprovals: () =>
       apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.pendingApprovals),

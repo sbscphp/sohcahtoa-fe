@@ -1,71 +1,80 @@
-import { Card, Group, Text, Select, Stack } from "@mantine/core";
+"use client";
+
+import { Card, Group, Text, Stack, Skeleton } from "@mantine/core";
 import { DonutChart } from "@mantine/charts";
-import { HiCalendarDateRange } from "react-icons/hi2";
+import type { AdminDashboardTransactionsByType } from "@/app/admin/_types/dashboard";
+import type { DonutSegment } from "../mapDashboardData";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
-const data = [
-  { name: "PTA", value: 3500000, color: "orange.7" },
-  { name: "BTA", value: 2800000, color: "orange.5" },
-  { name: "School fees", value: 1500000, color: "orange.3" },
-  { name: "Tourism", value: 900000, color: "orange.9" },
-  { name: "Expatriate", value: 800000, color: "orange.2" },
-  { name: "Series 6", value: 500000, color: "gray.4" },
-];
-const colors: Record<string, string> = {
-  PTA: "bg-orange-600",
-  BTA: "bg-orange-400",
-  "School fees": "bg-orange-300",
-  Tourism: "bg-orange-700",
-  Expatriate: "bg-orange-200",
-  "Series 6": "bg-gray-400",
+const LEGEND_DOT: Record<string, string> = {
+  "orange.7": "bg-orange-600",
+  "orange.5": "bg-orange-500",
+  "orange.3": "bg-orange-300",
+  "orange.9": "bg-orange-800",
+  "orange.2": "bg-orange-200",
+  "gray.4": "bg-gray-400",
+  "gray.5": "bg-gray-500",
+};
+
+function legendClass(segment: DonutSegment): string {
+  return LEGEND_DOT[segment.color] ?? "bg-orange-400";
 }
-    
 
-
-export function TransactionsByType() {
-  const total = data.reduce((acc, item) => acc + item.value, 0);
-  const icon = <HiCalendarDateRange size={16} />
-  
+export function TransactionsByType({
+  transactionsByType,
+  donutData,
+  loading = false,
+}: {
+  transactionsByType: AdminDashboardTransactionsByType | null;
+  donutData: DonutSegment[];
+  loading?: boolean;
+}) {
+  const total = transactionsByType?.totalAmount ?? 0;
+  const windowDays = transactionsByType?.windowDays ?? 7;
 
   return (
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="md">
         <Text fw={500}>Transactions by Type</Text>
 
-        <Select
-          size="xs"
-          data={["Last 7 Days", "Last 30 Days"]}
-          w={95}
-          defaultValue="Last 7 Days"
-          rightSection={icon}
-          rightSectionPointerEvents="none"
-          radius="lg"
-        />
+        {loading ? (
+          <Skeleton height={28} width={120} radius="lg" />
+        ) : (
+          <Text size="xs" c="dimmed">
+            Last {windowDays} days
+          </Text>
+        )}
       </Group>
 
-      <div className="grid grid-cols-[2fr_1fr]">
-      <Group justify="center">
-        <DonutChart
-          data={data}
-          size={260}
-          thickness={28}
-          withLabelsLine={false}
-          chartLabel={`$${total.toLocaleString()}`}
-        />
-        <div className="relative -top-34 "> 
-    <p className="text-xs">Total Amount</p>
-     </div>
-      </Group>
-
-      <Stack gap={3} mt="md">
-        {data.map((item) => (
-          <Group key={item.name} gap="xs">
-            <div className={`w-2 h-2 rounded-full ${colors[item.name]}`} />
-
-            <Text size="sm">{item.name}</Text>
+      {loading ? (
+        <Skeleton height={280} radius="sm" />
+      ) : (
+        <div className="grid grid-cols-[2fr_1fr]">
+          <Group justify="center">
+            <DonutChart
+              data={donutData}
+              size={260}
+              thickness={28}
+              withLabelsLine={false}
+              chartLabel={formatCurrency(total) || "$0"}
+            />
+            <div className="relative -top-34">
+              <p className="text-xs">Total Amount</p>
+            </div>
           </Group>
-        ))}
-      </Stack>
-      </div>
+
+          <Stack gap={3} mt="md">
+            {donutData.map((item) => (
+              <Group key={item.name} gap="xs">
+                <div
+                  className={`h-2 w-2 shrink-0 rounded-full ${legendClass(item)}`}
+                />
+                <Text size="sm">{item.name}</Text>
+              </Group>
+            ))}
+          </Stack>
+        </div>
+      )}
     </Card>
   );
 }

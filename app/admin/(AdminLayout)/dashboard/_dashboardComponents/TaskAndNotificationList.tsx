@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Card,
-  Group,
-  Text,
-  Stack,
-} from "@mantine/core";
+import { Card, Group, Text, Stack } from "@mantine/core";
 import { Notification } from "../../../_types/dashboard";
 import { ArrowUpRight } from "lucide-react";
 import ListItem from "./ListItem";
@@ -27,20 +22,30 @@ export function TaskAndNotificationList({
         </div>
       </Group>
 
-      <Stack gap="md">
-        {data.map((item) => (
-          <ListItem
-            key={item.id}
-            title={item.title}
-            description={item.description}
-            date={item.date}
-            time={item.time}
-            badge={item.unread ? { label: "Unread", color: "orange" } : undefined}
-            showIcons={true}
-            cardStyle={true}
-          />
-        ))}
-      </Stack>
+      {data.length === 0 ? (
+        <Text size="sm" c="dimmed">
+          No tasks or notifications yet.
+        </Text>
+      ) : (
+        <Stack gap="md">
+          {data.map((item) => (
+            <ListItem
+              key={item.id}
+              title={item.title}
+              description={item.description}
+              date={item.date}
+              time={item.time}
+              badge={
+                item.unread
+                  ? { label: "Unread", color: "orange" }
+                  : undefined
+              }
+              showIcons={true}
+              cardStyle={true}
+            />
+          ))}
+        </Stack>
+      )}
     </Card>
   );
 }
