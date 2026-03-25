@@ -19,6 +19,7 @@ import { notifications } from "@mantine/notifications";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 const pageSize = 5;
 
@@ -140,7 +141,7 @@ export default function TransactionsTable() {
     </Text>,
 
     <Text key="amount" size="sm">
-      ${item.amount}
+      {formatCurrency(item.amount)}
     </Text>,
 
     <StatusBadge key="status" status={item.status} />,

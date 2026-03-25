@@ -251,6 +251,12 @@ export const adminKeys = {
         params,
       ] as const,
     escrowAccounts: () => [...adminKeys.settlement.all, "escrow-accounts"] as const,
+    fundingTransactions: (params?: { page?: number; limit?: number }) =>
+      [
+        ...adminKeys.settlement.all,
+        "funding-transactions",
+        params,
+      ] as const,
   },
 
   regulatory: {

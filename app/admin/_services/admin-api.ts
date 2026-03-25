@@ -1343,6 +1343,12 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.settlement.escrowAccounts
       ),
+
+    listFundingTransactions: (params?: { page?: number; limit?: number }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.fundingTransactions,
+        { params }
+      ),
   },
 
   // ==================== Regulatory ====================
