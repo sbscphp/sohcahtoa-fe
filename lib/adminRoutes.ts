@@ -68,6 +68,9 @@ const adminUserManagementRole = (id: string | number = ':id') => `${adminUserMan
 //settings routes
 const adminSettings = () => `${admin()}/settings`;
 
+//settlement routes
+const adminSettlement = () => `${admin()}/settlement`;
+const adminSettlementRegisterEscrow = () => `${adminSettlement()}/register-escrow`;
 
 
 export const adminRoutes = {
@@ -134,4 +137,8 @@ export const adminRoutes = {
 
   // Settings
   adminSettings,
+
+  // Settlement
+  adminSettlement,
+  adminSettlementRegisterEscrow,
 };

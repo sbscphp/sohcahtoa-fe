@@ -3,16 +3,27 @@
 import { Card, Text, Stack, Badge, Skeleton } from "@mantine/core";
 import EmptySection from "@/app/admin/_components/EmptySection";
 import { useSettlementEscrowAccounts } from "../hooks/useSettlementEscrowAccounts";
+import { Plus } from "lucide-react";
+import { Group } from "@mantine/core";
+import Link from "next/link";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 export function EscrowAccountsSection() {
   const { accounts, isLoading } = useSettlementEscrowAccounts();
 
   return (
     <Card padding="lg" radius="md" withBorder className="h-full bg-white">
-      <Text fw={700} size="lg" mb="lg">Escrow Accounts</Text>
+      
+    <Group justify="space-between" mb="lg">
+      <Text fw={700} size="lg" c="dark">Escrow Accounts</Text>
+      <Link href={adminRoutes.adminSettlementRegisterEscrow()} className="text-orange-600 cursor-pointer hover:text-orange-700 flex items-center gap-2">
+        <Text size="sm" fw={600}>Add New</Text>
+        <Plus size={16} />
+      </Link>
+    </Group>
 
       {isLoading ? (
-        <Stack gap="md">
+        <Stack gap="md">s
           {Array.from({ length: 3 }).map((_, idx) => (
             <Skeleton key={idx} height={96} radius="md" />
           ))}
