@@ -727,6 +727,7 @@ export default function TakeActionOverlay({
         secondaryButtonText="No, Close"
         onConfirm={submitCompleteApproval}
         isLoading={approveDocumentMutation.isPending}
+        commentRequired={false}
       />
 
       <ApprovalActionConfirmModal
@@ -760,6 +761,7 @@ export default function TakeActionOverlay({
         secondaryButtonText="No, Close"
         onConfirm={submitTransactionCompleteReview}
         isLoading={completeReviewMutation.isPending}
+        commentRequired={false}
       />
 
       <ApprovalActionConfirmModal
@@ -829,9 +831,10 @@ export default function TakeActionOverlay({
         primaryButtonText="View More Action Approval"
         onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
-        onSecondaryClick={() =>
-          setTransactionCompleteReviewSuccessOpen(false)
-        }
+        onSecondaryClick={() => {
+          setTransactionCompleteReviewSuccessOpen(false);
+          onClose();
+        }}
         zIndex={4100}
       />
 
@@ -843,7 +846,10 @@ export default function TakeActionOverlay({
         primaryButtonText="View More Action Approval"
         onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
-        onSecondaryClick={() => setRequestMoreInfoSuccessOpen(false)}
+        onSecondaryClick={() => {
+          setRequestMoreInfoSuccessOpen(false);
+          onClose();
+        }}
         zIndex={4100}
       />
     </>

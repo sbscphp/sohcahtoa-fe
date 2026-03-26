@@ -840,6 +840,9 @@ export const adminApi = {
         data
       ),
 
+    update: (id: string, data: FormData) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.agent.getById(id), data),
+
     create: (data: FormData) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.list,

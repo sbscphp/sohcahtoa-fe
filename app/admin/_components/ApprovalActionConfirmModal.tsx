@@ -10,6 +10,8 @@ export interface ApprovalActionConfirmModalProps {
   opened: boolean;
   onClose: () => void;
   title: string;
+  commentRequired?: boolean;
+  commentPlaceholder?: string;
   message: ReactNode;
   primaryButtonText: string;
   secondaryButtonText: string;
@@ -22,6 +24,8 @@ export function ApprovalActionConfirmModal({
   opened,
   onClose,
   title,
+  commentRequired = true,
+  commentPlaceholder = "Start Typing",
   message,
   primaryButtonText,
   secondaryButtonText,
@@ -40,7 +44,7 @@ export function ApprovalActionConfirmModal({
   const handlePrimary = () => {
     if (isLoading) return;
     const trimmed = comment.trim();
-    if (!trimmed) return;
+    if (commentRequired && !trimmed) return;
     onConfirm(trimmed);
   };
 
@@ -89,7 +93,7 @@ export function ApprovalActionConfirmModal({
             </span>
           </Text>
           <Textarea
-            placeholder="Start Typing"
+            placeholder={commentPlaceholder}
             value={comment}
             onChange={(e) => setComment(e.currentTarget.value)}
             minRows={4}
@@ -107,7 +111,7 @@ export function ApprovalActionConfirmModal({
             size="md"
             color="orange"
             onClick={handlePrimary}
-            disabled={!comment.trim() || isLoading}
+            disabled={(commentRequired && !comment.trim()) || isLoading}
             loading={isLoading}
             className="font-medium! text-sm!"
           >
