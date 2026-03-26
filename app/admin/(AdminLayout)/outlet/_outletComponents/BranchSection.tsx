@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import StatCard from "@/app/admin/_components/StatCard";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -9,27 +9,13 @@ import { Group, TextInput, Select, Button, Text, Skeleton } from "@mantine/core"
 import { ListFilter, Plus, Search, Upload, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useBranchStats } from "../hooks/useBranchStats";
-
-type OutletStatus = "Active" | "Pending" | "Deactivated";
-
-export interface BranchRow {
-  id: string;
-  name: string;
-  managerName: string;
-  managerEmail: string;
-  address: string;
-  status: OutletStatus;
-}
-
-const BRANCH_DATA: BranchRow[] = [
-  { id: "9023", name: "Eternal Global", managerName: "Tunde Bashorun", managerEmail: "tunde@eternalglobal.com", address: "Plot 10, Off Jibowu Street, Lagos", status: "Active" },
-  { id: "9025", name: "Kudi Mata", managerName: "Queen Omotola", managerEmail: "queen@kudimata.com", address: "123 Odu'a Street, Ibadan", status: "Pending" },
-  { id: "9026", name: "Sammy Bureau", managerName: "Samuel Olubanki", managerEmail: "olubankisamuel@gmail.com", address: "Suite 5, 2nd Floor, Enugu Mall, Enugu", status: "Active" },
-  { id: "9024", name: "Eko Sulatn", managerName: "Ibrahim Dantata", managerEmail: "ibrahim@sultan.com", address: "Block 5, Victoria Island, Lagos", status: "Deactivated" },
-  { id: "9027", name: "Greenfield Exchange", managerName: "Mfon Ubot", managerEmail: "mubot@greenfield.com", address: "66, Zaria Road, Kaduna", status: "Active" },
-  { id: "9028", name: "Nagode Limited", managerName: "Sariki Sudan", managerEmail: "nagode@gmail.com", address: "Room 204, Abuja Business Center, A...", status: "Deactivated" },
-];
+import { useBranches, type BranchListItem } from "../hooks/useBranches";
 
 const branchHeaders = [
   { label: "Branch Name", key: "name" },
@@ -39,37 +25,72 @@ const branchHeaders = [
   { label: "Action", key: "action" },
 ];
 
+const PAGE_SIZE = 10;
+
+function getIsActiveParam(value: string | null): boolean | undefined {
+  if (!value) return undefined;
+  if (value === "Active") return true;
+  if (value === "Deactivated") return false;
+  return undefined;
+}
+
 export default function BranchSection() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Filter By");
-  const pageSize = 6;
+  const [filter, setFilter] = useState<string | null>(null);
+  const [debouncedSearch] = useDebouncedValue(search, 350);
 
   const { stats, isLoading: isStatsLoading } = useBranchStats();
   const isStatsEmpty = !isStatsLoading && !stats;
 
-  const filteredData = useMemo(() => {
-    return BRANCH_DATA.filter((b) => {
-      const matchesSearch =
-        b.name.toLowerCase().includes(search.toLowerCase()) ||
-        b.id.includes(search) ||
-        b.managerName.toLowerCase().includes(search.toLowerCase()) ||
-        b.managerEmail.toLowerCase().includes(search.toLowerCase()) ||
-        b.address.toLowerCase().includes(search.toLowerCase());
-      const matchesFilter =
-        filter === "Filter By" || filter === "All" || b.status === filter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter]);
+  const queryParams = useMemo(() => {
+    const trimmedSearch = debouncedSearch.trim();
 
-  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
+    return {
+      page,
+      limit: PAGE_SIZE,
+      search: trimmedSearch || undefined,
+      isActive: getIsActiveParam(filter),
+    };
+  }, [debouncedSearch, filter, page]);
 
-  const renderRow = (item: BranchRow) => [
+  const { branches, isLoading, totalPages } = useBranches(queryParams);
+
+  const exportBranchesMutation = useGetExportData(
+    () =>
+      adminApi.outlet.branches.export({
+        search: debouncedSearch.trim() || undefined,
+        isActive: getIsActiveParam(filter),
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `branches-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Branches Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export branches at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const renderRow = (item: BranchListItem) => [
     <div key="name">
       <Text fw={500} size="sm">
         {item.name}
@@ -140,7 +161,10 @@ export default function BranchSection() {
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
@@ -148,8 +172,13 @@ export default function BranchSection() {
           <Group>
             <Select
               value={filter}
-              onChange={(value) => setFilter(value!)}
-              data={["Filter By", "All", "Active", "Pending", "Deactivated"]}
+              onChange={(value) => {
+                setFilter(value);
+                setPage(1);
+              }}
+              data={["Active", "Deactivated"]}
+              placeholder="Filter By"
+              clearable
               radius="xl"
               w={120}
               rightSection={<ListFilter size={16} />}
@@ -159,6 +188,9 @@ export default function BranchSection() {
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportBranchesMutation.mutate()}
+              loading={exportBranchesMutation.isPending}
+              disabled={exportBranchesMutation.isPending}
             >
               Export
             </Button>
@@ -175,8 +207,8 @@ export default function BranchSection() {
         </Group>
         <DynamicTableSection
           headers={branchHeaders}
-          data={paginatedData}
-          loading={false}
+          data={branches}
+          loading={isLoading}
           renderItems={renderRow}
           emptyTitle="No Branches Found"
           emptyMessage="There are currently no branches to display."

@@ -211,6 +211,15 @@ export interface BranchStatsData {
   deactivated: number;
 }
 
+export interface BranchListItemData {
+  id: string;
+  branchName: string;
+  branchManager: string;
+  email: string;
+  address: string;
+  isActive: boolean;
+}
+
 export interface CreateFranchisePayload {
   franchiseName: string;
   state: string;
@@ -224,6 +233,16 @@ export interface CreateFranchisePayload {
 export interface OutletStatesData {
   states: string[];
 }
+
+export type BranchListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+};
 
 export interface TicketAttachment {
   id: string;
@@ -1077,6 +1096,24 @@ export const adminApi = {
         apiClient.get<ApiResponse<FranchiseDetailsData>>(API_ENDPOINTS.admin.outlet.franchises.getById(id)),
     },
     branches: {
+      list: (params?: BranchListParams) =>
+        apiClient.get<ApiResponse<BranchListItemData[]>>(API_ENDPOINTS.admin.outlet.branches.list, {
+          params,
+        }),
+
+      export: async (params?: { search?: string; isActive?: boolean }) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.branches.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       getStats: () =>
         apiClient.get<ApiResponse<BranchStatsData>>(API_ENDPOINTS.admin.outlet.branches.stats),
     },
