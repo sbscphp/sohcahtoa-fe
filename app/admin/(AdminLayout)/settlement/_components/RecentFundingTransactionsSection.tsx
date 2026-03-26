@@ -8,6 +8,7 @@ import { adminRoutes } from "@/lib/adminRoutes";
 import { useRouter } from "next/navigation";
 import { useSettlementFundingTransactions, type SettlementFundingTransactionListItem } from "../hooks/useSettlementFundingTransactions";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import Link from "next/link";
 
 export function RecentFundingTransactionsSection() {
   const router = useRouter();
@@ -53,10 +54,10 @@ export function RecentFundingTransactionsSection() {
     <Card padding="lg" radius="md" withBorder className="h-full bg-white">
       <Group justify="space-between" mb="lg">
       <Text fw={700} size="lg" c="dark">Recent Funding Transactions</Text>
-      <Group gap={4} className="text-orange-600 cursor-pointer hover:text-orange-700" onClick={() => router.push(adminRoutes.adminTransactions())}>
+      <Link href={adminRoutes.adminTransactions()} className="text-orange-600 cursor-pointer hover:text-orange-700 flex items-center gap-2">
         <Text size="sm" fw={600}>View all</Text>
         <ArrowUpRight size={16} />
-      </Group>
+      </Link>
     </Group>
       <DynamicTableSection
         headers={headers}
