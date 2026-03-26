@@ -1403,6 +1403,18 @@ export const adminApi = {
             API_ENDPOINTS.admin.regulatory.logs.audit,
             { params }
           ),
+        export: async (params?: AdminRegulatoryAuditLogsListParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.regulatory.logs.auditExport,
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
         getById: (id: string) =>
           apiClient.get<ApiResponse<AdminRegulatoryAuditLogDetailsData>>(
             API_ENDPOINTS.admin.regulatory.logs.auditById(id)
@@ -1414,6 +1426,18 @@ export const adminApi = {
             API_ENDPOINTS.admin.regulatory.logs.regulatory,
             { params }
           ),
+        export: async (params?: AdminRegulatoryLogsListParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.regulatory.logs.regulatoryExport,
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
         getById: (id: string) =>
           apiClient.get<ApiResponse<AdminRegulatoryLogDetailsData>>(
             API_ENDPOINTS.admin.regulatory.logs.regulatoryById(id)

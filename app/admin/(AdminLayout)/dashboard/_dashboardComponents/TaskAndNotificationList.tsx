@@ -5,6 +5,8 @@ import { Notification } from "../../../_types/dashboard";
 import { ArrowUpRight } from "lucide-react";
 import ListItem from "./ListItem";
 import EmptySection from "../../../_components/EmptySection";
+import { adminRoutes } from "@/lib/adminRoutes";
+import Link from "next/link";
 
 export function TaskAndNotificationList({
   data,
@@ -15,12 +17,15 @@ export function TaskAndNotificationList({
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="sm">
         <Text fw={500}>Task List & Notification</Text>
-        <div className="flex items-center">
+        <Link href={{
+          pathname: adminRoutes.adminSettings(),
+          query: { tab: "notifications" },
+        }} className="flex items-center">
           <Text size="sm" c="orange">
             View all
           </Text>
           <ArrowUpRight size={14} color="orange" />
-        </div>
+        </Link>
       </Group>
 
       {data.length === 0 ? (

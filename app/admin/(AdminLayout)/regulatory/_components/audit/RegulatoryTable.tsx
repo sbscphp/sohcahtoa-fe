@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useDebouncedValue } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { adminApi } from "@/app/admin/_services/admin-api";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { RegulatoryDetailModal } from "./RegulatoryDetailModal";
@@ -44,6 +48,34 @@ export default function RegulatoryLogTable() {
 
   const { logs, isLoading, isFetching, totalPages } = useRegulatoryLogs(queryParams);
   const safeTotalPages = Math.max(1, totalPages);
+
+  const exportRegulatoryLogsMutation = useGetExportData(
+    () => adminApi.regulatory.logs.regulatory.export(queryParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = objectUrl;
+        link.download = `regulatory-logs-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export regulatory logs failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export regulatory logs right now. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const headers = [
     { label: "Timestamp", key: "timestamp" },
@@ -118,7 +150,9 @@ export default function RegulatoryLogTable() {
             radius="xl"
             color="#E36C2F"
             rightSection={<Upload size={16} />}
-            disabled
+            onClick={() => exportRegulatoryLogsMutation.mutate()}
+            loading={exportRegulatoryLogsMutation.isPending}
+            disabled={exportRegulatoryLogsMutation.isPending}
           >
             Export
           </Button>

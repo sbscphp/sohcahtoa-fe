@@ -201,8 +201,10 @@ export const API_ENDPOINTS = {
       },
       logs: {
         audit: "/api/admin/regulatory/logs/audit",
+        auditExport: "/api/admin/regulatory/logs/audit/export",
         auditById: (id: string) => `/api/admin/regulatory/logs/audit/${id}`,
         regulatory: "/api/admin/regulatory/logs/regulatory",
+        regulatoryExport: "/api/admin/regulatory/logs/regulatory/export",
         regulatoryById: (id: string) => `/api/admin/regulatory/logs/regulatory/${id}`,
       },
       trms: {

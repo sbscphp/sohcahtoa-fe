@@ -138,15 +138,15 @@ export function SubmissionDetailModal({
           Close
         </Button>
 
-        <Button
+        {hasReportFile && <Button
           rightSection={<Download size={16} />}
           color="orange"
           radius="xl"
           onClick={handleDownload}
-          disabled={!hasReportFile || isLoading || isFetching}
+          disabled={isLoading || isFetching}
         >
           Download report
-        </Button>
+        </Button>}
       </Group>
     </Modal>
   );
