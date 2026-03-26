@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Group, Text, TextInput, Select } from "@mantine/core";
-import { Search, ListFilter } from "lucide-react";
+import { Group, Text, TextInput, Select, Button } from "@mantine/core";
+import { Search, ListFilter, Upload } from "lucide-react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -85,26 +85,37 @@ export function FranchiseBranchesTable({ franchiseId }: FranchiseBranchesTablePr
           placeholder="Enter keyword"
           leftSection={<Search size={16} color="#DD4F05" />}
           value={branchSearch}
-            onChange={(e) => {
-              setBranchSearch(e.currentTarget.value);
-              setBranchPage(1);
-            }}
+          onChange={(e) => {
+            setBranchSearch(e.currentTarget.value);
+            setBranchPage(1);
+          }}
           w={320}
           radius="xl"
         />
-        <Select
-          value={branchFilter}
-          onChange={(value) => {
-            setBranchFilter(value);
-            setBranchPage(1);
-          }}
-          data={["Active", "Deactivated"]}
-          placeholder="Filter By"
-          clearable
-          radius="xl"
-          w={120}
-          rightSection={<ListFilter size={16} />}
-        />
+
+        <Group>
+          <Select
+            value={branchFilter}
+            onChange={(value) => {
+              setBranchFilter(value);
+              setBranchPage(1);
+            }}
+            data={["Active", "Deactivated"]}
+            placeholder="Filter By"
+            clearable
+            radius="xl"
+            w={120}
+            rightSection={<ListFilter size={16} />}
+          />
+          <Button
+            variant="outline"
+            color="#E36C2F"
+            radius="xl"
+            rightSection={<Upload size={16} />}
+          >
+            Export
+          </Button>
+        </Group>
       </Group>
       <DynamicTableSection
         headers={branchHeaders}
