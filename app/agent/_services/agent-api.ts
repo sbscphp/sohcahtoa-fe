@@ -263,6 +263,8 @@ export const agentApi = {
       }),
     unreadCount: () =>
       apiClient.get<UnreadCountResponse>(AGENT_API_ENDPOINTS.notifications.unreadCount),
+    markAsRead: (id: string) =>
+      apiClient.post<void>(AGENT_API_ENDPOINTS.notifications.markAsRead(id)),
     markAllAsRead: () =>
       apiClient.post<ReadAllNotificationsResponse>(AGENT_API_ENDPOINTS.notifications.markAllAsRead),
     preferences: {

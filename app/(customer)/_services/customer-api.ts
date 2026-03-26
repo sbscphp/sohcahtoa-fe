@@ -73,6 +73,9 @@ import type {
   TransactionRatesListResponse,
   CalculateTransactionRateRequest,
   CalculateTransactionRateResponse,
+  TransactionVirtualAccountResponse,
+  TransactionDepositInstructionsResponse,
+  TransactionDepositStatusResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -202,6 +205,21 @@ export const customerApi = {
       apiClient.download(API_ENDPOINTS.transactions.export, {
         params: params as ApiRequestConfig["params"],
       }),
+
+    getVirtualAccount: (transactionId: string) =>
+      apiClient.get<TransactionVirtualAccountResponse>(
+        API_ENDPOINTS.transactions.virtualAccount(transactionId)
+      ),
+
+    getDepositInstructions: (transactionId: string) =>
+      apiClient.get<TransactionDepositInstructionsResponse>(
+        API_ENDPOINTS.transactions.depositInstructions(transactionId)
+      ),
+
+    getDepositStatus: (transactionId: string) =>
+      apiClient.get<TransactionDepositStatusResponse>(
+        API_ENDPOINTS.transactions.depositStatus(transactionId)
+      ),
   },
 
   // ==================== Notifications ====================

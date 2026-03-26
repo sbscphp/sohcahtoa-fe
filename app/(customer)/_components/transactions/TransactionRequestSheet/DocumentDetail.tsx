@@ -41,7 +41,12 @@ export default function DocumentDetail({
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
 
-  const resubmitDocs = documents.filter((d) => d.status === "Resubmit Document");
+  const canResubmit = (status: string) => {
+    const normalized = normalizeStatus(status);
+    return normalized === "resubmit_document" || normalized === "request_more_info" || normalized === "rejected";
+  };
+
+  const resubmitDocs = documents.filter((d) => canResubmit(d.status));
   const hasResubmit = resubmitDocs.length > 0;
 
   const handleResubmit = () => {
@@ -115,7 +120,7 @@ export default function DocumentDetail({
                 </div>
               </div>
 
-              {doc.status === "Resubmit Document" && (
+              {canResubmit(doc.status) && (
                 <div className="mt-2 bg-bg-card-2 p-2 rounded-lg">
                   <FileUploadInput
                     label="Re-upload Document"

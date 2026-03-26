@@ -39,19 +39,17 @@ function getDocumentDisplayName(type: string): string {
   }
 }
 
+function formatStatusLabel(status?: string | null): string {
+  if (!status) return "Pending";
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function mapRequiredDocsToDocumentItems(requiredDocuments: TransactionDetailRequiredDoc[]): TransactionDocumentItem[] {
   return requiredDocuments.map((doc) => {
     const uploaded = doc.uploaded;
-    const apiStatus = (uploaded?.status ?? "").toUpperCase();
-
-    let status: TransactionDocumentItem["status"];
-    if (apiStatus === "REJECTED" || apiStatus === "REQUEST_MORE_INFO") {
-      status = "resubmit_document";
-    } else if (apiStatus === "APPROVED") {
-      status = "approved";
-    } else {
-      status = "pending";
-    }
 
     const lastUploadDate = uploaded?.uploadedAt ? formatShortDate(uploaded.uploadedAt) : undefined;
     const lastUploadTime = uploaded?.uploadedAt ? formatShortTime(uploaded.uploadedAt) : undefined;
@@ -60,7 +58,7 @@ function mapRequiredDocsToDocumentItems(requiredDocuments: TransactionDetailRequ
       id: doc.type,
       name: getDocumentDisplayName(doc.type),
       size: "—",
-      status,
+      status: formatStatusLabel(uploaded?.status),
       lastUploadDate,
       lastUploadTime,
       fileName: uploaded?.fileName,

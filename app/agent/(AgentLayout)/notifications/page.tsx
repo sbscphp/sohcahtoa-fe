@@ -6,13 +6,22 @@ import { agentApi } from "@/app/agent/_services/agent-api";
 import { agentKeys } from "@/app/_lib/api/query-keys";
 import Loader from "@/components/loader";
 import NotificationItem from "@/app/(customer)/_components/notifications/NotificationItem";
-import { groupNotificationsByDate } from "@/app/(customer)/_utils/notifications";
+import {
+  formatNotificationDate,
+  formatNotificationTime,
+} from "@/app/(customer)/_utils/notifications";
 import { useQueryClient } from "@tanstack/react-query";
+import type {
+  Notification,
+  NotificationsListResponse,
+  UnreadCountResponse,
+} from "@/app/_lib/api/types";
 
 type TabKey = "all" | "unread" | "transactions";
 
 export default function AgentNotificationsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [markingNotificationId, setMarkingNotificationId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch notifications
@@ -34,16 +43,63 @@ export default function AgentNotificationsPage() {
     },
   });
 
-  // Transform and group notifications
-  const allGroups = useMemo(() => {
-    if (!notificationsResponse?.data?.notifications) return [];
-    return groupNotificationsByDate(notificationsResponse.data.notifications);
-  }, [notificationsResponse]);
+  const markAsReadMutation = useCreateData(agentApi.notifications.markAsRead, {
+    onMutate: (id: string) => {
+      setMarkingNotificationId(id);
+      const listKey = agentKeys.notifications.list({ limit: 50 }) as unknown as unknown[];
+      const unreadKey = agentKeys.notifications.unreadCount() as unknown as unknown[];
 
-  const allItems = useMemo(
-    () => allGroups.flatMap((g) => g.items),
-    [allGroups]
-  );
+      queryClient.setQueryData<NotificationsListResponse>(listKey, (prev) => {
+        if (!prev?.data?.notifications) return prev;
+        return {
+          ...prev,
+          data: {
+            ...prev.data,
+            notifications: prev.data.notifications.map((n) =>
+              n.id === id ? { ...n, read: true } : n
+            ),
+          },
+        };
+      });
+
+      queryClient.setQueryData<UnreadCountResponse>(unreadKey, (prev) => {
+        if (!prev?.data) return prev;
+        return {
+          ...prev,
+          data: { ...prev.data, count: Math.max((prev.data.count ?? 1) - 1, 0) },
+        };
+      });
+    },
+    onSettled: () => {
+      setMarkingNotificationId(null);
+      queryClient.invalidateQueries({ queryKey: agentKeys.notifications.all });
+    },
+  });
+
+  const notifications = notificationsResponse?.data?.notifications ?? [];
+
+  const allItems = useMemo(() => {
+    return notifications.map((n) => ({
+      id: n.id,
+      title: n.title,
+      context: n.message,
+      date: formatNotificationDate(n.createdAt),
+      time: formatNotificationTime(n.createdAt),
+      status: n.read ? ("read" as const) : ("unread" as const),
+      type: n.type,
+      createdAt: n.createdAt,
+    }));
+  }, [notifications]);
+
+  const groupedItems = useMemo(() => {
+    const groups = new Map<string, typeof allItems>();
+    for (const item of allItems) {
+      const label = item.date;
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(item);
+    }
+    return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
+  }, [allItems]);
 
   const unreadItems = useMemo(
     () => allItems.filter((i) => i.status === "unread"),
@@ -54,21 +110,28 @@ export default function AgentNotificationsPage() {
 
   const filteredGroups = useMemo(() => {
     if (activeTab === "unread") {
-      const unreadGroups = groupNotificationsByDate(
-        notificationsResponse?.data?.notifications?.filter((n) => !n.read) || []
-      );
-      return unreadGroups;
+      const groups = new Map<string, typeof unreadItems>();
+      for (const item of unreadItems) {
+        const label = item.date;
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label)!.push(item);
+      }
+      return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
     }
     if (activeTab === "transactions") {
-      const transactionGroups = groupNotificationsByDate(
-        notificationsResponse?.data?.notifications?.filter((n) =>
-          n.type?.toLowerCase().includes("transaction")
-        ) || []
+      const transactionItems = allItems.filter((i) =>
+        i.type?.toLowerCase().includes("transaction")
       );
-      return transactionGroups;
+      const groups = new Map<string, typeof transactionItems>();
+      for (const item of transactionItems) {
+        const label = item.date;
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label)!.push(item);
+      }
+      return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
     }
-    return allGroups;
-  }, [activeTab, allGroups, notificationsResponse]);
+    return groupedItems;
+  }, [activeTab, groupedItems, unreadItems, allItems]);
 
   const TABS: { key: TabKey; label: string; count?: number }[] = [
     { key: "all", label: "All", count: allItems.length },
@@ -127,12 +190,18 @@ export default function AgentNotificationsPage() {
                 <div className="flex flex-col gap-3">
                   {group.items.map((item, i) => (
                     <NotificationItem
-                      key={i}
+                      key={item.id ?? i}
                       title={item.title}
                       context={item.context}
                       date={item.date}
                       time={item.time}
                       status={item.status}
+                      isMarkingAsRead={markingNotificationId === item.id}
+                      onClick={
+                        item.status === "unread" && item.id
+                          ? () => markAsReadMutation.mutate(item.id)
+                          : undefined
+                      }
                     />
                   ))}
                 </div>

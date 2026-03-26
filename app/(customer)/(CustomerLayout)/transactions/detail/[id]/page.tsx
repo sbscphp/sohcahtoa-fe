@@ -21,6 +21,7 @@ import {
   TransactionDetailsSection,
   RequiredDocumentsSection,
   PaymentDetailsSection,
+  ProceedToPaymentModal,
   TransactionSettlementSection,
   type TransactionDetailsData,
   type RequiredDocumentsData,
@@ -66,6 +67,7 @@ export default function TransactionDetailPage() {
   );
 
   const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
+  const [proceedToPaymentOpen, setProceedToPaymentOpen] = useState(false);
   const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
   const viewStatus: DetailViewStatus = useMemo(
     () =>
@@ -96,6 +98,7 @@ export default function TransactionDetailPage() {
   const showSettlement = viewStatus === "transaction_settled";
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
+  const paymentAmountNgn = apiData?.nairaEquivalent != null ? Number(apiData.nairaEquivalent) : 5000;
 
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
@@ -182,8 +185,8 @@ export default function TransactionDetailPage() {
             : undefined
         }
         onProceedToPayment={() => {
-          console.log("Proceed to payment");
-          // Navigate to payment page or open payment modal
+          setUpdatesSheetOpen(false);
+          setProceedToPaymentOpen(true);
         }}
         documents={payload.documentsForSheet as unknown as TransactionDocumentItem[]}
         onOpenDocument={(doc) => {
@@ -195,6 +198,12 @@ export default function TransactionDetailPage() {
           }
         }}
         onViewTransaction={() => setUpdatesSheetOpen(false)}
+      />
+      <ProceedToPaymentModal
+        opened={proceedToPaymentOpen}
+        onClose={() => setProceedToPaymentOpen(false)}
+        transactionId={payload.id}
+        amountNgn={paymentAmountNgn}
       />
 
       {/* Sections */}

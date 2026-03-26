@@ -893,6 +893,42 @@ export interface DepositConfirmRequest {
   proofOfPayment: string;
 }
 
+export interface TransactionVirtualAccountData {
+  accountNumber?: string;
+  bankName?: string;
+  accountName?: string;
+  expiresAt?: string;
+  amount?: string | number | null;
+  [key: string]: unknown;
+}
+
+export type TransactionVirtualAccountResponse =
+  ApiResponseWrapper<TransactionVirtualAccountData>;
+
+export interface TransactionDepositInstructionsData {
+  title?: string;
+  message?: string;
+  instructions?: string[] | string;
+  note?: string;
+  [key: string]: unknown;
+}
+
+export type TransactionDepositInstructionsResponse =
+  ApiResponseWrapper<TransactionDepositInstructionsData>;
+
+export interface TransactionDepositStatusData {
+  hasDeposit: boolean;
+  depositStatus: string | null;
+  depositAmount: number | string | null;
+  depositDate: string | null;
+  transactionStatus: string;
+  awaitingDeposit: boolean;
+  depositConfirmed: boolean;
+}
+
+export type TransactionDepositStatusResponse =
+  ApiResponseWrapper<TransactionDepositStatusData>;
+
 // ==================== KYC Types ====================
 
 export interface VerifyKycRequest {

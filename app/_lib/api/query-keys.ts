@@ -24,6 +24,12 @@ export const customerKeys = {
     details: () => [...customerKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...customerKeys.transactions.details(), id] as const,
     overview: () => [...customerKeys.transactions.all, "overview"] as const,
+    virtualAccount: (id: string) =>
+      [...customerKeys.transactions.detail(id), "virtual-account"] as const,
+    depositInstructions: (id: string) =>
+      [...customerKeys.transactions.detail(id), "deposit-instructions"] as const,
+    depositStatus: (id: string) =>
+      [...customerKeys.transactions.detail(id), "deposit-status"] as const,
   },
   
   payments: {
