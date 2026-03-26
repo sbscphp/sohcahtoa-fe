@@ -1,26 +1,113 @@
 "use client";
 
-import { Avatar, Button, Divider, Group, Stack, Text } from "@mantine/core";
+import { Avatar, Button, Divider, Group, Skeleton, Stack, Text } from "@mantine/core";
 import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
+import EmptySection from "@/app/admin/_components/EmptySection";
 import { useParams } from "next/navigation";
+import { useFetchSingleData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import {
+  adminApi,
+  type AgentSingleTransactionData,
+  type AgentTransactionDocumentItem,
+} from "@/app/admin/_services/admin-api";
+import type { ApiResponse } from "@/app/_lib/api/client";
+
+const PLACEHOLDER = "—";
+
+function formatDateTime(iso?: string | null): { date: string; time: string } {
+  if (!iso) return { date: PLACEHOLDER, time: PLACEHOLDER };
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return { date: PLACEHOLDER, time: PLACEHOLDER };
+  return {
+    date: date.toLocaleDateString("en-NG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }),
+    time: date.toLocaleTimeString("en-NG", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }),
+  };
+}
+
+function formatAmount(currency?: string | null, value?: number | string | null): string {
+  if (value === null || value === undefined || value === "") return PLACEHOLDER;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    const formatted = numeric.toLocaleString("en-NG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return `${currency ?? ""} ${formatted}`.trim();
+  }
+  return `${currency ?? ""} ${String(value)}`.trim();
+}
 
 export default function AgentTransactionDetailsPage() {
   const params = useParams<{
-    agentId: string;
+    id: string;
     transactionId: string;
   }>();
-
+  const agentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const transactionId = Array.isArray(params?.transactionId)
     ? params.transactionId[0]
     : params?.transactionId;
 
-  // NOTE: This page is still based on mock UI. We keep transactionId to
-  // avoid unused-param warnings and to enable future API wiring.
-  const transactionTitle = "Personal Travel Allowance (PTA)";
-  const transactionDate = "Nov 17 2025";
-  const transactionTime = "1:00pm";
+  const transactionDetailsQuery = useFetchSingleData<ApiResponse<AgentSingleTransactionData>>(
+    [...adminKeys.agent.transactionDetail(agentId ?? "", transactionId ?? "")],
+    () => adminApi.agent.getTransactionById(agentId!, transactionId!),
+    Boolean(agentId && transactionId)
+  );
+
+  const transaction = transactionDetailsQuery.data?.data;
+  const isLoading = transactionDetailsQuery.isLoading;
+
+  const statusLabel = transaction?.status ?? PLACEHOLDER;
+  const title = transaction?.type ?? "Agent Transaction";
+  const created = formatDateTime(transaction?.createdAt);
+  const docsList = (transaction?.meta?.documentsList ?? []) as AgentTransactionDocumentItem[];
+  const docsCount =
+    transaction?.meta?.numberOfDocuments ??
+    (docsList.length > 0 ? docsList.length : PLACEHOLDER);
+  const receiptUrl = transaction?.meta?.receipt ?? null;
+
+  if (!agentId || !transactionId) {
+    return (
+      <div className="space-y-6">
+        <EmptySection
+          title="Transaction Not Found"
+          description="A valid agent transaction id is required to load this page."
+        />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 rounded-2xl bg-white p-6 shadow-sm">
+        <Skeleton height={30} width="35%" radius="sm" />
+        <Skeleton height={20} width="25%" radius="sm" />
+        <Skeleton height={220} radius="md" />
+        <Skeleton height={220} radius="md" />
+      </div>
+    );
+  }
+
+  if (!transaction) {
+    return (
+      <div className="space-y-6">
+        <EmptySection
+          title="Transaction Not Found"
+          description="The requested transaction is unavailable or may have been removed."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -30,14 +117,14 @@ export default function AgentTransactionDetailsPage() {
           <Stack gap={6} className="flex-1">
             <div className="space-y-2">
               <Text size="xl" fw={600}>
-                {transactionTitle}
+                {title}
               </Text>
 
               <Group gap={8} className="flex-wrap text-sm text-[#6B7280]">
                 <span>
-                  {transactionDate} | {transactionTime}
+                  {created.date} | {created.time}
                 </span>
-                <StatusBadge status="Transaction Settled" />
+                <StatusBadge status={statusLabel} />
               </Group>
 
               <div className="inline-flex items-center gap-3 rounded-full border border-gray-100 bg-white px-3 py-1">
@@ -74,6 +161,11 @@ export default function AgentTransactionDetailsPage() {
             variant="outline"
             rightSection={<Download size={18} />}
             className="self-start md:self-auto"
+            disabled={!receiptUrl}
+            onClick={() => {
+              if (!receiptUrl) return;
+              window.open(receiptUrl, "_blank", "noopener,noreferrer");
+            }}
           >
             Download Receipt
           </Button>
@@ -88,10 +180,16 @@ export default function AgentTransactionDetailsPage() {
               Agent Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Agent ID" value="2223334355" />
-              <DetailItem label="Agent Name" value="Babangida Idris" />
-              <DetailItem label="Email Address" value="$ 400" />
-              <DetailItem label="Phone Number" value="+234 8138898206" />
+              <DetailItem label="Agent ID" value={transaction.agent?.id ?? PLACEHOLDER} />
+              <DetailItem
+                label="Agent Name"
+                value={transaction.agent?.name ?? transaction.agent?.fullName ?? PLACEHOLDER}
+              />
+              <DetailItem label="Email Address" value={transaction.agent?.email ?? PLACEHOLDER} />
+              <DetailItem
+                label="Phone Number"
+                value={transaction.agent?.phoneNumber ?? PLACEHOLDER}
+              />
             </div>
           </section>
 
@@ -101,13 +199,25 @@ export default function AgentTransactionDetailsPage() {
               Transaction Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Transaction ID" value={transactionId ?? "—"} />
-              <DetailItem label="Amount" value="NGN 400,000.00" />
-              <DetailItem label="Equivalent Amount" value="$ 400" />
-              <DetailItem label="Date initiated" value="25 Jun 2025" />
+              <DetailItem label="Transaction ID" value={transaction.transactionId ?? transaction.id} />
+              <DetailItem
+                label="Amount"
+                value={formatAmount(
+                  transaction.amounts?.baseCurrency,
+                  transaction.amounts?.baseValue
+                )}
+              />
+              <DetailItem
+                label="Equivalent Amount"
+                value={formatAmount(
+                  transaction.amounts?.quoteCurrency,
+                  transaction.amounts?.quoteValue
+                )}
+              />
+              <DetailItem label="Date initiated" value={created.date} />
               <DetailItem
                 label="Pickup Address"
-                value="3, Adeola Odeku, VI, Lagos"
+                value={transaction.meta?.pickupLocation ?? PLACEHOLDER}
               />
             </div>
           </section>
@@ -118,13 +228,19 @@ export default function AgentTransactionDetailsPage() {
               Required Documents
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="BVN" value="2223334355" />
-              <DetailItem label="TIN" value="876245623" />
-              <DetailItem label="Form A ID" value="23456786543" />
-              <DetailItem label="Form A" value="Doc.pdf" />
-              <DetailItem label="Utility Bill" value="Doc.pdf" />
-              <DetailItem label="Visa" value="Doc.pdf" />
-              <DetailItem label="Return Ticket" value="Doc.pdf" />
+              <DetailItem label="BVN" value={transaction.meta?.bvnNumber ?? PLACEHOLDER} />
+              <DetailItem label="Documents Count" value={String(docsCount)} />
+              {docsList.length > 0 ? (
+                docsList.map((doc, index) => (
+                  <DetailItem
+                    key={`${doc.id ?? doc.fileName ?? "doc"}-${index}`}
+                    label={doc.name ?? doc.type ?? `Document ${index + 1}`}
+                    value={doc.fileName ?? doc.fileUrl ?? PLACEHOLDER}
+                  />
+                ))
+              ) : (
+                <DetailItem label="Documents" value={PLACEHOLDER} />
+              )}
             </div>
           </section>
 
@@ -134,12 +250,15 @@ export default function AgentTransactionDetailsPage() {
               Payment Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Transaction ID" value="783383AXSH" />
-              <DetailItem label="Transaction Date" value="15 Nov 2025" />
-              <DetailItem label="Transaction Time" value="11:00 am" />
-              <DetailItem label="Transaction Receipt" value="payment-receipt.pdf" />
-              <DetailItem label="Paid to" value="SohCahToa BSC" />
-              <DetailItem label="Bank Name" value="Access Bank 0069000592" />
+              <DetailItem label="Transaction ID" value={transaction.transactionId ?? transaction.id} />
+              <DetailItem label="Transaction Date" value={created.date} />
+              <DetailItem label="Transaction Time" value={created.time} />
+              <DetailItem
+                label="Transaction Receipt"
+                value={receiptUrl ?? PLACEHOLDER}
+              />
+              <DetailItem label="Paid to" value={transaction.customer?.name ?? PLACEHOLDER} />
+              <DetailItem label="Bank Name" value={PLACEHOLDER} />
             </div>
           </section>
 
@@ -149,18 +268,18 @@ export default function AgentTransactionDetailsPage() {
               Transaction Settlement
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Settlement ID" value="278338233AC" />
-              <DetailItem label="Settlement Date" value="17 Nov 2025" />
-              <DetailItem label="Settlement Time" value="1:00 pm" />
-              <DetailItem label="Settlement Receipt" value="settlement-receipt.pdf" />
-              <DetailItem label="Settlement Structure (Cash)" value="25% ~ $375" />
-              <DetailItem label="Settlement Structure (Prepaid Card)" value="75% ~ $1,125" />
-              <DetailItem label="75% Paid Into" value="GTB Bank Card 11 ******** 6773" />
+              <DetailItem label="Settlement ID" value={PLACEHOLDER} />
+              <DetailItem label="Settlement Date" value={PLACEHOLDER} />
+              <DetailItem label="Settlement Time" value={PLACEHOLDER} />
+              <DetailItem label="Settlement Receipt" value={PLACEHOLDER} />
+              <DetailItem label="Settlement Structure (Cash)" value={PLACEHOLDER} />
+              <DetailItem label="Settlement Structure (Prepaid Card)" value={PLACEHOLDER} />
+              <DetailItem label="75% Paid Into" value={PLACEHOLDER} />
               <div className="space-y-1">
                 <Text size="xs" className="text-body-text-50!" mb={4}>
                   Settlement Status
                 </Text>
-                <StatusBadge status="Completed" />
+                <StatusBadge status={transaction.step ?? PLACEHOLDER} />
               </div>
             </div>
           </section>

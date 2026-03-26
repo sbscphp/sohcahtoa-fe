@@ -94,6 +94,52 @@ export interface UpdateAgentStatusPayload {
   isActive: boolean;
 }
 
+export interface AgentTransactionAmountData {
+  baseCurrency?: string | null;
+  baseValue?: number | string | null;
+  quoteCurrency?: string | null;
+  quoteValue?: number | string | null;
+}
+
+export interface AgentTransactionEntityData {
+  id?: string | null;
+  name?: string | null;
+  fullName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface AgentTransactionDocumentItem {
+  id?: string | null;
+  name?: string | null;
+  fileName?: string | null;
+  fileUrl?: string | null;
+  type?: string | null;
+  status?: string | null;
+}
+
+export interface AgentSingleTransactionMetaData {
+  documentsList?: AgentTransactionDocumentItem[] | null;
+  numberOfDocuments?: number | string | null;
+  bvnNumber?: string | null;
+  pickupLocation?: string | null;
+  receipt?: string | null;
+}
+
+export interface AgentSingleTransactionData {
+  id: string;
+  transactionId?: string | null;
+  type?: string | null;
+  status?: string | null;
+  step?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  amounts?: AgentTransactionAmountData | null;
+  agent?: AgentTransactionEntityData | null;
+  customer?: AgentTransactionEntityData | null;
+  meta?: AgentSingleTransactionMetaData | null;
+}
+
 export interface UpdateAdminUserStatusPayload {
   isActive: boolean;
   reason: string;
@@ -781,6 +827,11 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.transactions(id),
         { params }
+      ),
+
+    getTransactionById: (id: string, transactionId: string) =>
+      apiClient.get<ApiResponse<AgentSingleTransactionData>>(
+        API_ENDPOINTS.admin.agent.getTransactionById(id, transactionId)
       ),
 
     updateStatus: (id: string, data: UpdateAgentStatusPayload) =>

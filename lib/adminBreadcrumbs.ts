@@ -53,9 +53,11 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   }
 
   // Agent Transactions: /admin/agent/transactions/:id
-  if (/^\/admin\/agent\/transactions\/[^/]+$/.test(pathname)) {
+  if (/^\/admin\/agent\/[^/]+\/transactions\/[^/]+$/.test(pathname)) {
+    const agentId = pathname.split('/')[3];
     return [
       { label: 'Agents', url: adminRoutes.adminAgent() },
+      { label: 'Agent Details', url: adminRoutes.adminAgentDetails(agentId) },
       { label: 'Agent Transactions' },
     ];
   }
