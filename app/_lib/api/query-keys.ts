@@ -208,6 +208,18 @@ export const adminKeys = {
         search?: string;
         status?: string;
       }) => [...adminKeys.outlet.franchises.all(), "list", params] as const,
+      branches: {
+        all: (id: string) => [...adminKeys.outlet.franchises.all(), "branches", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            isActive?: boolean;
+          }
+        ) => [...adminKeys.outlet.franchises.branches.all(id), "list", params] as const,
+      },
     },
     branches: {
       all: () => [...adminKeys.outlet.all, "branches"] as const,

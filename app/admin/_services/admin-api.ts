@@ -1094,6 +1094,14 @@ export const adminApi = {
 
       getById: (id: string) =>
         apiClient.get<ApiResponse<FranchiseDetailsData>>(API_ENDPOINTS.admin.outlet.franchises.getById(id)),
+
+      branches: {
+        list: (id: string, params?: BranchListParams) =>
+          apiClient.get<ApiResponse<BranchListItemData[]>>(
+            API_ENDPOINTS.admin.outlet.franchises.branches(id),
+            { params }
+          ),
+      },
     },
     branches: {
       list: (params?: BranchListParams) =>
