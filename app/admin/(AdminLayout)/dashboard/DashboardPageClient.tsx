@@ -108,7 +108,10 @@ export default function DashboardPageClient() {
             />
           </div>
           <div className="lg:col-span-2">
-            <TaskAndNotificationList data={taskNotificationFeed} />
+            <TaskAndNotificationList
+              data={taskNotificationFeed}
+              loading={isLoading}
+            />
           </div>
         </div>
       </div>

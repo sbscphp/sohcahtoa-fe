@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Group, Text, Stack } from "@mantine/core";
+import { Card, Group, Text, Stack, Skeleton } from "@mantine/core";
 import { Notification } from "../../../_types/dashboard";
 import { ArrowUpRight } from "lucide-react";
 import ListItem from "./ListItem";
@@ -10,8 +10,10 @@ import Link from "next/link";
 
 export function TaskAndNotificationList({
   data,
+  loading = false,
 }: {
   data: Notification[];
+  loading?: boolean;
 }) {
   return (
     <Card withBorder radius="md" padding="md">
@@ -28,7 +30,13 @@ export function TaskAndNotificationList({
         </Link>
       </Group>
 
-      {data.length === 0 ? (
+      {loading ? (
+        <Stack gap="sm">
+          <Skeleton height={72} radius="md" />
+          <Skeleton height={72} radius="md" />
+          <Skeleton height={72} radius="md" />
+        </Stack>
+      ) : data.length === 0 ? (
         <EmptySection
           format="secondary"
           title="No tasks or notifications yet."
