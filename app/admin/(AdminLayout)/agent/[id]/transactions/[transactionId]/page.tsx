@@ -266,7 +266,20 @@ export default function AgentTransactionDetailsPage() {
                   <DetailItem
                     key={`${doc.id ?? doc.fileName ?? "doc"}-${index}`}
                     label={doc.name ?? doc.type ?? `Document ${index + 1}`}
-                    value={doc.fileName ?? doc.fileUrl ?? PLACEHOLDER}
+                    value={
+                      doc.fileUrl ? (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#DD4F05] underline"
+                        >
+                          {doc.fileName ?? doc.fileUrl}
+                        </a>
+                      ) : (
+                        doc.fileName ?? PLACEHOLDER
+                      )
+                    }
                   />
                 ))
               ) : (
