@@ -67,7 +67,7 @@ const adminUserManagementRole = (id: string | number = ':id') => `${adminUserMan
 
 //settings routes
 const adminSettings = () => `${admin()}/settings`;
-const adminSettingsPickupStations = () => `${adminSettings()}/pickup-stations`;
+const adminSettingsPickupStations = () => `${adminSettings()}?tab=pickup-stations`;
 const adminSettingsPickupStationDetails = (
   id: string | number = ':id'
 ) => `${adminSettingsPickupStations()}/${id}`;
