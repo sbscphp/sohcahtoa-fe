@@ -78,9 +78,9 @@ export default function AgentTransactionDetailsPage() {
   const currencyFlagUrl = transaction?.currency ? getCurrencyFlagUrl(transaction.currency) : null;
   const docsList = (transaction?.meta?.documentsList ?? []) as AgentTransactionDocumentItem[];
   const docsCount =
-    transaction?.meta?.numberOfDocuments ??
+    transaction?.meta?.documents?.count ??
     (docsList.length > 0 ? docsList.length : PLACEHOLDER);
-  const receiptUrl = transaction?.meta?.receipt ?? null;
+  const receiptUrl = transaction?.receipt ?? null;
 
   const handleDownloadReceipt = async () => {
     if (!agentId || !transactionId || isDownloadingReceipt) return;
@@ -224,25 +224,28 @@ export default function AgentTransactionDetailsPage() {
               Transaction Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Transaction Reference Number" value={transaction.referenceNumber ?? transaction.transactionId ?? transaction.id} />
+              <DetailItem
+                label="Transaction Reference Number"
+                value={transaction.referenceNumber ?? transaction.transactionId}
+              />
               <DetailItem
                 label="Amount"
                 value={formatAmount(
-                  transaction.amounts?.baseCurrency,
-                  transaction.amounts?.baseValue
+                  "NGN",
+                  transaction.amounts?.nairaEquivalent
                 )}
               />
               <DetailItem
                 label="Equivalent Amount"
                 value={formatAmount(
-                  transaction.amounts?.quoteCurrency,
-                  transaction.amounts?.quoteValue
+                  transaction.currency,
+                  transaction.amounts?.foreignAmount
                 )}
               />
               <DetailItem label="Date initiated" value={created.date} />
               <DetailItem
                 label="Pickup Address"
-                value={transaction.meta?.pickupLocation ?? PLACEHOLDER}
+                value={transaction.meta?.destinationCountry ?? PLACEHOLDER}
               />
             </div>
           </section>
@@ -253,7 +256,7 @@ export default function AgentTransactionDetailsPage() {
               Required Documents
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="BVN" value={transaction.meta?.bvnNumber ?? PLACEHOLDER} />
+              <DetailItem label="BVN" value={transaction.customer?.bvn ?? PLACEHOLDER} />
               <DetailItem label="Documents Count" value={String(docsCount)} />
               {docsList.length > 0 ? (
                 docsList.map((doc, index) => (
@@ -288,7 +291,7 @@ export default function AgentTransactionDetailsPage() {
               Payment Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Transaction ID" value={transaction.transactionId ?? transaction.id} />
+              <DetailItem label="Transaction ID" value={transaction.transactionId} />
               <DetailItem label="Transaction Date" value={created.date} />
               <DetailItem label="Transaction Time" value={created.time} />
               <DetailItem
@@ -317,7 +320,7 @@ export default function AgentTransactionDetailsPage() {
                 <Text size="xs" className="text-body-text-50!" mb={4}>
                   Settlement Status
                 </Text>
-                <StatusBadge status={transaction.step ?? PLACEHOLDER} />
+                <StatusBadge status={transaction.stage ?? PLACEHOLDER} />
               </div>
             </div>
           </section>

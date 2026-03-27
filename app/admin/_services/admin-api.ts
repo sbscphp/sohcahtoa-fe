@@ -95,10 +95,10 @@ export interface UpdateAgentStatusPayload {
 }
 
 export interface AgentTransactionAmountData {
-  baseCurrency?: string | null;
-  baseValue?: number | string | null;
-  quoteCurrency?: string | null;
-  quoteValue?: number | string | null;
+  nairaEquivalent?: number | string | null;
+  foreignAmount?: number | string | null;
+  pickupAmount?: number | string | null;
+  value?: number | string | null;
 }
 
 export interface AgentTransactionEntityData {
@@ -118,27 +118,37 @@ export interface AgentTransactionDocumentItem {
   status?: string | null;
 }
 
+export interface AgentTransactionCustomerData {
+  name?: string | null;
+  bvn?: string | null;
+  tin?: string | null;
+}
+
+export interface AgentTransactionDocumentsMeta {
+  count?: number | string | null;
+}
+
 export interface AgentSingleTransactionMetaData {
+  documents?: AgentTransactionDocumentsMeta | null;
   documentsList?: AgentTransactionDocumentItem[] | null;
-  numberOfDocuments?: number | string | null;
-  bvnNumber?: string | null;
-  pickupLocation?: string | null;
-  receipt?: string | null;
+  destinationCountry?: string | null;
 }
 
 export interface AgentSingleTransactionData {
-  id: string;
-  transactionId?: string | null;
+  transactionId: string;
   referenceNumber?: string | null;
   type?: string | null;
   status?: string | null;
-  step?: string | null;
+  stage?: string | null;
   currency?: string | null;
+  pickup?: string | null | Record<string, unknown>;
+  receipt?: string | null;
+  settlement?: string | null | Record<string, unknown>;
   createdAt?: string | null;
   updatedAt?: string | null;
   amounts?: AgentTransactionAmountData | null;
   agent?: AgentTransactionEntityData | null;
-  customer?: AgentTransactionEntityData | null;
+  customer?: AgentTransactionCustomerData | null;
   meta?: AgentSingleTransactionMetaData | null;
 }
 
