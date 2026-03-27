@@ -14,6 +14,7 @@ import {
   type AgentSingleTransactionData,
   type AgentTransactionDocumentItem,
 } from "@/app/admin/_services/admin-api";
+import { getCurrencyFlagUrl } from "@/app/admin/_lib/currency";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
@@ -73,6 +74,8 @@ export default function AgentTransactionDetailsPage() {
   const statusLabel = transaction?.status ?? PLACEHOLDER;
   const title = transaction?.type ?? "Agent Transaction";
   const created = formatDateTime(transaction?.createdAt);
+  const currencyCode = transaction?.currency ?? PLACEHOLDER;
+  const currencyFlagUrl = transaction?.currency ? getCurrencyFlagUrl(transaction.currency) : null;
   const docsList = (transaction?.meta?.documentsList ?? []) as AgentTransactionDocumentItem[];
   const docsCount =
     transaction?.meta?.numberOfDocuments ??
@@ -161,27 +164,18 @@ export default function AgentTransactionDetailsPage() {
               </Group>
 
               <div className="inline-flex items-center gap-3 rounded-full border border-gray-100 bg-white px-3 py-1">
-                <div className="flex -space-x-2">
-                  <Avatar
-                    radius="xl"
-                    size={24}
-                    color="gray"
-                    className="ring-2 ring-white"
-                  >
-                    US
-                  </Avatar>
-                  <Avatar
-                    radius="xl"
-                    size={24}
-                    color="green"
-                    className="-ml-2 ring-2 ring-white"
-                  >
-                    NG
-                  </Avatar>
-                </div>
+                <Avatar
+                  radius="xl"
+                  size={24}
+                  color="gray"
+                  src={currencyFlagUrl ?? undefined}
+                  className="ring-2 ring-white"
+                >
+                  {currencyCode !== PLACEHOLDER ? currencyCode.slice(0, 2).toUpperCase() : PLACEHOLDER}
+                </Avatar>
 
                 <Text size="sm" fw={500} className="text-body-heading-300">
-                  Currency Transacted
+                  Currency Transacted: {currencyCode}
                 </Text>
               </div>
             </div>
@@ -230,7 +224,7 @@ export default function AgentTransactionDetailsPage() {
               Transaction Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Transaction ID" value={transaction.transactionId ?? transaction.id} />
+              <DetailItem label="Transaction Reference Number" value={transaction.referenceNumber ?? transaction.transactionId ?? transaction.id} />
               <DetailItem
                 label="Amount"
                 value={formatAmount(

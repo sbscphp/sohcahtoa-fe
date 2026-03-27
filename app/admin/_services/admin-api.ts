@@ -129,9 +129,11 @@ export interface AgentSingleTransactionMetaData {
 export interface AgentSingleTransactionData {
   id: string;
   transactionId?: string | null;
+  referenceNumber?: string | null;
   type?: string | null;
   status?: string | null;
   step?: string | null;
+  currency?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   amounts?: AgentTransactionAmountData | null;
