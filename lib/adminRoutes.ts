@@ -67,6 +67,10 @@ const adminUserManagementRole = (id: string | number = ':id') => `${adminUserMan
 
 //settings routes
 const adminSettings = () => `${admin()}/settings`;
+const adminSettingsPickupStations = () => `${adminSettings()}/pickup-stations`;
+const adminSettingsPickupStationDetails = (
+  id: string | number = ':id'
+) => `${adminSettingsPickupStations()}/${id}`;
 
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;
@@ -137,6 +141,8 @@ export const adminRoutes = {
 
   // Settings
   adminSettings,
+  adminSettingsPickupStations,
+  adminSettingsPickupStationDetails,
 
   // Settlement
   adminSettlement,

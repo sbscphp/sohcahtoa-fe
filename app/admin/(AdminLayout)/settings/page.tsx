@@ -9,12 +9,14 @@ import PasswordTab from "./PasswordTab";
 import AccountInformationTab from "./AccountInformationTab";
 import NotificationSettingsTab from "./NotificationSettingsTab";
 import { adminRoutes } from "@/lib/adminRoutes";
+import PickUpStations from "./PickUpStations";
 
 const SETTING_TABS = [
   { value: "account", label: "Account Information" },
   { value: "password", label: "Password" },
   { value: "workflow", label: "Workflow Configuration" },
   { value: "notifications", label: "Notification Settings" },
+  { value: "pickup-stations", label: "Pick-Up Stations" },
 ] as const;
 
 export type TabId = (typeof SETTING_TABS)[number]["value"];
@@ -81,6 +83,7 @@ export default function SettingsPage() {
         />
       )}
       {activeTab === "notifications" && <NotificationSettingsTab />}
+      {activeTab === "pickup-stations" && <PickUpStations />}
     </div>
   );
 }
