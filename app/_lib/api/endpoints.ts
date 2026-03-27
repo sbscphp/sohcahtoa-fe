@@ -114,6 +114,8 @@ export const API_ENDPOINTS = {
       transactions: (id: string) => `/api/admin/agent/${id}/transactions`,
       getTransactionById: (id: string, transactionId: string) =>
         `/api/admin/agent/${id}/transactions/${transactionId}`,
+      downloadTransactionReceipt: (id: string, transactionId: string) =>
+        `/api/admin/agent/${id}/transactions/${transactionId}/receipt/download`,
     },
     customers: {
       list: "/api/admin/customers",

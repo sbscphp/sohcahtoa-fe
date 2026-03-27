@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Avatar, Button, Divider, Group, Skeleton, Stack, Text } from "@mantine/core";
 import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -13,7 +14,8 @@ import {
   type AgentSingleTransactionData,
   type AgentTransactionDocumentItem,
 } from "@/app/admin/_services/admin-api";
-import type { ApiResponse } from "@/app/_lib/api/client";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const PLACEHOLDER = "—";
 
@@ -49,6 +51,7 @@ function formatAmount(currency?: string | null, value?: number | string | null):
 }
 
 export default function AgentTransactionDetailsPage() {
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
   const params = useParams<{
     id: string;
     transactionId: string;
@@ -75,6 +78,36 @@ export default function AgentTransactionDetailsPage() {
     transaction?.meta?.numberOfDocuments ??
     (docsList.length > 0 ? docsList.length : PLACEHOLDER);
   const receiptUrl = transaction?.meta?.receipt ?? null;
+
+  const handleDownloadReceipt = async () => {
+    if (!agentId || !transactionId || isDownloadingReceipt) return;
+
+    try {
+      setIsDownloadingReceipt(true);
+      const file = await adminApi.agent.downloadTransactionReceipt(agentId, transactionId);
+      const objectUrl = URL.createObjectURL(file.blob);
+      const link = document.createElement("a");
+      const fallbackFileName = `transaction-receipt-${transactionId}.pdf`;
+      link.href = objectUrl;
+      link.download = file.filename || fallbackFileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse | undefined;
+      notifications.show({
+        title: "Receipt Download Failed",
+        message:
+          apiResponse?.error?.message ??
+          (error as Error)?.message ??
+          "Unable to download transaction receipt right now.",
+        color: "red",
+      });
+    } finally {
+      setIsDownloadingReceipt(false);
+    }
+  };
 
   if (!agentId || !transactionId) {
     return (
@@ -161,11 +194,9 @@ export default function AgentTransactionDetailsPage() {
             variant="outline"
             rightSection={<Download size={18} />}
             className="self-start md:self-auto"
-            disabled={!receiptUrl}
-            onClick={() => {
-              if (!receiptUrl) return;
-              window.open(receiptUrl, "_blank", "noopener,noreferrer");
-            }}
+            loading={isDownloadingReceipt}
+            disabled={!agentId || !transactionId || isDownloadingReceipt}
+            onClick={handleDownloadReceipt}
           >
             Download Receipt
           </Button>

@@ -2,7 +2,7 @@
  * Admin API Functions
  */
 
-import { apiClient, type ApiResponse } from "@/app/_lib/api/client";
+import { apiClient, type ApiDownloadResponse, type ApiResponse } from "@/app/_lib/api/client";
 import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type { AdminUser } from "@/app/admin/_lib/atoms/admin-auth-atom";
 import type { AdminDashboardData } from "@/app/admin/_types/dashboard";
@@ -877,6 +877,11 @@ export const adminApi = {
     getTransactionById: (id: string, transactionId: string) =>
       apiClient.get<ApiResponse<AgentSingleTransactionData>>(
         API_ENDPOINTS.admin.agent.getTransactionById(id, transactionId)
+      ),
+
+    downloadTransactionReceipt: (id: string, transactionId: string): Promise<ApiDownloadResponse> =>
+      apiClient.download(
+        API_ENDPOINTS.admin.agent.downloadTransactionReceipt(id, transactionId)
       ),
 
     updateStatus: (id: string, data: UpdateAgentStatusPayload) =>
