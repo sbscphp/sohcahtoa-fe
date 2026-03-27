@@ -206,6 +206,15 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Pickup Station Details: /admin/settings/pickup-stations/:id
+  if (/^\/admin\/settings\/pickup-stations\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'Settings', url: adminRoutes.adminSettings() },
+      { label: 'Pick-up Stations', url: adminRoutes.adminSettingsPickupStations() },
+      { label: 'Pick-up Station' },
+    ];
+  }
+
   // Default: no breadcrumbs
   return [];
 }
