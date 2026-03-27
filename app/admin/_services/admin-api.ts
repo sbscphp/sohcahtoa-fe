@@ -601,6 +601,30 @@ export interface AdminTransactionDetailsData {
   raw?: Record<string, unknown> | null;
 }
 
+export type FranchiseTransactionListParams = AdminTransactionListParams;
+
+export interface FranchiseTransactionListItemData {
+  id: string;
+  transactionId?: string | null;
+  reference?: string | null;
+  type?: string | null;
+  transactionType?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  date?: string | null;
+  transactionDate?: string | null;
+  branchName?: string | null;
+  agentName?: string | null;
+  branch?: {
+    name?: string | null;
+  } | null;
+  agent?: {
+    fullName?: string | null;
+    name?: string | null;
+  } | null;
+}
+
 export interface ReportModuleItem {
   key: string;
   name: string;
@@ -1099,6 +1123,13 @@ export const adminApi = {
         list: (id: string, params?: BranchListParams) =>
           apiClient.get<ApiResponse<BranchListItemData[]>>(
             API_ENDPOINTS.admin.outlet.franchises.branches(id),
+            { params }
+          ),
+      },
+      transactions: {
+        list: (id: string, params?: FranchiseTransactionListParams) =>
+          apiClient.get<ApiResponse<FranchiseTransactionListItemData[]>>(
+            API_ENDPOINTS.admin.outlet.franchises.transactions(id),
             { params }
           ),
       },

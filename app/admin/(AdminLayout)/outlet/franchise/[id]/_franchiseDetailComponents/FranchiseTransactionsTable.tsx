@@ -2,12 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Group, Text, TextInput, Select, Button } from "@mantine/core";
-import { Search, ListFilter, Upload } from "lucide-react";
+import { Group, Text, TextInput, Select } from "@mantine/core";
+import { Search, ListFilter } from "lucide-react";
+import { useDebouncedValue } from "@mantine/hooks";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import {
+  useFranchiseTransactions,
+  type FranchiseTransactionListItem,
+} from "../../../hooks/useFranchiseTransactions";
 
 export interface TransactionRow {
   id: string;
@@ -20,14 +25,6 @@ export interface TransactionRow {
   actionEffect: "Posted" | "Pending" | "Rejected";
 }
 
-const TRANSACTIONS_MOCK: TransactionRow[] = [
-  { id: "tx1", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikoyi Axis", agentName: "Eddy Ubong", type: "BTA", actionEffect: "Posted" },
-  { id: "tx2", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Victoria Island", agentName: "Sarah Olufemi", type: "PTA", actionEffect: "Pending" },
-  { id: "tx3", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Lekki Phase 1", agentName: "Chinedu Okafor", type: "School Fees", actionEffect: "Rejected" },
-  { id: "tx4", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Surulere", agentName: "Tolu Adebayo", type: "Expatriate", actionEffect: "Pending" },
-  { id: "tx5", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikorodu", agentName: "Amanda Nwosu", type: "BTA", actionEffect: "Posted" },
-];
-
 const transactionHeaders = [
   { label: "Transaction ID", key: "transactionId" },
   { label: "Action Date", key: "actionDate" },
@@ -37,7 +34,17 @@ const transactionHeaders = [
   { label: "Action", key: "action" },
 ];
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
+
+const statusOptions = [
+  { value: "All", label: "Filter By" },
+  { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
+  { value: "PENDING", label: "Pending" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "REQUEST_INFORMATION", label: "Request Information" },
+];
 
 interface FranchiseTransactionsTableProps {
   franchiseId: string;
@@ -46,31 +53,27 @@ interface FranchiseTransactionsTableProps {
 export function FranchiseTransactionsTable({ franchiseId }: FranchiseTransactionsTableProps) {
   const router = useRouter();
   const [transactionSearch, setTransactionSearch] = useState("");
-  const [transactionFilter, setTransactionFilter] = useState("Filter By");
+  const [transactionFilter, setTransactionFilter] = useState("All");
   const [transactionPage, setTransactionPage] = useState(1);
+  const [debouncedSearch] = useDebouncedValue(transactionSearch, 350);
 
-  const filteredTransactions = useMemo(() => {
-    return TRANSACTIONS_MOCK.filter((t) => {
-      const matchesSearch =
-        t.transactionId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.branchName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.agentName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.type.toLowerCase().includes(transactionSearch.toLowerCase());
-      const matchesFilter =
-        transactionFilter === "Filter By" ||
-        transactionFilter === "All" ||
-        t.actionEffect === transactionFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [transactionSearch, transactionFilter]);
+  const queryParams = useMemo(
+    () => ({
+      page: transactionPage,
+      limit: PAGE_SIZE,
+      search: debouncedSearch.trim() || undefined,
+      status: transactionFilter !== "All" ? transactionFilter : undefined,
+    }),
+    [debouncedSearch, transactionFilter, transactionPage]
+  );
 
-  const transactionTotalPages = Math.ceil(filteredTransactions.length / PAGE_SIZE) || 1;
-  const paginatedTransactions = useMemo(() => {
-    const start = (transactionPage - 1) * PAGE_SIZE;
-    return filteredTransactions.slice(start, start + PAGE_SIZE);
-  }, [transactionPage, filteredTransactions]);
+  const { transactions, totalPages, isLoading, isFetching } = useFranchiseTransactions(
+    franchiseId,
+    queryParams
+  );
+  const safeTotalPages = Math.max(1, totalPages);
 
-  const renderTransactionRow = (item: TransactionRow) => [
+  const renderTransactionRow = (item: FranchiseTransactionListItem) => [
     <Text key="transactionId" size="sm">
       {item.transactionId}
     </Text>,
@@ -107,41 +110,37 @@ export function FranchiseTransactionsTable({ franchiseId }: FranchiseTransaction
           placeholder="Enter keyword"
           leftSection={<Search size={16} color="#DD4F05" />}
           value={transactionSearch}
-          onChange={(e) => setTransactionSearch(e.currentTarget.value)}
+            onChange={(e) => {
+              setTransactionSearch(e.currentTarget.value);
+              setTransactionPage(1);
+            }}
           w={320}
           radius="xl"
         />
-        <Group>
-          <Select
-            value={transactionFilter}
-            onChange={(value) => setTransactionFilter(value!)}
-            data={["Filter By", "All", "Posted", "Pending", "Rejected"]}
-            radius="xl"
-            w={120}
-            rightSection={<ListFilter size={16} />}
-          />
-          <Button
-            variant="filled"
-            color="#DD4F05"
-            radius="xl"
-            rightSection={<Upload size={16} />}
-          >
-            Export
-          </Button>
-        </Group>
+        <Select
+          value={transactionFilter}
+          onChange={(value) => {
+            setTransactionFilter(value ?? "All");
+            setTransactionPage(1);
+          }}
+          data={statusOptions}
+          radius="xl"
+          w={190}
+          rightSection={<ListFilter size={16} />}
+        />
       </Group>
       <DynamicTableSection
         headers={transactionHeaders}
-        data={paginatedTransactions}
-        loading={false}
+        data={transactions}
+        loading={isLoading || isFetching}
         renderItems={renderTransactionRow}
         emptyTitle="No Transactions Found"
         emptyMessage="There are no transactions for this franchise."
         pagination={{
           page: transactionPage,
-          totalPages: transactionTotalPages,
+          totalPages: safeTotalPages,
           onNext: () =>
-            setTransactionPage((p) => Math.min(p + 1, transactionTotalPages)),
+            setTransactionPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setTransactionPage((p) => Math.max(p - 1, 1)),
           onPageChange: setTransactionPage,
         }}

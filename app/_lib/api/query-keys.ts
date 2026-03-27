@@ -220,6 +220,24 @@ export const adminKeys = {
           }
         ) => [...adminKeys.outlet.franchises.branches.all(id), "list", params] as const,
       },
+      transactions: {
+        all: (id: string) => [...adminKeys.outlet.franchises.all(), "transactions", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            status?: string;
+            step?: string;
+            type?: string;
+            dateFrom?: string;
+            dateTo?: string;
+            sortBy?: string;
+            sortOrder?: "asc" | "desc";
+          }
+        ) => [...adminKeys.outlet.franchises.transactions.all(id), "list", params] as const,
+      },
     },
     branches: {
       all: () => [...adminKeys.outlet.all, "branches"] as const,
