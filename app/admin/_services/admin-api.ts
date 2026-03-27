@@ -230,6 +230,8 @@ export interface CreateFranchisePayload {
   altPhoneNumber: string;
 }
 
+export type UpdateFranchisePayload = CreateFranchisePayload;
+
 export interface OutletStatesData {
   states: string[];
 }
@@ -1118,6 +1120,9 @@ export const adminApi = {
 
       getById: (id: string) =>
         apiClient.get<ApiResponse<FranchiseDetailsData>>(API_ENDPOINTS.admin.outlet.franchises.getById(id)),
+
+      update: (id: string, data: UpdateFranchisePayload) =>
+        apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.update(id), data),
 
       branches: {
         list: (id: string, params?: BranchListParams) =>

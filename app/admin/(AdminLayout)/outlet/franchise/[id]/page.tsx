@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Text,
   Group,
@@ -11,9 +12,10 @@ import {
   Skeleton,
   Alert,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { CustomButton } from "@/app/admin/_components/CustomButton";
+// import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import FormModal, { type FormField } from "@/app/admin/_components/FormModal";
@@ -23,30 +25,26 @@ import {
   formatFranchiseStatusForBadge,
   formatFranchiseCreatedAt,
 } from "../../hooks/useFranchiseDetails";
+import { useOutletStates } from "../../hooks/useOutletStates";
+import { usePutData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import {
+  adminApi,
+  type UpdateFranchisePayload,
+} from "@/app/admin/_services/admin-api";
 
-const EDIT_FRANCHISE_STATES = [
-  { value: "Lagos State", label: "Lagos State" },
-  { value: "Abuja", label: "Abuja" },
-  { value: "Kano", label: "Kano" },
-  { value: "Rivers", label: "Rivers" },
-  { value: "Oyo", label: "Oyo" },
-  { value: "Enugu", label: "Enugu" },
-  { value: "Kaduna", label: "Kaduna" },
-  { value: "Delta", label: "Delta" },
-  { value: "Ogun", label: "Ogun" },
-  { value: "Anambra", label: "Anambra" },
-  { value: "Osun", label: "Osun" },
-];
-
-const editFranchiseFields: FormField[] = [
-  { name: "franchiseName", label: "Franchise Name", type: "text", required: true, placeholder: "e.g. Sterling Exchange" },
-  { name: "state", label: "State", type: "select", required: true, placeholder: "Select state", options: EDIT_FRANCHISE_STATES },
-  { name: "address", label: "Address", type: "text", required: true, placeholder: "Enter address" },
-  { name: "contactPerson", label: "Contact Person", type: "text", required: true, placeholder: "e.g. Adekunle, Ibrahim Olamide" },
-  { name: "emailAddress", label: "Email Address", type: "email", required: true, placeholder: "e.g. olamide@sohcahtoa.com" },
-  { name: "phoneNumber1", label: "Phone Number 1", type: "tel", required: true, placeholder: "+234 8056283635" },
-  { name: "phoneNumber2", label: "Phone Number 2", type: "tel", required: true, placeholder: "+234 000000000" },
-];
+function buildUpdatePayload(data: Record<string, unknown>): UpdateFranchisePayload {
+  return {
+    franchiseName: String(data.franchiseName ?? "").trim(),
+    state: String(data.state ?? "").trim(),
+    address: String(data.address ?? "").trim(),
+    contactPersonName: String(data.contactPerson ?? "").trim(),
+    email: String(data.emailAddress ?? "").trim(),
+    phoneNumber: String(data.phoneNumber1 ?? "").trim(),
+    altPhoneNumber: String(data.phoneNumber2 ?? "").trim(),
+  };
+}
 
 export default function FranchiseDetailPage() {
   const params = useParams<{ id: string }>();
@@ -64,7 +62,16 @@ export default function FranchiseDetailPage() {
 }
 
 function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
+  const queryClient = useQueryClient();
   const { franchise, isLoading, isError, error } = useFranchiseDetails(franchiseId);
+  const {
+    states,
+    isLoading: isStatesLoading,
+    isError: isStatesError,
+    error: statesError,
+  } = useOutletStates();
+
+  const hasStateOptions = states.length > 0;
 
   /** Local override after mock deactivate/reactivate until refetch is wired; cleared when franchise id from route changes */
   const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
@@ -80,7 +87,57 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
   const [editSuccessOpen, setEditSuccessOpen] = useState(false);
   const [pendingEditData, setPendingEditData] = useState<Record<string, unknown> | null>(null);
-  const [editLoading, setEditLoading] = useState(false);
+
+  const editFranchiseFields = useMemo<FormField[]>(
+    () => [
+      {
+        name: "franchiseName",
+        label: "Franchise Name",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Sterling Exchange",
+      },
+      {
+        name: "state",
+        label: "State",
+        type: "select",
+        required: true,
+        placeholder: isStatesLoading ? "Loading states..." : "Select state",
+        options: states,
+        disabled: isStatesLoading || !hasStateOptions,
+      },
+      { name: "address", label: "Address", type: "text", required: true, placeholder: "Enter address" },
+      {
+        name: "contactPerson",
+        label: "Contact Person",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Adekunle, Ibrahim Olamide",
+      },
+      {
+        name: "emailAddress",
+        label: "Email Address",
+        type: "email",
+        required: true,
+        placeholder: "e.g. olamide@sohcahtoa.com",
+      },
+      {
+        name: "phoneNumber1",
+        label: "Phone Number 1",
+        type: "tel",
+        required: true,
+        placeholder: "+234 8056283635",
+      },
+      {
+        name: "phoneNumber2",
+        label: "Phone Number 2",
+        type: "tel",
+        required: false,
+        placeholder: "+234 000000000",
+      },
+    ],
+    [hasStateOptions, isStatesLoading, states]
+  );
 
   const editFormInitialValues = useMemo(
     () => ({
@@ -95,11 +152,52 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
     [franchise]
   );
 
+  const updateFranchiseMutation = usePutData(
+    ({ id, payload }: { id: string; payload: UpdateFranchisePayload }) =>
+      adminApi.outlet.franchises.update(id, payload),
+    {
+      onError: (err) => {
+        const apiResponse = (err as unknown as ApiError).data as ApiResponse | undefined;
+        notifications.show({
+          title: "Update Franchise Failed",
+          message:
+            apiResponse?.error?.message ??
+            err.message ??
+            "Unable to update franchise. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const branchStatsSummary = useMemo(() => {
     if (!franchise?.branchStats) return "--";
     const { total, active, pending, deactivated } = franchise.branchStats;
     return `${total} total (${active} active, ${pending} pending, ${deactivated} deactivated)`;
   }, [franchise]);
+
+  const openEditModal = () => {
+    if (isStatesError) {
+      notifications.show({
+        title: "Unable to Load States",
+        message:
+          statesError?.message ??
+          "States could not be fetched. You cannot edit a franchise until states are available.",
+        color: "red",
+      });
+      return;
+    }
+    if (!hasStateOptions && !isStatesLoading) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "State options are unavailable. Please try again when states are loaded.",
+        color: "red",
+      });
+      return;
+    }
+    setEditModalOpened(true);
+  };
 
   const handleEditSubmit = (data: Record<string, unknown>) => {
     setPendingEditData(data);
@@ -108,15 +206,22 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
   };
 
   const handleEditConfirmSave = async () => {
-    setEditLoading(true);
-    if (pendingEditData) {
-      // TODO: persist pendingEditData via API
-      await new Promise((r) => setTimeout(r, 600));
+    if (!pendingEditData) return;
+    const payload = buildUpdatePayload(pendingEditData);
+    try {
+      await updateFranchiseMutation.mutateAsync({ id: franchiseId, payload });
+      await queryClient.invalidateQueries({
+        queryKey: [...adminKeys.outlet.franchises.detail(franchiseId)],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [...adminKeys.outlet.franchises.all()],
+      });
+      setEditConfirmOpen(false);
+      setEditSuccessOpen(true);
+      setPendingEditData(null);
+    } catch {
+      setEditConfirmOpen(false);
     }
-    setEditLoading(false);
-    setEditConfirmOpen(false);
-    setEditSuccessOpen(true);
-    setPendingEditData(null);
   };
 
   const handleDeactivateConfirm = async () => {
@@ -139,6 +244,7 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
 
   const statusBadgeLabel = franchise ? formatFranchiseStatusForBadge(franchise.status) : "--";
   const createdLabel = franchise ? formatFranchiseCreatedAt(franchise.createdAt) : "--";
+  const formModalKey = `${franchise?.id ?? "edit"}-${franchise?.updatedAt ?? ""}`;
 
   return (
     <div className="space-y-6">
@@ -177,9 +283,9 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
                 </div>
 
                 <Group gap="sm">
-                  <CustomButton buttonType="secondary" size="md" radius="xl">
+                  {/* <CustomButton buttonType="secondary" size="md" radius="xl">
                     View Updates
-                  </CustomButton>
+                  </CustomButton> */}
                   <Menu position="bottom-end" shadow="md" width={160}>
                     <Menu.Target>
                       <Button radius="xl" size="md" color="#DD4F05">
@@ -187,9 +293,7 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
                       </Button>
                     </Menu.Target>
                     <Menu.Dropdown>
-                      <Menu.Item onClick={() => setEditModalOpened(true)}>
-                        Edit
-                      </Menu.Item>
+                      <Menu.Item onClick={openEditModal}>Edit</Menu.Item>
                       <Menu.Divider />
                       <Menu.Item
                         onClick={() =>
@@ -237,7 +341,7 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
       <FranchiseDetailTabbedTables franchiseId={franchiseId} />
 
       <FormModal
-        key={franchise?.id ?? "edit"}
+        key={formModalKey}
         opened={editModalOpened}
         onClose={() => setEditModalOpened(false)}
         title="Edit Franchise Details"
@@ -259,7 +363,7 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         secondaryButtonText="No, Close"
         onPrimary={handleEditConfirmSave}
         onSecondary={() => setEditConfirmOpen(false)}
-        loading={editLoading}
+        loading={updateFranchiseMutation.isPending}
       />
 
       <SuccessModal
