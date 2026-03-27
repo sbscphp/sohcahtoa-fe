@@ -59,12 +59,16 @@ export default function ReviewPage() {
   const handleSendOTP = () => {
     if (userType && !isSendingOTP) {
       setIsSendingOTP(true);
-      const onSuccess = (response: { success: boolean; data?: { otp?: string }; error?: { message?: string } }) => {
+      const onSuccess = (response: { success: boolean; data?: unknown; error?: { message?: string } }) => {
         if (response.success) {
-          if (response.data?.otp) {
+          const otp =
+            response.data && typeof response.data === "object" && "otp" in response.data
+              ? (response.data as { otp?: unknown }).otp
+              : undefined;
+          if (typeof otp === "string" && otp) {
             notifications.show({
               title: "DEV OTP",
-              message: `OTP: ${response.data.otp}`,
+              message: `OTP: ${otp}`,
               color: "blue",
               autoClose: 8000,
             });
