@@ -1276,6 +1276,9 @@ export const adminApi = {
       create: (data: CreateBranchPayload) =>
         apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.branches.create, data),
 
+      update: (id: string, data: CreateBranchPayload) =>
+        apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.branches.update(id), data),
+
       export: async (params?: { search?: string; isActive?: boolean }) => {
         const response = await apiClient.get<Blob | string>(
           API_ENDPOINTS.admin.outlet.branches.export,

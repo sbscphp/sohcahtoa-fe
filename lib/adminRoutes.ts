@@ -51,6 +51,7 @@ const adminOutletFranchiseTransactionDetail = (franchiseId: string | number, txI
   `${adminOutletFranchiseDetails(franchiseId)}/transactions?tx=${encodeURIComponent(txId)}`;
 const adminOutletBranchCreate = () => `${adminOutlet()}/branch/create`;
 const adminOutletBranchDetails = (id: string | number = ':id') => `${adminOutlet()}/branch/${id}`;
+const adminOutletBranchEditDetails = (id: string | number = ':id') => `${adminOutletBranchDetails(id)}/edit`;
 const adminOutletBranchTransactionDetail = (branchId: string | number, txId: string) =>
   `${adminOutletBranchDetails(branchId)}/transactions?tx=${encodeURIComponent(txId)}`;
 
@@ -126,6 +127,7 @@ export const adminRoutes = {
   adminOutletFranchiseTransactionDetail,
   adminOutletBranchCreate,
   adminOutletBranchDetails,
+  adminOutletBranchEditDetails,
   adminOutletBranchTransactionDetail,
   
   // Workflow

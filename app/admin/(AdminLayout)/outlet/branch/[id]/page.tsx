@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Text,
   Group,
@@ -11,6 +11,7 @@ import {
   Skeleton,
   Alert,
 } from "@mantine/core";
+import { adminRoutes } from "@/lib/adminRoutes";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
@@ -66,6 +67,7 @@ export default function BranchDetailPage() {
 }
 
 function BranchDetailPageInner({ branchId }: { branchId: string }) {
+  const router = useRouter();
   const { branch, isLoading, isError, error } = useBranchDetails(branchId);
 
   const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
@@ -182,7 +184,13 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
                     </Button>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    <Menu.Item onClick={() => setEditModalOpened(true)}>Edit</Menu.Item>
+                    <Menu.Item
+                      onClick={() =>
+                        router.push(adminRoutes.adminOutletBranchEditDetails(branchId))
+                      }
+                    >
+                      Edit
+                    </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
                       onClick={() =>

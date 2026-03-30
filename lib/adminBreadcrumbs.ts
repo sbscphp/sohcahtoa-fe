@@ -128,6 +128,16 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Branch Edit: /admin/outlet/branch/:id/edit
+  if (/^\/admin\/outlet\/branch\/[^/]+\/edit$/.test(pathname)) {
+    const branchId = pathname.split('/')[4];
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Branch Details', url: adminRoutes.adminOutletBranchDetails(branchId) },
+      { label: 'Edit Branch Details' },
+    ];
+  }
+
   // Branch Transaction Detail: /admin/outlet/branch/:id/transactions
   if (/^\/admin\/outlet\/branch\/[^/]+\/transactions$/.test(pathname)) {
     const branchId = pathname.split('/')[4];
