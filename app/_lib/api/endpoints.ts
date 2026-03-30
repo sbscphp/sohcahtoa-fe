@@ -106,6 +106,7 @@ export const API_ENDPOINTS = {
     auditTrail: "/api/admin/audit/trail",
     auditTrailExport: "/api/admin/audit/trail/export",
     agent: {
+      all: "/api/admin/agent/all",
       list: "/api/admin/agent",
       export: "/api/admin/agent/export",
       stats: "/api/admin/agent/stats",
@@ -167,6 +168,7 @@ export const API_ENDPOINTS = {
         transactions: (id: string) => `/api/admin/outlet/franchises/${id}/transactions`,
       },
       branches: {
+        create: "/api/admin/outlet/branches",
         list: "/api/admin/outlet/branches",
         export: "/api/admin/outlet/branches/export",
         stats: "/api/admin/outlet/branches/stats",

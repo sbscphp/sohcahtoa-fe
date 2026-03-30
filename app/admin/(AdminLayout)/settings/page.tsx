@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../_components/HeaderTabs";
-import EmptyState from "../../_components/EmptyState";
+// import EmptyState from "../../_components/EmptyState";
 import PasswordTab from "./PasswordTab";
 import AccountInformationTab from "./AccountInformationTab";
 import NotificationSettingsTab from "./NotificationSettingsTab";
@@ -14,7 +14,7 @@ import PickUpStations from "./PickUpStations";
 const SETTING_TABS = [
   { value: "account", label: "Account Information" },
   { value: "password", label: "Password" },
-  { value: "workflow", label: "Workflow Configuration" },
+  // { value: "workflow", label: "Workflow Configuration" },
   { value: "notifications", label: "Notification Settings" },
   { value: "pickup-stations", label: "Pick-Up Stations" },
 ] as const;
@@ -55,17 +55,17 @@ export default function SettingsPage() {
         onChange={(v) => {
           const tab = v as TabId;
 
-          if (tab === "workflow") {
-            router.push(adminRoutes.adminWorkflowDetails("item.id"));
-            return; // ❗ prevent tab switch
-          }
+          // if (tab === "workflow") {
+          //   router.push(adminRoutes.adminWorkflowDetails("item.id"));
+          //   return; // ❗ prevent tab switch
+          // }
 
           setActiveTab(tab);
         }}
         tabs={[...SETTING_TABS]}
       />
     ),
-    [activeTab, router]
+    [activeTab]
   );
 
   useSetHeaderContent(headerContent);
@@ -74,14 +74,14 @@ export default function SettingsPage() {
     <div className="space-y-4">
       {activeTab === "account" && <AccountInformationTab />}
       {activeTab === "password" && <PasswordTab />}
-      {activeTab === "workflow" && (
+      {/* {activeTab === "workflow" && (
         <EmptyState
           title="Workflow Configuration"
           description="Redirecting you to workflow configuration."
           buttonText="Open workflow"
           onClick={() => router.push(adminRoutes.adminWorkflowDetails("item.id"))}
         />
-      )}
+      )} */}
       {activeTab === "notifications" && <NotificationSettingsTab />}
       {activeTab === "pickup-stations" && <PickUpStations />}
     </div>

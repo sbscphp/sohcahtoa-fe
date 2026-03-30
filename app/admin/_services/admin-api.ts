@@ -90,6 +90,17 @@ export interface AgentDetailsResponseData {
   transactionValue?: number;
 }
 
+export interface AgentAllData {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  isApproved: boolean;
+  branchId: string;
+  branchName: string;
+}
+
 export interface UpdateAgentStatusPayload {
   isActive: boolean;
 }
@@ -249,6 +260,20 @@ export interface BranchDetailsData {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateBranchPayload {
+  branchName: string;
+  branchEmail: string;
+  state: string;
+  address: string;
+  branchManager: string;
+  email: string;
+  phoneNumber: string;
+  agentName: string;
+  agentEmail: string;
+  agentId: string;
+  agentPhoneNumber: string;
 }
 
 export interface CreateFranchisePayload {
@@ -860,6 +885,9 @@ export const adminApi = {
         { params }
       ),
 
+    getAll: () =>
+      apiClient.get<ApiResponse<AgentAllData[]>>(API_ENDPOINTS.admin.agent.all),
+
     export: async (params?: {
       search?: string;
       isActive?: boolean;
@@ -1127,7 +1155,7 @@ export const adminApi = {
   outlet: {
     states: {
       list: () =>
-        apiClient.get<ApiResponse<OutletStatesData>>(API_ENDPOINTS.admin.outlet.states),
+        apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.outlet.states),
     },
     franchises: {
       list: (params?: FranchiseListParams) =>
@@ -1183,6 +1211,9 @@ export const adminApi = {
 
       getById: (id: string) =>
         apiClient.get<ApiResponse<BranchDetailsData>>(API_ENDPOINTS.admin.outlet.branches.getById(id)),
+
+      create: (data: CreateBranchPayload) =>
+        apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.branches.create, data),
 
       export: async (params?: { search?: string; isActive?: boolean }) => {
         const response = await apiClient.get<Blob | string>(

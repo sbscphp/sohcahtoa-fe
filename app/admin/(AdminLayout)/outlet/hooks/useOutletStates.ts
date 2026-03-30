@@ -20,13 +20,13 @@ export function useOutletStates() {
   );
 
   const states = useMemo<SelectOption[]>(() => {
-    const rawStates = query.data?.data?.states;
+    const rawStates = query.data?.data;
     if (!Array.isArray(rawStates)) return [];
 
     return rawStates
       .filter((state): state is string => typeof state === "string" && state.trim().length > 0)
       .map((state) => ({ value: state, label: state }));
-  }, [query.data?.data?.states]);
+  }, [query.data?.data]);
 
   return {
     states,
