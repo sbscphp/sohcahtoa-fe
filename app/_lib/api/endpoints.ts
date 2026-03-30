@@ -179,6 +179,7 @@ export const API_ENDPOINTS = {
         stats: "/api/admin/outlet/branches/stats",
         getById: (id: string) => `/api/admin/outlet/branches/${id}`,
         update: (id: string) => `/api/admin/outlet/branches/${id}`,
+        updateStatus: (id: string) => `/api/admin/outlet/branches/${id}/status`,
         agents: {
           list: (id: string) => `/api/admin/outlet/branches/${id}/agents`,
           export: (id: string) => `/api/admin/outlet/branches/${id}/agents/export`,

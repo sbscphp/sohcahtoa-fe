@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Text,
   Group,
@@ -22,6 +23,11 @@ import {
   formatBranchStatusForBadge,
   formatBranchCreatedAt,
 } from "../../hooks/useBranchDetails";
+import { usePutData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 import { BranchAgentsTable } from "../[id]_branchDetailComponents/BranchAgentsTable";
 import { BranchTransactionsTable } from "../[id]_branchDetailComponents/BranchTransactionsTable";
@@ -68,6 +74,7 @@ export default function BranchDetailPage() {
 
 function BranchDetailPageInner({ branchId }: { branchId: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { branch, isLoading, isError, error } = useBranchDetails(branchId);
 
   const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
@@ -79,7 +86,6 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
   const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
@@ -103,6 +109,25 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
   const statusBadgeLabel = branch ? formatBranchStatusForBadge(branch.status) : "--";
   const createdLabel = branch ? formatBranchCreatedAt(branch.createdAt) : "--";
 
+  const updateStatusMutation = usePutData(
+    (payload: { status: boolean }) =>
+      adminApi.outlet.branches.updateStatus(branchId, payload),
+    {
+      onError: (err) => {
+        const apiResponse = (err as unknown as ApiError).data as ApiResponse | undefined;
+        notifications.show({
+          title: "Update Branch Status Failed",
+          message:
+            apiResponse?.error?.message ??
+            apiResponse?.message ??
+            err.message ??
+            "Unable to update branch status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const formModalKey = `${branch?.id ?? "edit"}-${branch?.updatedAt ?? ""}`;
 
   const handleEditSubmit = (data: Record<string, any>) => {
@@ -124,21 +149,51 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
   };
 
   const handleDeactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setActiveOverride(false);
-    setDeactivateConfirmOpen(false);
-    setDeactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateStatusMutation.mutateAsync({ status: false });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.detail(branchId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.all()],
+        }),
+      ]);
+      setActiveOverride(false);
+      setDeactivateConfirmOpen(false);
+      setDeactivateSuccessOpen(true);
+      notifications.show({
+        title: "Branch Deactivated",
+        message: "Branch has been successfully deactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification is handled in mutation onError.
+    }
   };
 
   const handleReactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setActiveOverride(true);
-    setReactivateConfirmOpen(false);
-    setReactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateStatusMutation.mutateAsync({ status: true });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.detail(branchId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.all()],
+        }),
+      ]);
+      setActiveOverride(true);
+      setReactivateConfirmOpen(false);
+      setReactivateSuccessOpen(true);
+      notifications.show({
+        title: "Branch Reactivated",
+        message: "Branch has been successfully reactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification is handled in mutation onError.
+    }
   };
 
   return (
@@ -330,7 +385,7 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
         secondaryButtonText="No, Close"
         onPrimary={handleDeactivateConfirm}
         onSecondary={() => setDeactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateStatusMutation.isPending}
       />
 
       {/* Reactivate confirmation */}
@@ -343,7 +398,7 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
         secondaryButtonText="No, Close"
         onPrimary={handleReactivateConfirm}
         onSecondary={() => setReactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateStatusMutation.isPending}
       />
 
       {/* Deactivate success */}

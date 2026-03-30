@@ -294,6 +294,10 @@ export interface CreateBranchPayload {
   agentPhoneNumber: string;
 }
 
+export interface UpdateBranchStatusPayload {
+  status: boolean;
+}
+
 export type BranchAgentListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1315,6 +1319,12 @@ export const adminApi = {
 
       update: (id: string, data: CreateBranchPayload) =>
         apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.branches.update(id), data),
+
+      updateStatus: (id: string, data: UpdateBranchStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.branches.updateStatus(id),
+          data
+        ),
 
       export: async (params?: { search?: string; isActive?: boolean }) => {
         const response = await apiClient.get<Blob | string>(
