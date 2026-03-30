@@ -32,6 +32,7 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import {
   adminApi,
   type UpdateFranchisePayload,
+  type UpdateFranchiseStatusPayload,
 } from "@/app/admin/_services/admin-api";
 
 function buildUpdatePayload(data: Record<string, unknown>): UpdateFranchisePayload {
@@ -81,7 +82,6 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
   const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
@@ -170,6 +170,25 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
     }
   );
 
+  const updateFranchiseStatusMutation = usePutData(
+    (payload: UpdateFranchiseStatusPayload) =>
+      adminApi.outlet.franchises.updateStatus(franchiseId, payload),
+    {
+      onError: (err) => {
+        const apiResponse = (err as unknown as ApiError).data as ApiResponse | undefined;
+        notifications.show({
+          title: "Update Franchise Status Failed",
+          message:
+            apiResponse?.error?.message ??
+            apiResponse?.message ??
+            err.message ??
+            "Unable to update franchise status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const branchStatsSummary = useMemo(() => {
     if (!franchise?.branchStats) return "--";
     const { total, active, pending, deactivated } = franchise.branchStats;
@@ -225,21 +244,51 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
   };
 
   const handleDeactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setActiveOverride(false);
-    setDeactivateConfirmOpen(false);
-    setDeactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateFranchiseStatusMutation.mutateAsync({ status: false });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.detail(franchiseId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.all()],
+        }),
+      ]);
+      setActiveOverride(false);
+      setDeactivateConfirmOpen(false);
+      setDeactivateSuccessOpen(true);
+      notifications.show({
+        title: "Franchise Deactivated",
+        message: "Franchise has been successfully deactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification handled in mutation onError.
+    }
   };
 
   const handleReactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setActiveOverride(true);
-    setReactivateConfirmOpen(false);
-    setReactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateFranchiseStatusMutation.mutateAsync({ status: true });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.detail(franchiseId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.all()],
+        }),
+      ]);
+      setActiveOverride(true);
+      setReactivateConfirmOpen(false);
+      setReactivateSuccessOpen(true);
+      notifications.show({
+        title: "Franchise Reactivated",
+        message: "Franchise has been successfully reactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification handled in mutation onError.
+    }
   };
 
   const statusBadgeLabel = franchise ? formatFranchiseStatusForBadge(franchise.status) : "--";
@@ -386,7 +435,7 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         secondaryButtonText="No, Close"
         onPrimary={handleDeactivateConfirm}
         onSecondary={() => setDeactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateFranchiseStatusMutation.isPending}
       />
 
       <ConfirmationModal
@@ -398,7 +447,7 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         secondaryButtonText="No, Close"
         onPrimary={handleReactivateConfirm}
         onSecondary={() => setReactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateFranchiseStatusMutation.isPending}
       />
 
       <SuccessModal

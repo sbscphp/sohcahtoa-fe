@@ -352,6 +352,9 @@ export interface CreateFranchisePayload {
 }
 
 export type UpdateFranchisePayload = CreateFranchisePayload;
+export interface UpdateFranchiseStatusPayload {
+  status: boolean;
+}
 
 export interface OutletStatesData {
   states: string[];
@@ -1289,6 +1292,12 @@ export const adminApi = {
 
       update: (id: string, data: UpdateFranchisePayload) =>
         apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.update(id), data),
+
+      updateStatus: (id: string, data: UpdateFranchiseStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.franchises.updateStatus(id),
+          data
+        ),
 
       branches: {
         list: (id: string, params?: BranchListParams) =>
