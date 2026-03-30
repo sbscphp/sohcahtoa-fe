@@ -10,6 +10,8 @@ import {
   Select,
   Menu,
   Divider,
+  Skeleton,
+  Alert,
 } from "@mantine/core";
 import { Search, ListFilter, Upload } from "lucide-react";
 import { adminRoutes } from "@/lib/adminRoutes";
@@ -20,8 +22,12 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import FormModal, { type FormField } from "@/app/admin/_components/FormModal";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import {
+  useBranchDetails,
+  formatBranchStatusForBadge,
+  formatBranchCreatedAt,
+} from "../../hooks/useBranchDetails";
 
-type BranchStatus = "Active" | "Deactivated";
 type TabKey = "agents" | "transactions";
 
 interface AgentRow {
@@ -111,10 +117,26 @@ const formatNaira = (amount: number): string =>
 
 export default function BranchDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const id = params?.id ?? "";
 
-  const [status, setStatus] = useState<BranchStatus>("Active");
+  if (!id) {
+    return (
+      <Alert color="red" title="Invalid branch">
+        Missing branch id in the URL.
+      </Alert>
+    );
+  }
+
+  return <BranchDetailPageInner key={id} branchId={id} />;
+}
+
+function BranchDetailPageInner({ branchId }: { branchId: string }) {
+  const router = useRouter();
+  const { branch, isLoading, isError, error } = useBranchDetails(branchId);
+
+  const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
+  const effectiveIsActive = activeOverride ?? branch?.isActive ?? true;
+
   const [activeTab, setActiveTab] = useState<TabKey>("agents");
 
   const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false);
@@ -137,31 +159,23 @@ export default function BranchDetailPage() {
   const [transactionPage, setTransactionPage] = useState(1);
   const pageSize = 6;
 
-  const branch = {
-    id: id || "2223334355",
-    name: "Name of Branch",
-    dateCreated: "Nov 17 2025 | 11:00am",
-    totalAgents: 12,
-    managerEmail: "adekunle@sohcatoa.com",
-    branchManager: "Gafar Mustapha",
-    state: "Lagos",
-    branchEmail: "Lekkibranch@sohcatoa.com",
-    address: "Chevron Drive, Lekki",
-    phone: "+234 90 4747 2791",
-    status,
-  };
+  const editFormInitialValues = useMemo(
+    () => ({
+      branchName: branch?.name ?? "",
+      branchEmail: branch?.branchEmail ?? "",
+      state: branch?.state ?? "",
+      address: branch?.address ?? "",
+      branchManager: branch?.branchManager ?? "",
+      managerEmail: branch?.email ?? "",
+      phone: branch?.phoneNumber ?? "",
+    }),
+    [branch]
+  );
 
-  const isActive = status === "Active";
+  const statusBadgeLabel = branch ? formatBranchStatusForBadge(branch.status) : "--";
+  const createdLabel = branch ? formatBranchCreatedAt(branch.createdAt) : "--";
 
-  const editFormInitialValues = {
-    branchName: branch.name,
-    branchEmail: branch.branchEmail,
-    state: branch.state,
-    address: branch.address,
-    branchManager: branch.branchManager,
-    managerEmail: branch.managerEmail,
-    phone: branch.phone,
-  };
+  const formModalKey = `${branch?.id ?? "edit"}-${branch?.updatedAt ?? ""}`;
 
   const handleEditSubmit = (data: Record<string, any>) => {
     setPendingEditData(data);
@@ -276,7 +290,7 @@ export default function BranchDetailPage() {
     <RowActionIcon
       key="action"
       onClick={() =>
-        router.push(adminRoutes.adminOutletBranchTransactionDetail(id, item.id))
+        router.push(adminRoutes.adminOutletBranchTransactionDetail(branchId, item.id))
       }
     />,
   ];
@@ -284,7 +298,7 @@ export default function BranchDetailPage() {
   const handleDeactivateConfirm = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    setStatus("Deactivated");
+    setActiveOverride(false);
     setDeactivateConfirmOpen(false);
     setDeactivateSuccessOpen(true);
     setLoading(false);
@@ -293,7 +307,7 @@ export default function BranchDetailPage() {
   const handleReactivateConfirm = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    setStatus("Active");
+    setActiveOverride(true);
     setReactivateConfirmOpen(false);
     setReactivateSuccessOpen(true);
     setLoading(false);
@@ -301,60 +315,94 @@ export default function BranchDetailPage() {
 
   return (
     <div className="space-y-6">
+      {isError && (
+        <Alert color="red" title="Could not load branch">
+          {error?.message ?? "Unable to load branch details. Please try again."}
+        </Alert>
+      )}
+
       {/* Header card */}
       <div className="rounded-2xl bg-white shadow-sm">
         <div className="flex flex-col gap-6 p-6 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <Text size="xl" fw={600} className="text-gray-900">
-                {branch.name}
-              </Text>
-              <Group gap={8} className="flex-wrap text-sm text-gray-600">
-                <span>Date Created: {branch.dateCreated}</span>
-                <StatusBadge status={branch.status} />
-              </Group>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton height={32} width="60%" />
+              <Skeleton height={20} width="40%" />
+              <Divider className="my-2" />
+              <Skeleton height={24} width={180} />
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} height={56} />
+                ))}
+              </div>
             </div>
+          ) : branch ? (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
+                  <Text size="xl" fw={600} className="text-gray-900">
+                    {branch.name}
+                  </Text>
+                  <Group gap={8} className="flex-wrap text-sm text-gray-600">
+                    <span>Date Created: {createdLabel}</span>
+                    <StatusBadge status={statusBadgeLabel} />
+                  </Group>
+                </div>
 
-            <Menu position="bottom-end" shadow="md" width={160}>
-              <Menu.Target>
-                <Button radius="xl" size="md" color="#DD4F05">
-                  Take Action
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item onClick={() => setEditModalOpened(true)}>
-                  Edit
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  onClick={() =>
-                    isActive ? setDeactivateConfirmOpen(true) : setReactivateConfirmOpen(true)
-                  }
-                >
-                  {isActive ? "Deactivate" : "Reactivate"}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </div>
+                <Menu position="bottom-end" shadow="md" width={160}>
+                  <Menu.Target>
+                    <Button radius="xl" size="md" color="#DD4F05">
+                      Take Action
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item onClick={() => setEditModalOpened(true)}>Edit</Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      onClick={() =>
+                        effectiveIsActive
+                          ? setDeactivateConfirmOpen(true)
+                          : setReactivateConfirmOpen(true)
+                      }
+                    >
+                      {effectiveIsActive ? "Deactivate" : "Reactivate"}
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </div>
 
-          <Divider className="my-2" />
+              <Divider className="my-2" />
 
-          {/* Branch Details */}
-          <section className="space-y-4">
-            <Text fw={600} className="text-orange-500">
-              Branch Details
+              <section className="space-y-4">
+                <Text fw={600} className="text-orange-500">
+                  Branch Details
+                </Text>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailItem label="Branch ID" value={branch.id} />
+                  <DetailItem label="Total Agents" value="--" />
+                  <DetailItem
+                    label="Manager Email"
+                    value={branch.email?.trim() ? branch.email : "--"}
+                  />
+                  <DetailItem label="Branch Manager" value={branch.branchManager} />
+                  <DetailItem label="State" value={branch.state} />
+                  <DetailItem
+                    label="Branch Email"
+                    value={branch.branchEmail?.trim() ? branch.branchEmail : "--"}
+                  />
+                  <DetailItem label="Address" value={branch.address} />
+                  <DetailItem label="Phone Number" value={branch.phoneNumber} />
+                  {branch.franchiseId ? (
+                    <DetailItem label="Franchise ID" value={branch.franchiseId} />
+                  ) : null}
+                </div>
+              </section>
+            </>
+          ) : !isError ? (
+            <Text c="dimmed" size="sm">
+              No branch data found.
             </Text>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <DetailItem label="Branch ID" value={branch.id} />
-              <DetailItem label="Total Agents" value={String(branch.totalAgents)} />
-              <DetailItem label="Email Address" value={branch.managerEmail} />
-              <DetailItem label="Branch Manager" value={branch.branchManager} />
-              <DetailItem label="State" value={branch.state} />
-              <DetailItem label="Email Address" value={branch.branchEmail} />
-              <DetailItem label="Address" value={branch.address} />
-              <DetailItem label="Phone Number" value={branch.phone} />
-            </div>
-          </section>
+          ) : null}
         </div>
       </div>
 
@@ -489,6 +537,7 @@ export default function BranchDetailPage() {
 
       {/* Edit Branch Details modal */}
       <FormModal
+        key={formModalKey}
         opened={editModalOpened}
         onClose={() => setEditModalOpened(false)}
         title="Edit Branch Details"

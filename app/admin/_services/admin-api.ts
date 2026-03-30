@@ -232,6 +232,25 @@ export interface BranchListItemData {
   isActive: boolean;
 }
 
+export interface BranchDetailsData {
+  id: string;
+  franchiseId: string | null;
+  name: string;
+  branchEmail: string;
+  state: string;
+  address: string;
+  branchManager: string;
+  email: string;
+  phoneNumber: string;
+  agentName: string | null;
+  agentEmail: string | null;
+  agentPhoneNumber: string | null;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateFranchisePayload {
   franchiseName: string;
   state: string;
@@ -1161,6 +1180,9 @@ export const adminApi = {
         apiClient.get<ApiResponse<BranchListItemData[]>>(API_ENDPOINTS.admin.outlet.branches.list, {
           params,
         }),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<BranchDetailsData>>(API_ENDPOINTS.admin.outlet.branches.getById(id)),
 
       export: async (params?: { search?: string; isActive?: boolean }) => {
         const response = await apiClient.get<Blob | string>(
