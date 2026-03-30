@@ -90,7 +90,7 @@ function parsePagination(response: BranchAgentsResponse): number | null {
   const metadataPagination = response.metadata?.pagination;
   if (!metadataPagination) return null;
 
-  const totalPages = metadataPagination.totalPages;
+  const totalPages: unknown = metadataPagination.totalPages;
   if (typeof totalPages === "number" && Number.isFinite(totalPages)) return totalPages;
   if (typeof totalPages === "string" && totalPages.trim()) {
     const parsed = Number(totalPages);
