@@ -3,9 +3,13 @@
 import { Button, Group, Tabs } from "@mantine/core";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, UploadIcon } from "@hugeicons/core-free-icons";
-import { ReactNode } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import PaginatedTable, { type PaginatedTableColumn } from "./PaginatedTable";
 import FilterTabs from "../FilterTabs";
+import TableFilterSheet, {
+  type TableFilterGroup,
+  type TableFilterValues,
+} from "./TableFilterSheet";
 
 export interface FilterTabOption {
   value: string;
@@ -18,6 +22,10 @@ interface TableWrapperProps<T> {
   activeFilter?: string;
   onFilterChange?: (value: string) => void;
   onFilterClick?: () => void;
+  filters?: TableFilterGroup[];
+  filterValues?: TableFilterValues;
+  onFiltersApply?: (values: TableFilterValues) => void;
+  filterSheetTitle?: string;
   onExportClick?: () => void;
   actionButton?: ReactNode;
   data: T[];
@@ -36,6 +44,10 @@ export default function TableWrapper<T>({
   activeFilter,
   onFilterChange,
   onFilterClick,
+  filters,
+  filterValues,
+  onFiltersApply,
+  filterSheetTitle,
   onExportClick,
   actionButton,
   data,
@@ -47,6 +59,18 @@ export default function TableWrapper<T>({
   isLoading = false,
   skeletonRowCount = 4,
 }: TableWrapperProps<T>) {
+  const [filterSheetOpened, setFilterSheetOpened] = useState(false);
+
+  const hasInlineFilters = useMemo(
+    () => Array.isArray(filters) && filters.length > 0 && typeof onFiltersApply === "function",
+    [filters, onFiltersApply]
+  );
+
+  const handleFilterButtonClick = () => {
+    if (onFilterClick) return onFilterClick();
+    if (hasInlineFilters) setFilterSheetOpened(true);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -71,13 +95,13 @@ export default function TableWrapper<T>({
 
           {/* Action Buttons */}
           <Group gap="xs" justify="end">
-            {onFilterClick && (
+            {(onFilterClick || hasInlineFilters) && (
               <Button
                 variant="outline"
                 size="sm"
                 radius="xl"
                 rightSection={<HugeiconsIcon icon={FilterIcon} className="w-3.5 h-3.5 text-[#4D4B4B]! hover:text-primary-300!" />}
-                onClick={onFilterClick}
+                onClick={handleFilterButtonClick}
                 className="border-text-50! bg-white! hover:border-primary-200! hover:bg-[#FFF6F1]! px-4 py-2.5 gap-1.5 h-10 font-medium text-sm leading-5 text-[#4D4B4B]! hover:text-primary-300!"
               >
                 Filter By
@@ -112,6 +136,17 @@ export default function TableWrapper<T>({
         isLoading={isLoading}
         skeletonRowCount={skeletonRowCount}
       />
+
+      {hasInlineFilters && (
+        <TableFilterSheet
+          opened={filterSheetOpened}
+          onClose={() => setFilterSheetOpened(false)}
+          title={filterSheetTitle ?? "Filter By"}
+          groups={filters ?? []}
+          value={filterValues}
+          onApply={(next) => onFiltersApply?.(next)}
+        />
+      )}
     </div>
   );
 }

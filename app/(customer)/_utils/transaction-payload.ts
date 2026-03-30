@@ -25,7 +25,7 @@ export function toTransactionDocuments(uploaded: UploadedDocumentLike[]): Transa
     documentType: doc.documentType,
     fileUrl: doc.fileUrl,
     fileName: doc.fileName,
-    fileSize: typeof doc.fileSize === "number" ? doc.fileSize : parseInt(String(doc.fileSize ?? 0), 10),
+    fileSize: typeof doc.fileSize === "number" ? doc.fileSize : Number.parseInt(String(doc.fileSize ?? "0"), 10),
   }));
 }
 
@@ -33,7 +33,7 @@ function getAmount(data: Record<string, unknown> | null): number {
   if (!data) return 0;
   const raw = data.receiveAmount ?? data.sendAmount;
   if (typeof raw === "number") return raw;
-  if (typeof raw === "string") return parseFloat(raw) || 0;
+  if (typeof raw === "string") return Number.parseFloat(raw) || 0;
   return 0;
 }
 
@@ -105,7 +105,7 @@ function buildTouristPayload(
   bag: TransactionFormDataBag,
   documents: TransactionDocument[]
 ): CreateTransactionRequest {
-  const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
+  const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
 
@@ -115,10 +115,15 @@ function buildTouristPayload(
     amount: getAmount(amount),
     purpose: "Tourist travel",
     destinationCountry: "United States",
-    bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
-    nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
-    formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
-    documents,
+    bvn: upload?.bvn ?? undefined,
+    nin: upload?.ninNumber ?? undefined,
+    formAId: upload?.formAId ?? undefined,
+    passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
+    passportIssueDate: upload?.passportIssueDate ?? undefined,
+    passportExpiryDate: upload?.passportExpiryDate ?? undefined,
+    visaDocumentNumber: upload?.visaDocumentNumber ?? undefined,
+    returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
+    documents, 
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -211,6 +216,53 @@ function buildProfessionalBodyPayload(
   };
 }
 
+function buildResidentFxPayload(
+  bag: TransactionFormDataBag,
+  documents: TransactionDocument[]
+): CreateTransactionRequest {
+  const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
+  const amount = bag.transactionAmountData;
+  const pickup = bag.pickupPointData;
+
+  return {
+    type: "RESIDENT_FX",
+    currency: getCurrency(amount),
+    amount: getAmount(amount),
+    purpose: "Transaction",
+    destinationCountry: "United States",
+    tinNumber: upload?.tinNumber ?? undefined,
+    passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
+    documents,
+    pickupLocation: buildPickupLocation(pickup ?? null),
+  };
+}
+
+function buildExpatriateFxPayload(
+  bag: TransactionFormDataBag,
+  documents: TransactionDocument[]
+): CreateTransactionRequest {
+  const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
+  const amount = bag.transactionAmountData;
+  const pickup = bag.pickupPointData;
+
+  return {
+    type: "EXPATRIATE_FX",
+    currency: getCurrency(amount),
+    amount: getAmount(amount),
+    purpose: "Transaction",
+    destinationCountry: "United States",
+    bvn: upload?.bvn ?? undefined,
+    nin: upload?.ninNumber ?? undefined,
+    passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
+    workPermitNumber: upload?.workPermitNumber ?? undefined,
+    passportIssueDate: upload?.passportIssueDate ?? undefined,
+    passportExpiryDate: upload?.passportExpiryDate ?? undefined,
+    utilityBillNumber: upload?.utilityBillNumber ?? undefined,
+    documents,
+    pickupLocation: buildPickupLocation(pickup ?? null),
+  };
+}
+
 /**
  * Builds the API payload for the given transaction type from collected form data and uploaded documents.
  * Pure function: no side effects, easily testable.
@@ -233,14 +285,24 @@ export function buildTransactionPayload(
       return buildMedicalPayload(bag, documents);
     case "PROFESSIONAL_BODY":
       return buildProfessionalBodyPayload(bag, documents);
+    case "RESIDENT_FX":
+      return buildResidentFxPayload(bag, documents);
+    case "EXPATRIATE_FX":
+      return buildExpatriateFxPayload(bag, documents);
     default: {
       const amount = bag.transactionAmountData;
+      const bank = bag.bankDetailsData as Record<string, unknown> | null;
+      const pickup = bag.pickupPointData;
+
       return {
         type: transactionType as TransactionTypeAPI,
         currency: getCurrency(amount),
         amount: getAmount(amount),
         purpose: "Transaction",
         destinationCountry: "United States",
+        documents,
+        beneficiaryDetails: bank ?? undefined,
+        pickupLocation: buildPickupLocation(pickup ?? null),
       };
     }
   }

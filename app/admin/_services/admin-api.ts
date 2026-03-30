@@ -2,9 +2,10 @@
  * Admin API Functions
  */
 
-import { apiClient, type ApiResponse } from "@/app/_lib/api/client";
+import { apiClient, type ApiDownloadResponse, type ApiResponse } from "@/app/_lib/api/client";
 import { API_ENDPOINTS } from "@/app/_lib/api/endpoints";
 import type { AdminUser } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import type { AdminDashboardData } from "@/app/admin/_types/dashboard";
 
 // ==================== Response Data Types ====================
 
@@ -30,6 +31,23 @@ export interface CreateAdminUserPayload {
 export type UpdateAdminUserPayload = CreateAdminUserPayload;
 
 export type LookupQuery = "role" | "department" | "branch";
+
+export interface AdminProfileData {
+  id: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  altPhoneNumber: string | null;
+  position: string | null;
+  branch: string;
+  roleId: string;
+  departmentId: string;
+  permissions: unknown;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  rolePermissions: Record<string, unknown>;
+}
 
 export interface CreateDepartmentPayload {
   name: string;
@@ -89,8 +107,77 @@ export interface AgentDetailsResponseData {
   transactionValue?: number;
 }
 
+export interface AgentAllData {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  isApproved: boolean;
+  branchId: string;
+  branchName: string;
+}
+
 export interface UpdateAgentStatusPayload {
   isActive: boolean;
+}
+
+export interface AgentTransactionAmountData {
+  nairaEquivalent?: number | string | null;
+  foreignAmount?: number | string | null;
+  pickupAmount?: number | string | null;
+  value?: number | string | null;
+}
+
+export interface AgentTransactionEntityData {
+  id?: string | null;
+  name?: string | null;
+  fullName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface AgentTransactionDocumentItem {
+  id?: string | null;
+  name?: string | null;
+  fileName?: string | null;
+  fileUrl?: string | null;
+  type?: string | null;
+  status?: string | null;
+}
+
+export interface AgentTransactionCustomerData {
+  name?: string | null;
+  bvn?: string | null;
+  tin?: string | null;
+}
+
+export interface AgentTransactionDocumentsMeta {
+  count?: number | string | null;
+}
+
+export interface AgentSingleTransactionMetaData {
+  documents?: AgentTransactionDocumentsMeta | null;
+  documentsList?: AgentTransactionDocumentItem[] | null;
+  destinationCountry?: string | null;
+}
+
+export interface AgentSingleTransactionData {
+  transactionId: string;
+  referenceNumber?: string | null;
+  type?: string | null;
+  status?: string | null;
+  stage?: string | null;
+  currency?: string | null;
+  pickup?: string | null | Record<string, unknown>;
+  receipt?: string | null;
+  settlement?: string | null | Record<string, unknown>;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  amounts?: AgentTransactionAmountData | null;
+  agent?: AgentTransactionEntityData | null;
+  customer?: AgentTransactionCustomerData | null;
+  meta?: AgentSingleTransactionMetaData | null;
 }
 
 export interface UpdateAdminUserStatusPayload {
@@ -135,6 +222,125 @@ export interface FranchiseStatsData {
   pendingApproval: number;
 }
 
+export interface FranchiseBranchStats {
+  total: number;
+  active: number;
+  deactivated: number;
+  pending: number;
+}
+
+export interface FranchiseDetailsData {
+  id: string;
+  franchiseName: string;
+  contactPerson: string;
+  email: string;
+  phoneNumber: string;
+  altPhoneNumber: string;
+  state: string;
+  address: string;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  branchStats: FranchiseBranchStats;
+}
+
+export interface BranchStatsData {
+  total: number;
+  active: number;
+  deactivated: number;
+}
+
+export interface BranchListItemData {
+  id: string;
+  branchName: string;
+  branchManager: string;
+  email: string;
+  address: string;
+  isActive: boolean;
+}
+
+export interface BranchDetailsData {
+  id: string;
+  franchiseId: string | null;
+  name: string;
+  branchEmail: string;
+  state: string;
+  address: string;
+  branchManager: string;
+  email: string;
+  phoneNumber: string;
+  agentName: string | null;
+  agentEmail: string | null;
+  agentId: string | null;
+  agentPhoneNumber: string | null;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBranchPayload {
+  branchName: string;
+  branchEmail: string;
+  state: string;
+  address: string;
+  branchManager: string;
+  email: string;
+  phoneNumber: string;
+  agentName: string;
+  agentEmail: string;
+  agentId: string;
+  agentPhoneNumber: string;
+}
+
+export interface UpdateBranchStatusPayload {
+  status: boolean;
+}
+
+export type BranchAgentListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+};
+
+export interface BranchAgentListItemData {
+  id?: string | number;
+  agentId?: string | number;
+  userId?: string | number;
+  fullName?: string;
+  agentName?: string;
+  name?: string;
+  phone?: string;
+  phoneNumber?: string;
+  email?: string;
+  emailAddress?: string;
+  totalTransactions?: number | string;
+  transactionCount?: number | string;
+  numberOfTransactions?: number | string;
+  transactionVolume?: number | string;
+  totalTransactionVolume?: number | string;
+  totalVolume?: number | string;
+  isActive?: boolean;
+  status?: string;
+}
+
+export type BranchAgentExportParams = {
+  search?: string;
+  isActive?: boolean;
+};
+
+export type BranchTransactionListParams = AdminTransactionListParams;
+
+export type BranchTransactionExportParams = {
+  search?: string;
+  status?: string;
+};
+
 export interface CreateFranchisePayload {
   franchiseName: string;
   state: string;
@@ -145,9 +351,24 @@ export interface CreateFranchisePayload {
   altPhoneNumber: string;
 }
 
+export type UpdateFranchisePayload = CreateFranchisePayload;
+export interface UpdateFranchiseStatusPayload {
+  status: boolean;
+}
+
 export interface OutletStatesData {
   states: string[];
 }
+
+export type BranchListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+};
 
 export interface TicketAttachment {
   id: string;
@@ -262,11 +483,223 @@ export type AdminTransactionListParams = Record<
   sortOrder?: "asc" | "desc";
 };
 
+export type AdminComplianceReportsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "PENDING" | "SUCCESS" | "FAILED" | "COMPLETED";
+  fileType?: string;
+  channel?: string;
+};
+
+export type AdminComplianceReportsExportParams = {
+  search?: string;
+  status?: "" | "PENDING" | "SUCCESS" | "FAILED";
+};
+
+export interface AdminComplianceReportListItem {
+  id: string;
+  reportName: string;
+  reportingDate: string;
+  fileType: string;
+  status: string;
+  channel: string;
+  reference: string;
+  url: string | null;
+  createdAt: string;
+}
+
+export interface AdminComplianceReportDetailsData {
+  reportName: string;
+  type: string;
+  fileType: string;
+  channel: string;
+  status: string;
+  reference: string;
+  submittedOn: string;
+  reportDate: string;
+  endDate: string | null;
+  fileUrl: string | null;
+  fileSize: string | number | null;
+}
+
+export interface AdminComplianceDashboardData {
+  overview: {
+    submittedReports: number;
+    pendingSubmissions: number;
+    failedSubmissions: number;
+    rejectedReports: number;
+  };
+  insights: {
+    sla: {
+      complianceRate: number;
+      onTime: number;
+      late: number;
+      missed: number;
+      trend: {
+        delta: number;
+      };
+      target: number;
+    };
+    screening: {
+      passed: number;
+      flagged: number;
+      rejected: number;
+      pendingReview: number;
+      totalScreened: number;
+    };
+    fxSold: {
+      PTA: number;
+      BTA: number;
+      School: number;
+      Medical: number;
+      Imports: number;
+      total: number;
+    };
+  };
+}
+
+export type AdminRegulatoryAuditLogsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  severity?: "" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
+};
+
+export interface AdminRegulatoryAuditLogListItem {
+  id: string;
+  timestamp: string;
+  userOrSystem: string;
+  actionPerformed: string;
+  actionResult: string;
+  channel: string;
+  auditId: string;
+}
+
+export interface AdminRegulatoryAuditLogDetailsData {
+  timestamp: string;
+  source: string;
+  description: string;
+  duplicate: boolean;
+  result: string;
+  auditId: string;
+  fileUrl: string | null;
+  user: string;
+}
+
+export type AdminRegulatoryLogsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "PENDING" | "SUCCESS" | "FAILED" | "COMPLETED";
+};
+
+export interface AdminRegulatoryLogListItem {
+  id: string;
+  timestamp: string;
+  userOrSystem: string;
+  actionPerformed: string;
+  actionResult: string;
+  channel: string;
+  regulatoryId: string;
+}
+
+export interface AdminRegulatoryLogDetailsData {
+  timestamp: string;
+  source: string;
+  description: string;
+  duplicate: boolean;
+  response: string;
+  result: string;
+  regulatoryId: string;
+  channel: string;
+  fileUrl: string | null;
+}
+
+export type AdminTrmsSubmissionsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "BUSY" | "AWAITING_VERIFICATION" | "APPROVED" | "REJECTED";
+};
+
+export interface AdminTrmsSubmissionListItem {
+  id: string;
+  transactionId: string;
+  customerName: string;
+  currencyPair: string;
+  type: string;
+  amount: string;
+  documents: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminTrmsSubmissionDetailsData {
+  applicantName: string;
+  transactionId: string;
+  type: string;
+  currencyPair: string;
+  amount: string;
+  documents: number;
+  status: string;
+  formAId: string | null;
+  submittedOn: string;
+  fileUrl: string | null;
+}
+
+export interface AdminTrmsDashboardData {
+  submittedReports: number;
+  pendingSubmissions: number;
+  failedSubmissions: number;
+  rejectedReports: number;
+}
+
 export interface AdminTransactionStatsData {
   underReview: number;
   rejected: number;
   requestInformation: number;
   approved: number;
+}
+
+export interface WorkflowStatsData {
+  pending: number;
+  completed: number;
+  rejected: number;
+}
+
+export type AdminWorkflowActionsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  status?: "Pending" | "Rejected" | "Approved";
+  module?: string;
+  search?: string;
+};
+
+export interface AdminWorkflowActionListItem {
+  id: string;
+  module: string;
+  workflowAction: string;
+  actionNeeded: string;
+  status: string;
+  dateInitiated: string;
+  escalationMinutes: number;
+  title: string;
 }
 
 export interface AdminTransactionDetailsPayload {
@@ -292,6 +725,30 @@ export interface AdminTransactionDetailsData {
   requestStatus: string;
   details: AdminTransactionDetailsPayload | null;
   raw?: Record<string, unknown> | null;
+}
+
+export type FranchiseTransactionListParams = AdminTransactionListParams;
+
+export interface FranchiseTransactionListItemData {
+  id: string;
+  transactionId?: string | null;
+  reference?: string | null;
+  type?: string | null;
+  transactionType?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  date?: string | null;
+  transactionDate?: string | null;
+  branchName?: string | null;
+  agentName?: string | null;
+  branch?: {
+    name?: string | null;
+  } | null;
+  agent?: {
+    fullName?: string | null;
+    name?: string | null;
+  } | null;
 }
 
 export interface ReportModuleItem {
@@ -385,6 +842,31 @@ export interface RateDetailsData {
   isActive?: boolean;
 }
 
+export interface SettlementDashboardStats {
+  currentBalance: number;
+  pendingReconciliation: number;
+  totalEscrowAccounts: number;
+}
+
+export interface AdminNotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  updatedDate?: string;
+  time: string;
+  status: "unread" | "read";
+  category: "all" | "transactions";
+}
+
+export type AdminNotificationsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+};
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -430,10 +912,30 @@ export const adminApi = {
   // ==================== Dashboard ====================
   dashboard: {
     getStats: () =>
-      apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.dashboard),
+      apiClient.get<ApiResponse<AdminDashboardData>>(
+        API_ENDPOINTS.admin.dashboard
+      ),
 
     getPendingApprovals: () =>
       apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.pendingApprovals),
+  },
+
+  // ==================== Notifications ====================
+  notifications: {
+    getAllNotifications: (params?: AdminNotificationsListParams) =>
+      apiClient.get<ApiResponse<AdminNotificationItem[]>>(
+        API_ENDPOINTS.admin.notifications.all,
+        { params }
+      ),
+
+    getUnreadNotifications: (params?: AdminNotificationsListParams) =>
+      apiClient.get<ApiResponse<AdminNotificationItem[]>>(
+        API_ENDPOINTS.admin.notifications.unread,
+        { params }
+      ),
+
+    markNotificationAsRead: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.notifications.markRead(id)),
   },
 
   // ==================== Audit Trail ====================
@@ -488,6 +990,9 @@ export const adminApi = {
         { params }
       ),
 
+    getAll: () =>
+      apiClient.get<ApiResponse<AgentAllData[]>>(API_ENDPOINTS.admin.agent.all),
+
     export: async (params?: {
       search?: string;
       isActive?: boolean;
@@ -533,11 +1038,24 @@ export const adminApi = {
         { params }
       ),
 
+    getTransactionById: (id: string, transactionId: string) =>
+      apiClient.get<ApiResponse<AgentSingleTransactionData>>(
+        API_ENDPOINTS.admin.agent.getTransactionById(id, transactionId)
+      ),
+
+    downloadTransactionReceipt: (id: string, transactionId: string): Promise<ApiDownloadResponse> =>
+      apiClient.download(
+        API_ENDPOINTS.admin.agent.downloadTransactionReceipt(id, transactionId)
+      ),
+
     updateStatus: (id: string, data: UpdateAgentStatusPayload) =>
       apiClient.patch<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.agent.updateStatus(id),
         data
       ),
+
+    update: (id: string, data: FormData) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.agent.getById(id), data),
 
     create: (data: FormData) =>
       apiClient.post<ApiResponse<unknown>>(
@@ -742,7 +1260,7 @@ export const adminApi = {
   outlet: {
     states: {
       list: () =>
-        apiClient.get<ApiResponse<OutletStatesData>>(API_ENDPOINTS.admin.outlet.states),
+        apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.outlet.states),
     },
     franchises: {
       list: (params?: FranchiseListParams) =>
@@ -768,6 +1286,110 @@ export const adminApi = {
 
       getStats: () =>
         apiClient.get<ApiResponse<FranchiseStatsData>>(API_ENDPOINTS.admin.outlet.franchises.stats),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<FranchiseDetailsData>>(API_ENDPOINTS.admin.outlet.franchises.getById(id)),
+
+      update: (id: string, data: UpdateFranchisePayload) =>
+        apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.franchises.update(id), data),
+
+      updateStatus: (id: string, data: UpdateFranchiseStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.franchises.updateStatus(id),
+          data
+        ),
+
+      branches: {
+        list: (id: string, params?: BranchListParams) =>
+          apiClient.get<ApiResponse<BranchListItemData[]>>(
+            API_ENDPOINTS.admin.outlet.franchises.branches(id),
+            { params }
+          ),
+      },
+      transactions: {
+        list: (id: string, params?: FranchiseTransactionListParams) =>
+          apiClient.get<ApiResponse<FranchiseTransactionListItemData[]>>(
+            API_ENDPOINTS.admin.outlet.franchises.transactions(id),
+            { params }
+          ),
+      },
+    },
+    branches: {
+      list: (params?: BranchListParams) =>
+        apiClient.get<ApiResponse<BranchListItemData[]>>(API_ENDPOINTS.admin.outlet.branches.list, {
+          params,
+        }),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<BranchDetailsData>>(API_ENDPOINTS.admin.outlet.branches.getById(id)),
+
+      create: (data: CreateBranchPayload) =>
+        apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.branches.create, data),
+
+      update: (id: string, data: CreateBranchPayload) =>
+        apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.outlet.branches.update(id), data),
+
+      updateStatus: (id: string, data: UpdateBranchStatusPayload) =>
+        apiClient.patch<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.branches.updateStatus(id),
+          data
+        ),
+
+      export: async (params?: { search?: string; isActive?: boolean }) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.branches.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
+      getStats: () =>
+        apiClient.get<ApiResponse<BranchStatsData>>(API_ENDPOINTS.admin.outlet.branches.stats),
+
+      agents: {
+        list: (id: string, params?: BranchAgentListParams) =>
+          apiClient.get<ApiResponse<unknown>>(
+            API_ENDPOINTS.admin.outlet.branches.agents.list(id),
+            { params }
+          ),
+        export: async (id: string, params?: BranchAgentExportParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.outlet.branches.agents.export(id),
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
+      },
+
+      transactions: {
+        list: (id: string, params?: BranchTransactionListParams) =>
+          apiClient.get<ApiResponse<unknown>>(
+            API_ENDPOINTS.admin.outlet.branches.transactions.list(id),
+            { params }
+          ),
+        export: async (id: string, params?: BranchTransactionExportParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.outlet.branches.transactions.export(id),
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
+      },
     },
   },
 
@@ -777,6 +1399,9 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.management.lookups, {
         params: { query },
       }),
+
+    profile: () =>
+      apiClient.get<ApiResponse<AdminProfileData | null>>("/api/admin/management/profile"),
 
     modules: {
       list: () =>
@@ -976,6 +1601,19 @@ export const adminApi = {
         params,
       }),
 
+    export: async (params?: AdminTransactionListParams) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.transactions.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
     getStats: () =>
       apiClient.get<ApiResponse<AdminTransactionStatsData>>(
         API_ENDPOINTS.admin.transactions.stats
@@ -995,6 +1633,37 @@ export const adminApi = {
     approve: (id: string, data?: { notes?: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.approve(id),
+        data
+      ),
+
+    requestTransactionInfo: (
+      id: string,
+      data: { notes: string; fields: string[] }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.requestTransactionInfo(id),
+        data
+      ),
+
+    approveDocument: (id: string, documentId: string, data: { notes: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.approveDocument(id, documentId),
+        data
+      ),
+
+    requestDocumentInfo: (id: string, documentId: string, data: { comment: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.requestDocumentInfo(id, documentId),
+        data
+      ),
+
+    rejectDocument: (
+      id: string,
+      documentId: string,
+      data: { reason: string; notes: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.rejectDocument(id, documentId),
         data
       ),
 
@@ -1030,5 +1699,163 @@ export const adminApi = {
 
       return { blob, fileName };
     },
+  },
+
+  // ==================== Settlement ====================
+  settlement: {
+    getStats: () =>
+      apiClient.get<ApiResponse<SettlementDashboardStats>>(
+        API_ENDPOINTS.admin.settlement.stats
+      ),
+
+    listDiscrepancies: (params?: { page?: number; limit?: number }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.discrepancies,
+        { params }
+      ),
+
+    listPendingReconciliations: (params?: { page?: number; limit?: number }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.pendingReconciliations,
+        { params }
+      ),
+
+    listEscrowAccounts: () =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.escrowAccounts
+      ),
+
+    listFundingTransactions: (params?: { page?: number; limit?: number }) =>
+      apiClient.get<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.settlement.fundingTransactions,
+        { params }
+      ),
+  },
+
+  // ==================== Regulatory ====================
+  regulatory: {
+    compliance: {
+      dashboard: () =>
+        apiClient.get<ApiResponse<AdminComplianceDashboardData>>(
+          API_ENDPOINTS.admin.regulatory.compliance.dashboard
+        ),
+
+      list: (params?: AdminComplianceReportsListParams) =>
+        apiClient.get<ApiResponse<AdminComplianceReportListItem[]>>(
+          API_ENDPOINTS.admin.regulatory.compliance.reports,
+          { params }
+        ),
+
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<AdminComplianceReportDetailsData>>(
+          API_ENDPOINTS.admin.regulatory.compliance.reportById(id)
+        ),
+
+      export: async (params?: AdminComplianceReportsExportParams) => {
+        const response = await apiClient.post<Blob | string>(
+          API_ENDPOINTS.admin.regulatory.compliance.reportsExport,
+          params ?? {}
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+    },
+    logs: {
+      audit: {
+        list: (params?: AdminRegulatoryAuditLogsListParams) =>
+          apiClient.get<ApiResponse<AdminRegulatoryAuditLogListItem[]>>(
+            API_ENDPOINTS.admin.regulatory.logs.audit,
+            { params }
+          ),
+        export: async (params?: AdminRegulatoryAuditLogsListParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.regulatory.logs.auditExport,
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
+        getById: (id: string) =>
+          apiClient.get<ApiResponse<AdminRegulatoryAuditLogDetailsData>>(
+            API_ENDPOINTS.admin.regulatory.logs.auditById(id)
+          ),
+      },
+      regulatory: {
+        list: (params?: AdminRegulatoryLogsListParams) =>
+          apiClient.get<ApiResponse<AdminRegulatoryLogListItem[]>>(
+            API_ENDPOINTS.admin.regulatory.logs.regulatory,
+            { params }
+          ),
+        export: async (params?: AdminRegulatoryLogsListParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.regulatory.logs.regulatoryExport,
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
+        getById: (id: string) =>
+          apiClient.get<ApiResponse<AdminRegulatoryLogDetailsData>>(
+            API_ENDPOINTS.admin.regulatory.logs.regulatoryById(id)
+          ),
+      },
+    },
+    trms: {
+      list: (params?: AdminTrmsSubmissionsListParams) =>
+        apiClient.get<ApiResponse<AdminTrmsSubmissionListItem[]>>(
+          API_ENDPOINTS.admin.regulatory.trms.list,
+          { params }
+        ),
+
+      export: async (params?: {
+        search?: string;
+        status?: "" | "BUSY" | "AWAITING_VERIFICATION" | "APPROVED" | "REJECTED";
+      }) => {
+        const response = await apiClient.post<Blob | string>(
+          API_ENDPOINTS.admin.regulatory.trms.export,
+          params ?? {}
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
+      getByTransactionId: (transactionId: string) =>
+        apiClient.get<ApiResponse<AdminTrmsSubmissionDetailsData>>(
+          API_ENDPOINTS.admin.regulatory.trms.details(transactionId)
+        ),
+
+      stats: () =>
+        apiClient.get<ApiResponse<AdminTrmsDashboardData>>(
+          API_ENDPOINTS.admin.regulatory.trms.stats
+        ),
+    },
+  },
+
+  // ==================== Workflow ====================
+  workflow: {
+    getStats: () =>
+      apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
+
+    listActions: (params?: AdminWorkflowActionsListParams) =>
+      apiClient.get<ApiResponse<AdminWorkflowActionListItem[]>>(
+        "/api/admin/workflow/actions",
+        { params }
+      ),
   },
 };

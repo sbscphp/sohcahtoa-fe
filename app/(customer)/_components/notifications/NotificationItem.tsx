@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ChevronRight, Clock } from "lucide-react";
+import { Calendar, ChevronRight, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export type NotificationItemProps = {
@@ -11,6 +11,7 @@ export type NotificationItemProps = {
   status?: "unread" | "read";
   href?: string;
   onClick?: () => void;
+  isMarkingAsRead?: boolean;
 };
 
 export default function NotificationItem({
@@ -21,6 +22,7 @@ export default function NotificationItem({
   status = "read",
   href,
   onClick,
+  isMarkingAsRead = false,
 }: NotificationItemProps) {
   const content = (
     <>
@@ -56,7 +58,11 @@ export default function NotificationItem({
             Read
           </span>
         )}
-        <ChevronRight className="size-4 shrink-0 text-[#B2AFAF]" />
+        {isMarkingAsRead ? (
+          <Loader2 className="size-4 shrink-0 animate-spin text-[#B2AFAF]" />
+        ) : (
+          <ChevronRight className="size-4 shrink-0 text-[#B2AFAF]" />
+        )}
       </div>
     </>
   );

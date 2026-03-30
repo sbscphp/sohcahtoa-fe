@@ -17,12 +17,14 @@ const emptySubscribe = () => () => {};
 /**
  * Protects all admin layout routes.
  *
- * - Reads the persisted adminUserAtom (backed by localStorage "admin_auth")
- * - Wires the admin access token into the shared apiClient singleton
- * - Redirects to /admin/login when no valid session exists
+ * - Reads the persisted adminUserAtom (backed by localStorage "admin_auth").
+ *   The atom is initialized synchronously from localStorage on module load, so
+ *   the stored session is available on the very first render — no async race.
+ * - Wires the admin access token into the shared apiClient singleton.
+ * - Redirects to /admin/login when no valid session exists.
  *
  * Rendering is deferred until after client hydration to prevent a flash
- * caused by the atom reading localStorage (which is unavailable on the server).
+ * caused by the server not having access to localStorage.
  */
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const router = useRouter();
@@ -37,7 +39,8 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     apiClient.setAuthTokenGetter(() => accessToken);
   }, [accessToken]);
 
-  // Track token expiry and clear session + redirect when it expires.
+  // Watch token expiry: shows a warning notification and clears the session
+  // when the access token expires.
   useTokenExpiry(accessToken);
 
   // Redirect once hydration confirms there is no active session.

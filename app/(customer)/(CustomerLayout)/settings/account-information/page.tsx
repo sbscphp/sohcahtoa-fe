@@ -7,27 +7,7 @@ import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { normalizeProfile, setProfileInStorage } from "@/app/(customer)/_utils/auth-profile";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
-
-function formatDate(dateString?: string | null): string {
-  if (!dateString) return "N/A";
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { 
-      month: "long", 
-      day: "numeric", 
-      year: "numeric" 
-    });
-  } catch {
-    return dateString;
-  }
-}
-
-function formatPhone(phone?: string | null): string {
-  if (!phone) return "N/A";
-  // Unmask phone if it's masked (contains asterisks)
-  if (phone.includes("*")) return phone;
-  return phone;
-}
+import { formatAccountDate as formatDate, formatAccountPhone as formatPhone } from "@/app/_lib/utils/account-format";
 
 function FieldGrid({ fields }: { fields: { label: string; value: string }[] }) {
   return (

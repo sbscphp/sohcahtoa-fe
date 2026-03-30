@@ -128,7 +128,7 @@ export default function VerifyOTPPage() {
         <OTPInput
           onComplete={handleOTPComplete}
           onResend={handleResend}
-          expiryMinutes={15}
+          expiryMinutes={5}
         />
 
         <Button

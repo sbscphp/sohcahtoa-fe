@@ -54,6 +54,12 @@ export const API_ENDPOINTS = {
     uploadDocuments: (id: string) => `/api/customer/transactions/${id}/documents`,
     checkLimits: "/api/customer/transactions/limits/check",
     health: "/api/customer/transactions/health",
+    rates: "/api/customer/transactions/rates",
+    calculateRate: "/api/customer/transactions/rates/calculate",
+    export: "/api/customer/transactions/export",
+    virtualAccount: (id: string) => `/api/customer/transactions/${id}/virtual-account`,
+    depositInstructions: (id: string) => `/api/customer/transactions/${id}/deposit-instructions`,
+    depositStatus: (id: string) => `/api/customer/transactions/${id}/deposit-status`,
   },
   
   // Payments

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Group } from "@mantine/core";
 import { Check } from "lucide-react";
@@ -8,19 +8,12 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminRoutes } from "@/lib/adminRoutes";
-
-const NIGERIAN_STATES = [
-  { value: "Lagos", label: "Lagos" },
-  { value: "Abuja", label: "Abuja" },
-  { value: "Kano", label: "Kano" },
-  { value: "Rivers", label: "Rivers" },
-  { value: "Oyo", label: "Oyo" },
-  { value: "Enugu", label: "Enugu" },
-  { value: "Kaduna", label: "Kaduna" },
-  { value: "Delta", label: "Delta" },
-  { value: "Ogun", label: "Ogun" },
-  { value: "Anambra", label: "Anambra" },
-];
+import { notifications } from "@mantine/notifications";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminApi, type CreateBranchPayload } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useOutletStates } from "../../hooks/useOutletStates";
+import { useAgentsAll } from "../../hooks/useAgentsAll";
 
 export default function CreateBranchPage() {
   const router = useRouter();
@@ -35,20 +28,131 @@ export default function CreateBranchPage() {
   const [address, setAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
 
+  const {
+    states,
+    isLoading: isStatesLoading,
+    isError: isStatesError,
+    error: statesError,
+  } = useOutletStates();
+  const hasStateOptions = states.length > 0;
+
+  const {
+    agentOptions,
+    agents,
+    isLoading: isAgentsLoading,
+    isError: isAgentsError,
+    error: agentsError,
+  } = useAgentsAll();
+
   // Step 2: Add Agents
-  const [agentName, setAgentName] = useState("");
-  const [agentEmail, setAgentEmail] = useState("");
-  const [agentPhone, setAgentPhone] = useState("");
+  const [agentId, setAgentId] = useState<string | null>(null);
+  const selectedAgent = useMemo(
+    () => agents?.find((agent) => agent.id === agentId) ?? null,
+    [agents, agentId]
+  );
+
+  const hasShownStateErrorRef = useRef(false);
+  const hasShownAgentsErrorRef = useRef(false);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+
+  const isStep1Valid = useMemo(
+    () =>
+      branchName.trim().length > 0 &&
+      !!state &&
+      branchManager.trim().length > 0 &&
+      managerEmail.trim().length > 0 &&
+      branchEmail.trim().length > 0 &&
+      address.trim().length > 0 &&
+      phoneNumber.trim().length > 0,
+    [address, branchEmail, branchManager, branchName, managerEmail, phoneNumber, state]
+  );
+
+  const createBranchMutation = useCreateData(adminApi.outlet.branches.create, {
+    onSuccess: () => {
+      setIsConfirmOpen(false);
+      setIsSuccessOpen(true);
+      notifications.show({
+        title: "Branch Created",
+        message: "Branch was created successfully.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+      notifications.show({
+        title: "Create Branch Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create branch. Please try again.",
+        color: "red",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!isStatesError) {
+      hasShownStateErrorRef.current = false;
+      return;
+    }
+
+    if (hasShownStateErrorRef.current) return;
+
+    notifications.show({
+      title: "Unable to Load States",
+      message:
+        statesError?.message ??
+        "States could not be fetched. You cannot create a branch until states are available.",
+      color: "red",
+    });
+
+    hasShownStateErrorRef.current = true;
+  }, [isStatesError, statesError?.message]);
+
+  useEffect(() => {
+    if (!isAgentsError) {
+      hasShownAgentsErrorRef.current = false;
+      return;
+    }
+
+    if (hasShownAgentsErrorRef.current) return;
+
+    notifications.show({
+      title: "Unable to Load Agents",
+      message:
+        agentsError?.message ?? "Agents could not be fetched. Please try again later.",
+      color: "red",
+    });
+
+    hasShownAgentsErrorRef.current = true;
+  }, [isAgentsError, agentsError?.message]);
 
   const handleCancel = () => {
     router.push(adminRoutes.adminOutlet());
   };
 
   const handleNext = () => {
+    if (isStatesError || !hasStateOptions) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "Unable to load state options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!isStep1Valid) {
+      notifications.show({
+        title: "Incomplete Form",
+        message: "Please complete all required fields before proceeding.",
+        color: "red",
+      });
+      return;
+    }
+
     setStep(2);
   };
 
@@ -57,15 +161,64 @@ export default function CreateBranchPage() {
   };
 
   const handleCreateBranchClick = () => {
+    if (isStatesError || !hasStateOptions) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "Unable to load state options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!isStep1Valid) {
+      notifications.show({
+        title: "Incomplete Form",
+        message: "Please complete all required fields before creating the branch.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (isAgentsError) {
+      notifications.show({
+        title: "Unable to Load Agents",
+        message: "Agents could not be fetched. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!selectedAgent) {
+      notifications.show({
+        title: "Agent Required",
+        message: "Please select an agent before creating the branch.",
+        color: "red",
+      });
+      return;
+    }
+
     setIsConfirmOpen(true);
   };
 
-  const handleConfirmCreate = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setIsConfirmOpen(false);
-    setIsSuccessOpen(true);
+  const handleConfirmCreate = () => {
+    if (!state || !selectedAgent || createBranchMutation.isPending) return;
+
+    const payload: CreateBranchPayload = {
+      branchName: branchName.trim(),
+      branchEmail: branchEmail.trim(),
+      state,
+      address: address.trim(),
+      branchManager: branchManager.trim(),
+      email: managerEmail.trim(),
+      phoneNumber: phoneNumber.trim(),
+      agentName: selectedAgent.name,
+      agentEmail: selectedAgent.email,
+      agentId: selectedAgent.id,
+      agentPhoneNumber: selectedAgent.phoneNumber,
+    };
+
+    createBranchMutation.mutate(payload);
   };
 
   const handleManageBranch = () => {
@@ -140,12 +293,18 @@ export default function CreateBranchPage() {
               <Group grow align="flex-start">
                 <Select
                   label="State"
-                  placeholder="Select state"
-                  data={NIGERIAN_STATES}
+                  placeholder={isStatesLoading ? "Loading states..." : "Select state"}
+                  data={states}
                   value={state}
                   onChange={setState}
                   required
                   radius="md"
+                  searchable
+                  clearable
+                  disabled={isStatesLoading || !hasStateOptions}
+                  error={
+                    isStatesError ? "Unable to load states. Please try again later." : undefined
+                  }
                 />
                 <TextInput
                   label="Branch Manager"
@@ -213,6 +372,7 @@ export default function CreateBranchPage() {
                 size="md"
                 buttonType="primary"
                 onClick={handleNext}
+                disabled={isStatesLoading || !hasStateOptions}
               >
                 Next
               </CustomButton>
@@ -230,31 +390,35 @@ export default function CreateBranchPage() {
             </div>
 
             <Stack gap="lg">
-              <TextInput
-                label="Agent Name"
-                placeholder="e.g. Mallam Chibuzor"
-                value={agentName}
-                onChange={(e) => setAgentName(e.currentTarget.value)}
+              <Select
+                label="Agent"
+                placeholder={isAgentsLoading ? "Loading agents..." : "Select an agent"}
+                data={agentOptions}
+                value={agentId}
+                onChange={setAgentId}
                 required
                 radius="md"
+                searchable
+                clearable={false}
+                disabled={isAgentsLoading || isAgentsError || agentOptions.length === 0}
+                error={
+                  isAgentsError ? "Unable to load agents. Please try again later." : undefined
+                }
               />
 
               <Group grow align="flex-start">
                 <TextInput
-                  label="Email Address"
-                  placeholder="e.g. chibuzor@sohcahtoa.com"
-                  value={agentEmail}
-                  onChange={(e) => setAgentEmail(e.currentTarget.value)}
-                  type="email"
-                  required
+                  label="Agent Email"
+                  placeholder={selectedAgent ? "" : "Select an agent"}
+                  value={selectedAgent?.email ?? ""}
+                  disabled
                   radius="md"
                 />
                 <TextInput
-                  label="Phone Number"
-                  placeholder="e.g. +234 8138989106"
-                  value={agentPhone}
-                  onChange={(e) => setAgentPhone(e.currentTarget.value)}
-                  required
+                  label="Agent Phone Number"
+                  placeholder={selectedAgent ? "" : "Select an agent"}
+                  value={selectedAgent?.phoneNumber ?? ""}
+                  disabled
                   radius="md"
                 />
               </Group>
@@ -274,6 +438,7 @@ export default function CreateBranchPage() {
                 size="md"
                 buttonType="primary"
                 onClick={handleCreateBranchClick}
+                disabled={createBranchMutation.isPending || isAgentsLoading || isAgentsError || !selectedAgent}
               >
                 Create Branch
               </CustomButton>
@@ -291,7 +456,7 @@ export default function CreateBranchPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleConfirmCreate}
         onSecondary={() => setIsConfirmOpen(false)}
-        loading={isSaving}
+        loading={createBranchMutation.isPending}
       />
 
       <SuccessModal

@@ -5,12 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PinInput, Text, Title } from "@mantine/core";
 import { AgentAuthLayout } from "@/app/agent/_components/auth/AuthLayout";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { notifications } from "@mantine/notifications";
 
 export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [otp, setOtp] = useState("");
-  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -25,20 +28,47 @@ export default function VerifyOtpPage() {
 
   const email = useMemo(() => searchParams.get("email") || "", [searchParams]);
 
+  const verifyLoginMutation = useCreateData(agentApi.auth.verifyLogin);
+
   const handleOtpSubmit = async () => {
     if (!canSubmit) return;
+    if (!email) {
+      notifications.show({
+        title: "Link invalid or expired",
+        message: "We could not find the email for this verification. Please start again.",
+        color: "red",
+      });
+      router.push("/agent/auth/login");
+      return;
+    }
     
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // On success, redirect to create password with email + otp
+      const res = await verifyLoginMutation.mutateAsync({ email, otp });
+      if (!res.success) {
+        notifications.show({
+          title: "OTP verification failed",
+          message:
+            res.error?.message ||
+            "The code you entered is incorrect or has expired. Please try again.",
+          color: "red",
+        });
+        return;
+      }
+
       const search = new URLSearchParams();
-      if (email) search.set("email", email);
+      search.set("email", email);
       search.set("otp", otp);
       router.push(`/agent/auth/create-password?${search.toString()}`);
     } catch (error) {
-      console.error("OTP verification failed", error);
+      notifications.show({
+        title: "OTP verification failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "The code you entered is incorrect or has expired. Please try again.",
+        color: "red",
+      });
     } finally {
       setLoading(false);
     }
@@ -47,7 +77,7 @@ export default function VerifyOtpPage() {
   const handleResendOtp = async () => {
     // Mock resend OTP - replace with actual API call
     setOtp("");
-    setTimeLeft(900); // Reset timer
+    setTimeLeft(300); // Reset timer
     console.log("Resending OTP...");
   };
 
@@ -88,25 +118,18 @@ export default function VerifyOtpPage() {
 
             <Text className="text-body-text-100 text-sm">
               Didn&apos;t Receive Code?{" "}
-              <span
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 onClick={timeLeft > 0 ? undefined : handleResendOtp}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    if (timeLeft === 0) handleResendOtp();
-                  }
-                }}
                 className={
                   timeLeft > 0
                     ? "text-error-600/60 cursor-not-allowed"
                     : "text-error-600 cursor-pointer font-medium underline"
                 }
-                aria-disabled={timeLeft > 0}
+                disabled={timeLeft > 0}
               >
                 Resend OTP
-              </span>
+              </button>
             </Text>
           </div>
 

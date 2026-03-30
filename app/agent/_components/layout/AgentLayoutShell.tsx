@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AgentHeader from "./AgentHeader";
 import AgentSidebar from "./AgentSidebar";
+import { AuthProfileSync } from "@/app/(customer)/_components/auth/AuthProfileSync";
 
 // type BreadcrumbItem = {
 //   label: string;
@@ -23,6 +24,8 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
 
   useLayoutEffect(() => {
     const mediaQuery = globalThis.matchMedia("(max-width: 768px)");
+    // This state update is necessary to prevent hydration mismatch between server and client
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- necessary for hydration mismatch prevention
     setIsMobile(mediaQuery.matches);
 
     const handleChange = (e: MediaQueryListEvent) => {
@@ -62,6 +65,7 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
     }
     if (pathname?.startsWith("/agent/rate-calculator"))
       return "Rate Calculator";
+    if (pathname === "/agent/notifications") return "Notification";
     if (pathname?.startsWith("/agent/settings")) {
       if (pathname === "/agent/settings") return "Setting";
       if (pathname.includes("/account-information"))
@@ -148,6 +152,8 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
   };
 
   return (
+    <>
+      <AuthProfileSync />
     <AppShell
       layout={isMobile ? undefined : "alt"}
       header={{ height: HEADER_HEIGHT }}
@@ -202,6 +208,7 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
         {children}
       </AppShell.Main>
     </AppShell>
+    </>
   );
 }
 

@@ -4,6 +4,7 @@ import type {
   TransactionDetailStep,
 } from "@/app/_lib/api/types";
 import type { RequiredDocumentsData, TransactionDetailsData } from "@/app/(customer)/_components/transactions/details";
+import type { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import type { TransactionDetailPayload } from "@/app/(customer)/(CustomerLayout)/transactions/detail/[id]/page";
 import { getTransactionTypeLabel } from "@/app/(customer)/_lib/mock-transactions";
 import { getDetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
@@ -17,6 +18,53 @@ function getStepData(api: TransactionDetailData): TransactionDetailStep["data"] 
   const completed = api.steps?.filter((s) => s.data && Object.keys(s.data).length > 0);
   const last = completed?.length ? completed[completed.length - 1] : null;
   return last?.data ?? null;
+}
+
+function getDocumentDisplayName(type: string): string {
+  switch (type) {
+    case "FORM_A_DOCUMENT":
+      return "Form A";
+    case "PASSPORT":
+      return "International Passport";
+    case "VISA":
+      return "Valid Visa";
+    case "RETURN_TICKET":
+      return "Return Ticket";
+    case "UTILITY_BILL":
+      return "Utility Bill";
+    case "WORK_PERMIT":
+      return "Work Permit";
+    default:
+      return type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+}
+
+function formatStatusLabel(status?: string | null): string {
+  if (!status) return "Pending";
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function mapRequiredDocsToDocumentItems(requiredDocuments: TransactionDetailRequiredDoc[]): TransactionDocumentItem[] {
+  return requiredDocuments.map((doc) => {
+    const uploaded = doc.uploaded;
+
+    const lastUploadDate = uploaded?.uploadedAt ? formatShortDate(uploaded.uploadedAt) : undefined;
+    const lastUploadTime = uploaded?.uploadedAt ? formatShortTime(uploaded.uploadedAt) : undefined;
+
+    return {
+      id: doc.type,
+      name: getDocumentDisplayName(doc.type),
+      size: "—",
+      status: formatStatusLabel(uploaded?.status),
+      lastUploadDate,
+      lastUploadTime,
+      fileName: uploaded?.fileName,
+      url: uploaded?.fileUrl,
+    };
+  });
 }
 
 export function buildDetailPayloadFromApi(api: TransactionDetailData): TransactionDetailPayload {
@@ -61,6 +109,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     currencyCode: api.currency,
     transactionDetails,
     requiredDocuments,
+    documentsForSheet: mapRequiredDocsToDocumentItems(docs),
   };
 
   if (viewStatus === "awaiting_disbursement" || viewStatus === "transaction_settled") {

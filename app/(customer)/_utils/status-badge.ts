@@ -8,6 +8,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   open: { bg: "#ECFDF3", textColor: "#027A48" },
   closed: { bg: "#FEF2F2", textColor: "#B91C1C" },
   approved: { bg: "#ECFDF3", textColor: "#027A48" },
+  verified: { bg: "#ECFDF3", textColor: "#027A48" },
   success: { bg: "#ECFDF3", textColor: "#027A48" },
   completed: { bg: "#ECFDF3", textColor: "#027A48" },
   pending: { bg: "#FEF3C7", textColor: "#B45309" },
@@ -23,7 +24,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   request_more_info: { bg: "#F4E8FF", textColor: "#7C3AED" },
 };
 
-function normalizeStatus(status: string): string {
+export function normalizeStatus(status: string): string {
   return status.trim().toLowerCase().replace(/\s+/g, "_");
 }
 

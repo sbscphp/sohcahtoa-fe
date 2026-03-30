@@ -83,11 +83,32 @@ function normalizeStatus(value: unknown): string {
   return raw ? `${raw.charAt(0).toUpperCase()}${raw.slice(1)}` : "--";
 }
 
+function parseStatusFromValidityWindow(validFromRaw: unknown, validUntilRaw: unknown): string | null {
+  const validFrom = asString(validFromRaw).trim();
+  const validUntil = asString(validUntilRaw).trim();
+  if (!validFrom || !validUntil) return null;
+
+  const start = new Date(validFrom);
+  const end = new Date(validUntil);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+
+  const now = Date.now();
+  if (now < start.getTime()) return "Scheduled";
+  if (now > end.getTime()) return "Expired";
+  return "Active";
+}
+
 function parseStatus(raw: Record<string, unknown>): string {
   const isActive = raw.isActive ?? raw.is_active;
   if (typeof isActive === "boolean") {
     return isActive ? "Active" : "Inactive";
   }
+
+  const fromWindow = parseStatusFromValidityWindow(
+    raw.validFrom ?? raw.valid_from,
+    raw.validUntil ?? raw.valid_until
+  );
+  if (fromWindow) return fromWindow;
 
   return normalizeStatus(raw.status);
 }
@@ -119,15 +140,30 @@ function getCurrencyPair(raw: Record<string, unknown>): string {
 }
 
 function parseRate(raw: Record<string, unknown>): RateListItem {
+  const validFrom = raw.validFrom ?? raw.valid_from;
+  const validUntil = raw.validUntil ?? raw.valid_until;
+
   return {
     id: String(raw.id ?? raw.rateId ?? raw.rate_id ?? ""),
     dateTime: formatDateTime(
-      raw.dateTime ?? raw.startDateTime ?? raw.startAt ?? raw.createdAt ?? raw.created_at
+      validFrom ??
+        raw.dateTime ??
+        raw.startDateTime ??
+        raw.startAt ??
+        raw.createdAt ??
+        raw.created_at
     ),
     currencyPair: getCurrencyPair(raw),
-    buyAt: formatNairaValue(raw.buyAt ?? raw.buyRate ?? raw.buy_rate),
-    sellAt: formatNairaValue(raw.sellAt ?? raw.sellRate ?? raw.sell_rate),
-    lastUpdated: formatDateTime(raw.lastUpdated ?? raw.updatedAt ?? raw.updated_at),
+    buyAt: formatNairaValue(raw.buyRate ?? raw.buy_rate ?? raw.buyAt),
+    sellAt: formatNairaValue(raw.sellRate ?? raw.sell_rate ?? raw.sellAt),
+    lastUpdated: formatDateTime(
+      raw.updatedAt ??
+        raw.updated_at ??
+        raw.lastUpdated ??
+        raw.createdAt ??
+        raw.created_at ??
+        validUntil
+    ),
     status: parseStatus(raw),
   };
 }

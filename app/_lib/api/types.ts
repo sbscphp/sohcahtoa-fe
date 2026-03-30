@@ -199,6 +199,19 @@ export interface ResetPasswordResponseData {
 export type ResetPasswordResponse =
   ApiResponseWrapper<ResetPasswordResponseData>;
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirm: string;
+}
+
+export interface ChangePasswordResponseData {
+  message: string;
+}
+
+export type ChangePasswordResponse =
+  ApiResponseWrapper<ChangePasswordResponseData>;
+
 export interface LoginResponseData {
   accessToken: string;
   refreshToken: string;
@@ -277,6 +290,168 @@ export interface UserProfile {
 
 export type ProfileResponse = ApiResponseWrapper<UserProfile>;
 
+// ==================== Agent Customer Types ====================
+
+export interface AgentAuthProfile {
+  id: string;
+  email: string;
+  phone_number: string | null;
+  date_joined: string;
+  last_active: string;
+  gender: string | null;
+  date_of_birth: string | null;
+  bvn: string | null;
+  tin: string | null;
+  [key: string]: string | number | boolean | null;
+}
+
+export type AgentAuthProfileResponse = ApiResponseWrapper<AgentAuthProfile>;
+
+export interface AgentDashboardRecentTransaction {
+  transactionId: string;
+  timestamp: string;
+  amount: number;
+  currency: string;
+}
+
+export interface AgentDashboardRecentTransactionsResponse
+  extends ApiResponseWrapper<AgentDashboardRecentTransaction[]> {
+  pagination: PaginationMetadata;
+}
+
+export type AgentDashboardRange =
+  | "today"
+  | "this_week"
+  | "last_30_days"
+  | "last_3_months"
+  | "last_year";
+
+export interface AgentDashboardTransactionsByTypeSegment {
+  transactionType: string;
+  count: number;
+  totalAmount: number;
+  percentageOfVolume: number;
+}
+
+export interface AgentDashboardTransactionsByTypeData {
+  range: AgentDashboardRange | string;
+  rangeStart: string;
+  rangeEnd: string;
+  amountBasis: string;
+  totalTransactionCount: number;
+  totalVolume: number;
+  segments: AgentDashboardTransactionsByTypeSegment[];
+}
+
+export type AgentDashboardTransactionsByTypeResponse =
+  ApiResponseWrapper<AgentDashboardTransactionsByTypeData>;
+
+export interface PaginationMetadata {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface AgentCustomerListParams extends PaginationParams {
+  status?: string;
+  lastTransactionType?: string;
+  customerType?: string;
+  fromDate?: string;
+  toDate?: string;
+  search?: string;
+}
+
+export interface AgentCustomerSummary {
+  userId: string;
+  fullName: string;
+  customerType: string;
+  lastTransactionType: string | null;
+  registeredAt: string;
+  kycStatus: string;
+}
+
+export interface AgentCustomerListResponse
+  extends ApiResponseWrapper<AgentCustomerSummary[]> {
+  metadata: ApiResponseWrapper<unknown>["metadata"] & {
+    pagination: PaginationMetadata;
+  };
+}
+
+export interface AgentCustomerStats {
+  totalCustomers: number;
+  verifiedCustomers: number;
+  repeatCustomers: number;
+  pendingKyc: number;
+}
+
+export type AgentCustomerStatsResponse =
+  ApiResponseWrapper<AgentCustomerStats>;
+
+export interface AgentCustomerFile {
+  id: string;
+  documentType: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+export interface AgentCustomerIdDetails {
+  idType: string | null;
+  bvn: string | null;
+  tin: string | null;
+  formAId: string | null;
+}
+
+export interface AgentCustomerDetails {
+  userId: string;
+  registeredAt: string;
+  fullName: string;
+  email: string;
+  dateOnboarded: string;
+  totalTransactionsCompleted: number;
+  idDetails: AgentCustomerIdDetails;
+  files: Record<string, AgentCustomerFile | null>;
+}
+
+export type AgentCustomerDetailsResponse =
+  ApiResponseWrapper<AgentCustomerDetails>;
+
+export interface AgentCustomerUpdateRequest {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+}
+
+export interface AgentCustomerUpdateData {
+  userId: string;
+  fullName: string;
+  phoneNumber: string;
+  customerType: string;
+  kycStatus: string;
+}
+
+export type AgentCustomerUpdateResponse =
+  ApiResponseWrapper<AgentCustomerUpdateData>;
+
+export interface AgentCustomerTransaction {
+  transactionId: string;
+  transactionDate: string;
+  transactionType: string;
+  transactionStatus: string;
+  transactionReferenceNumber: string;
+  currency: string;
+  foreignAmount: number;
+}
+
+export interface AgentCustomerTransactionsResponse
+  extends ApiResponseWrapper<AgentCustomerTransaction[]> {
+  metadata: ApiResponseWrapper<unknown>["metadata"] & {
+    pagination: PaginationMetadata;
+  };
+}
+
 // ==================== Transaction Types ====================
 
 export type TransactionTypeAPI =
@@ -318,9 +493,19 @@ export interface CreateTransactionRequest {
   amount: number;
   purpose: string;
   destinationCountry: string;
+  /** Optional: when an agent creates a transaction on behalf of a customer. */
+  customerId?: string;
   bvn?: string;
   nin?: string;
   formAId?: string;
+  passportDocumentNumber?: string;
+  passportIssueDate?: string;
+  passportExpiryDate?: string;
+  visaDocumentNumber?: string;
+  returnTicketDocumentNumber?: string;
+  tinNumber?: string;
+  workPermitNumber?: string;
+  utilityBillNumber?: string;
   admissionType?: AdmissionType;
   beneficiaryDetails?: Record<string, unknown>;
   pickupLocation?: PickupLocation;
@@ -329,15 +514,12 @@ export interface CreateTransactionRequest {
 
 export interface Transaction {
   id: string;
+  referenceNumber?: string;
+  transactionId?: string;
   type: string;
-  amount: number;
-  currency: string;
-  status:
-    | "PENDING"
-    | "APPROVED"
-    | "REJECTED"
-    | "COMPLETED"
-    | "REQUEST_MORE_INFO";
+  amount?: number;
+  currency?: string;
+  status: string;
   stage: string;
   date: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
@@ -356,8 +538,9 @@ export interface TransactionListCashPickup {
 }
 
 export interface TransactionListItem {
+  transactionId?: string;
   id: string;
-  referenceNumber: string;
+  referenceNumber?: string;
   type: string;
   status: string;
   currentStep: string;
@@ -376,6 +559,12 @@ export interface TransactionListItem {
   documents: TransactionListDocument[];
   cashPickup: TransactionListCashPickup;
   group: "BUY" | "SELL" | "REMITTANCE";
+  transaction_date?: string;
+  transaction_type?: string;
+  transaction_stage?: string;
+  transaction_status?: string;
+  reference_number?: string;
+  transaction_id?: string;
 }
 
 export interface TransactionsListApiResponse {
@@ -658,6 +847,38 @@ export interface ExchangeRateResponse {
   validUntil: string;
 }
 
+// Customer transaction exchange rate (buy/sell FX)
+export interface TransactionRate {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  buyRate: number;
+  sellRate: number;
+  validFrom: string;
+  validUntil: string;
+}
+
+export type TransactionRatesListResponse = ApiResponseWrapper<TransactionRate[]>;
+
+export interface CalculateTransactionRateRequest {
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+}
+
+export interface CalculateTransactionRateData {
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  sellRate: number;
+  buyRate: number;
+  convertedAmount: number;
+  rateValidUntil: string;
+}
+
+export type CalculateTransactionRateResponse =
+  ApiResponseWrapper<CalculateTransactionRateData>;
+
 export interface DepositInitiateRequest {
   transactionId: string;
   amount: number;
@@ -671,6 +892,42 @@ export interface DepositConfirmRequest {
   paymentReference: string;
   proofOfPayment: string;
 }
+
+export interface TransactionVirtualAccountData {
+  accountNumber?: string;
+  bankName?: string;
+  accountName?: string;
+  expiresAt?: string;
+  amount?: string | number | null;
+  [key: string]: unknown;
+}
+
+export type TransactionVirtualAccountResponse =
+  ApiResponseWrapper<TransactionVirtualAccountData>;
+
+export interface TransactionDepositInstructionsData {
+  title?: string;
+  message?: string;
+  instructions?: string[] | string;
+  note?: string;
+  [key: string]: unknown;
+}
+
+export type TransactionDepositInstructionsResponse =
+  ApiResponseWrapper<TransactionDepositInstructionsData>;
+
+export interface TransactionDepositStatusData {
+  hasDeposit: boolean;
+  depositStatus: string | null;
+  depositAmount: number | string | null;
+  depositDate: string | null;
+  transactionStatus: string;
+  awaitingDeposit: boolean;
+  depositConfirmed: boolean;
+}
+
+export type TransactionDepositStatusResponse =
+  ApiResponseWrapper<TransactionDepositStatusData>;
 
 // ==================== KYC Types ====================
 
@@ -709,6 +966,7 @@ export interface TransactionListParams extends PaginationParams {
   type?: string;
   group?: "BUY" | "SELL" | "REMITTANCE";
   currency?: string;
+  stage?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;

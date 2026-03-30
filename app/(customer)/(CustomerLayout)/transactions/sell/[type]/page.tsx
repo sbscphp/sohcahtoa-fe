@@ -13,7 +13,10 @@ import {
   getStepsForTransactionType,
   STEP_LABELS,
 } from "@/app/(customer)/_utils/transaction-flow";
-import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  getDocumentUploadSpec,
+  getSellOver10kDocumentUploadSpec,
+} from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   buildTransactionPayload,
   toTransactionDocuments,
@@ -130,19 +133,36 @@ export default function SellTransactionCreationPage() {
     };
 
     try {
-      const spec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
-      const uploaded = spec
+      const baseSpec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
+      const over10kSpec = getSellOver10kDocumentUploadSpec(
+        transactionType,
+        bag.transactionAmountData
+      );
+      const combinedSpec =
+        baseSpec || over10kSpec
+          ? {
+              files: [...(baseSpec?.files ?? []), ...(over10kSpec?.files ?? [])],
+              documentTypes: [
+                ...(baseSpec?.documentTypes ?? []),
+                ...(over10kSpec?.documentTypes ?? []),
+              ],
+            }
+          : null;
+
+      const uploaded = combinedSpec
         ? await uploadDocuments.mutateAsync({
-            file: spec.files,
+            file: combinedSpec.files,
             userId: userProfile.id,
-            documentType: spec.documentTypes,
+            documentType: combinedSpec.documentTypes,
           })
         : [];
       const documents = toTransactionDocuments(uploaded);
       const payload = buildTransactionPayload(transactionType, bag, documents);
+      // console.log("payload", payload);
       const created = await createTransaction.mutateAsync(payload);
       setConfirmationOpened(false);
-      router.push(`/transactions/detail/${(created as { id: string }).id}`);
+      // console.log("created", created);
+      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
     } catch (error) {
       handleApiError(error);
       setConfirmationOpened(false);

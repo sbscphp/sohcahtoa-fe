@@ -70,6 +70,12 @@ import type {
   SupportTicketDetailResponse,
   TransactionOverviewRequest,
   TransactionOverviewResponse,
+  TransactionRatesListResponse,
+  CalculateTransactionRateRequest,
+  CalculateTransactionRateResponse,
+  TransactionVirtualAccountResponse,
+  TransactionDepositInstructionsResponse,
+  TransactionDepositStatusResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -194,6 +200,26 @@ export const customerApi = {
 
     overview: (data?: TransactionOverviewRequest) =>
       apiClient.post<TransactionOverviewResponse>(API_ENDPOINTS.transactions.overview, data),
+
+    export: (params?: TransactionListParams) =>
+      apiClient.download(API_ENDPOINTS.transactions.export, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    getVirtualAccount: (transactionId: string) =>
+      apiClient.get<TransactionVirtualAccountResponse>(
+        API_ENDPOINTS.transactions.virtualAccount(transactionId)
+      ),
+
+    getDepositInstructions: (transactionId: string) =>
+      apiClient.get<TransactionDepositInstructionsResponse>(
+        API_ENDPOINTS.transactions.depositInstructions(transactionId)
+      ),
+
+    getDepositStatus: (transactionId: string) =>
+      apiClient.get<TransactionDepositStatusResponse>(
+        API_ENDPOINTS.transactions.depositStatus(transactionId)
+      ),
   },
 
   // ==================== Notifications ====================
@@ -318,5 +344,19 @@ export const customerApi = {
 
     getSettlement: (transactionId: string) =>
       apiClient.get<unknown>(API_ENDPOINTS.payments.settlement(transactionId)),
+  },
+
+  // ==================== Transaction FX Rates ====================
+  transactionRates: {
+    list: (params?: { fromCurrency?: string; toCurrency?: string }) =>
+      apiClient.get<TransactionRatesListResponse>(API_ENDPOINTS.transactions.rates, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    calculate: (data: CalculateTransactionRateRequest) =>
+      apiClient.post<CalculateTransactionRateResponse>(
+        API_ENDPOINTS.transactions.calculateRate,
+        data,
+      ),
   },
 };

@@ -12,6 +12,7 @@ import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import { isAmountOver10k } from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 
 const transactionAmountSchema = z.object({
   receiveAmount: z.string().min(1, "Amount is required"),
@@ -49,6 +50,13 @@ export default function ProfessionalBodyTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const { displayRate, recalculate } = useTransactionRateCalculator({
+    getValues: () => form.values,
+    setSendAmount: (value) => form.setFieldValue("sendAmount", value),
+    setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
+    defaultLabel: exchangeRate,
+  });
+
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values);
   });
@@ -78,10 +86,16 @@ export default function ProfessionalBodyTransactionAmountStep({
           <CurrencyAmountInput
             label="You Get Exactly"
             value={form.values.receiveAmount}
-            onChange={(value) => form.setFieldValue("receiveAmount", value)}
+            onChange={(value) => {
+              form.setFieldValue("receiveAmount", value);
+              recalculate(value);
+            }}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code)}
+            onCurrencyChange={(c) => {
+              form.setFieldValue("receiveCurrency", c.code);
+              recalculate(undefined, c.code);
+            }}
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
@@ -128,11 +142,12 @@ export default function ProfessionalBodyTransactionAmountStep({
               placeholder="0"
               error={form.errors.sendAmount?.toString() || undefined}
               showDropdown={false}
+              disabled
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full h-14 bg-black rounded-b-3xl">
             <span className="font-normal text-base leading-6 text-white">Exchange Rate</span>
-            <span className="font-normal text-base leading-6 text-white">{exchangeRate}</span>
+            <span className="font-normal text-base leading-6 text-white">{displayRate}</span>
           </div>
         </div>
       </div>

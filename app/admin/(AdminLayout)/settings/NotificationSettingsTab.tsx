@@ -1,78 +1,42 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Calendar, Clock, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Divider } from "@mantine/core"
+import { useCreateData, useFetchData } from "@/app/_lib/api/hooks"
+import { adminKeys } from "@/app/_lib/api/query-keys"
+import {
+  adminApi,
+  type AdminNotificationItem,
+} from "@/app/admin/_services/admin-api"
+import type { ApiResponse } from "@/app/_lib/api/client"
 
 // --- Types ---
-interface Notification {
-  id: string
-  title: string
-  description: string
-  date: string
-  updatedDate?: string
-  time: string
-  status: "unread" | "read"
-  category: "all" | "transactions"
-}
-
-// --- Mock Data ---
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    title: "Notification Title",
-    description: "One line Short context Text",
-    date: "Nov 18 2025",
-    updatedDate: "Nov 18 2025",
-    time: "11:00 am",
-    status: "unread",
-    category: "all",
-  },
-  {
-    id: "2",
-    title: "Notification Title",
-    description: "One line Short context Text",
-    date: "Nov 18 2025",
-    updatedDate: "Nov 18 2025",
-    time: "11:00 am",
-    status: "unread",
-    category: "transactions",
-  },
-  {
-    id: "3",
-    title: "Notification Title",
-    description: "One line Short context Text",
-    date: "Nov 18 2025",
-    updatedDate: "Nov 18 2025",
-    time: "11:00 am",
-    status: "unread",
-    category: "all",
-  },
-  {
-    id: "4",
-    title: "Notification Title",
-    description: "One line Short context Text",
-    date: "Nov 17 2025",
-    time: "11:00 am",
-    status: "read",
-    category: "all",
-  },
-]
+type Notification = AdminNotificationItem
 
 // --- Tab definitions ---
 const NOTIFICATION_TABS = [
   { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
-  { value: "transactions", label: "Transactions" },
 ] as const
 
 type NotificationTabValue = (typeof NOTIFICATION_TABS)[number]["value"]
 
 // --- Date grouping helper ---
 function groupByDate(notifications: Notification[]) {
-  const groups: { label: string; items: Notification[] }[] = []
+  const groups: { label: string; items: Notification[]; sortDate: Date }[] = []
   const groupMap = new Map<string, Notification[]>()
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfYesterday = new Date(startOfToday)
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1)
+
+  const parseDate = (value: string) => {
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return null
+    return parsed
+  }
 
   for (const n of notifications) {
     const key = n.date
@@ -82,22 +46,39 @@ function groupByDate(notifications: Notification[]) {
     groupMap.get(key)?.push(n)
   }
 
-  // Convert to labeled groups
-  const today = "Nov 18 2025"
-  const yesterday = "Nov 17 2025"
-
   for (const [date, items] of groupMap) {
+    const parsed = parseDate(date)
     let label = date
-    if (date === today) label = "Today"
-    else if (date === yesterday) label = "Yesterday"
-    groups.push({ label, items })
+
+    if (parsed) {
+      const startOfParsed = new Date(
+        parsed.getFullYear(),
+        parsed.getMonth(),
+        parsed.getDate()
+      )
+
+      if (startOfParsed.getTime() === startOfToday.getTime()) label = "Today"
+      else if (startOfParsed.getTime() === startOfYesterday.getTime()) {
+        label = "Yesterday"
+      }
+    }
+
+    groups.push({ label, items, sortDate: parsed ?? new Date(0) })
   }
 
-  return groups
+  return groups.sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
 }
 
 // --- Notification Card ---
-function NotificationCard({ notification }: { notification: Notification }) {
+function NotificationCard({
+  notification,
+  onMarkRead,
+  isMarkingRead,
+}: {
+  notification: Notification
+  onMarkRead: (id: string) => void
+  isMarkingRead: boolean
+}) {
   const isUnread = notification.status === "unread"
 
   return (
@@ -125,7 +106,17 @@ function NotificationCard({ notification }: { notification: Notification }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        {isUnread && (
+          <button
+            type="button"
+            onClick={() => onMarkRead(notification.id)}
+            disabled={isMarkingRead}
+            className="rounded-md border border-[#E8533F]/30 px-2.5 py-1 text-xs font-medium text-[#E8533F] transition-colors hover:bg-[#E8533F]/5 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isMarkingRead ? "Marking..." : "Mark read"}
+          </button>
+        )}
         <span
           className={cn(
             "text-sm font-medium",
@@ -144,9 +135,13 @@ function NotificationCard({ notification }: { notification: Notification }) {
 function DateGroup({
   label,
   notifications,
+  onMarkRead,
+  markingId,
 }: {
   label: string
   notifications: Notification[]
+  onMarkRead: (id: string) => void
+  markingId: string | null
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -161,7 +156,12 @@ function DateGroup({
       {/* Notification Cards */}
       <div className="flex flex-col gap-3">
         {notifications.map((n) => (
-          <NotificationCard key={n.id} notification={n} />
+          <NotificationCard
+            key={n.id}
+            notification={n}
+            onMarkRead={onMarkRead}
+            isMarkingRead={markingId === n.id}
+          />
         ))}
       </div>
     </div>
@@ -171,22 +171,65 @@ function DateGroup({
 // --- Main Component ---
 export default function NotificationSettingsTab() {
   const [activeTab, setActiveTab] = useState<NotificationTabValue>("all")
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([])
+  const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([])
+  const [markingId, setMarkingId] = useState<string | null>(null)
+
+  const allQuery = useFetchData<ApiResponse<Notification[]>>(
+    [...adminKeys.all, "notifications", "all", { page: 1, limit: 20 }],
+    () => adminApi.notifications.getAllNotifications({ page: 1, limit: 20 }),
+    true
+  )
+
+  const unreadQuery = useFetchData<ApiResponse<Notification[]>>(
+    [...adminKeys.all, "notifications", "unread", { page: 1, limit: 20 }],
+    () => adminApi.notifications.getUnreadNotifications({ page: 1, limit: 20 }),
+    true
+  )
+
+  useEffect(() => {
+    if (allQuery.data?.data) {
+      setAllNotifications(allQuery.data.data)
+    }
+  }, [allQuery.data?.data])
+
+  useEffect(() => {
+    if (unreadQuery.data?.data) {
+      setUnreadNotifications(unreadQuery.data.data)
+    }
+  }, [unreadQuery.data?.data])
+
+  const markReadMutation = useCreateData((id: string) =>
+    adminApi.notifications.markNotificationAsRead(id)
+  )
+
+  const handleMarkRead = async (id: string) => {
+    setMarkingId(id)
+    try {
+      await markReadMutation.mutateAsync(id)
+      setUnreadNotifications((prev) => prev.filter((n) => n.id !== id))
+      setAllNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, status: "read" } : n))
+      )
+    } finally {
+      setMarkingId(null)
+    }
+  }
+
+  const isLoading =
+    allQuery.isLoading || unreadQuery.isLoading || allQuery.isFetching || unreadQuery.isFetching
+  const hasError = allQuery.isError || unreadQuery.isError
 
   // Filter notifications based on active tab
   const filteredNotifications = useMemo(() => {
-    if (activeTab === "all") return MOCK_NOTIFICATIONS
-    if (activeTab === "unread")
-      return MOCK_NOTIFICATIONS.filter((n) => n.status === "unread")
-    if (activeTab === "transactions")
-      return MOCK_NOTIFICATIONS.filter((n) => n.category === "transactions")
-    return MOCK_NOTIFICATIONS
-  }, [activeTab])
+    if (activeTab === "all") return allNotifications
+    if (activeTab === "unread") return unreadNotifications
+    return allNotifications
+  }, [activeTab, allNotifications, unreadNotifications])
 
   // Compute counts
-  const unreadCount = MOCK_NOTIFICATIONS.filter(
-    (n) => n.status === "unread"
-  ).length
-  const allCount = unreadCount
+  const unreadCount = unreadNotifications.length
+  const allCount = allNotifications.length
 
   // Group by date
   const groups = useMemo(
@@ -241,12 +284,29 @@ export default function NotificationSettingsTab() {
 
       {/* Notification Groups */}
       <div className="flex flex-col gap-8">
-        {groups.length > 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-sm font-medium text-foreground/50">
+              Loading notifications...
+            </p>
+          </div>
+        ) : hasError ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-sm font-medium text-foreground/50">
+              Unable to load notifications
+            </p>
+            <p className="mt-1 text-xs text-foreground/30">
+              Please refresh and try again
+            </p>
+          </div>
+        ) : groups.length > 0 ? (
           groups.map((group) => (
             <DateGroup
-              key={group.label}
+              key={`${group.label}-${group.sortDate.getTime()}`}
               label={group.label}
               notifications={group.items}
+              onMarkRead={handleMarkRead}
+              markingId={markingId}
             />
           ))
         ) : (

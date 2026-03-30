@@ -1,16 +1,22 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDisclosure } from "@mantine/hooks";
+import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
-import { Card, Text, TextInput, Select, Textarea, Button, Group, Stack } from "@mantine/core";
-import { FileWithPath } from "@mantine/dropzone";
+import { Card, Text, Select, Textarea, Button, Group, Stack, Loader } from "@mantine/core";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { useUploadData } from "@/app/_lib/api/hooks";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { ChevronDown } from "lucide-react";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import type { SupportTicketCategory } from "@/app/_lib/api/types";
+import { handleApiError } from "@/app/_lib/api/error-handler";
 
 const supportSchema = z.object({
   customerId: z.string().min(1, "Customer ID is required"),
@@ -21,24 +27,53 @@ const supportSchema = z.object({
 
 type SupportFormValues = z.infer<typeof supportSchema>;
 
-const CATEGORIES = [
-  "Account",
-  "Transaction",
-  "Verification",
-  "Technical",
-  "Other",
+const CATEGORY_OPTIONS: { value: SupportTicketCategory; label: string }[] = [
+  { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
+  { value: "ACCOUNT_ACCESS", label: "Account access" },
+  { value: "PAYMENT_ISSUE", label: "Payment issue" },
+  { value: "DOCUMENT_VERIFICATION", label: "Document verification" },
+  { value: "TECHNICAL_ISSUE", label: "Technical issue" },
+  { value: "COMPLIANCE_INQUIRY", label: "Compliance / regulatory inquiry" },
+  { value: "GENERAL_INQUIRY", label: "General inquiry" },
+  { value: "OTHER", label: "Other" },
 ];
 
 export default function ChatSupportPage() {
   const router = useRouter();
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [debouncedCustomerSearch] = useDebouncedValue(customerSearch, 300);
   const [confirmOpened, { open: openConfirm, close: closeConfirm }] =
     useDisclosure(false);
   const [successOpened, { open: openSuccess, close: closeSuccess }] =
     useDisclosure(false);
+  const createTicket = useUploadData(agentApi.support.tickets.create);
+
+  const customerListParams = useMemo(
+    () => ({
+      page: 1,
+      limit: 20,
+      search: debouncedCustomerSearch?.trim() || undefined,
+    }),
+    [debouncedCustomerSearch]
+  );
+
+  const { data: customerListResponse, isLoading: isCustomersLoading } = useFetchData(
+    [...agentKeys.customers.list(customerListParams)],
+    () => agentApi.customers.list(customerListParams)
+  );
+
+  const customerOptions = useMemo(
+    () =>
+      (customerListResponse?.data ?? []).map((customer) => ({
+        value: customer.userId,
+        label: `${customer.fullName}`,
+      })),
+    [customerListResponse]
+  );
 
   const form = useForm<SupportFormValues>({
     initialValues: {
-      customerId: "2223334355",
+      customerId: "",
       category: "",
       description: "",
       attachment: null,
@@ -52,17 +87,34 @@ export default function ChatSupportPage() {
   });
 
   const handleConfirmSubmit = () => {
-    closeConfirm();
-    // Mock API call
-    setTimeout(() => {
-      openSuccess();
-      form.reset();
-    }, 500);
+    const values = form.values;
+    const formData = new FormData();
+    formData.append("customerId", values.customerId);
+    formData.append("category", values.category);
+    formData.append("description", values.description);
+
+    if (values.attachment) {
+      formData.append("attachment", values.attachment, values.attachment.name);
+    }
+
+    createTicket.mutate(formData, {
+      onSuccess: () => {
+        closeConfirm();
+        openSuccess();
+        form.reset();
+      },
+      onError: (error) => {
+        closeConfirm();
+        handleApiError(error, {
+          customMessage: "Unable to submit support ticket. Please try again.",
+        });
+      },
+    });
   };
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-2xl mx-auto">
         {/* Breadcrumbs */}
         <Group gap="xs">
           <Text size="sm" c="dimmed">
@@ -90,18 +142,32 @@ export default function ChatSupportPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextInput
-                  label="Customer ID"
+                <Select
+                  label="Customer"
                   required
-                  placeholder="Customer ID"
+                  placeholder="Search and select customer"
+                  searchable
+                  clearable
+                  data={customerOptions}
+                  searchValue={customerSearch}
+                  onSearchChange={setCustomerSearch}
+                  nothingFoundMessage={
+                    isCustomersLoading
+                      ? "Loading customers..."
+                      : debouncedCustomerSearch
+                      ? "No customer found"
+                      : "No customers available"
+                  }
                   size="md"
                   radius="md"
+                  rightSection={isCustomersLoading ? <Loader size={14} /> : <ChevronDown size={16} />}
+                  rightSectionPointerEvents="none"
                   {...form.getInputProps("customerId")}
                 />
                 <Select
                   label="Category"
                   placeholder="Select Category"
-                  data={CATEGORIES}
+                  data={CATEGORY_OPTIONS}
                   size="md"
                   radius="md"
                   rightSection={<ChevronDown size={16} />}
@@ -145,7 +211,8 @@ export default function ChatSupportPage() {
                   type="submit"
                   radius="xl"
                   color="orange"
-                  disabled={!form.isValid()}
+                  disabled={!form.isValid() || createTicket.isPending}
+                  loading={createTicket.isPending}
                 >
                   Submit Form
                 </Button>
@@ -164,6 +231,7 @@ export default function ChatSupportPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleConfirmSubmit}
         onSecondary={closeConfirm}
+        loading={createTicket.isPending}
       />
 
       <SuccessModal

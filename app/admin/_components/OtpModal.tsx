@@ -23,7 +23,7 @@ export interface OtpModalProps {
   onSubmit: (otp: string) => void;
   /** Called when user requests a new OTP (e.g. Resend OTP clicked) */
   onResend: () => Promise<boolean> | boolean;
-  /** Countdown duration in seconds. Default 900 (15 min) */
+  /** Countdown duration in seconds. Default 300 (5 min) */
   expiresInSeconds?: number;
 }
 

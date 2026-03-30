@@ -11,7 +11,7 @@ import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadI
 
 const uploadDocumentsSchema = z.object({
   tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
   internationalPassportFile: z
     .custom<FileWithPath | null>()
     .refine((file) => file !== null, {
@@ -96,7 +96,7 @@ export default function ResidentUploadDocumentsStep({
         required
         size="md"
         placeholder="Enter Passport Number"
-        maxLength={50}
+        maxLength={9}
         autoComplete="off"
         {...form.getInputProps("passportDocumentNumber")}
       />

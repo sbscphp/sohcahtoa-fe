@@ -12,11 +12,11 @@ import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadI
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
   ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
+  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
   formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Form A file is required",
   }),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
@@ -140,7 +140,7 @@ export default function MedicalUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={30}
+          maxLength={8}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
@@ -149,7 +149,7 @@ export default function MedicalUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Passport Number"
-          maxLength={50}
+          maxLength={9}
           autoComplete="off"
           {...form.getInputProps("passportDocumentNumber")}
         />

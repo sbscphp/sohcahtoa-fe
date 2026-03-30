@@ -4,10 +4,18 @@ import { ActionIcon } from "@mantine/core";
 import { Plus } from "@hugeicons/core-free-icons";
 import { Button } from "@mantine/core";
 import Link from "next/link";
-import { TableWrapper, type PaginatedTableColumn, type FilterTabOption } from "../../common";
+import {
+  TableWrapper,
+  type PaginatedTableColumn,
+  type FilterTabOption,
+} from "../../common";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { IconArrowRight } from "@/components/icons/IconArrowRight";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import type {
+  TableFilterGroup,
+  TableFilterValues,
+} from "@/app/(customer)/_components/common/table/TableFilterSheet";
 
 export interface Transaction {
   id: string;
@@ -15,14 +23,18 @@ export interface Transaction {
   date: string;
   type: string;
   stage: string;
-  status: "Pending" | "Completed" | "Rejected" | "Request More Info" | "Approved";
+  status: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
 }
 
 interface TransactionTableOverviewProps {
+  filterOptions: FilterTabOption[];
   activeType: string;
   onTypeChange: (type: string) => void;
   onFilterClick?: () => void;
+  filters?: TableFilterGroup[];
+  filterValues?: TableFilterValues;
+  onFiltersApply?: (values: TableFilterValues) => void;
   onExportClick?: () => void;
   transactions: Transaction[];
   pageSize?: number;
@@ -31,16 +43,14 @@ interface TransactionTableOverviewProps {
   skeletonRowCount?: number;
 }
 
-const FILTER_OPTIONS: FilterTabOption[] = [
-  { value: "Buy FX", label: "Buy FX" },
-  { value: "Sell FX", label: "Sell FX" },
-  { value: "Receive FX", label: "Receive FX" },
-];
-
-export default function TransactionTableOverview({
+export default function  TransactionTableOverview({
+  filterOptions,
   activeType,
   onTypeChange,
   onFilterClick,
+  filters,
+  filterValues,
+  onFiltersApply,
   onExportClick,
   transactions,
   pageSize = 10,
@@ -132,10 +142,14 @@ export default function TransactionTableOverview({
     
       <TableWrapper
       title="All Transactions"
-      filterOptions={FILTER_OPTIONS}
+      filterOptions={filterOptions}
       activeFilter={activeType}
       onFilterChange={onTypeChange}
       onFilterClick={onFilterClick}
+      filters={filters}
+      filterValues={filterValues}
+      onFiltersApply={onFiltersApply}
+      filterSheetTitle="Filter By"
       onExportClick={onExportClick}
       actionButton={
         <Link href="/transactions/options">

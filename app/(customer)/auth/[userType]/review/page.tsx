@@ -15,6 +15,7 @@ import {
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import { notifications } from "@mantine/notifications";
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -58,8 +59,20 @@ export default function ReviewPage() {
   const handleSendOTP = () => {
     if (userType && !isSendingOTP) {
       setIsSendingOTP(true);
-      const onSuccess = (response: { success: boolean; error?: { message?: string } }) => {
+      const onSuccess = (response: { success: boolean; data?: unknown; error?: { message?: string } }) => {
         if (response.success) {
+          const otp =
+            response.data && typeof response.data === "object" && "otp" in response.data
+              ? (response.data as { otp?: unknown }).otp
+              : undefined;
+          if (typeof otp === "string" && otp) {
+            notifications.show({
+              title: "DEV OTP",
+              message: `OTP: ${otp}`,
+              color: "blue",
+              autoClose: 8000,
+            });
+          }
           setIsSendingOTP(false);
           sessionStorage.setItem("userType", userType);
           openOTPSent();

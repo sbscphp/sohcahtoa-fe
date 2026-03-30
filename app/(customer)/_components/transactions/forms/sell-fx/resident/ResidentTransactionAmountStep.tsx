@@ -14,6 +14,7 @@ import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import SourceOfFundsDeclaration from "./SourceOfFundsDeclaration";
 import type { FileWithPath } from "@mantine/dropzone";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 
 const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
@@ -27,6 +28,7 @@ export type ResidentTransactionAmountFormData = z.infer<typeof transactionAmount
   sourceOfFundsSignatureMode?: "initials" | "upload";
   sourceOfFundsInitials?: string;
   sourceOfFundsSignatureFile?: FileWithPath | null;
+  proofOfFundsFiles?: File[];
 };
 
 interface ResidentTransactionAmountStepProps {
@@ -41,7 +43,7 @@ export default function ResidentTransactionAmountStep({
   onSubmit,
   onBack,
   exchangeRate = "USD1 - NGN1500",
-}: ResidentTransactionAmountStepProps) {
+}: Readonly<ResidentTransactionAmountStepProps>) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">("initials");
   const [sourceOfFundsInitials, setSourceOfFundsInitials] = useState(initialValues?.sourceOfFundsInitials ?? "");
@@ -49,6 +51,8 @@ export default function ResidentTransactionAmountStep({
     initialValues?.sourceOfFundsSignatureFile ?? null
   );
   const [sourceOfFundsError, setSourceOfFundsError] = useState<string | null>(null);
+  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(initialValues?.proofOfFundsFiles ?? []);
+  const [proofOfFundsError, setProofOfFundsError] = useState<string | null>(null);
 
   const form = useForm<ResidentTransactionAmountFormData>({
     mode: "uncontrolled",
@@ -62,6 +66,23 @@ export default function ResidentTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const { displayRate, recalculate } = useTransactionRateCalculator({
+    // Re-map sell form to calculator shape:
+    // source amount/currency = sendAmount/sendCurrency
+    // target currency = receiveCurrency
+    getValues: () => ({
+      receiveAmount: form.values.sendAmount,
+      receiveCurrency: form.values.sendCurrency,
+      sendAmount: form.values.receiveAmount,
+      sendCurrency: form.values.receiveCurrency,
+      exchangeRate: form.values.exchangeRate,
+    }),
+    // Calculator writes converted amount into target side for sell flow.
+    setSendAmount: (value) => form.setFieldValue("receiveAmount", value),
+    setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
+    defaultLabel: exchangeRate,
+  });
+
   const over10k = isAmountOver10k(
     form.values.receiveAmount,
     form.values.receiveCurrency,
@@ -69,25 +90,35 @@ export default function ResidentTransactionAmountStep({
     form.values.sendCurrency
   );
 
+  const validateOver10kRequirements = () => {
+    if (!over10k) return true;
+    if (!proofOfFundsFiles.length) {
+      setProofOfFundsError("Please upload at least one proof of fund document");
+      return false;
+    }
+    const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
+    const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
+    if (!hasInitials && !hasSignature) {
+      setSourceOfFundsError(
+        sourceOfFundsMode === "initials"
+          ? "Please enter your initials for the source of funds declaration"
+          : "Please upload your signature for the source of funds declaration"
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = form.onSubmit((values) => {
     setSourceOfFundsError(null);
-    if (over10k) {
-      const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
-      const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
-      if (!hasInitials && !hasSignature) {
-        setSourceOfFundsError(
-          sourceOfFundsMode === "initials"
-            ? "Please enter your initials for the source of funds declaration"
-            : "Please upload your signature for the source of funds declaration"
-        );
-        return;
-      }
-    }
+    setProofOfFundsError(null);
+    if (!validateOver10kRequirements()) return;
     onSubmit({
       ...values,
       sourceOfFundsSignatureMode: over10k ? sourceOfFundsMode : undefined,
       sourceOfFundsInitials: over10k && sourceOfFundsMode === "initials" ? sourceOfFundsInitials.trim() : undefined,
       sourceOfFundsSignatureFile: over10k && sourceOfFundsMode === "upload" ? sourceOfFundsSignatureFile : undefined,
+      proofOfFundsFiles: over10k ? proofOfFundsFiles : undefined,
     });
   });
 
@@ -99,6 +130,7 @@ export default function ResidentTransactionAmountStep({
       receiveAmount: sendAmount,
       receiveCurrency: sendCurrency,
     });
+    recalculate(receiveAmount, receiveCurrency, sendCurrency);
   };
 
   return (
@@ -117,20 +149,31 @@ export default function ResidentTransactionAmountStep({
           <CurrencyAmountInput
             label="When you Send"
             value={form.values.sendAmount}
-            onChange={(value) => form.setFieldValue("sendAmount", value)}
+            onChange={(value) => {
+              form.setFieldValue("sendAmount", value);
+              recalculate(value);
+            }}
             currency={
               getCurrencyByCode(form.values.sendCurrency) ?? CURRENCIES[0]
             }
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("sendCurrency", c.code)}
+            onCurrencyChange={(c) => {
+              form.setFieldValue("sendCurrency", c.code);
+              recalculate(undefined, c.code);
+            }}
             placeholder="0"
-            error={form.errors.sendAmount?.toString() || undefined}
+            error={typeof form.errors.sendAmount === "string" ? form.errors.sendAmount : undefined}
           />
           <div className="w-full">
             <ProofOfFundPrompt
               show={over10k}
               onUploadClick={() => setProofModalOpen(true)}
             />
+            {over10k && proofOfFundsError && (
+              <p className="text-red-600 text-xs mt-1 text-right">
+                {proofOfFundsError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -151,7 +194,7 @@ export default function ResidentTransactionAmountStep({
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
-            console.log("Proof of fund attached", files);
+            setProofOfFundsFiles(files);
             setProofModalOpen(false);
           }}
         />
@@ -176,9 +219,14 @@ export default function ResidentTransactionAmountStep({
               currency={
                 getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
               }
+              onCurrencyChange={(c) => {
+                form.setFieldValue("receiveCurrency", c.code);
+                recalculate(undefined, undefined, c.code);
+              }}
               placeholder="0"
-              error={form.errors.receiveAmount?.toString() || undefined}
-              showDropdown={false}
+              error={typeof form.errors.receiveAmount === "string" ? form.errors.receiveAmount : undefined}
+              showDropdown
+              disabled
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full h-14 bg-black rounded-b-3xl">
@@ -186,7 +234,7 @@ export default function ResidentTransactionAmountStep({
               Exchange Rate
             </span>
             <span className="font-normal text-base leading-6 text-white">
-              {exchangeRate}
+              {displayRate}
             </span>
           </div>
         </div>

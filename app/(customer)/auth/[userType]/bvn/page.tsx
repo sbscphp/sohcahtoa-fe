@@ -12,6 +12,7 @@ import { validateUserType, checkAndClearSessionIfUserTypeChanged } from "@/app/(
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import { notifications } from "@mantine/notifications";
 
 export default function BVNPage() {
   const router = useRouter();
@@ -99,6 +100,15 @@ export default function BVNPage() {
       {
         onSuccess: (response) => {
           if (response.success) {
+            const otp = (response as { data?: { otp?: string } })?.data?.otp;
+            if (otp) {
+              notifications.show({
+                title: "DEV OTP",
+                message: `OTP: ${otp}`,
+                color: "blue",
+                autoClose: 8000,
+              });
+            }
             closeOTPDelivery();
             openVerifyBVN();
           } else {
