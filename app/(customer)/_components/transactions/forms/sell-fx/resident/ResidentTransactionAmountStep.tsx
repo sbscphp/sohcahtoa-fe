@@ -14,6 +14,7 @@ import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import SourceOfFundsDeclaration from "./SourceOfFundsDeclaration";
 import type { FileWithPath } from "@mantine/dropzone";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 
 const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
@@ -65,6 +66,23 @@ export default function ResidentTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const { displayRate, recalculate } = useTransactionRateCalculator({
+    // Re-map sell form to calculator shape:
+    // source amount/currency = sendAmount/sendCurrency
+    // target currency = receiveCurrency
+    getValues: () => ({
+      receiveAmount: form.values.sendAmount,
+      receiveCurrency: form.values.sendCurrency,
+      sendAmount: form.values.receiveAmount,
+      sendCurrency: form.values.receiveCurrency,
+      exchangeRate: form.values.exchangeRate,
+    }),
+    // Calculator writes converted amount into target side for sell flow.
+    setSendAmount: (value) => form.setFieldValue("receiveAmount", value),
+    setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
+    defaultLabel: exchangeRate,
+  });
+
   const over10k = isAmountOver10k(
     form.values.receiveAmount,
     form.values.receiveCurrency,
@@ -112,6 +130,7 @@ export default function ResidentTransactionAmountStep({
       receiveAmount: sendAmount,
       receiveCurrency: sendCurrency,
     });
+    recalculate(receiveAmount, receiveCurrency, sendCurrency);
   };
 
   return (
@@ -130,12 +149,18 @@ export default function ResidentTransactionAmountStep({
           <CurrencyAmountInput
             label="When you Send"
             value={form.values.sendAmount}
-            onChange={(value) => form.setFieldValue("sendAmount", value)}
+            onChange={(value) => {
+              form.setFieldValue("sendAmount", value);
+              recalculate(value);
+            }}
             currency={
               getCurrencyByCode(form.values.sendCurrency) ?? CURRENCIES[0]
             }
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("sendCurrency", c.code)}
+            onCurrencyChange={(c) => {
+              form.setFieldValue("sendCurrency", c.code);
+              recalculate(undefined, c.code);
+            }}
             placeholder="0"
             error={typeof form.errors.sendAmount === "string" ? form.errors.sendAmount : undefined}
           />
@@ -194,9 +219,14 @@ export default function ResidentTransactionAmountStep({
               currency={
                 getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
               }
+              onCurrencyChange={(c) => {
+                form.setFieldValue("receiveCurrency", c.code);
+                recalculate(undefined, undefined, c.code);
+              }}
               placeholder="0"
               error={typeof form.errors.receiveAmount === "string" ? form.errors.receiveAmount : undefined}
-              showDropdown={false}
+              showDropdown
+              disabled
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full h-14 bg-black rounded-b-3xl">
@@ -204,7 +234,7 @@ export default function ResidentTransactionAmountStep({
               Exchange Rate
             </span>
             <span className="font-normal text-base leading-6 text-white">
-              {exchangeRate}
+              {displayRate}
             </span>
           </div>
         </div>

@@ -62,7 +62,7 @@ export default function UndergraduateForm({
         required
         size="md"
         placeholder="Enter Number"
-        maxLength={50}
+        maxLength={9}
         autoComplete="off"
         value={schoolInvoiceNumber}
         onChange={(e) => onSchoolInvoiceNumberChange(e.target.value)}

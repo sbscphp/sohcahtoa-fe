@@ -126,7 +126,7 @@ export default function SetSecurityQuestionPage() {
         length={6}
         onSubmit={handleOtpSubmit}
         onResend={() => Promise.resolve(true)}
-        expiresInSeconds={900}
+        expiresInSeconds={300}
       />
 
       {/* Success Modal */}

@@ -15,7 +15,7 @@ import { CalendarIcon } from "@hugeicons/core-free-icons";
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
   ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
   workPermitNumber: z.string().min(1, "Work Permit Number is required").max(50, "Work Permit Number is too long"),
   internationalPassportFile: z
     .custom<FileWithPath | null>()
@@ -134,7 +134,7 @@ export default function ExpatriateUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Passport Number"
-          maxLength={50}
+          maxLength={9}
           autoComplete="off"
           {...form.getInputProps("passportDocumentNumber")}
         />

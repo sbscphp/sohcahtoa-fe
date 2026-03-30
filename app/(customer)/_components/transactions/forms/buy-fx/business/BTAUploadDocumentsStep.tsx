@@ -16,12 +16,12 @@ const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
   ninNumber: z.string().max(50).refine((v) => !v || v.trim() === "" || /^\d{11}$/.test(v.trim()), "NIN must be exactly 11 digits when provided"),
   tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
+  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
   tccDocumentNumber: z.string().min(1, "TCC document number is required").max(50, "Document number is too long"),
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "TCC (Tax Clearance Certificate) file is required",
   }),
-  passportDocumentNumber: z.string().min(1, "International passport document number is required").max(50, "Document number is too long"),
+  passportDocumentNumber: z.string().min(1, "International passport document number is required").max(9, "International Passport number must be at most 9 characters"),
   passportIssueDate: z.string().min(1, "Passport issue date is required"),
   passportExpiryDate: z.string().min(1, "Passport expiry date is required"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
@@ -153,7 +153,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter TIN Number"
-          maxLength={30}
+          maxLength={8}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
         />
@@ -162,7 +162,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={30}
+          maxLength={9}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
