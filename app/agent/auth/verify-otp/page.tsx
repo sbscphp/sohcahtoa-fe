@@ -13,7 +13,7 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [otp, setOtp] = useState("");
-  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function VerifyOtpPage() {
   const handleResendOtp = async () => {
     // Mock resend OTP - replace with actual API call
     setOtp("");
-    setTimeLeft(900); // Reset timer
+    setTimeLeft(300); // Reset timer
     console.log("Resending OTP...");
   };
 

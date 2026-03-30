@@ -224,7 +224,7 @@ export default function AgentLoginPage() {
         loading={verifyLoginMutation.isPending}
         onSubmit={handleOtpSubmit}
         onResend={handleResendOtp}
-        expiresInSeconds={900}
+        expiresInSeconds={300}
       />
     </AgentAuthLayout>
   );

@@ -50,6 +50,14 @@ export const AGENT_API_ENDPOINTS = {
     transactionsByType: "/api/agent/dashboard/transactions-by-type",
   },
 
+  support: {
+    tickets: {
+      create: "/api/agent/support/tickets",
+      list: "/api/agent/support/tickets",
+      getById: (id: string) => `/api/agent/support/tickets/${id}`,
+    },
+  },
+
     // Notifications
     notifications: {
       list: "/api/notifications",

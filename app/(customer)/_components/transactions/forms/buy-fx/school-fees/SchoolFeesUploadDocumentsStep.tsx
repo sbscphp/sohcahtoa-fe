@@ -16,7 +16,7 @@ import OtherForm from './components/OtherForm';
 
 const undergraduateSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
+  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
   schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "School Invoice is required",
   }),
@@ -27,12 +27,12 @@ const undergraduateSchema = z.object({
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
 });
 
 const postgraduateSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
+  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
   schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "School Invoice is required",
   }),
@@ -53,7 +53,7 @@ const postgraduateSchema = z.object({
 
 const otherSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
+  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
   transactionFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Transaction Document is required",
   }),
@@ -169,7 +169,7 @@ export default function SchoolFeesUploadDocumentsStep({
         required
         size="md"
         placeholder="Enter Form A ID"
-        maxLength={30}
+        maxLength={8}
         autoComplete="off"
         {...form.getInputProps("formAId")}
       />

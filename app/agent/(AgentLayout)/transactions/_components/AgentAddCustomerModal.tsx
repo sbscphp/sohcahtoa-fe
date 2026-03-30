@@ -5,6 +5,7 @@ import { Modal, Button, TextInput } from "@mantine/core";
 import { ArrowUpRight } from "lucide-react";
 import { OTPInput } from "@/app/(customer)/_components/auth/OTPInput";
 import { UserTypeCard } from "@/app/(customer)/_components/auth/UserTypeCard";
+import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import { emailIcon, phoneIcon } from "@/app/assets/asset";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
@@ -187,13 +188,14 @@ export function AgentAddCustomerModal({
           createAccountMutation.mutate(
             {
               verificationToken: tokenForCreate,
-              password: "password123!",
+              password: "securePass12!",
               customerType,
             },
             {
               onSuccess: (createRes) => {
                 setIsSubmitting(false);
-                if (createRes.success && createRes.data?.user) {
+                const createdData = createRes.data as { userId?: string } | undefined;
+                if (createRes.success && createdData?.userId) {
                   setStep("success");
                 } else {
                   handleApiError(
@@ -399,7 +401,7 @@ export function AgentAddCustomerModal({
           <OTPInput
             onComplete={handleOtpComplete}
             maskedInfo={maskedInfo}
-            expiryMinutes={15}
+            expiryMinutes={5}
             onResend={selectedType === "resident" ? handleResendOtp : undefined}
             isResending={selectedType === "resident" ? sendOtpMutation.isPending : false}
           />
@@ -421,38 +423,6 @@ export function AgentAddCustomerModal({
     );
   };
 
-  const renderSuccess = () => (
-    <div className="space-y-6 text-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-50">
-          <div className="h-9 w-9 rounded-full bg-green-500" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-body-heading-300 text-xl font-semibold">
-            {selectedType === "resident"
-              ? "BVN Verified Successfully"
-              : "Details Verified Successfully"}
-          </h2>
-          <p className="text-body-text-200 text-sm md:text-base">
-            The customer has been verified successfully. Continue below to begin
-            the transaction.
-          </p>
-        </div>
-      </div>
-
-      <Button
-        onClick={handleClose}
-        fullWidth
-        radius="xl"
-        size="lg"
-        rightSection={<ArrowUpRight size={18} />}
-        className="bg-primary-400 hover:bg-primary-500 text-[#FFF6F1]"
-      >
-        Continue
-      </Button>
-    </div>
-  );
-
   const renderBody = () => {
     switch (step) {
       case "type-select":
@@ -466,24 +436,35 @@ export function AgentAddCustomerModal({
       case "verify-otp":
         return renderVerifyOtp();
       case "success":
-        return renderSuccess();
+        return null;
       default:
         return null;
     }
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={handleClose}
-      centered
-      radius="xl"
-      size="577px"
-      closeOnClickOutside={false}
-      withCloseButton={step !== "otp-delivery" && step !== "verify-otp" && step !== "success"}
-    >
-      <div className="p-4 md:p-6">{renderBody()}</div>
-    </Modal>
+    <>
+      <Modal
+        opened={opened && step !== "success"}
+        onClose={handleClose}
+        centered
+        radius="xl"
+        size="577px"
+        closeOnClickOutside={false}
+        // withCloseButton={step !== "otp-delivery" && step !== "verify-otp"}
+      >
+        <div className="p-4 md:p-6">{renderBody()}</div>
+      </Modal>
+
+      <SuccessModal
+        opened={opened && step === "success"}
+        onClose={handleClose}
+        title="Customer Added Successfully"
+        message="The customer has been verified and added successfully. Continue below to begin the transaction."
+        buttonText="Continue"
+        onButtonClick={handleClose}
+      />
+    </>
   );
 }
 

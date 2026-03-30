@@ -95,18 +95,18 @@ export function TransactionHistoryModal({
 
         {/* Footer Button */}
         <CustomButton
-          buttonType="primary"
+          buttonType="secondary"
           fullWidth
           size="lg"
           radius="xl"
-          rightSection={<ArrowUpRight size={16} />}
+          // rightSection={<ArrowUpRight size={16} />}
           onClick={() => {
             // Handle start new transaction
-            console.log("Start new transaction");
+            // console.log("Start new transaction");
             onClose();
           }}
         >
-          Start New Transaction
+          Close
         </CustomButton>
       </Stack>
     </Modal>

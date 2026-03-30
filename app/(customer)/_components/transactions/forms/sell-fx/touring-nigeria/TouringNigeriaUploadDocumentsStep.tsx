@@ -12,7 +12,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 
 const uploadDocumentsSchema = z.object({
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(50, "International Passport Number is too long"),
+  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
@@ -100,7 +100,7 @@ export default function TouringNigeriaUploadDocumentsStep({
         required
         size="md"
         placeholder="Enter Passport Number"
-        maxLength={50}
+        maxLength={9}
         autoComplete="off"
         {...form.getInputProps("passportDocumentNumber")}
       />

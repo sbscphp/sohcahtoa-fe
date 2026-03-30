@@ -51,6 +51,8 @@ import type {
   CheckTransactionLimitsResponse,
   TransactionOverviewRequest,
   TransactionOverviewResponse,
+  SupportTicketDetailResponse,
+  SupportTicketListResponse,
 } from "@/app/_lib/api/types";
 
 interface AgentLoginResponseData {
@@ -276,6 +278,27 @@ export const agentApi = {
         apiClient.put<NotificationPreferencesResponse>(
           AGENT_API_ENDPOINTS.notifications.preferences.update,
           data
+        ),
+    },
+  },
+
+  support: {
+    tickets: {
+      create: (formData: FormData) =>
+        apiClient.post<SupportTicketDetailResponse>(
+          AGENT_API_ENDPOINTS.support.tickets.create,
+          formData
+        ),
+      list: (params?: { page?: number; limit?: number }) =>
+        apiClient.get<SupportTicketListResponse>(
+          AGENT_API_ENDPOINTS.support.tickets.list,
+          {
+            params: params as ApiRequestConfig["params"],
+          }
+        ),
+      getById: (id: string) =>
+        apiClient.get<SupportTicketDetailResponse>(
+          AGENT_API_ENDPOINTS.support.tickets.getById(id)
         ),
     },
   },

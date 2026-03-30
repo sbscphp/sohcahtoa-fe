@@ -15,7 +15,7 @@ interface OTPInputProps {
 export function OTPInput({
   length = 6,
   onComplete,
-  expiryMinutes = 15,
+  expiryMinutes = 5,
   onResend,
   maskedInfo,
   isResending = false
