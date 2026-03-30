@@ -841,6 +841,25 @@ export interface SettlementDashboardStats {
   totalEscrowAccounts: number;
 }
 
+export interface AdminNotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  updatedDate?: string;
+  time: string;
+  status: "unread" | "read";
+  category: "all" | "transactions";
+}
+
+export type AdminNotificationsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+};
+
 export const adminApi = {
   // ==================== Auth ====================
   auth: {
@@ -892,6 +911,24 @@ export const adminApi = {
 
     getPendingApprovals: () =>
       apiClient.get<ApiResponse<unknown[]>>(API_ENDPOINTS.admin.pendingApprovals),
+  },
+
+  // ==================== Notifications ====================
+  notifications: {
+    getAllNotifications: (params?: AdminNotificationsListParams) =>
+      apiClient.get<ApiResponse<AdminNotificationItem[]>>(
+        API_ENDPOINTS.admin.notifications.all,
+        { params }
+      ),
+
+    getUnreadNotifications: (params?: AdminNotificationsListParams) =>
+      apiClient.get<ApiResponse<AdminNotificationItem[]>>(
+        API_ENDPOINTS.admin.notifications.unread,
+        { params }
+      ),
+
+    markNotificationAsRead: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.notifications.markRead(id)),
   },
 
   // ==================== Audit Trail ====================

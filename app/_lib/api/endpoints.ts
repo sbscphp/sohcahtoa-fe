@@ -103,6 +103,11 @@ export const API_ENDPOINTS = {
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",
+    notifications: {
+      all: "/api/admin/notifications",
+      unread: "/api/admin/notifications/unread",
+      markRead: (id: string) => `/api/admin/notifications/${id}/read`,
+    },
     auditTrail: "/api/admin/audit/trail",
     auditTrailExport: "/api/admin/audit/trail/export",
     agent: {
