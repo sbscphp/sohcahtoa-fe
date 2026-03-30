@@ -1,7 +1,6 @@
 "use client";
 
 import { atom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
 
 export interface AdminUser {
   id: string;
@@ -21,14 +20,56 @@ export interface AdminUser {
   refreshToken: string;
 }
 
+export const ADMIN_AUTH_STORAGE_KEY = "admin_auth";
+
 /**
- * Persisted admin session atom.
- * Stored under the key "admin_auth" in localStorage to avoid clashing
- * with customer or agent sessions which use their own namespaced keys.
+ * Reads the admin session from localStorage synchronously.
+ * Called once during module initialization on the client so that the atom
+ * has the correct value on the very first render — avoiding the race
+ * condition that `atomWithStorage` has where it returns null before
+ * asynchronously hydrating from storage.
  */
-export const adminUserAtom = atomWithStorage<AdminUser | null>(
-  "admin_auth",
-  null
+const getInitialAdminUser = (): AdminUser | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AdminUser;
+    return parsed?.id ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const _adminUserBase = atom<AdminUser | null>(getInitialAdminUser());
+
+/**
+ * Admin session atom — write-through to localStorage.
+ *
+ * Reading: returns the in-memory admin user (populated synchronously from
+ *   localStorage on module load, so it is correct on the first render).
+ *
+ * Writing: persists every update to localStorage automatically, so all
+ *   existing `setAdminUser(value)` call-sites work without any changes.
+ */
+export const adminUserAtom = atom(
+  (get) => get(_adminUserBase),
+  (
+    get,
+    set,
+    update: AdminUser | null | ((prev: AdminUser | null) => AdminUser | null)
+  ) => {
+    const next =
+      typeof update === "function" ? update(get(_adminUserBase)) : update;
+    set(_adminUserBase, next);
+    if (typeof window !== "undefined") {
+      if (next) {
+        localStorage.setItem(ADMIN_AUTH_STORAGE_KEY, JSON.stringify(next));
+      } else {
+        localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+      }
+    }
+  }
 );
 
 /** Derived read-only atom – used by the API client token getter. */

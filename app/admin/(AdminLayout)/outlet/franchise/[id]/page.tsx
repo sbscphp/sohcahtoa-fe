@@ -1,492 +1,396 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Text,
   Group,
   Button,
-  TextInput,
-  Select,
   Menu,
   Divider,
+  Skeleton,
+  Alert,
 } from "@mantine/core";
-import { Search, ListFilter, Upload } from "lucide-react";
-import { adminRoutes } from "@/lib/adminRoutes";
+import { notifications } from "@mantine/notifications";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { CustomButton } from "@/app/admin/_components/CustomButton";
+// import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import FormModal, { type FormField } from "@/app/admin/_components/FormModal";
+import { FranchiseDetailTabbedTables } from "./_franchiseDetailComponents/FranchiseDetailTabbedTables";
+import {
+  useFranchiseDetails,
+  formatFranchiseStatusForBadge,
+  formatFranchiseCreatedAt,
+} from "../../hooks/useFranchiseDetails";
+import { useOutletStates } from "../../hooks/useOutletStates";
+import { usePutData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import {
+  adminApi,
+  type UpdateFranchisePayload,
+  type UpdateFranchiseStatusPayload,
+} from "@/app/admin/_services/admin-api";
 
-type FranchiseStatus = "Active" | "Deactivated";
-type TabKey = "branches" | "transactions";
-
-interface BranchRow {
-  id: string;
-  name: string;
-  managerName: string;
-  managerEmail: string;
-  address: string;
-  agents: number;
-  status: "Active" | "Pending" | "Deactivated";
+function buildUpdatePayload(data: Record<string, unknown>): UpdateFranchisePayload {
+  return {
+    franchiseName: String(data.franchiseName ?? "").trim(),
+    state: String(data.state ?? "").trim(),
+    address: String(data.address ?? "").trim(),
+    contactPersonName: String(data.contactPerson ?? "").trim(),
+    email: String(data.emailAddress ?? "").trim(),
+    phoneNumber: String(data.phoneNumber1 ?? "").trim(),
+    altPhoneNumber: String(data.phoneNumber2 ?? "").trim(),
+  };
 }
-
-const BRANCHES_MOCK: BranchRow[] = [
-  { id: "9023", name: "Eternal Global", managerName: "Tunde Bashorun", managerEmail: "tunde@eternalglobal.com", address: "Plot 10, Off Jibowu Street, Lagos", agents: 5, status: "Active" },
-  { id: "9025", name: "Kudi Mata", managerName: "Queen Omotola", managerEmail: "queen@kudimata.com", address: "123 Odu'a Street, Ibadan", agents: 3, status: "Pending" },
-  { id: "9026", name: "Sammy Bureau", managerName: "Samuel Olubanki", managerEmail: "olubankisamuel@gmail.com", address: "Suite 5, 2nd Floor, Enugu Mall, Enugu", agents: 8, status: "Active" },
-  { id: "9024", name: "Eko Sulatn", managerName: "Ibrahim Dantata", managerEmail: "ibrahim@sultan.com", address: "Block 5, Victoria Island, Lagos", agents: 2, status: "Deactivated" },
-  { id: "9027", name: "Greenfield Exchange", managerName: "Mfon Ubot", managerEmail: "mubot@greenfield.com", address: "66, Zaria Road, Kaduna", agents: 6, status: "Active" },
-  { id: "9028", name: "Nagode Limited", managerName: "Sariki Sudan", managerEmail: "nagode@gmail.com", address: "Room 204, Abuja Business Center, A...", agents: 4, status: "Deactivated" },
-];
-
-const branchHeaders = [
-  { label: "Branch Name", key: "name" },
-  { label: "Branch Manager", key: "manager" },
-  { label: "Address", key: "address" },
-  { label: "Agents", key: "agents" },
-  { label: "Status", key: "status" },
-  { label: "Action", key: "action" },
-];
-
-interface TransactionRow {
-  id: string;
-  transactionId: string;
-  actionDate: string;
-  actionTime: string;
-  branchName: string;
-  agentName: string;
-  type: string;
-  actionEffect: "Posted" | "Pending" | "Rejected";
-}
-
-const TRANSACTIONS_MOCK: TransactionRow[] = [
-  { id: "tx1", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikoyi Axis", agentName: "Eddy Ubong", type: "BTA", actionEffect: "Posted" },
-  { id: "tx2", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Victoria Island", agentName: "Sarah Olufemi", type: "PTA", actionEffect: "Pending" },
-  { id: "tx3", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Lekki Phase 1", agentName: "Chinedu Okafor", type: "School Fees", actionEffect: "Rejected" },
-  { id: "tx4", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Surulere", agentName: "Tolu Adebayo", type: "Expatriate", actionEffect: "Pending" },
-  { id: "tx5", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikorodu", agentName: "Amanda Nwosu", type: "BTA", actionEffect: "Posted" },
-];
-
-const transactionHeaders = [
-  { label: "Transaction ID", key: "transactionId" },
-  { label: "Action Date", key: "actionDate" },
-  { label: "Branch/Agent", key: "branchAgent" },
-  { label: "Type", key: "type" },
-  { label: "Action Effect", key: "actionEffect" },
-  { label: "Action", key: "action" },
-];
-
-const EDIT_FRANCHISE_STATES = [
-  { value: "Lagos State", label: "Lagos State" },
-  { value: "Abuja", label: "Abuja" },
-  { value: "Kano", label: "Kano" },
-  { value: "Rivers", label: "Rivers" },
-  { value: "Oyo", label: "Oyo" },
-  { value: "Enugu", label: "Enugu" },
-  { value: "Kaduna", label: "Kaduna" },
-  { value: "Delta", label: "Delta" },
-  { value: "Ogun", label: "Ogun" },
-  { value: "Anambra", label: "Anambra" },
-];
-
-const editFranchiseFields: FormField[] = [
-  { name: "franchiseName", label: "Franchise Name", type: "text", required: true, placeholder: "e.g. Sterling Exchange" },
-  { name: "state", label: "State", type: "select", required: true, placeholder: "Select state", options: EDIT_FRANCHISE_STATES },
-  { name: "address", label: "Address", type: "text", required: true, placeholder: "Enter address" },
-  { name: "contactPerson", label: "Contact Person", type: "text", required: true, placeholder: "e.g. Adekunle, Ibrahim Olamide" },
-  { name: "emailAddress", label: "Email Address", type: "email", required: true, placeholder: "e.g. olamide@sohcahtoa.com" },
-  { name: "phoneNumber1", label: "Phone Number 1", type: "tel", required: true, placeholder: "+234 8056283635" },
-  { name: "phoneNumber2", label: "Phone Number 2", type: "tel", required: true, placeholder: "+234 000000000" },
-];
 
 export default function FranchiseDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const id = params?.id ?? "";
 
-  const [status, setStatus] = useState<FranchiseStatus>("Active");
-  const [activeTab, setActiveTab] = useState<TabKey>("branches");
+  if (!id) {
+    return (
+      <Alert color="red" title="Invalid franchise">
+        Missing franchise id in the URL.
+      </Alert>
+    );
+  }
+
+  return <FranchiseDetailPageInner key={id} franchiseId={id} />;
+}
+
+function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
+  const queryClient = useQueryClient();
+  const { franchise, isLoading, isError, error } = useFranchiseDetails(franchiseId);
+  const {
+    states,
+    isLoading: isStatesLoading,
+    isError: isStatesError,
+    error: statesError,
+  } = useOutletStates();
+
+  const hasStateOptions = states.length > 0;
+
+  /** Local override after mock deactivate/reactivate until refetch is wired; cleared when franchise id from route changes */
+  const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
+  const effectiveIsActive = activeOverride ?? franchise?.isActive ?? true;
 
   const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false);
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
   const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
   const [editSuccessOpen, setEditSuccessOpen] = useState(false);
-  const [pendingEditData, setPendingEditData] = useState<Record<string, any> | null>(null);
-  const [editLoading, setEditLoading] = useState(false);
+  const [pendingEditData, setPendingEditData] = useState<Record<string, unknown> | null>(null);
 
-  const [branchSearch, setBranchSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("Filter By");
-  const [branchPage, setBranchPage] = useState(1);
-  const [transactionSearch, setTransactionSearch] = useState("");
-  const [transactionFilter, setTransactionFilter] = useState("Filter By");
-  const [transactionPage, setTransactionPage] = useState(1);
-  const pageSize = 6;
+  const editFranchiseFields = useMemo<FormField[]>(
+    () => [
+      {
+        name: "franchiseName",
+        label: "Franchise Name",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Sterling Exchange",
+      },
+      {
+        name: "state",
+        label: "State",
+        type: "select",
+        required: true,
+        placeholder: isStatesLoading ? "Loading states..." : "Select state",
+        options: states,
+        disabled: isStatesLoading || !hasStateOptions,
+      },
+      { name: "address", label: "Address", type: "text", required: true, placeholder: "Enter address" },
+      {
+        name: "contactPerson",
+        label: "Contact Person",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Adekunle, Ibrahim Olamide",
+      },
+      {
+        name: "emailAddress",
+        label: "Email Address",
+        type: "email",
+        required: true,
+        placeholder: "e.g. olamide@sohcahtoa.com",
+      },
+      {
+        name: "phoneNumber1",
+        label: "Phone Number 1",
+        type: "tel",
+        required: true,
+        placeholder: "+234 8056283635",
+      },
+      {
+        name: "phoneNumber2",
+        label: "Phone Number 2",
+        type: "tel",
+        required: false,
+        placeholder: "+234 000000000",
+      },
+    ],
+    [hasStateOptions, isStatesLoading, states]
+  );
 
-  const franchise = {
-    id: id || "2223334355",
-    name: "Name of Franchise",
-    dateCreated: "Nov 17 2025 | 11:00am",
-    branch: "Lagos Branch",
-    contactName: "Adekunle Dimeji",
-    noOfAgents: 12,
-    email: "adekunle@sohcatoa.com",
-    phone: "+234 90 4747 2791",
-    status,
+  const editFormInitialValues = useMemo(
+    () => ({
+      franchiseName: franchise?.franchiseName ?? "",
+      state: franchise?.state ?? "",
+      address: franchise?.address ?? "",
+      contactPerson: franchise?.contactPerson ?? "",
+      emailAddress: franchise?.email ?? "",
+      phoneNumber1: franchise?.phoneNumber ?? "",
+      phoneNumber2: franchise?.altPhoneNumber ?? "",
+    }),
+    [franchise]
+  );
+
+  const updateFranchiseMutation = usePutData(
+    ({ id, payload }: { id: string; payload: UpdateFranchisePayload }) =>
+      adminApi.outlet.franchises.update(id, payload),
+    {
+      onError: (err) => {
+        const apiResponse = (err as unknown as ApiError).data as ApiResponse | undefined;
+        notifications.show({
+          title: "Update Franchise Failed",
+          message:
+            apiResponse?.error?.message ??
+            err.message ??
+            "Unable to update franchise. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const updateFranchiseStatusMutation = usePutData(
+    (payload: UpdateFranchiseStatusPayload) =>
+      adminApi.outlet.franchises.updateStatus(franchiseId, payload),
+    {
+      onError: (err) => {
+        const apiResponse = (err as unknown as ApiError).data as ApiResponse | undefined;
+        notifications.show({
+          title: "Update Franchise Status Failed",
+          message:
+            apiResponse?.error?.message ??
+            apiResponse?.message ??
+            err.message ??
+            "Unable to update franchise status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const branchStatsSummary = useMemo(() => {
+    if (!franchise?.branchStats) return "--";
+    const { total, active, pending, deactivated } = franchise.branchStats;
+    return `${total} total (${active} active, ${pending} pending, ${deactivated} deactivated)`;
+  }, [franchise]);
+
+  const openEditModal = () => {
+    if (isStatesError) {
+      notifications.show({
+        title: "Unable to Load States",
+        message:
+          statesError?.message ??
+          "States could not be fetched. You cannot edit a franchise until states are available.",
+        color: "red",
+      });
+      return;
+    }
+    if (!hasStateOptions && !isStatesLoading) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "State options are unavailable. Please try again when states are loaded.",
+        color: "red",
+      });
+      return;
+    }
+    setEditModalOpened(true);
   };
 
-  const editFormInitialValues = {
-    franchiseName: franchise.name,
-    state: "Lagos State",
-    address: "No 14 B, Karimu Kotun, VI. Lagos",
-    contactPerson: franchise.contactName,
-    emailAddress: franchise.email,
-    phoneNumber1: franchise.phone,
-    phoneNumber2: "+234 000000000",
-  };
-
-  const isActive = status === "Active";
-
-  const handleEditSubmit = (data: Record<string, any>) => {
+  const handleEditSubmit = (data: Record<string, unknown>) => {
     setPendingEditData(data);
     setEditModalOpened(false);
     setEditConfirmOpen(true);
   };
 
   const handleEditConfirmSave = async () => {
-    setEditLoading(true);
-    if (pendingEditData) {
-      // TODO: persist pendingEditData via API
-      await new Promise((r) => setTimeout(r, 600));
+    if (!pendingEditData) return;
+    const payload = buildUpdatePayload(pendingEditData);
+    try {
+      await updateFranchiseMutation.mutateAsync({ id: franchiseId, payload });
+      await queryClient.invalidateQueries({
+        queryKey: [...adminKeys.outlet.franchises.detail(franchiseId)],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [...adminKeys.outlet.franchises.all()],
+      });
+      setEditConfirmOpen(false);
+      setEditSuccessOpen(true);
+      setPendingEditData(null);
+    } catch {
+      setEditConfirmOpen(false);
     }
-    setEditLoading(false);
-    setEditConfirmOpen(false);
-    setEditSuccessOpen(true);
-    setPendingEditData(null);
   };
 
-  const filteredBranches = useMemo(() => {
-    return BRANCHES_MOCK.filter((b) => {
-      const matchesSearch =
-        b.name.toLowerCase().includes(branchSearch.toLowerCase()) ||
-        b.id.includes(branchSearch) ||
-        b.managerName.toLowerCase().includes(branchSearch.toLowerCase()) ||
-        b.managerEmail.toLowerCase().includes(branchSearch.toLowerCase()) ||
-        b.address.toLowerCase().includes(branchSearch.toLowerCase());
-      const matchesFilter =
-        branchFilter === "Filter By" || branchFilter === "All" || b.status === branchFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [branchSearch, branchFilter]);
-
-  const branchTotalPages = Math.ceil(filteredBranches.length / pageSize) || 1;
-  const paginatedBranches = useMemo(() => {
-    const start = (branchPage - 1) * pageSize;
-    return filteredBranches.slice(start, start + pageSize);
-  }, [branchPage, filteredBranches]);
-
-  const renderBranchRow = (item: BranchRow) => [
-    <div key="name">
-      <Text fw={500} size="sm">
-        {item.name}
-      </Text>
-      <Text size="xs" c="dimmed">
-        ID:{item.id}
-      </Text>
-    </div>,
-    <div key="manager">
-      <Text fw={500} size="sm">
-        {item.managerName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        {item.managerEmail}
-      </Text>
-    </div>,
-    <Text key="address" size="sm">
-      {item.address}
-    </Text>,
-    <Text key="agents" size="sm">
-      {item.agents}
-    </Text>,
-    <StatusBadge key="status" status={item.status} />,
-    <RowActionIcon
-      key="action"
-      onClick={() => router.push(adminRoutes.adminOutletBranchDetails(item.id))}
-    />,
-  ];
-
-  const filteredTransactions = useMemo(() => {
-    return TRANSACTIONS_MOCK.filter((t) => {
-      const matchesSearch =
-        t.transactionId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.branchName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.agentName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.type.toLowerCase().includes(transactionSearch.toLowerCase());
-      const matchesFilter =
-        transactionFilter === "Filter By" ||
-        transactionFilter === "All" ||
-        t.actionEffect === transactionFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [transactionSearch, transactionFilter]);
-
-  const transactionTotalPages = Math.ceil(filteredTransactions.length / pageSize) || 1;
-  const paginatedTransactions = useMemo(() => {
-    const start = (transactionPage - 1) * pageSize;
-    return filteredTransactions.slice(start, start + pageSize);
-  }, [transactionPage, filteredTransactions]);
-
-  const renderTransactionRow = (item: TransactionRow) => [
-    <Text key="transactionId" size="sm">
-      {item.transactionId}
-    </Text>,
-    <div key="actionDate">
-      <Text size="sm">{item.actionDate}</Text>
-      <Text size="xs" c="dimmed">
-        {item.actionTime}
-      </Text>
-    </div>,
-    <div key="branchAgent">
-      <Text fw={500} size="sm">
-        {item.branchName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        Agent: {item.agentName}
-      </Text>
-    </div>,
-    <Text key="type" size="sm">
-      {item.type}
-    </Text>,
-    <StatusBadge key="actionEffect" status={item.actionEffect} />,
-    <RowActionIcon
-      key="action"
-      onClick={() =>
-        router.push(adminRoutes.adminOutletFranchiseTransactionDetail(id, item.id))
-      }
-    />,
-  ];
-
   const handleDeactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setStatus("Deactivated");
-    setDeactivateConfirmOpen(false);
-    setDeactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateFranchiseStatusMutation.mutateAsync({ status: false });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.detail(franchiseId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.all()],
+        }),
+      ]);
+      setActiveOverride(false);
+      setDeactivateConfirmOpen(false);
+      setDeactivateSuccessOpen(true);
+      notifications.show({
+        title: "Franchise Deactivated",
+        message: "Franchise has been successfully deactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification handled in mutation onError.
+    }
   };
 
   const handleReactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setStatus("Active");
-    setReactivateConfirmOpen(false);
-    setReactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateFranchiseStatusMutation.mutateAsync({ status: true });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.detail(franchiseId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.franchises.all()],
+        }),
+      ]);
+      setActiveOverride(true);
+      setReactivateConfirmOpen(false);
+      setReactivateSuccessOpen(true);
+      notifications.show({
+        title: "Franchise Reactivated",
+        message: "Franchise has been successfully reactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification handled in mutation onError.
+    }
   };
+
+  const statusBadgeLabel = franchise ? formatFranchiseStatusForBadge(franchise.status) : "--";
+  const createdLabel = franchise ? formatFranchiseCreatedAt(franchise.createdAt) : "--";
+  const formModalKey = `${franchise?.id ?? "edit"}-${franchise?.updatedAt ?? ""}`;
 
   return (
     <div className="space-y-6">
+      {isError && (
+        <Alert color="red" title="Could not load franchise">
+          {error?.message ?? "Unable to load franchise details. Please try again."}
+        </Alert>
+      )}
+
       {/* Header card */}
       <div className="rounded-2xl bg-white shadow-sm">
         <div className="flex flex-col gap-6 p-6 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <Text size="xl" fw={600} className="text-gray-900">
-                {franchise.name}
-              </Text>
-              <Group gap={8} className="flex-wrap text-sm text-gray-600">
-                <span>Date Created: {franchise.dateCreated}</span>
-                <StatusBadge status={franchise.status} />
-              </Group>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton height={32} width="60%" />
+              <Skeleton height={20} width="40%" />
+              <Divider className="my-2" />
+              <Skeleton height={24} width={180} />
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} height={56} />
+                ))}
+              </div>
             </div>
+          ) : franchise ? (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
+                  <Text size="xl" fw={600} className="text-gray-900">
+                    {franchise.franchiseName}
+                  </Text>
+                  <Group gap={8} className="flex-wrap text-sm text-gray-600">
+                    <span>Date Created: {createdLabel}</span>
+                    <StatusBadge status={statusBadgeLabel} />
+                  </Group>
+                </div>
 
-            <Group gap="sm">
-              <CustomButton buttonType="secondary" size="md" radius="xl">
-                View Updates
-              </CustomButton>
-              <Menu position="bottom-end" shadow="md" width={160}>
-                <Menu.Target>
-                  <Button radius="xl" size="md" color="#DD4F05">
-                    Take Action
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item onClick={() => setEditModalOpened(true)}>
-                    Edit
-                  </Menu.Item>
-                  <Menu.Divider />
-                  <Menu.Item
-                    onClick={() =>
-                      isActive ? setDeactivateConfirmOpen(true) : setReactivateConfirmOpen(true)
-                    }
-                  >
-                    {isActive ? "Deactivate" : "Reactivate"}
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
-          </div>
+                <Group gap="sm">
+                  {/* <CustomButton buttonType="secondary" size="md" radius="xl">
+                    View Updates
+                  </CustomButton> */}
+                  <Menu position="bottom-end" shadow="md" width={160}>
+                    <Menu.Target>
+                      <Button radius="xl" size="md" color="#DD4F05">
+                        Take Action
+                      </Button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={openEditModal}>Edit</Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        onClick={() =>
+                          effectiveIsActive
+                            ? setDeactivateConfirmOpen(true)
+                            : setReactivateConfirmOpen(true)
+                        }
+                      >
+                        {effectiveIsActive ? "Deactivate" : "Reactivate"}
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              </div>
 
-          <Divider className="my-2" />
+              <Divider className="my-2" />
 
-          {/* Franchise Details */}
-          <section className="space-y-4">
-            <Text fw={600} className="text-orange-500">
-              Franchise Details
+              <section className="space-y-4">
+                <Text fw={600} className="text-orange-500">
+                  Franchise Details
+                </Text>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailItem label="Franchise ID" value={franchise.id} />
+                  <DetailItem label="State" value={franchise.state} />
+                  <DetailItem label="Address" value={franchise.address} />
+                  <DetailItem label="Contact Person" value={franchise.contactPerson} />
+                  <DetailItem label="Branches" value={branchStatsSummary} />
+                  <DetailItem label="Email Address" value={franchise.email} />
+                  <DetailItem label="Phone Number" value={franchise.phoneNumber} />
+                  <DetailItem
+                    label="Alt Phone"
+                    value={franchise.altPhoneNumber?.trim() ? franchise.altPhoneNumber : "--"}
+                  />
+                </div>
+              </section>
+            </>
+          ) : !isError ? (
+            <Text c="dimmed" size="sm">
+              No franchise data found.
             </Text>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <DetailItem label="Franchise ID" value={franchise.id} />
-              <DetailItem label="Branch" value={franchise.branch} />
-              <DetailItem label="Contact Person" value={franchise.contactName} />
-              <DetailItem label="No of Agents" value={String(franchise.noOfAgents)} />
-              <DetailItem label="Email Address" value={franchise.email} />
-              <DetailItem label="Phone Number" value={franchise.phone} />
-            </div>
-          </section>
+          ) : null}
         </div>
       </div>
 
-      {/* Tabs + Branches / Transactions */}
-      <div className="rounded-2xl bg-white shadow-sm p-6">
-        <div className="flex gap-6 mb-6">
-          <button
-            type="button"
-            onClick={() => setActiveTab("branches")}
-            className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-              activeTab === "branches"
-                ? "text-primary-500 font-semibold"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Branches
-            {activeTab === "branches" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("transactions")}
-            className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-              activeTab === "transactions"
-                ? "text-primary-500 font-semibold"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Transactions
-            {activeTab === "transactions" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-            )}
-          </button>
-        </div>
+      <FranchiseDetailTabbedTables franchiseId={franchiseId} />
 
-        {activeTab === "branches" ? (
-          <>
-            <Group justify="space-between" mb="md" wrap="wrap">
-              <TextInput
-                placeholder="Enter keyword"
-                leftSection={<Search size={16} color="#DD4F05" />}
-                value={branchSearch}
-                onChange={(e) => setBranchSearch(e.currentTarget.value)}
-                w={320}
-                radius="xl"
-              />
-              <Group>
-                <Select
-                  value={branchFilter}
-                  onChange={(value) => setBranchFilter(value!)}
-                  data={["Filter By", "All", "Active", "Pending", "Deactivated"]}
-                  radius="xl"
-                  w={120}
-                  rightSection={<ListFilter size={16} />}
-                />
-                <Button
-                  variant="outline"
-                  color="#E36C2F"
-                  radius="xl"
-                  rightSection={<Upload size={16} />}
-                >
-                  Export
-                </Button>
-              </Group>
-            </Group>
-            <DynamicTableSection
-              headers={branchHeaders}
-              data={paginatedBranches}
-              loading={false}
-              renderItems={renderBranchRow}
-              emptyTitle="No Branches Found"
-              emptyMessage="There are no branches for this franchise."
-              pagination={{
-                page: branchPage,
-                totalPages: branchTotalPages,
-                onNext: () =>
-                  setBranchPage((p) => Math.min(p + 1, branchTotalPages)),
-                onPrevious: () => setBranchPage((p) => Math.max(p - 1, 1)),
-                onPageChange: setBranchPage,
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <Group justify="space-between" mb="md" wrap="wrap">
-              <TextInput
-                placeholder="Enter keyword"
-                leftSection={<Search size={16} color="#DD4F05" />}
-                value={transactionSearch}
-                onChange={(e) => setTransactionSearch(e.currentTarget.value)}
-                w={320}
-                radius="xl"
-              />
-              <Group>
-                <Select
-                  value={transactionFilter}
-                  onChange={(value) => setTransactionFilter(value!)}
-                  data={["Filter By", "All", "Posted", "Pending", "Rejected"]}
-                  radius="xl"
-                  w={120}
-                  rightSection={<ListFilter size={16} />}
-                />
-                <Button
-                  variant="filled"
-                  color="#DD4F05"
-                  radius="xl"
-                  rightSection={<Upload size={16} />}
-                >
-                  Export
-                </Button>
-              </Group>
-            </Group>
-            <DynamicTableSection
-              headers={transactionHeaders}
-              data={paginatedTransactions}
-              loading={false}
-              renderItems={renderTransactionRow}
-              emptyTitle="No Transactions Found"
-              emptyMessage="There are no transactions for this franchise."
-              pagination={{
-                page: transactionPage,
-                totalPages: transactionTotalPages,
-                onNext: () =>
-                  setTransactionPage((p) => Math.min(p + 1, transactionTotalPages)),
-                onPrevious: () => setTransactionPage((p) => Math.max(p - 1, 1)),
-                onPageChange: setTransactionPage,
-              }}
-            />
-          </>
-        )}
-      </div>
-
-      {/* Edit franchise modal */}
       <FormModal
+        key={formModalKey}
         opened={editModalOpened}
         onClose={() => setEditModalOpened(false)}
         title="Edit Franchise Details"
@@ -499,7 +403,6 @@ export default function FranchiseDetailPage() {
         size="lg"
       />
 
-      {/* Edit save confirmation */}
       <ConfirmationModal
         opened={editConfirmOpen}
         onClose={() => setEditConfirmOpen(false)}
@@ -509,10 +412,9 @@ export default function FranchiseDetailPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleEditConfirmSave}
         onSecondary={() => setEditConfirmOpen(false)}
-        loading={editLoading}
+        loading={updateFranchiseMutation.isPending}
       />
 
-      {/* Edit success */}
       <SuccessModal
         opened={editSuccessOpen}
         onClose={() => setEditSuccessOpen(false)}
@@ -524,7 +426,6 @@ export default function FranchiseDetailPage() {
         onSecondaryClick={() => setEditSuccessOpen(false)}
       />
 
-      {/* Deactivate confirmation */}
       <ConfirmationModal
         opened={deactivateConfirmOpen}
         onClose={() => setDeactivateConfirmOpen(false)}
@@ -534,10 +435,9 @@ export default function FranchiseDetailPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleDeactivateConfirm}
         onSecondary={() => setDeactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateFranchiseStatusMutation.isPending}
       />
 
-      {/* Reactivate confirmation */}
       <ConfirmationModal
         opened={reactivateConfirmOpen}
         onClose={() => setReactivateConfirmOpen(false)}
@@ -547,10 +447,9 @@ export default function FranchiseDetailPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleReactivateConfirm}
         onSecondary={() => setReactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateFranchiseStatusMutation.isPending}
       />
 
-      {/* Deactivate success */}
       <SuccessModal
         opened={deactivateSuccessOpen}
         onClose={() => setDeactivateSuccessOpen(false)}
@@ -562,7 +461,6 @@ export default function FranchiseDetailPage() {
         onSecondaryClick={() => setDeactivateSuccessOpen(false)}
       />
 
-      {/* Reactivate success */}
       <SuccessModal
         opened={reactivateSuccessOpen}
         onClose={() => setReactivateSuccessOpen(false)}

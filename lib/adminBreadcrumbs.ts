@@ -53,9 +53,11 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   }
 
   // Agent Transactions: /admin/agent/transactions/:id
-  if (/^\/admin\/agent\/transactions\/[^/]+$/.test(pathname)) {
+  if (/^\/admin\/agent\/[^/]+\/transactions\/[^/]+$/.test(pathname)) {
+    const agentId = pathname.split('/')[3];
     return [
       { label: 'Agents', url: adminRoutes.adminAgent() },
+      { label: 'Agent Details', url: adminRoutes.adminAgentDetails(agentId) },
       { label: 'Agent Transactions' },
     ];
   }
@@ -123,6 +125,16 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     return [
       { label: 'Outlet', url: adminRoutes.adminOutlet() },
       { label: 'Branch Details' },
+    ];
+  }
+
+  // Branch Edit: /admin/outlet/branch/:id/edit
+  if (/^\/admin\/outlet\/branch\/[^/]+\/edit$/.test(pathname)) {
+    const branchId = pathname.split('/')[4];
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Branch Details', url: adminRoutes.adminOutletBranchDetails(branchId) },
+      { label: 'Edit Branch Details' },
     ];
   }
 
@@ -201,6 +213,15 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     return [
       { label: 'Workflow', url: adminRoutes.adminWorkflow() },
       { label: 'Workflow Details' },
+    ];
+  }
+
+  // Pickup Station Details: /admin/settings/pickup-stations/:id
+  if (/^\/admin\/settings\/pickup-stations\/[^/]+$/.test(pathname)) {
+    return [
+      { label: 'Settings', url: adminRoutes.adminSettings() },
+      { label: 'Pick-up Stations', url: adminRoutes.adminSettingsPickupStations() },
+      { label: 'Pick-up Station' },
     ];
   }
 

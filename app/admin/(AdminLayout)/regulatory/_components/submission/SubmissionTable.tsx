@@ -1,171 +1,126 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
-import { useRouter } from "next/navigation";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { SubmissionDetailModal } from "./SubmissionDetailModal";
-// import { ReportSummaryModal } from "./[id]/page";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import {
+  mapTrmsFilterToApiStatus,
+  useTrmsSubmissions,
+  type TrmsSubmissionRowItem,
+} from "../../hooks/useTrmsSubmissions";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface Submission {
-  transactionId: string;
-  customerName: string;
-  currencyPair: string;
-  transactionType: string;
-  amount: string;
-  status: "Submitted" | "Pending" | "Rejected";
-}
+const pageSize = 5;
 
-/* --------------------------------------------
-Mock Data
---------------------------------------------- */
-const submissions: Submission[] = [
-  {
-    transactionId: "TXN-2031",
-    customerName: "John Doe",
-    currencyPair: "USD/NGN",
-    transactionType: "BTA",
-    amount: "$3,000",
-    status: "Submitted",
-  },
-  {
-    transactionId: "TXN-2032",
-    customerName: "Sarah Bas",
-    currencyPair: "GBP/NGN",
-    transactionType: "PTA",
-    amount: "£2,500",
-    status: "Pending",
-  },
-  {
-    transactionId: "TXN-2033",
-    customerName: "Ola Bdc",
-    currencyPair: "EUR/NGN",
-    transactionType: "BTA",
-    amount: "€2,500",
-    status: "Rejected",
-  },
-  {
-    transactionId: "TXN-2034",
-    customerName: "Adekunle",
-    currencyPair: "USD/NGN",
-    transactionType: "School fees",
-    amount: "$3,000",
-    status: "Submitted",
-  },
-
-  {
-    transactionId: "TXN-2032",
-    customerName: "Sarah Bas",
-    currencyPair: "GBP/NGN",
-    transactionType: "PTA",
-    amount: "£2,500",
-    status: "Pending",
-  },
-  {
-    transactionId: "TXN-2033",
-    customerName: "Ola Bdc",
-    currencyPair: "EUR/NGN",
-    transactionType: "BTA",
-    amount: "€2,500",
-    status: "Rejected",
-  },
-
-  {
-    transactionId: "TXN-2032",
-    customerName: "Sarah Bas",
-    currencyPair: "GBP/NGN",
-    transactionType: "PTA",
-    amount: "£2,500",
-    status: "Pending",
-  },
-  {
-    transactionId: "TXN-2033",
-    customerName: "Ola Bdc",
-    currencyPair: "EUR/NGN",
-    transactionType: "BTA",
-    amount: "€2,500",
-    status: "Rejected",
-  },
+const statusOptions = [
+  { value: "", label: "Filter By" },
+  { value: "BUSY", label: "BUSY" },
+  { value: "AWAITING APPROVAL", label: "AWAITING APPROVAL" },
+  { value: "APPROVED", label: "APPROVED" },
+  { value: "REJECTED", label: "REJECTED" },
 ];
 
-/* --------------------------------------------
- Helper Functions
---------------------------------------------- */
-const generateSubmissions = () => submissions;
-
-/* --------------------------------------------
- Component
---------------------------------------------- */
 export default function SubmissionTable() {
-  /* Pagination state */
   const [page, setPage] = useState(1);
-  const pageSize = 5;
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Filter By");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const allCompliances = useMemo(() => generateSubmissions(), []);
+  const mappedStatus = mapTrmsFilterToApiStatus(statusFilter);
 
-  const filteredData = useMemo(() => {
-    return allCompliances.filter((submission) => {
-      const matchesSearch =
-        submission.transactionId.toLowerCase().includes(search.toLowerCase()) ||
-        submission.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        submission.currencyPair.toLowerCase().includes(search.toLowerCase()) ||
-        submission.transactionType
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        submission.amount.toLowerCase().includes(search.toLowerCase());
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: pageSize,
+      search: debouncedSearch.trim() || undefined,
+      status: mappedStatus || undefined,
+    }),
+    [debouncedSearch, mappedStatus, page]
+  );
 
-      const matchesFilter =
-        filter === "Filter By" ||
-        filter === "All" ||
-        submission.status === filter;
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      status: mappedStatus || undefined,
+    }),
+    [debouncedSearch, mappedStatus]
+  );
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter, allCompliances]);
+  const { submissions, isLoading, isFetching, totalPages } = useTrmsSubmissions(queryParams);
+  const safeTotalPages = Math.max(1, totalPages);
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const exportTrmsMutation = useGetExportData(
+    () => adminApi.regulatory.trms.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = objectUrl;
+        link.download = `trms-submissions-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export TRMS Submissions Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export TRMS submissions at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [page, filteredData]);
-
-  /* Table headers */
   const headers = [
     { label: "Transaction ID", key: "transactionId" },
     { label: "Customer Name", key: "customerName" },
     { label: "Currency Pair", key: "currencyPair" },
-    { label: "transaction Type", key: "transactionType" },
+    { label: "Transaction Type", key: "transactionType" },
     { label: "Amount", key: "amount" },
     { label: "Status", key: "status" },
     { label: "Action", key: "action" },
   ];
 
-  /* Row renderer */
-  const renderRow = (item: Submission) => [
-    <Text key="id" fw={500} size="sm">
+  const handleOpenDetails = (transactionId: string) => {
+    setSelectedTransactionId(transactionId);
+    setIsOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setIsOpen(false);
+    setSelectedTransactionId(null);
+  };
+
+  const renderRow = (item: TrmsSubmissionRowItem) => [
+    <Text key="transactionId" fw={500} size="sm">
       {item.transactionId}
     </Text>,
 
-    <Text key="name" size="sm">
+    <Text key="customerName" size="sm">
       {item.customerName}
     </Text>,
 
-    <Text key="pair" size="sm">
+    <Text key="currencyPair" size="sm">
       {item.currencyPair}
     </Text>,
 
-    <Text key="type" size="sm">
+    <Text key="transactionType" size="sm">
       {item.transactionType}
     </Text>,
 
@@ -175,7 +130,7 @@ export default function SubmissionTable() {
 
     <StatusBadge key="status" status={item.status} />,
 
-    <RowActionIcon key="action" onClick={() => setIsOpen(true)} />,
+    <RowActionIcon key="action" onClick={() => handleOpenDetails(item.id)} />,
   ];
 
   return (
@@ -189,29 +144,36 @@ export default function SubmissionTable() {
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
           </div>
 
           <Group>
-            {/* Filter */}
             <Select
-              value={filter}
-              onChange={(value) => setFilter(value!)}
-              data={["Filter By", "All", "Submitted", "Rejected", "Pending"]}
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value ?? "");
+                setPage(1);
+              }}
+              data={statusOptions}
               radius="xl"
-              w={120}
+              w={190}
               rightSection={<ListFilter size={16} />}
             />
 
-            {/* Export */}
             <Button
-              variant="filled"
+              variant="outline"
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportTrmsMutation.mutate()}
+              loading={exportTrmsMutation.isPending}
+              disabled={exportTrmsMutation.isPending}
             >
               Export
             </Button>
@@ -221,20 +183,24 @@ export default function SubmissionTable() {
 
       <DynamicTableSection
         headers={headers}
-        data={paginatedData}
-        loading={false}
+        data={submissions}
+        loading={isLoading || isFetching}
         renderItems={renderRow}
-        emptyTitle="No submissions Found"
-        emptyMessage="There are currently no submissions to display. Submissions will appear here once they are made."
+        emptyTitle="No TRMS Submissions Yet"
+        emptyMessage="There are currently no TRMS submissions to display. New submissions will appear here once available."
         pagination={{
           page,
-          totalPages,
-          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
           onPageChange: setPage,
         }}
       />
-      <SubmissionDetailModal opened={isOpen} onClose={() => setIsOpen(false)} />
+      <SubmissionDetailModal
+        opened={isOpen}
+        onClose={handleCloseDetails}
+        transactionId={selectedTransactionId}
+      />
     </div>
   );
 }

@@ -2,83 +2,37 @@
 
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Text,
   Group,
   Button,
-  TextInput,
-  Select,
   Menu,
   Divider,
+  Skeleton,
+  Alert,
 } from "@mantine/core";
-import { Search, ListFilter, Upload } from "lucide-react";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import FormModal, { type FormField } from "@/app/admin/_components/FormModal";
-import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import {
+  useBranchDetails,
+  formatBranchStatusForBadge,
+  formatBranchCreatedAt,
+} from "../../hooks/useBranchDetails";
+import { usePutData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
-type BranchStatus = "Active" | "Deactivated";
+import { BranchAgentsTable } from "../[id]_branchDetailComponents/BranchAgentsTable";
+import { BranchTransactionsTable } from "../[id]_branchDetailComponents/BranchTransactionsTable";
+
 type TabKey = "agents" | "transactions";
-
-interface AgentRow {
-  id: string;
-  agentName: string;
-  phone: string;
-  email: string;
-  totalTransactions: number;
-  transactionVolume: number;
-  status: "Active" | "Deactivated";
-}
-
-const AGENTS_MOCK: AgentRow[] = [
-  { id: "9023", agentName: "Tunde Bashorun", phone: "+234 90 2323 4545", email: "tunde@eternalglobal.com", totalTransactions: 209, transactionVolume: 1250000, status: "Active" },
-  { id: "9025", agentName: "Queen Omotola", phone: "+234 90 5858 3939", email: "queen@kudimata.com", totalTransactions: 9, transactionVolume: 875000, status: "Active" },
-  { id: "9026", agentName: "Samuel Olubanki", phone: "+234 91 2222 4545", email: "olubankisamuel@gmail.com", totalTransactions: 120, transactionVolume: 930500, status: "Active" },
-  { id: "9024", agentName: "Ibrahim Dantata", phone: "+234 90 5858 3939", email: "ibrahim@sultan.com", totalTransactions: 50, transactionVolume: 1100000, status: "Deactivated" },
-  { id: "9027", agentName: "Mfon Ubot", phone: "+234 90 2323 4545", email: "mubot@greenfield.com", totalTransactions: 60, transactionVolume: 790000, status: "Active" },
-  { id: "9028", agentName: "Sariki Sudan", phone: "+234 81 0000 3456", email: "nagode@gmail.com", totalTransactions: 98, transactionVolume: 980000, status: "Deactivated" },
-];
-
-const agentHeaders = [
-  { label: "Agent", key: "agent" },
-  { label: "Contact", key: "contact" },
-  { label: "Total Transactions", key: "totalTransactions" },
-  { label: "Transaction Volume", key: "transactionVolume" },
-  { label: "Status", key: "status" },
-  { label: "Action", key: "action" },
-];
-
-interface TransactionRow {
-  id: string;
-  transactionId: string;
-  actionDate: string;
-  actionTime: string;
-  branchName: string;
-  agentName: string;
-  type: string;
-  actionEffect: "Posted" | "Pending" | "Rejected";
-}
-
-const TRANSACTIONS_MOCK: TransactionRow[] = [
-  { id: "tx1", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikoyi Axis", agentName: "Eddy Ubong", type: "BTA", actionEffect: "Posted" },
-  { id: "tx2", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Victoria Island", agentName: "Sarah Olufemi", type: "PTA", actionEffect: "Pending" },
-  { id: "tx3", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Lekki Phase 1", agentName: "Chinedu Okafor", type: "School Fees", actionEffect: "Rejected" },
-  { id: "tx4", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Surulere", agentName: "Tolu Adebayo", type: "Expatriate", actionEffect: "Pending" },
-  { id: "tx5", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikorodu", agentName: "Amanda Nwosu", type: "BTA", actionEffect: "Posted" },
-];
-
-const transactionHeaders = [
-  { label: "Transaction ID", key: "transactionId" },
-  { label: "Action Date", key: "actionDate" },
-  { label: "Branch/Agent", key: "branchAgent" },
-  { label: "Type", key: "type" },
-  { label: "Action Effect", key: "actionEffect" },
-  { label: "Action", key: "action" },
-];
 
 const EDIT_BRANCH_STATES = [
   { value: "Lagos", label: "Lagos" },
@@ -103,25 +57,35 @@ const editBranchFields: FormField[] = [
   { name: "phone", label: "Phone Number", type: "tel", required: true, placeholder: "+234 8138989206" },
 ];
 
-const formatNaira = (amount: number): string =>
-  `₦ ${amount.toLocaleString("en-NG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
 export default function BranchDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const id = params?.id ?? "";
 
-  const [status, setStatus] = useState<BranchStatus>("Active");
+  if (!id) {
+    return (
+      <Alert color="red" title="Invalid branch">
+        Missing branch id in the URL.
+      </Alert>
+    );
+  }
+
+  return <BranchDetailPageInner key={id} branchId={id} />;
+}
+
+function BranchDetailPageInner({ branchId }: { branchId: string }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { branch, isLoading, isError, error } = useBranchDetails(branchId);
+
+  const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
+  const effectiveIsActive = activeOverride ?? branch?.isActive ?? true;
+
   const [activeTab, setActiveTab] = useState<TabKey>("agents");
 
   const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false);
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
   const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
@@ -129,39 +93,42 @@ export default function BranchDetailPage() {
   const [pendingEditData, setPendingEditData] = useState<Record<string, any> | null>(null);
   const [editLoading, setEditLoading] = useState(false);
 
-  const [agentSearch, setAgentSearch] = useState("");
-  const [agentFilter, setAgentFilter] = useState("Filter By");
-  const [agentPage, setAgentPage] = useState(1);
-  const [transactionSearch, setTransactionSearch] = useState("");
-  const [transactionFilter, setTransactionFilter] = useState("Filter By");
-  const [transactionPage, setTransactionPage] = useState(1);
-  const pageSize = 6;
+  const editFormInitialValues = useMemo(
+    () => ({
+      branchName: branch?.name ?? "",
+      branchEmail: branch?.branchEmail ?? "",
+      state: branch?.state ?? "",
+      address: branch?.address ?? "",
+      branchManager: branch?.branchManager ?? "",
+      managerEmail: branch?.email ?? "",
+      phone: branch?.phoneNumber ?? "",
+    }),
+    [branch]
+  );
 
-  const branch = {
-    id: id || "2223334355",
-    name: "Name of Branch",
-    dateCreated: "Nov 17 2025 | 11:00am",
-    totalAgents: 12,
-    managerEmail: "adekunle@sohcatoa.com",
-    branchManager: "Gafar Mustapha",
-    state: "Lagos",
-    branchEmail: "Lekkibranch@sohcatoa.com",
-    address: "Chevron Drive, Lekki",
-    phone: "+234 90 4747 2791",
-    status,
-  };
+  const statusBadgeLabel = branch ? formatBranchStatusForBadge(branch.status) : "--";
+  const createdLabel = branch ? formatBranchCreatedAt(branch.createdAt) : "--";
 
-  const isActive = status === "Active";
+  const updateStatusMutation = usePutData(
+    (payload: { status: boolean }) =>
+      adminApi.outlet.branches.updateStatus(branchId, payload),
+    {
+      onError: (err) => {
+        const apiResponse = (err as unknown as ApiError).data as ApiResponse | undefined;
+        notifications.show({
+          title: "Update Branch Status Failed",
+          message:
+            apiResponse?.error?.message ??
+            apiResponse?.message ??
+            err.message ??
+            "Unable to update branch status. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
-  const editFormInitialValues = {
-    branchName: branch.name,
-    branchEmail: branch.branchEmail,
-    state: branch.state,
-    address: branch.address,
-    branchManager: branch.branchManager,
-    managerEmail: branch.managerEmail,
-    phone: branch.phone,
-  };
+  const formModalKey = `${branch?.id ?? "edit"}-${branch?.updatedAt ?? ""}`;
 
   const handleEditSubmit = (data: Record<string, any>) => {
     setPendingEditData(data);
@@ -181,180 +148,150 @@ export default function BranchDetailPage() {
     setPendingEditData(null);
   };
 
-  const filteredAgents = useMemo(() => {
-    return AGENTS_MOCK.filter((a) => {
-      const matchesSearch =
-        a.agentName.toLowerCase().includes(agentSearch.toLowerCase()) ||
-        a.id.includes(agentSearch) ||
-        a.email.toLowerCase().includes(agentSearch.toLowerCase()) ||
-        a.phone.includes(agentSearch);
-      const matchesFilter =
-        agentFilter === "Filter By" || agentFilter === "All" || a.status === agentFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [agentSearch, agentFilter]);
-
-  const agentTotalPages = Math.ceil(filteredAgents.length / pageSize) || 1;
-  const paginatedAgents = useMemo(() => {
-    const start = (agentPage - 1) * pageSize;
-    return filteredAgents.slice(start, start + pageSize);
-  }, [agentPage, filteredAgents]);
-
-  const renderAgentRow = (item: AgentRow) => [
-    <div key="agent">
-      <Text fw={500} size="sm">
-        {item.agentName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        ID:{item.id}
-      </Text>
-    </div>,
-    <div key="contact">
-      <Text fw={500} size="sm">
-        {item.phone}
-      </Text>
-      <Text size="xs" c="dimmed">
-        {item.email}
-      </Text>
-    </div>,
-    <Text key="totalTransactions" size="sm">
-      {item.totalTransactions}
-    </Text>,
-    <Text key="transactionVolume" size="sm" fw={500}>
-      {formatNaira(item.transactionVolume)}
-    </Text>,
-    <StatusBadge key="status" status={item.status} />,
-    <RowActionIcon
-      key="action"
-      onClick={() => router.push(adminRoutes.adminAgentDetails(item.id))}
-    />,
-  ];
-
-  const filteredTransactions = useMemo(() => {
-    return TRANSACTIONS_MOCK.filter((t) => {
-      const matchesSearch =
-        t.transactionId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.branchName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.agentName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.type.toLowerCase().includes(transactionSearch.toLowerCase());
-      const matchesFilter =
-        transactionFilter === "Filter By" ||
-        transactionFilter === "All" ||
-        t.actionEffect === transactionFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [transactionSearch, transactionFilter]);
-
-  const transactionTotalPages = Math.ceil(filteredTransactions.length / pageSize) || 1;
-  const paginatedTransactions = useMemo(() => {
-    const start = (transactionPage - 1) * pageSize;
-    return filteredTransactions.slice(start, start + pageSize);
-  }, [transactionPage, filteredTransactions]);
-
-  const renderTransactionRow = (item: TransactionRow) => [
-    <Text key="transactionId" size="sm">
-      {item.transactionId}
-    </Text>,
-    <div key="actionDate">
-      <Text size="sm">{item.actionDate}</Text>
-      <Text size="xs" c="dimmed">
-        {item.actionTime}
-      </Text>
-    </div>,
-    <div key="branchAgent">
-      <Text fw={500} size="sm">
-        {item.branchName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        Agent: {item.agentName}
-      </Text>
-    </div>,
-    <Text key="type" size="sm">
-      {item.type}
-    </Text>,
-    <StatusBadge key="actionEffect" status={item.actionEffect} variant="filled" />,
-    <RowActionIcon
-      key="action"
-      onClick={() =>
-        router.push(adminRoutes.adminOutletBranchTransactionDetail(id, item.id))
-      }
-    />,
-  ];
-
   const handleDeactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setStatus("Deactivated");
-    setDeactivateConfirmOpen(false);
-    setDeactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateStatusMutation.mutateAsync({ status: false });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.detail(branchId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.all()],
+        }),
+      ]);
+      setActiveOverride(false);
+      setDeactivateConfirmOpen(false);
+      setDeactivateSuccessOpen(true);
+      notifications.show({
+        title: "Branch Deactivated",
+        message: "Branch has been successfully deactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification is handled in mutation onError.
+    }
   };
 
   const handleReactivateConfirm = async () => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setStatus("Active");
-    setReactivateConfirmOpen(false);
-    setReactivateSuccessOpen(true);
-    setLoading(false);
+    try {
+      await updateStatusMutation.mutateAsync({ status: true });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.detail(branchId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.branches.all()],
+        }),
+      ]);
+      setActiveOverride(true);
+      setReactivateConfirmOpen(false);
+      setReactivateSuccessOpen(true);
+      notifications.show({
+        title: "Branch Reactivated",
+        message: "Branch has been successfully reactivated.",
+        color: "green",
+      });
+    } catch {
+      // Notification is handled in mutation onError.
+    }
   };
 
   return (
     <div className="space-y-6">
+      {isError && (
+        <Alert color="red" title="Could not load branch">
+          {error?.message ?? "Unable to load branch details. Please try again."}
+        </Alert>
+      )}
+
       {/* Header card */}
       <div className="rounded-2xl bg-white shadow-sm">
         <div className="flex flex-col gap-6 p-6 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <Text size="xl" fw={600} className="text-gray-900">
-                {branch.name}
-              </Text>
-              <Group gap={8} className="flex-wrap text-sm text-gray-600">
-                <span>Date Created: {branch.dateCreated}</span>
-                <StatusBadge status={branch.status} />
-              </Group>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton height={32} width="60%" />
+              <Skeleton height={20} width="40%" />
+              <Divider className="my-2" />
+              <Skeleton height={24} width={180} />
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} height={56} />
+                ))}
+              </div>
             </div>
+          ) : branch ? (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
+                  <Text size="xl" fw={600} className="text-gray-900">
+                    {branch.name}
+                  </Text>
+                  <Group gap={8} className="flex-wrap text-sm text-gray-600">
+                    <span>Date Created: {createdLabel}</span>
+                    <StatusBadge status={statusBadgeLabel} />
+                  </Group>
+                </div>
 
-            <Menu position="bottom-end" shadow="md" width={160}>
-              <Menu.Target>
-                <Button radius="xl" size="md" color="#DD4F05">
-                  Take Action
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item onClick={() => setEditModalOpened(true)}>
-                  Edit
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  onClick={() =>
-                    isActive ? setDeactivateConfirmOpen(true) : setReactivateConfirmOpen(true)
-                  }
-                >
-                  {isActive ? "Deactivate" : "Reactivate"}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </div>
+                <Menu position="bottom-end" shadow="md" width={160}>
+                  <Menu.Target>
+                    <Button radius="xl" size="md" color="#DD4F05">
+                      Take Action
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      onClick={() =>
+                        router.push(adminRoutes.adminOutletBranchEditDetails(branchId))
+                      }
+                    >
+                      Edit
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      onClick={() =>
+                        effectiveIsActive
+                          ? setDeactivateConfirmOpen(true)
+                          : setReactivateConfirmOpen(true)
+                      }
+                    >
+                      {effectiveIsActive ? "Deactivate" : "Reactivate"}
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </div>
 
-          <Divider className="my-2" />
+              <Divider className="my-2" />
 
-          {/* Branch Details */}
-          <section className="space-y-4">
-            <Text fw={600} className="text-orange-500">
-              Branch Details
+              <section className="space-y-4">
+                <Text fw={600} className="text-orange-500">
+                  Branch Details
+                </Text>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailItem label="Branch ID" value={branch.id} />
+                  <DetailItem label="Total Agents" value="--" />
+                  <DetailItem
+                    label="Manager Email"
+                    value={branch.email?.trim() ? branch.email : "--"}
+                  />
+                  <DetailItem label="Branch Manager" value={branch.branchManager} />
+                  <DetailItem label="State" value={branch.state} />
+                  <DetailItem
+                    label="Branch Email"
+                    value={branch.branchEmail?.trim() ? branch.branchEmail : "--"}
+                  />
+                  <DetailItem label="Address" value={branch.address} />
+                  <DetailItem label="Phone Number" value={branch.phoneNumber} />
+                  {branch.franchiseId ? (
+                    <DetailItem label="Franchise ID" value={branch.franchiseId} />
+                  ) : null}
+                </div>
+              </section>
+            </>
+          ) : !isError ? (
+            <Text c="dimmed" size="sm">
+              No branch data found.
             </Text>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <DetailItem label="Branch ID" value={branch.id} />
-              <DetailItem label="Total Agents" value={String(branch.totalAgents)} />
-              <DetailItem label="Email Address" value={branch.managerEmail} />
-              <DetailItem label="Branch Manager" value={branch.branchManager} />
-              <DetailItem label="State" value={branch.state} />
-              <DetailItem label="Email Address" value={branch.branchEmail} />
-              <DetailItem label="Address" value={branch.address} />
-              <DetailItem label="Phone Number" value={branch.phone} />
-            </div>
-          </section>
+          ) : null}
         </div>
       </div>
 
@@ -392,103 +329,15 @@ export default function BranchDetailPage() {
         </div>
 
         {activeTab === "agents" ? (
-          <>
-            <Group justify="space-between" mb="md" wrap="wrap">
-              <TextInput
-                placeholder="Enter keyword"
-                leftSection={<Search size={16} color="#DD4F05" />}
-                value={agentSearch}
-                onChange={(e) => setAgentSearch(e.currentTarget.value)}
-                w={320}
-                radius="xl"
-              />
-              <Group>
-                <Select
-                  value={agentFilter}
-                  onChange={(value) => setAgentFilter(value!)}
-                  data={["Filter By", "All", "Active", "Deactivated"]}
-                  radius="xl"
-                  w={120}
-                  rightSection={<ListFilter size={16} />}
-                />
-                <Button
-                  variant="outline"
-                  color="#E36C2F"
-                  radius="xl"
-                  rightSection={<Upload size={16} />}
-                >
-                  Export
-                </Button>
-              </Group>
-            </Group>
-            <DynamicTableSection
-              headers={agentHeaders}
-              data={paginatedAgents}
-              loading={false}
-              renderItems={renderAgentRow}
-              emptyTitle="No Agents Found"
-              emptyMessage="There are no agents for this branch."
-              pagination={{
-                page: agentPage,
-                totalPages: agentTotalPages,
-                onNext: () => setAgentPage((p) => Math.min(p + 1, agentTotalPages)),
-                onPrevious: () => setAgentPage((p) => Math.max(p - 1, 1)),
-                onPageChange: setAgentPage,
-              }}
-            />
-          </>
+          <BranchAgentsTable branchId={branchId} />
         ) : (
-          <>
-            <Group justify="space-between" mb="md" wrap="wrap">
-              <TextInput
-                placeholder="Enter keyword"
-                leftSection={<Search size={16} color="#DD4F05" />}
-                value={transactionSearch}
-                onChange={(e) => setTransactionSearch(e.currentTarget.value)}
-                w={320}
-                radius="xl"
-              />
-              <Group>
-                <Select
-                  value={transactionFilter}
-                  onChange={(value) => setTransactionFilter(value!)}
-                  data={["Filter By", "All", "Posted", "Pending", "Rejected"]}
-                  radius="xl"
-                  w={120}
-                  rightSection={<ListFilter size={16} />}
-                />
-                <Button
-                  variant="filled"
-                  color="#DD4F05"
-                  radius="xl"
-                  rightSection={<Upload size={16} />}
-                >
-                  Export
-                </Button>
-              </Group>
-            </Group>
-            <DynamicTableSection
-              headers={transactionHeaders}
-              data={paginatedTransactions}
-              loading={false}
-              renderItems={renderTransactionRow}
-              emptyTitle="No Transactions Found"
-              emptyMessage="There are no transactions for this branch."
-              pagination={{
-                page: transactionPage,
-                totalPages: transactionTotalPages,
-                onNext: () =>
-                  setTransactionPage((p) => Math.min(p + 1, transactionTotalPages)),
-                onPrevious: () => setTransactionPage((p) => Math.max(p - 1, 1)),
-                onPageChange: setTransactionPage,
-              }}
-            />
-          </>
+          <BranchTransactionsTable branchId={branchId} />
         )}
       </div>
 
       {/* Edit Branch Details modal */}
       <FormModal
+        key={formModalKey}
         opened={editModalOpened}
         onClose={() => setEditModalOpened(false)}
         title="Edit Branch Details"
@@ -536,7 +385,7 @@ export default function BranchDetailPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleDeactivateConfirm}
         onSecondary={() => setDeactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateStatusMutation.isPending}
       />
 
       {/* Reactivate confirmation */}
@@ -549,7 +398,7 @@ export default function BranchDetailPage() {
         secondaryButtonText="No, Close"
         onPrimary={handleReactivateConfirm}
         onSecondary={() => setReactivateConfirmOpen(false)}
-        loading={loading}
+        loading={updateStatusMutation.isPending}
       />
 
       {/* Deactivate success */}

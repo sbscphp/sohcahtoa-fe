@@ -1,11 +1,15 @@
-
+"use client";
 
 import StatCard from "@/app/admin/_components/StatCard";
 import { SiDocusaurus } from "react-icons/si";
 import ComplianceInsights from "./ComplianceInsights";
 import ComplianceTable from "./ComplianceTable";
+import { useComplianceDashboard } from "../../hooks/useComplianceDashboard";
+import { Loader } from "@mantine/core";
 
 export default function OverviewPage() {
+  const { dashboard, isLoading } = useComplianceDashboard();
+
   const SubmittedIcon = (
     <SiDocusaurus className="h-5 w-5 text-success-500" />
   );
@@ -18,6 +22,10 @@ export default function OverviewPage() {
   const RejectedIcon = (
     <SiDocusaurus className="h-5 w-5 text-error-500" />
   );
+  const overview = dashboard.overview;
+
+  const statValue = (value: number) =>
+    isLoading ? <Loader size="xs" color="orange" /> : value.toLocaleString("en-US");
 
   return (
     <>
@@ -25,34 +33,34 @@ export default function OverviewPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <StatCard
             title="Submitted Reports"
-            value="162"
+            value={statValue(overview.submittedReports)}
             icon={SubmittedIcon}
             iconBg="bg-success-100"
           />
 
           <StatCard
             title="Pending Submissions"
-            value="24"
+            value={statValue(overview.pendingSubmissions)}
             icon={PendingIcon}
             iconBg="bg-warning-100"
           />
 
           <StatCard
             title="Failed Submissions"
-            value="4"
+            value={statValue(overview.failedSubmissions)}
             icon={FailedIcon}
             iconBg="bg-rose-100"
           />
 
           <StatCard
             title="Rejected Reports"
-            value="7"
+            value={statValue(overview.rejectedReports)}
             icon={RejectedIcon}
             iconBg="bg-error-100"
           />
         </div>
       </div>
-      <ComplianceInsights />
+      <ComplianceInsights insights={dashboard.insights} loading={isLoading} />
       <ComplianceTable />
       
     </>

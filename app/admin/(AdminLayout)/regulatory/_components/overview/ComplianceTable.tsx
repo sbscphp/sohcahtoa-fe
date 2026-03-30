@@ -1,263 +1,133 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import {
-  Text,
-  Group,
-  TextInput,
-  Select,
-  Button,
-} from "@mantine/core";
-import { Search, Upload, ListFilter } from "lucide-react";
-import { useRouter } from "next/navigation";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { ReportSummaryModal } from "./[id]/page";
+import { Text, Group, TextInput, Select, Button } from "@mantine/core";
+import { Search, Upload, ListFilter } from "lucide-react";
+import { useDebouncedValue } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { ReportSummaryModal } from "./ComplianceSummaryModal";
+import {
+  mapComplianceFilterToApiStatus,
+  useComplianceReports,
+  type ComplianceReportRowItem,
+} from "../../hooks/useComplianceReports";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface compliance {
-  report: string;
-  id: string;
-  date: string;
-  time: string;
-  file: string;
-  channel: string;
-  status: "Submitted" | "Rejected" | "Pending";
-}
+const pageSize = 5;
 
-/* --------------------------------------------
-Mock Data
---------------------------------------------- */
-const generateCompliance = (): compliance[] => [
-  {
-    report: "Daily FX sales Report",
-    id: "1",
-    date: "2025-10-04",
-    time: "7:00am",
-    file: "XML",
-    channel: "FN window",
-    status: "Submitted",
-  },
-  {
-    report: "Weekly FX Allocation summary",
-    id: "2",
-    date: "2025-10-11",
-    time: "14:00pm",
-    file: "CSV",
-    channel: "Manual upload",
-    status: "Submitted",
-  },
-  {
-    report: "Sanctions Screening summary",
-    id: "3",
-    date: "2025-10-18",
-    time: "19:00pm",
-    file: "PDF",
-    channel: "System",
-    status: "Pending",
-  },
-  {
-    report: "Monthly BDC XML Export",
-    id: "4",
-    date: "2025-10-25",
-    time: "15:30pm",
-    file: "XML",
-    channel: "CBN portal",
-    status: "Rejected",
-  },
-  {
-    report: "FX utilization Report",
-    id: "5",
-    date: "2025-10-30",
-    time: "18:00pm",
-    file: "PDF",
-    channel: "System",
-    status: "Submitted",
-  },
-  {
-    report: "Suspicion transaction log",
-    id: "6",
-    date: "2025-11-05",
-    time: "10:00am",
-    file: "CSV",
-    channel: "Manual upload",
-    status: "Rejected",
-  },
-  {
-    report: "Sophia Martinez",
-    id: "7",
-    date: "2025-11-12",
-    time: "12:00pm",
-    file: "PDF",
-    channel: "System",
-    status: "Submitted",
-  },
-  {
-    report: "James Wilson",
-    id: "8",
-    date: "2025-11-19",
-    time: "10:30am",
-    file: "CSV",
-    channel: "Manual upload",
-    status: "Pending",
-  },
-  {
-    report: "Isabella Brown",
-    id: "9",
-    date: "2025-11-26",
-    time: "11:00am",
-    file: "PDF",
-    channel: "System",
-    status: "Rejected",
-  },
-  {
-    report: "William Davis",
-    id: "10",
-    date: "2025-12-03",
-    time: "10:00am",
-    file: "XML",
-    channel: "FN window",
-    status: "Submitted",
-  },
-  {
-    report: "Charlotte Taylor",
-    id: "11",
-    date: "2025-12-10",
-    time: "12:30pm",
-    file: "PDF",
-    channel: "System",
-    status: "Pending",
-  },
-  {
-    report: "Benjamin Anderson",
-    id: "12",
-    date: "2025-12-17",
-    time: "11:00am",
-    file: "CSV",
-    channel: "Manual upload",
-    status: "Rejected",
-  },
-  {
-    report: "Amelia White",
-    id: "13",
-    date: "2025-12-24",
-    time: "12:30pm",
-    file: "PDF",
-    channel: "System",
-    status: "Submitted",
-  },
-  {
-    report: "Lucas Harris",
-    id: "14",
-    date: "2025-12-31",
-    time: "15:00pm",
-    file: "CSV",
-    channel: "FN window",
-    status: "Rejected",
-  },
-  {
-    report: "Mia Clark",
-    id: "15",
-    date: "2025-12-31",
-    time: "09:30am",
-    file: "PDF",
-    channel: "System",
-    status: "Submitted",
-  },
+const statusOptions = [
+  { value: "", label: "Filter By" },
+  { value: "PENDING", label: "Pending" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "FAILED", label: "Failed" },
 ];
 
-
-
-/* --------------------------------------------
- Component
---------------------------------------------- */
 export default function ComplianceTable() {
-  /* Pagination state */
   const [page, setPage] = useState(1);
-  const pageSize = 5;
-  const [ isOpen, setIsOpen ] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Filter By");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const allCompliances = useMemo(() => generateCompliance(), []);
+  const mappedStatus = mapComplianceFilterToApiStatus(statusFilter);
 
-  const filteredData = useMemo(() => {
-    return allCompliances.filter((compliance) => {
-      const matchesSearch =
-        compliance.report.toLowerCase().includes(search.toLowerCase()) ||
-        compliance.id.includes(search) ||
-        compliance.time.toLowerCase().includes(search.toLowerCase()) ||
-        compliance.date.includes(search);
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      status: mappedStatus || undefined,
+    }),
+    [debouncedSearch, mappedStatus]
+  );
 
-      const matchesFilter =
-        filter === "Filter By" ||
-        filter === "All" ||
-        compliance.status === filter;
+  const exportComplianceMutation = useGetExportData(
+    () => adminApi.regulatory.compliance.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = objectUrl;
+        link.download = `compliance-reports-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export compliance reports failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export compliance reports right now. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter, allCompliances]);
+  const { reports, isLoading, isFetching, totalPages } = useComplianceReports({
+    page,
+    limit: pageSize,
+    search: debouncedSearch || undefined,
+    status: mappedStatus || undefined,
+  });
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const safeTotalPages = Math.max(1, totalPages);
 
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [page, filteredData]);
-
-  /* Table headers */
   const complianceHeaders = [
-    { label: "Report Name", key: "report" },
+    { label: "Report Name", key: "reportName" },
     { label: "Reporting Date", key: "reportingDate" },
-    { label: "File type", key: "file" },
+    { label: "File type", key: "fileType" },
     { label: "Status", key: "status" },
     { label: "Channel", key: "channel" },
     { label: "Action", key: "action" },
   ];
 
-  /* Row renderer */
-  const rendercomplianceRow = (item: compliance) => [
-    // compliance
-    <div key="report">
+  const handleOpenReportSummary = (reportId: string) => {
+    setSelectedReportId(reportId);
+    setIsOpen(true);
+  };
+
+  const handleCloseReportSummary = () => {
+    setIsOpen(false);
+    setSelectedReportId(null);
+  };
+
+  const rendercomplianceRow = (item: ComplianceReportRowItem) => [
+    <div key="reportName">
       <Text fw={500} size="sm">
-        {item.report}
+        {item.reportName}
       </Text>
     </div>,
 
-    // Contact
     <div key="reportingDate">
       <Text fw={500} size="sm">
-        {item.date}
+        {item.reportingDate}
       </Text>
       <Text size="xs" c="dimmed">
-        {item.time}
+        {item.reportingTime}
       </Text>
     </div>,
 
-    // Total Transactions
-    <Text key="file" size="sm">
-      {item.file}
+    <Text key="fileType" size="sm">
+      {item.fileType}
     </Text>,
 
-    // Status
     <StatusBadge key="status" status={item.status} />,
 
-    // Transaction Volume
     <Text key="channel" size="sm">
       {item.channel}
     </Text>,
 
-    
-
-    // Action
-    <RowActionIcon
-      key="action"
-      onClick={() => setIsOpen(true)}
-    />
+    <RowActionIcon key="action" onClick={() => handleOpenReportSummary(item.id)} />,
   ];
 
   return (
@@ -266,34 +136,40 @@ export default function ComplianceTable() {
         <Group justify="space-between" mb="md" wrap="nowrap">
           <div className="flex items-center gap-4">
             <h2 className="font-semibold text-lg">Compliance Reports</h2>
-            {/* Search */}
             <TextInput
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
           </div>
 
           <Group>
-            {/* Filter */}
             <Select
-              value={filter}
-              onChange={(value) => setFilter(value!)}
-              data={["Filter By", "All", "Submitted", "Rejected"]}
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value ?? "");
+                setPage(1);
+              }}
+              data={statusOptions}
               radius="xl"
-              w={120}
+              w={130}
               rightSection={<ListFilter size={16} />}
             />
 
-            {/* Export */}
             <Button
-              variant="filled"
+              variant="outline"
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportComplianceMutation.mutate()}
+              loading={exportComplianceMutation.isPending}
+              disabled={exportComplianceMutation.isPending}
             >
               Export
             </Button>
@@ -303,20 +179,25 @@ export default function ComplianceTable() {
 
       <DynamicTableSection
         headers={complianceHeaders}
-        data={paginatedData}
-        loading={false}
+        data={reports}
+        loading={isLoading || isFetching}
         renderItems={rendercomplianceRow}
-        emptyTitle="No compliances Found"
-        emptyMessage="There are currently no compliances to display. compliances will appear here once they create accounts."
+        emptyTitle="No Compliance Reports Yet"
+        emptyMessage="There are currently no compliance reports to display. New reports will appear here once generated."
         pagination={{
           page,
-          totalPages,
-          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
           onPageChange: setPage,
         }}
       />
-      <ReportSummaryModal opened={isOpen} onClose={() => setIsOpen(false)} />
+
+      <ReportSummaryModal
+        opened={isOpen}
+        onClose={handleCloseReportSummary}
+        reportId={selectedReportId}
+      />
     </div>
   );
 }

@@ -103,15 +103,25 @@ export const API_ENDPOINTS = {
     },
     dashboard: "/api/admin/dashboard",
     pendingApprovals: "/api/admin/pending-approvals",
+    notifications: {
+      all: "/api/admin/notifications",
+      unread: "/api/admin/notifications/unread",
+      markRead: (id: string) => `/api/admin/notifications/${id}/read`,
+    },
     auditTrail: "/api/admin/audit/trail",
     auditTrailExport: "/api/admin/audit/trail/export",
     agent: {
+      all: "/api/admin/agent/all",
       list: "/api/admin/agent",
       export: "/api/admin/agent/export",
       stats: "/api/admin/agent/stats",
       getById: (id: string) => `/api/admin/agent/${id}`,
       updateStatus: (id: string) => `/api/admin/agent/${id}/status`,
       transactions: (id: string) => `/api/admin/agent/${id}/transactions`,
+      getTransactionById: (id: string, transactionId: string) =>
+        `/api/admin/agent/${id}/transactions/${transactionId}`,
+      downloadTransactionReceipt: (id: string, transactionId: string) =>
+        `/api/admin/agent/${id}/transactions/${transactionId}/receipt/download`,
     },
     customers: {
       list: "/api/admin/customers",
@@ -156,21 +166,83 @@ export const API_ENDPOINTS = {
         create: "/api/admin/outlet/franchises",
         export: "/api/admin/outlet/franchises/export",
         stats: "/api/admin/outlet/franchises/stats",
+        getById: (id: string) => `/api/admin/outlet/franchises/${id}`,
+        update: (id: string) => `/api/admin/outlet/franchises/${id}`,
+        updateStatus: (id: string) => `/api/admin/outlet/franchises/${id}/status`,
+        branches: (id: string) => `/api/admin/outlet/franchises/${id}/branches`,
+        branchesExport: (id: string) => `/api/admin/outlet/franchises/${id}/branches/export`,
+        transactions: (id: string) => `/api/admin/outlet/franchises/${id}/transactions`,
+      },
+      branches: {
+        create: "/api/admin/outlet/branches",
+        list: "/api/admin/outlet/branches",
+        export: "/api/admin/outlet/branches/export",
+        stats: "/api/admin/outlet/branches/stats",
+        getById: (id: string) => `/api/admin/outlet/branches/${id}`,
+        update: (id: string) => `/api/admin/outlet/branches/${id}`,
+        updateStatus: (id: string) => `/api/admin/outlet/branches/${id}/status`,
+        agents: {
+          list: (id: string) => `/api/admin/outlet/branches/${id}/agents`,
+          export: (id: string) => `/api/admin/outlet/branches/${id}/agents/export`,
+        },
+        transactions: {
+          list: (id: string) => `/api/admin/outlet/branches/${id}/transactions`,
+          export: (id: string) => `/api/admin/outlet/branches/${id}/transactions/export`,
+        },
       },
       states: "/api/admin/outlet/states",
     },
     transactions: {
       list: "/api/admin/transactions",
+      export: "/api/admin/transactions/export",
       stats: "/api/admin/transactions/stats",
       getById: (id: string) => `/api/admin/transactions/${id}`,
       review: (id: string) => `/api/admin/transactions/${id}/review`,
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,
+      requestTransactionInfo: (id: string) =>
+        `/api/admin/transactions/${id}/request-info`,
+      approveDocument: (id: string, documentId: string) =>
+        `/api/admin/transactions/${id}/documents/${documentId}/approve`,
+      requestDocumentInfo: (id: string, documentId: string) =>
+        `/api/admin/transactions/${id}/documents/${documentId}/request-info`,
+      rejectDocument: (id: string, documentId: string) =>
+        `/api/admin/transactions/${id}/documents/${documentId}/reject`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },
     reports: {
       modules: "/api/admin/reports/modules",
       generate: "/api/admin/reports/generate",
+    },
+    settlement: {
+      stats: "/api/admin/settlement/stats",
+      discrepancies: "/api/admin/settlement/discrepancies",
+      pendingReconciliations: "/api/admin/settlement/pending-reconciliations",
+      escrowAccounts: "/api/admin/settlement/escrow-accounts",
+      fundingTransactions: "/api/admin/settlement/funding-transactions",
+    },
+    regulatory: {
+      compliance: {
+        dashboard: "/api/admin/regulatory/compliance/dashboard",
+        reports: "/api/admin/regulatory/compliance/reports",
+        reportsExport: "/api/admin/regulatory/compliance/reports/export",
+        reportById: (id: string) => `/api/admin/regulatory/compliance/reports/${id}`,
+      },
+      logs: {
+        audit: "/api/admin/regulatory/logs/audit",
+        auditExport: "/api/admin/regulatory/logs/audit/export",
+        auditById: (id: string) => `/api/admin/regulatory/logs/audit/${id}`,
+        regulatory: "/api/admin/regulatory/logs/regulatory",
+        regulatoryExport: "/api/admin/regulatory/logs/regulatory/export",
+        regulatoryById: (id: string) => `/api/admin/regulatory/logs/regulatory/${id}`,
+      },
+      trms: {
+        stats: "/api/admin/regulatory/trms/stats",
+        list: "/api/admin/regulatory/trms/list",
+        export: "/api/admin/regulatory/trms/export",
+        details: (transactionId: string) =>
+          `/api/admin/regulatory/trms/details/${transactionId}`,
+      },
     },
     management: {
       lookups: "/api/admin/management/lookups",

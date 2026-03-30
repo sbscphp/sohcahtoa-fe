@@ -30,6 +30,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import AgentTransactionsTable from "../_agentComponents/AgentTransactionsTable";
+import { useManagementLookups } from "../../user-management/hooks/useManagementLookups";
 
 type AgentStatus = "Active" | "Deactivated";
 
@@ -70,6 +71,8 @@ export default function AgentDetailsPage() {
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpened, setEditConfirmOpened] = useState(false);
   const [editSuccessOpened, setEditSuccessOpened] = useState(false);
+  const [pendingEditAgentData, setPendingEditAgentData] =
+    useState<Record<string, unknown> | null>(null);
 
   const [statusAction, setStatusAction] = useState<
     "deactivate" | "reactivate" | null
@@ -114,26 +117,17 @@ export default function AgentDetailsPage() {
     [agentData, currentStatus]
   );
 
+  const { options: branchOptions, isLoading: branchesLoading } =
+    useManagementLookups("branch", "name");
+
   const editAgentFields: FormField[] = useMemo(
     () => [
       {
-        name: "agentName",
+        name: "name",
         label: "Agent Name",
         type: "text",
         required: true,
         placeholder: "Enter agent name",
-      },
-      {
-        name: "branch",
-        label: "Branch",
-        type: "select",
-        required: true,
-        placeholder: "Select branch",
-        options: [
-          { value: "Chevron Drive, Lekki", label: "Chevron Drive, Lekki" },
-          { value: "Victoria Island, Lagos", label: "Victoria Island, Lagos" },
-          { value: "Yaba", label: "Yaba" },
-        ],
       },
       {
         name: "email",
@@ -143,48 +137,93 @@ export default function AgentDetailsPage() {
         placeholder: "example@email.com",
       },
       {
-        name: "phone",
-        label: "Phone Number 1",
+        name: "branch",
+        label: "Branch",
+        type: "select",
+        required: true,
+        placeholder: "Select an Option",
+        options: branchOptions,
+        disabled: branchesLoading,
+      },
+      {
+        name: "phoneNumber",
+        label: "Phone Number",
         type: "tel",
         required: true,
         placeholder: "+234 00 0000 0000",
       },
       {
-        name: "internationalPassport",
-        label: "International Passport",
-        type: "file",
-        required: true,
-        accept: ".pdf,.jpg,.jpeg,.png",
-        maxSize: 2,
-      },
-      {
-        name: "additionalDocument",
+        name: "attachment",
         label: "Additional Document",
         type: "file",
-        required: true,
+        required: false,
         accept: ".pdf,.jpg,.jpeg,.png",
         maxSize: 2,
+        description: "Upload KYC document (Max: 2 MB)",
       },
     ],
-    []
+    [branchOptions, branchesLoading]
   );
 
-  const handleEditSubmit = () => {
-    // Here you could persist the edited values before confirming
-    // For now we just open the confirmation modal to simulate the flow
+  const handleEditSubmit = (data: Record<string, unknown>) => {
+    // Persist the edit payload until user confirms.
+    setPendingEditAgentData(data);
     setEditConfirmOpened(true);
   };
 
   const performEditAgent = async () => {
+    if (!agentId || !pendingEditAgentData) return;
+
     try {
       setLoading(true);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const payload = pendingEditAgentData as Record<string, unknown>;
+
+      const formData = new FormData();
+      formData.append("name", String(payload.name ?? ""));
+      formData.append("email", String(payload.email ?? ""));
+      formData.append("phoneNumber", String(payload.phoneNumber ?? ""));
+      formData.append("branch", String(payload.branch ?? ""));
+
+      const attachment = payload.attachment;
+      if (attachment instanceof File) {
+        formData.append("attachment", attachment);
+      }
+
+      await adminApi.agent.update(agentId, formData);
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.agent.all],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.agent.stats()],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.agent.detail(agentId)],
+        }),
+      ]);
 
       setEditModalOpened(false);
       setEditConfirmOpened(false);
+      setPendingEditAgentData(null);
       setEditSuccessOpened(true);
+
+      notifications.show({
+        title: "Agent Updated",
+        message: "Agent details have been successfully updated.",
+        color: "green",
+      });
+    } catch (error) {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+      notifications.show({
+        title: "Update Agent Failed",
+        message:
+          apiResponse?.error?.message ??
+          (error as Error)?.message ??
+          "Failed to update agent details. Please try again.",
+        color: "red",
+      });
     } finally {
       setLoading(false);
     }
@@ -384,10 +423,10 @@ export default function AgentDetailsPage() {
         loading={loading}
         size="lg"
         initialValues={{
-          agentName: agent.name,
+          name: agent.name,
           branch: agent.branch,
           email: agent.email,
-          phone: agent.phone,
+          phoneNumber: agent.phone,
         }}
         onSubmit={handleEditSubmit}
       />

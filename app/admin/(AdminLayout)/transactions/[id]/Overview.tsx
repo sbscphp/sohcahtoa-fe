@@ -7,10 +7,17 @@ import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import EmptyState from "@/app/admin/_components/EmptyState";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
-import type { TransactionOverviewViewModel } from "./hooks/useTransactionDetails";
+import type {
+  TransactionActionDocumentViewModel,
+  TransactionOverviewViewModel,
+  TransactionWorkflowHistoryItemViewModel,
+} from "./hooks/useTransactionDetails";
 
 interface OverviewProps {
   transaction: TransactionOverviewViewModel | null;
+  actionDocuments?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
 }
@@ -46,7 +53,14 @@ const loadingSections = [
   },
 ];
 
-export default function Overview({ transaction, isLoading = false, isError = false }: OverviewProps) {
+export default function Overview({
+  transaction,
+  actionDocuments = [],
+  workflowHistory = [],
+  transactionId,
+  isLoading = false,
+  isError = false,
+}: OverviewProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   const hasData = Boolean(transaction);
   const basicDetailsToRender = isLoading
@@ -76,7 +90,14 @@ export default function Overview({ transaction, isLoading = false, isError = fal
           </Group>
         </div>
 
-        <TakeActionButton />
+        <TakeActionButton
+          transactionId={transactionId}
+          transactionStatusLabel={
+            isLoading ? undefined : transaction?.statusLabel
+          }
+          documents={actionDocuments}
+          workflowHistory={workflowHistory}
+        />
       </Group>
 
       {/* Basic Details */}
