@@ -32,6 +32,23 @@ export type UpdateAdminUserPayload = CreateAdminUserPayload;
 
 export type LookupQuery = "role" | "department" | "branch";
 
+export interface AdminProfileData {
+  id: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  altPhoneNumber: string | null;
+  position: string | null;
+  branch: string;
+  roleId: string;
+  departmentId: string;
+  permissions: unknown;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  rolePermissions: Record<string, unknown>;
+}
+
 export interface CreateDepartmentPayload {
   name: string;
   departmentEmail: string | null;
@@ -255,6 +272,7 @@ export interface BranchDetailsData {
   phoneNumber: string;
   agentName: string | null;
   agentEmail: string | null;
+  agentId: string | null;
   agentPhoneNumber: string | null;
   status: string;
   isActive: boolean;
@@ -1322,6 +1340,9 @@ export const adminApi = {
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.management.lookups, {
         params: { query },
       }),
+
+    profile: () =>
+      apiClient.get<ApiResponse<AdminProfileData | null>>("/api/admin/management/profile"),
 
     modules: {
       list: () =>
