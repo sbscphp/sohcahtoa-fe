@@ -249,6 +249,30 @@ export const adminKeys = {
         search?: string;
         isActive?: boolean;
       }) => [...adminKeys.outlet.branches.all(), "list", params] as const,
+      agents: {
+        all: (id: string) => [...adminKeys.outlet.branches.all(), "agents", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            isActive?: boolean;
+          }
+        ) => [...adminKeys.outlet.branches.agents.all(id), "list", params] as const,
+      },
+      transactions: {
+        all: (id: string) => [...adminKeys.outlet.branches.all(), "transactions", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            status?: string;
+          }
+        ) => [...adminKeys.outlet.branches.transactions.all(id), "list", params] as const,
+      },
     },
   },
   

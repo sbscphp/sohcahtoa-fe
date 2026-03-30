@@ -276,6 +276,49 @@ export interface CreateBranchPayload {
   agentPhoneNumber: string;
 }
 
+export type BranchAgentListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+};
+
+export interface BranchAgentListItemData {
+  id?: string | number;
+  agentId?: string | number;
+  userId?: string | number;
+  fullName?: string;
+  agentName?: string;
+  name?: string;
+  phone?: string;
+  phoneNumber?: string;
+  email?: string;
+  emailAddress?: string;
+  totalTransactions?: number | string;
+  transactionCount?: number | string;
+  numberOfTransactions?: number | string;
+  transactionVolume?: number | string;
+  totalTransactionVolume?: number | string;
+  totalVolume?: number | string;
+  isActive?: boolean;
+  status?: string;
+}
+
+export type BranchAgentExportParams = {
+  search?: string;
+  isActive?: boolean;
+};
+
+export type BranchTransactionListParams = AdminTransactionListParams;
+
+export type BranchTransactionExportParams = {
+  search?: string;
+  status?: string;
+};
+
 export interface CreateFranchisePayload {
   franchiseName: string;
   state: string;
@@ -1230,6 +1273,46 @@ export const adminApi = {
 
       getStats: () =>
         apiClient.get<ApiResponse<BranchStatsData>>(API_ENDPOINTS.admin.outlet.branches.stats),
+
+      agents: {
+        list: (id: string, params?: BranchAgentListParams) =>
+          apiClient.get<ApiResponse<unknown>>(
+            API_ENDPOINTS.admin.outlet.branches.agents.list(id),
+            { params }
+          ),
+        export: async (id: string, params?: BranchAgentExportParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.outlet.branches.agents.export(id),
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
+      },
+
+      transactions: {
+        list: (id: string, params?: BranchTransactionListParams) =>
+          apiClient.get<ApiResponse<unknown>>(
+            API_ENDPOINTS.admin.outlet.branches.transactions.list(id),
+            { params }
+          ),
+        export: async (id: string, params?: BranchTransactionExportParams) => {
+          const response = await apiClient.get<Blob | string>(
+            API_ENDPOINTS.admin.outlet.branches.transactions.export(id),
+            { params }
+          );
+
+          if (response instanceof Blob) {
+            return response;
+          }
+
+          return new Blob([response], { type: "text/csv;charset=utf-8;" });
+        },
+      },
     },
   },
 

@@ -15,7 +15,7 @@ const SETTING_TABS = [
   { value: "account", label: "Account Information" },
   { value: "password", label: "Password" },
   // { value: "workflow", label: "Workflow Configuration" },
-  { value: "notifications", label: "Notification Settings" },
+  { value: "notifications", label: "Notifications" },
   { value: "pickup-stations", label: "Pick-Up Stations" },
 ] as const;
 

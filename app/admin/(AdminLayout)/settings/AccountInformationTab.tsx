@@ -1,6 +1,5 @@
 "use client"
 
-import { adminRoutes } from "@/lib/adminRoutes";
 import { Avatar } from "@mantine/core";
 import { StatusBadge } from "../../_components/StatusBadge";
 

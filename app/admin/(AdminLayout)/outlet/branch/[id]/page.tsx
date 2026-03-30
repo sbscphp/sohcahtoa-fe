@@ -1,90 +1,31 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   Text,
   Group,
   Button,
-  TextInput,
-  Select,
   Menu,
   Divider,
   Skeleton,
   Alert,
 } from "@mantine/core";
-import { Search, ListFilter, Upload } from "lucide-react";
-import { adminRoutes } from "@/lib/adminRoutes";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import FormModal, { type FormField } from "@/app/admin/_components/FormModal";
-import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import {
   useBranchDetails,
   formatBranchStatusForBadge,
   formatBranchCreatedAt,
 } from "../../hooks/useBranchDetails";
 
+import { BranchAgentsTable } from "../[id]_branchDetailComponents/BranchAgentsTable";
+import { BranchTransactionsTable } from "../[id]_branchDetailComponents/BranchTransactionsTable";
+
 type TabKey = "agents" | "transactions";
-
-interface AgentRow {
-  id: string;
-  agentName: string;
-  phone: string;
-  email: string;
-  totalTransactions: number;
-  transactionVolume: number;
-  status: "Active" | "Deactivated";
-}
-
-const AGENTS_MOCK: AgentRow[] = [
-  { id: "9023", agentName: "Tunde Bashorun", phone: "+234 90 2323 4545", email: "tunde@eternalglobal.com", totalTransactions: 209, transactionVolume: 1250000, status: "Active" },
-  { id: "9025", agentName: "Queen Omotola", phone: "+234 90 5858 3939", email: "queen@kudimata.com", totalTransactions: 9, transactionVolume: 875000, status: "Active" },
-  { id: "9026", agentName: "Samuel Olubanki", phone: "+234 91 2222 4545", email: "olubankisamuel@gmail.com", totalTransactions: 120, transactionVolume: 930500, status: "Active" },
-  { id: "9024", agentName: "Ibrahim Dantata", phone: "+234 90 5858 3939", email: "ibrahim@sultan.com", totalTransactions: 50, transactionVolume: 1100000, status: "Deactivated" },
-  { id: "9027", agentName: "Mfon Ubot", phone: "+234 90 2323 4545", email: "mubot@greenfield.com", totalTransactions: 60, transactionVolume: 790000, status: "Active" },
-  { id: "9028", agentName: "Sariki Sudan", phone: "+234 81 0000 3456", email: "nagode@gmail.com", totalTransactions: 98, transactionVolume: 980000, status: "Deactivated" },
-];
-
-const agentHeaders = [
-  { label: "Agent", key: "agent" },
-  { label: "Contact", key: "contact" },
-  { label: "Total Transactions", key: "totalTransactions" },
-  { label: "Transaction Volume", key: "transactionVolume" },
-  { label: "Status", key: "status" },
-  { label: "Action", key: "action" },
-];
-
-interface TransactionRow {
-  id: string;
-  transactionId: string;
-  actionDate: string;
-  actionTime: string;
-  branchName: string;
-  agentName: string;
-  type: string;
-  actionEffect: "Posted" | "Pending" | "Rejected";
-}
-
-const TRANSACTIONS_MOCK: TransactionRow[] = [
-  { id: "tx1", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikoyi Axis", agentName: "Eddy Ubong", type: "BTA", actionEffect: "Posted" },
-  { id: "tx2", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Victoria Island", agentName: "Sarah Olufemi", type: "PTA", actionEffect: "Pending" },
-  { id: "tx3", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Lekki Phase 1", agentName: "Chinedu Okafor", type: "School Fees", actionEffect: "Rejected" },
-  { id: "tx4", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Surulere", agentName: "Tolu Adebayo", type: "Expatriate", actionEffect: "Pending" },
-  { id: "tx5", transactionId: "7844gAGAA563A", actionDate: "September 12, 2025", actionTime: "11:00 am", branchName: "Ikorodu", agentName: "Amanda Nwosu", type: "BTA", actionEffect: "Posted" },
-];
-
-const transactionHeaders = [
-  { label: "Transaction ID", key: "transactionId" },
-  { label: "Action Date", key: "actionDate" },
-  { label: "Branch/Agent", key: "branchAgent" },
-  { label: "Type", key: "type" },
-  { label: "Action Effect", key: "actionEffect" },
-  { label: "Action", key: "action" },
-];
 
 const EDIT_BRANCH_STATES = [
   { value: "Lagos", label: "Lagos" },
@@ -109,12 +50,6 @@ const editBranchFields: FormField[] = [
   { name: "phone", label: "Phone Number", type: "tel", required: true, placeholder: "+234 8138989206" },
 ];
 
-const formatNaira = (amount: number): string =>
-  `₦ ${amount.toLocaleString("en-NG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
 export default function BranchDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
@@ -131,7 +66,6 @@ export default function BranchDetailPage() {
 }
 
 function BranchDetailPageInner({ branchId }: { branchId: string }) {
-  const router = useRouter();
   const { branch, isLoading, isError, error } = useBranchDetails(branchId);
 
   const [activeOverride, setActiveOverride] = useState<boolean | null>(null);
@@ -150,14 +84,6 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
   const [editSuccessOpen, setEditSuccessOpen] = useState(false);
   const [pendingEditData, setPendingEditData] = useState<Record<string, any> | null>(null);
   const [editLoading, setEditLoading] = useState(false);
-
-  const [agentSearch, setAgentSearch] = useState("");
-  const [agentFilter, setAgentFilter] = useState("Filter By");
-  const [agentPage, setAgentPage] = useState(1);
-  const [transactionSearch, setTransactionSearch] = useState("");
-  const [transactionFilter, setTransactionFilter] = useState("Filter By");
-  const [transactionPage, setTransactionPage] = useState(1);
-  const pageSize = 6;
 
   const editFormInitialValues = useMemo(
     () => ({
@@ -194,106 +120,6 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
     setEditSuccessOpen(true);
     setPendingEditData(null);
   };
-
-  const filteredAgents = useMemo(() => {
-    return AGENTS_MOCK.filter((a) => {
-      const matchesSearch =
-        a.agentName.toLowerCase().includes(agentSearch.toLowerCase()) ||
-        a.id.includes(agentSearch) ||
-        a.email.toLowerCase().includes(agentSearch.toLowerCase()) ||
-        a.phone.includes(agentSearch);
-      const matchesFilter =
-        agentFilter === "Filter By" || agentFilter === "All" || a.status === agentFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [agentSearch, agentFilter]);
-
-  const agentTotalPages = Math.ceil(filteredAgents.length / pageSize) || 1;
-  const paginatedAgents = useMemo(() => {
-    const start = (agentPage - 1) * pageSize;
-    return filteredAgents.slice(start, start + pageSize);
-  }, [agentPage, filteredAgents]);
-
-  const renderAgentRow = (item: AgentRow) => [
-    <div key="agent">
-      <Text fw={500} size="sm">
-        {item.agentName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        ID:{item.id}
-      </Text>
-    </div>,
-    <div key="contact">
-      <Text fw={500} size="sm">
-        {item.phone}
-      </Text>
-      <Text size="xs" c="dimmed">
-        {item.email}
-      </Text>
-    </div>,
-    <Text key="totalTransactions" size="sm">
-      {item.totalTransactions}
-    </Text>,
-    <Text key="transactionVolume" size="sm" fw={500}>
-      {formatNaira(item.transactionVolume)}
-    </Text>,
-    <StatusBadge key="status" status={item.status} />,
-    <RowActionIcon
-      key="action"
-      onClick={() => router.push(adminRoutes.adminAgentDetails(item.id))}
-    />,
-  ];
-
-  const filteredTransactions = useMemo(() => {
-    return TRANSACTIONS_MOCK.filter((t) => {
-      const matchesSearch =
-        t.transactionId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.branchName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.agentName.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        t.type.toLowerCase().includes(transactionSearch.toLowerCase());
-      const matchesFilter =
-        transactionFilter === "Filter By" ||
-        transactionFilter === "All" ||
-        t.actionEffect === transactionFilter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [transactionSearch, transactionFilter]);
-
-  const transactionTotalPages = Math.ceil(filteredTransactions.length / pageSize) || 1;
-  const paginatedTransactions = useMemo(() => {
-    const start = (transactionPage - 1) * pageSize;
-    return filteredTransactions.slice(start, start + pageSize);
-  }, [transactionPage, filteredTransactions]);
-
-  const renderTransactionRow = (item: TransactionRow) => [
-    <Text key="transactionId" size="sm">
-      {item.transactionId}
-    </Text>,
-    <div key="actionDate">
-      <Text size="sm">{item.actionDate}</Text>
-      <Text size="xs" c="dimmed">
-        {item.actionTime}
-      </Text>
-    </div>,
-    <div key="branchAgent">
-      <Text fw={500} size="sm">
-        {item.branchName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        Agent: {item.agentName}
-      </Text>
-    </div>,
-    <Text key="type" size="sm">
-      {item.type}
-    </Text>,
-    <StatusBadge key="actionEffect" status={item.actionEffect} variant="filled" />,
-    <RowActionIcon
-      key="action"
-      onClick={() =>
-        router.push(adminRoutes.adminOutletBranchTransactionDetail(branchId, item.id))
-      }
-    />,
-  ];
 
   const handleDeactivateConfirm = async () => {
     setLoading(true);
@@ -440,98 +266,9 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
         </div>
 
         {activeTab === "agents" ? (
-          <>
-            <Group justify="space-between" mb="md" wrap="wrap">
-              <TextInput
-                placeholder="Enter keyword"
-                leftSection={<Search size={16} color="#DD4F05" />}
-                value={agentSearch}
-                onChange={(e) => setAgentSearch(e.currentTarget.value)}
-                w={320}
-                radius="xl"
-              />
-              <Group>
-                <Select
-                  value={agentFilter}
-                  onChange={(value) => setAgentFilter(value!)}
-                  data={["Filter By", "All", "Active", "Deactivated"]}
-                  radius="xl"
-                  w={120}
-                  rightSection={<ListFilter size={16} />}
-                />
-                <Button
-                  variant="outline"
-                  color="#E36C2F"
-                  radius="xl"
-                  rightSection={<Upload size={16} />}
-                >
-                  Export
-                </Button>
-              </Group>
-            </Group>
-            <DynamicTableSection
-              headers={agentHeaders}
-              data={paginatedAgents}
-              loading={false}
-              renderItems={renderAgentRow}
-              emptyTitle="No Agents Found"
-              emptyMessage="There are no agents for this branch."
-              pagination={{
-                page: agentPage,
-                totalPages: agentTotalPages,
-                onNext: () => setAgentPage((p) => Math.min(p + 1, agentTotalPages)),
-                onPrevious: () => setAgentPage((p) => Math.max(p - 1, 1)),
-                onPageChange: setAgentPage,
-              }}
-            />
-          </>
+          <BranchAgentsTable branchId={branchId} />
         ) : (
-          <>
-            <Group justify="space-between" mb="md" wrap="wrap">
-              <TextInput
-                placeholder="Enter keyword"
-                leftSection={<Search size={16} color="#DD4F05" />}
-                value={transactionSearch}
-                onChange={(e) => setTransactionSearch(e.currentTarget.value)}
-                w={320}
-                radius="xl"
-              />
-              <Group>
-                <Select
-                  value={transactionFilter}
-                  onChange={(value) => setTransactionFilter(value!)}
-                  data={["Filter By", "All", "Posted", "Pending", "Rejected"]}
-                  radius="xl"
-                  w={120}
-                  rightSection={<ListFilter size={16} />}
-                />
-                <Button
-                  variant="filled"
-                  color="#DD4F05"
-                  radius="xl"
-                  rightSection={<Upload size={16} />}
-                >
-                  Export
-                </Button>
-              </Group>
-            </Group>
-            <DynamicTableSection
-              headers={transactionHeaders}
-              data={paginatedTransactions}
-              loading={false}
-              renderItems={renderTransactionRow}
-              emptyTitle="No Transactions Found"
-              emptyMessage="There are no transactions for this branch."
-              pagination={{
-                page: transactionPage,
-                totalPages: transactionTotalPages,
-                onNext: () =>
-                  setTransactionPage((p) => Math.min(p + 1, transactionTotalPages)),
-                onPrevious: () => setTransactionPage((p) => Math.max(p - 1, 1)),
-                onPageChange: setTransactionPage,
-              }}
-            />
-          </>
+          <BranchTransactionsTable branchId={branchId} />
         )}
       </div>
 

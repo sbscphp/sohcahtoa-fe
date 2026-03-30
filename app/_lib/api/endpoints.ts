@@ -173,6 +173,14 @@ export const API_ENDPOINTS = {
         export: "/api/admin/outlet/branches/export",
         stats: "/api/admin/outlet/branches/stats",
         getById: (id: string) => `/api/admin/outlet/branches/${id}`,
+        agents: {
+          list: (id: string) => `/api/admin/outlet/branches/${id}/agents`,
+          export: (id: string) => `/api/admin/outlet/branches/${id}/agents/export`,
+        },
+        transactions: {
+          list: (id: string) => `/api/admin/outlet/branches/${id}/transactions`,
+          export: (id: string) => `/api/admin/outlet/branches/${id}/transactions/export`,
+        },
       },
       states: "/api/admin/outlet/states",
     },
