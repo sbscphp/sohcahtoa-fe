@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { Alert, Button, Divider, Menu, Stack, Text } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
+import { notifications } from "@mantine/notifications";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import FormModal, { FormField } from "@/app/admin/_components/FormModal";
@@ -11,6 +14,11 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import EmptySection from "@/app/admin/_components/EmptySection";
 import { adminRoutes } from "@/lib/adminRoutes";
 import AllPickupsSection from "./AllPickupsSection";
+import { adminApi, type UpdatePickupStationPayload } from "@/app/admin/_services/admin-api";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useOutletStates } from "../../../outlet/hooks/useOutletStates";
+import { useOutletCities } from "../../hooks/useOutletCities";
 import {
   usePickupStationDetails,
   type PickupStationDetailsViewModel,
@@ -19,6 +27,7 @@ import {
 export default function PickupStationDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const stationId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const {
     station: fetchedStation,
@@ -38,8 +47,15 @@ export default function PickupStationDetailsPage() {
   const [editSuccessOpened, setEditSuccessOpened] = useState(false);
   const [deleteConfirmOpened, setDeleteConfirmOpened] = useState(false);
   const [deleteSuccessOpened, setDeleteSuccessOpened] = useState(false);
+  const [selectedEditState, setSelectedEditState] = useState<string | null>(null);
   const [pendingEditData, setPendingEditData] =
     useState<Record<string, unknown> | null>(null);
+  const { states: outletStateOptions } = useOutletStates();
+  const {
+    cities: cityOptions,
+    isLoading: isCitiesLoading,
+    isFetching: isCitiesFetching,
+  } = useOutletCities(selectedEditState);
   const station = useMemo(() => {
     if (!fetchedStation) return null;
     const merged = {
@@ -49,94 +65,124 @@ export default function PickupStationDetailsPage() {
     const location = [merged.region, merged.state].filter(Boolean).join(", ");
     return { ...merged, location: location || "—" };
   }, [fetchedStation, stationOverride]);
+  const updatePickupStationMutation = useCreateData(
+    (payload: UpdatePickupStationPayload) =>
+      adminApi.outlet.pickupStations.update(stationId!, payload),
+    {
+      onSuccess: async (_response, variables) => {
+        setStationOverride((prev) => ({
+          ...(prev ?? {}),
+          stationName: variables.stationName,
+          address: variables.physicalAddress,
+          state: variables.state,
+          region: variables.region,
+          email: variables.stationEmail,
+          phoneNumber: variables.phoneNumber,
+          status: variables.isActive ? "Active" : "Deactivated",
+          location: `${variables.region}, ${variables.state}`,
+        }));
+        setEditConfirmOpened(false);
+        setEditModalOpened(false);
+        setEditSuccessOpened(true);
+        setPendingEditData(null);
+        setSelectedEditState(null);
+        await queryClient.invalidateQueries({
+          queryKey: [...adminKeys.outlet.pickupStations.detail(stationId!)],
+        });
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Update Pick-up Station Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to update pick-up station at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
-  const editFields: FormField[] = [
-    {
-      name: "stationName",
-      label: "Station Name",
-      type: "text",
-      required: true,
-      placeholder: "Ikeja Station 1",
-    },
-    {
-      name: "address",
-      label: "Physical Address",
-      type: "text",
-      required: true,
-      placeholder: "Block 14, Adeniyi Jones, Ikeja Lagos",
-    },
-    {
-      name: "state",
-      label: "State",
-      type: "select",
-      required: true,
-      options: [
-        "Lagos State",
-        "FCT",
-        "Rivers State",
-        "Kano State",
-        "Kaduna State",
-        "Oyo State",
-      ],
-    },
-    {
-      name: "region",
-      label: "Region",
-      type: "text",
-      required: true,
-      placeholder: "Ikeja",
-    },
-    {
-      name: "email",
-      label: "Email Address",
-      type: "email",
-      required: true,
-      placeholder: "name@sohcahtoa.com",
-    },
-    {
-      name: "phoneNumber",
-      label: "Phone Number 1",
-      type: "tel",
-      required: true,
-      placeholder: "+234 8056283635",
-    },
-  ];
+  const editFields: FormField[] = useMemo(
+    () => [
+      {
+        name: "stationName",
+        label: "Station Name",
+        type: "text",
+        required: true,
+        placeholder: "Ikeja Station 1",
+      },
+      {
+        name: "address",
+        label: "Physical Address",
+        type: "text",
+        required: true,
+        placeholder: "Block 14, Adeniyi Jones, Ikeja Lagos",
+      },
+      {
+        name: "state",
+        label: "State",
+        type: "select",
+        required: true,
+        options: outletStateOptions,
+      },
+      {
+        name: "region",
+        label: "Region",
+        type: "select",
+        required: true,
+        options: cityOptions,
+        disabled: !selectedEditState || isCitiesLoading || isCitiesFetching,
+        placeholder: selectedEditState
+          ? isCitiesLoading || isCitiesFetching
+            ? "Loading cities..."
+            : "Select city"
+          : "Select state first",
+      },
+      {
+        name: "email",
+        label: "Email Address",
+        type: "email",
+        required: true,
+        placeholder: "name@sohcahtoa.com",
+      },
+      {
+        name: "phoneNumber",
+        label: "Phone Number 1",
+        type: "tel",
+        required: true,
+        placeholder: "+234 8056283635",
+      },
+    ],
+    [
+      cityOptions,
+      isCitiesFetching,
+      isCitiesLoading,
+      outletStateOptions,
+      selectedEditState,
+    ]
+  );
 
   const handleEditSubmit = (data: Record<string, unknown>) => {
     setPendingEditData(data);
     setEditConfirmOpened(true);
   };
 
-  const performEdit = () => {
+  const performEdit = async () => {
     if (!pendingEditData || !station) return;
-
-    setStationOverride((prev) => ({
-      ...(prev ?? {}),
-      stationName: String(
-        pendingEditData.stationName ?? prev?.stationName ?? station.stationName
-      ),
-      address: String(
-        pendingEditData.address ?? prev?.address ?? station.address
-      ),
-      state: String(pendingEditData.state ?? prev?.state ?? station.state),
-      region: String(pendingEditData.region ?? prev?.region ?? station.region),
-      email: String(pendingEditData.email ?? prev?.email ?? station.email),
-      phoneNumber: String(
-        pendingEditData.phoneNumber ??
-          prev?.phoneNumber ??
-          station.phoneNumber
-      ),
-      location: `${String(
-        pendingEditData.region ?? prev?.region ?? station.region
-      )}, ${String(
-        pendingEditData.state ?? prev?.state ?? station.state
-      )}`,
-    }));
-
-    setEditConfirmOpened(false);
-    setEditModalOpened(false);
-    setEditSuccessOpened(true);
-    setPendingEditData(null);
+    const normalizedStatus = (station.status ?? "").toLowerCase();
+    const isActive = normalizedStatus === "active";
+    await updatePickupStationMutation.mutateAsync({
+      stationName: String(pendingEditData.stationName ?? station.stationName),
+      physicalAddress: String(pendingEditData.address ?? station.address),
+      state: String(pendingEditData.state ?? station.state),
+      region: String(pendingEditData.region ?? station.region),
+      stationEmail: String(pendingEditData.email ?? station.email),
+      phoneNumber: String(pendingEditData.phoneNumber ?? station.phoneNumber),
+      status: station.status,
+      isActive,
+    });
   };
 
   const performDelete = () => {
@@ -198,7 +244,14 @@ export default function PickupStationDetailsPage() {
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item onClick={() => setEditModalOpened(true)}>Edit</Menu.Item>
+              <Menu.Item
+                onClick={() => {
+                  setSelectedEditState(station?.state ?? null);
+                  setEditModalOpened(true);
+                }}
+              >
+                Edit
+              </Menu.Item>
               <Menu.Divider />
               <Menu.Item color="red" onClick={() => setDeleteConfirmOpened(true)}>
                 Delete
@@ -242,7 +295,19 @@ export default function PickupStationDetailsPage() {
           email: station?.email ?? "",
           phoneNumber: station?.phoneNumber ?? "",
         }}
+        onFieldChange={(name, value, currentData) => {
+          if (name === "state") {
+            const nextState = value ? String(value) : null;
+            setSelectedEditState(nextState);
+            return {
+              ...currentData,
+              region: "",
+            };
+          }
+          return currentData;
+        }}
         onSubmit={handleEditSubmit}
+        loading={updatePickupStationMutation.isPending}
       />
 
       <ConfirmationModal
@@ -254,6 +319,7 @@ export default function PickupStationDetailsPage() {
         secondaryButtonText="No, Close"
         onPrimary={performEdit}
         onSecondary={() => setEditConfirmOpened(false)}
+        loading={updatePickupStationMutation.isPending}
       />
 
       <SuccessModal

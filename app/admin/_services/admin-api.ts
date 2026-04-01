@@ -399,6 +399,17 @@ export interface CreatePickupStationPayload {
   status: string;
 }
 
+export interface UpdatePickupStationPayload {
+  stationName: string;
+  physicalAddress: string;
+  state: string;
+  region: string;
+  stationEmail: string;
+  phoneNumber: string;
+  status: string;
+  isActive: boolean;
+}
+
 export interface PickupStationDetailsData {
   id: string;
   name: string;
@@ -1336,6 +1347,11 @@ export const adminApi = {
       create: (data: CreatePickupStationPayload) =>
         apiClient.post<ApiResponse<unknown>>(
           API_ENDPOINTS.admin.outlet.pickupStations.create,
+          data
+        ),
+      update: (id: string, data: UpdatePickupStationPayload) =>
+        apiClient.put<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.update(id),
           data
         ),
       export: async (params?: PickupStationListParams) => {
