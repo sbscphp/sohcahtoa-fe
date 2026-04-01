@@ -17,6 +17,11 @@ interface ValidateOtpResponseData {
   resetToken: string;
 }
 
+interface VerifyOldPasswordResponseData {
+  changeToken: string;
+  message: string;
+}
+
 export interface CreateAdminUserPayload {
   fullName: string;
   email: string;
@@ -903,6 +908,18 @@ export const adminApi = {
         API_ENDPOINTS.admin.auth.resetPassword,
         data,
         { skipAuth: true }
+      ),
+
+    verifyOldPassword: (data: { oldPassword: string }) =>
+      apiClient.post<ApiResponse<VerifyOldPasswordResponseData>>(
+        API_ENDPOINTS.admin.auth.password.verifyOld,
+        data
+      ),
+
+    changePassword: (data: { changeToken: string; newPassword: string }) =>
+      apiClient.post<ApiResponse<null>>(
+        API_ENDPOINTS.admin.auth.password.change,
+        data
       ),
 
     logout: () =>

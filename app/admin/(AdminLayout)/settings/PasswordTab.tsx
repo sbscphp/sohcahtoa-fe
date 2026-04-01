@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CircleCheck } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 
 import {
   Dialog,
@@ -12,23 +14,28 @@ import {
 import { PasswordInput } from "@mantine/core";
 import { SuccessModal } from "../../_components/SuccessModal";
 import { CustomButton } from "../../_components/CustomButton";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { adminRoutes } from "@/lib/adminRoutes";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 type PasswordStep = "change" | "create";
 
 export default function PasswordTab() {
+  const router = useRouter();
   const [step, setStep] = useState<PasswordStep>("change");
 
   const [oldPassword, setOldPassword] = useState("");
   const [confirmOldPassword, setConfirmOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [changeToken, setChangeToken] = useState("");
 
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showConfirmOldPassword, setShowConfirmOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
-  const [showValidatedModal, setShowValidatedModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showDeletedModal, setShowDeletedModal] = useState(false);
 
@@ -42,17 +49,78 @@ export default function PasswordTab() {
   const allValid = hasLength && hasUpperAndLower && hasNumber && hasSpecial;
   const passwordsMatch =
     newPassword === confirmNewPassword && confirmNewPassword.length > 0;
+  const oldPasswordsMatch =
+    oldPassword === confirmOldPassword && confirmOldPassword.length > 0;
+
+  const getErrorMessage = (
+    error: unknown,
+    fallback: string
+  ) => {
+    const apiResponse = (error as ApiError)?.data as ApiResponse | undefined;
+    return apiResponse?.error?.message ?? (error as Error)?.message ?? fallback;
+  };
+
+  const verifyOldPasswordMutation = useCreateData(
+    adminApi.auth.verifyOldPassword
+  );
+  const changePasswordMutation = useCreateData(adminApi.auth.changePassword);
 
   /* ---------------- Handlers ---------------- */
-  const handleChangePassword = () => {
-    if (oldPassword && confirmOldPassword) {
-      setShowValidatedModal(true);
+  const handleChangePassword = async () => {
+    if (!oldPassword || !confirmOldPassword) return;
+
+    if (!oldPasswordsMatch) {
+      notifications.show({
+        title: "Password Mismatch",
+        message: "Old password and confirmation must match.",
+        color: "red",
+      });
+      return;
+    }
+
+    try {
+      const response = await verifyOldPasswordMutation.mutateAsync({
+        oldPassword,
+      });
+      setChangeToken(response.data.changeToken);
+      setStep("create");
+      notifications.show({
+        title: "Password Verified",
+        message:
+          response.data.message ??
+          "Old password verified. Proceed to create a new password.",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        title: "Verification Failed",
+        message: getErrorMessage(
+          error,
+          "Unable to verify old password. Please try again."
+        ),
+        color: "red",
+      });
     }
   };
 
-  const handleCreateNewPassword = () => {
-    if (allValid && passwordsMatch) {
+  const handleCreateNewPassword = async () => {
+    if (!allValid || !passwordsMatch || !changeToken) return;
+
+    try {
+      await changePasswordMutation.mutateAsync({
+        changeToken,
+        newPassword,
+      });
       setShowSuccessModal(true);
+    } catch (error) {
+      notifications.show({
+        title: "Password Change Failed",
+        message: getErrorMessage(
+          error,
+          "Unable to update password. Please try again."
+        ),
+        color: "red",
+      });
     }
   };
 
@@ -62,6 +130,7 @@ export default function PasswordTab() {
     setConfirmOldPassword("");
     setNewPassword("");
     setConfirmNewPassword("");
+    setChangeToken("");
   };
 
   /* ---------------- UI ---------------- */
@@ -112,11 +181,16 @@ export default function PasswordTab() {
             </CustomButton>
             <CustomButton
               onClick={handleChangePassword}
-              disabled={!oldPassword || !confirmOldPassword}
+              disabled={
+                !oldPassword ||
+                !confirmOldPassword ||
+                verifyOldPasswordMutation.isPending
+              }
               buttonType="primary"
               fullWidth={true}
+              loading={verifyOldPasswordMutation.isPending}
             >
-              Change Password
+              Verify Old Password
             </CustomButton>
           </div>
         </div>
@@ -178,11 +252,17 @@ export default function PasswordTab() {
             </CustomButton>
             <CustomButton
               onClick={handleCreateNewPassword}
-              disabled={!allValid || !passwordsMatch}
+              disabled={
+                !allValid ||
+                !passwordsMatch ||
+                !changeToken ||
+                changePasswordMutation.isPending
+              }
+              loading={changePasswordMutation.isPending}
               buttonType="primary"
               fullWidth={true}
             >
-              Change Password
+              Create New Password
             </CustomButton>
           </div>
         </div>
@@ -190,24 +270,13 @@ export default function PasswordTab() {
 
       {/* ================= MODALS ================= */}
 
-      {/* Old password validated → proceed to create */}
-      <SuccessModal
-        opened={showValidatedModal}
-        onClose={() => {
-          setShowValidatedModal(false);
-          setStep("create");
-        }}
-        title="Old Password Validated"
-        message="Your old password has been successfully validated."
-        primaryButtonText="Create New Password"
-      />
-
       {/* New password saved */}
       <SuccessModal
         opened={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
           resetAll();
+          router.push(adminRoutes.adminSettingsAccountInformation());
         }}
         title="Password Created"
         message="Your password has been successfully updated."

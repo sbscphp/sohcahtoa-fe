@@ -68,6 +68,9 @@ const adminUserManagementRole = (id: string | number = ':id') => `${adminUserMan
 
 //settings routes
 const adminSettings = () => `${admin()}/settings`;
+const adminSettingsPassword = () => `${adminSettings()}?tab=password`;
+const adminSettingsAccountInformation = () => `${adminSettings()}?tab=account`;
+const adminSettingsNotifications = () => `${adminSettings()}?tab=notifications`;
 const adminSettingsPickupStations = () => `${adminSettings()}?tab=pickup-stations`;
 const adminSettingsPickupStationDetails = (
   id: string | number = ':id'
@@ -145,6 +148,9 @@ export const adminRoutes = {
   adminSettings,
   adminSettingsPickupStations,
   adminSettingsPickupStationDetails,
+  adminSettingsPassword,
+  adminSettingsAccountInformation,
+  adminSettingsNotifications,
 
   // Settlement
   adminSettlement,

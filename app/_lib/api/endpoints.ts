@@ -96,6 +96,10 @@ export const API_ENDPOINTS = {
       verifyLogin: "/api/admin/auth/verify-login",
       forgotPassword: "/api/admin/auth/forgot-password",
       resetPassword: "/api/admin/auth/reset-password",
+      password: {
+        verifyOld: "/api/admin/auth/password/verify-old",
+        change: "/api/admin/auth/password/change",
+      },
       logout: "/api/admin/auth/logout",
       otp: {
         validate: "/api/admin/auth/otp/validate",
