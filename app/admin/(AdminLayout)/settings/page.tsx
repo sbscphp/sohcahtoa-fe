@@ -71,7 +71,7 @@ export default function SettingsPage() {
   useSetHeaderContent(headerContent);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 my-5">
       {activeTab === "account" && <AccountInformationTab />}
       {activeTab === "password" && <PasswordTab />}
       {/* {activeTab === "workflow" && (
