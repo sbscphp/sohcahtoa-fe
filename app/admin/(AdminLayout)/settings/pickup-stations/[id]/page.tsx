@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Alert, Button, Divider, Menu, Stack, Text } from "@mantine/core";
+import { Alert, Button, Divider, Menu, Skeleton, Stack, Text } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
 import { useCreateData } from "@/app/_lib/api/hooks";
@@ -232,6 +232,8 @@ export default function PickupStationDetailsPage() {
     );
   }
 
+  const isHeaderLoading = isLoading && !station;
+
   return (
     <div className="space-y-6">
       {isError && (
@@ -242,18 +244,30 @@ export default function PickupStationDetailsPage() {
       <div className="rounded-xl bg-white p-5 shadow-sm space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <Stack gap={4} className="flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <Text size="xl" fw={600}>
-                {station?.stationName ?? "—"}
-              </Text>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-[#6B7280]">
-              <span>
-                <span className="font-medium text-[#111827]">Date Created:</span>{" "}
-                {station?.createdAt ?? "—"} | {station?.createdTime ?? "—"}
-              </span>
-              <StatusBadge status={station?.status ?? "—"} />
-            </div>
+            {isHeaderLoading ? (
+              <div className="space-y-3">
+                <Skeleton height={28} width="45%" radius="md" />
+                <div className="flex items-center gap-3">
+                  <Skeleton height={18} width="35%" radius="md" />
+                  <Skeleton height={24} width={90} radius="xl" />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Text size="xl" fw={600}>
+                    {station?.stationName ?? "—"}
+                  </Text>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-[#6B7280]">
+                  <span>
+                    <span className="font-medium text-[#111827]">Date Created:</span>{" "}
+                    {station?.createdAt ?? "—"} | {station?.createdTime ?? "—"}
+                  </span>
+                  <StatusBadge status={station?.status ?? "—"} />
+                </div>
+              </>
+            )}
           </Stack>
 
           <Menu position="bottom-end" shadow="md" width={180}>
@@ -263,6 +277,7 @@ export default function PickupStationDetailsPage() {
                 size="md"
                 color="#DD4F05"
                 className="self-start md:self-auto"
+                disabled={isHeaderLoading}
               >
                 Take Action
               </Button>
@@ -291,11 +306,11 @@ export default function PickupStationDetailsPage() {
             Station Details
           </Text>
           <div className="grid gap-6 md:grid-cols-4">
-            <DetailItem label="Station ID" value={station?.stationCode ?? "—"} />
-            <DetailItem label="Location" value={station?.location ?? "—"} />
-            <DetailItem label="Address" value={station?.address ?? "—"} />
-            <DetailItem label="Phone Number" value={station?.phoneNumber ?? "—"} />
-            <DetailItem label="Email Address" value={station?.email ?? "—"} />
+            <DetailItem label="Station ID" value={station?.stationCode ?? "—"} loading={isLoading} />
+            <DetailItem label="Location" value={station?.location ?? "—"} loading={isLoading} />
+            <DetailItem label="Address" value={station?.address ?? "—"} loading={isLoading} />
+            <DetailItem label="Phone Number" value={station?.phoneNumber ?? "—"} loading={isLoading} />
+            <DetailItem label="Email Address" value={station?.email ?? "—"} loading={isLoading} />
           </div>
         </div>
       </div>
