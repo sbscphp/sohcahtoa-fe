@@ -165,6 +165,10 @@ export const API_ENDPOINTS = {
       stats: "/api/admin/rate/stats",
     },
     outlet: {
+      pickupStations: {
+        list: "/api/admin/outlet/pickup-stations",
+        export: "/api/admin/outlet/pickup-stations/export",
+      },
       franchises: {
         list: "/api/admin/outlet/franchises",
         create: "/api/admin/outlet/franchises",

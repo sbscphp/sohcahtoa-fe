@@ -74,7 +74,7 @@ const adminSettingsNotifications = () => `${adminSettings()}?tab=notifications`;
 const adminSettingsPickupStations = () => `${adminSettings()}?tab=pickup-stations`;
 const adminSettingsPickupStationDetails = (
   id: string | number = ':id'
-) => `${adminSettingsPickupStations()}/${id}`;
+) => `${adminSettings()}/pickup-stations/${id}`;
 
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;

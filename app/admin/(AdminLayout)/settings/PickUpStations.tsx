@@ -6,196 +6,78 @@ import { ListFilter, Plus, Search, Upload } from "lucide-react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import FormModal, { FormField } from "@/app/admin/_components/FormModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminRoutes } from "@/lib/adminRoutes";
-
-type PickUpStation = {
-  id: string;
-  stationName: string;
-  stationId: string;
-  location: string;
-  address: string;
-  state: string;
-  region: string;
-  email: string;
-  phoneNumber: string;
-  dateCreated: string;
-  timeCreated: string;
-};
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { useOutletStates } from "../outlet/hooks/useOutletStates";
+import {
+  usePickupStations,
+  type PickupStationRowItem,
+} from "./hooks/usePickupStations";
 
 const PAGE_SIZE = 6;
-
-const INITIAL_STATIONS: PickUpStation[] = [
-  {
-    id: "8933",
-    stationName: "Ikeja Station 1",
-    stationId: "8933",
-    location: "Ikeja, Lagos",
-    address: "Block 14, Adeniyi Jones, Ikeja",
-    state: "Lagos State",
-    region: "Ikeja",
-    email: "ikeja1@socatoa.com",
-    phoneNumber: "+234 8056283635",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8935",
-    stationName: "Agungi Station",
-    stationId: "8935",
-    location: "Eti-Osa 3, Lagos",
-    address: "A3, Parks Estate, Agungi bus-stop, Lagos",
-    state: "Lagos State",
-    region: "Eti-Osa",
-    email: "agungi@socatoa.com",
-    phoneNumber: "+234 8021234567",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8936",
-    stationName: "Maitama Station",
-    stationId: "8936",
-    location: "Maitama, Abuja",
-    address: "34, Bourdillon Road, Ikoyi, Lagos",
-    state: "FCT",
-    region: "Maitama",
-    email: "maitama@socatoa.com",
-    phoneNumber: "+234 8070001122",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8934",
-    stationName: "Trans-Amadi Station",
-    stationId: "8934",
-    location: "Port Harcourt, Rivers",
-    address: "12, Trans Amadi Road, Port Harcourt",
-    state: "Rivers State",
-    region: "Trans-Amadi",
-    email: "transamadi@socatoa.com",
-    phoneNumber: "+234 8081112233",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8937",
-    stationName: "Kano Station 1",
-    stationId: "8937",
-    location: "Kano, Kano State",
-    address: "7, Gwani Muktar Road, Kano",
-    state: "Kano State",
-    region: "Nassarawa",
-    email: "kano1@socatoa.com",
-    phoneNumber: "+234 8093334455",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8938",
-    stationName: "Abuja Station 3",
-    stationId: "8938",
-    location: "CBD, Abuja",
-    address: "Plot 23, Cadastral Zone, Central Business District",
-    state: "FCT",
-    region: "CBD",
-    email: "abuja3@socatoa.com",
-    phoneNumber: "+234 8067778899",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8939",
-    stationName: "Lekki Station",
-    stationId: "8939",
-    location: "Lekki, Lagos",
-    address: "16, Admiralty Way, Lekki Phase 1",
-    state: "Lagos State",
-    region: "Lekki",
-    email: "lekki@socatoa.com",
-    phoneNumber: "+234 8019991010",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8940",
-    stationName: "Yaba Station",
-    stationId: "8940",
-    location: "Yaba, Lagos",
-    address: "2, Herbert Macaulay Way, Yaba",
-    state: "Lagos State",
-    region: "Yaba",
-    email: "yaba@socatoa.com",
-    phoneNumber: "+234 8041213141",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8941",
-    stationName: "Wuse Station",
-    stationId: "8941",
-    location: "Wuse, Abuja",
-    address: "18, Aminu Kano Crescent, Wuse 2",
-    state: "FCT",
-    region: "Wuse",
-    email: "wuse@socatoa.com",
-    phoneNumber: "+234 8031516171",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8942",
-    stationName: "GRA Station",
-    stationId: "8942",
-    location: "GRA, Port Harcourt",
-    address: "9, King Perekule Street, GRA Phase 2",
-    state: "Rivers State",
-    region: "GRA",
-    email: "gra@socatoa.com",
-    phoneNumber: "+234 8051819202",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8943",
-    stationName: "Kaduna Station",
-    stationId: "8943",
-    location: "Barnawa, Kaduna",
-    address: "21, Ali Akilu Road, Kaduna",
-    state: "Kaduna State",
-    region: "Barnawa",
-    email: "kaduna@socatoa.com",
-    phoneNumber: "+234 8072122232",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8944",
-    stationName: "Ibadan Station",
-    stationId: "8944",
-    location: "Bodija, Ibadan",
-    address: "10, Awolowo Avenue, Bodija",
-    state: "Oyo State",
-    region: "Bodija",
-    email: "ibadan@socatoa.com",
-    phoneNumber: "+234 8092425262",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-];
+const ALL_STATES_VALUE = "__all_states__";
 
 export default function PickUpStations() {
   const router = useRouter();
-  const [stations, setStations] = useState<PickUpStation[]>(INITIAL_STATIONS);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
-  const [stateFilter, setStateFilter] = useState("All States");
+  const [stateFilter, setStateFilter] = useState(ALL_STATES_VALUE);
   const [createModalOpened, setCreateModalOpened] = useState(false);
   const [successModalOpened, setSuccessModalOpened] = useState(false);
+  const { states: outletStateOptions } = useOutletStates();
+  const selectedState =
+    stateFilter === ALL_STATES_VALUE ? undefined : stateFilter;
+  const {
+    stations,
+    total,
+    totalPages,
+    isLoading,
+    isFetching,
+  } = usePickupStations({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    state: selectedState,
+  });
+  const exportPickupStationsMutation = useGetExportData(
+    () =>
+      adminApi.outlet.pickupStations.export({
+        search: debouncedSearch || undefined,
+        state: selectedState,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `pickup-stations-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Pick-up Stations Failed",
+          message:
+            apiResponse?.error?.message ??
+            (error as Error).message ??
+            "Unable to export pick-up stations at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const headers = [
     { label: "Station name", key: "stationName" },
@@ -206,32 +88,11 @@ export default function PickUpStations() {
   ];
 
   const stateOptions = useMemo(() => {
-    const uniqueStates = Array.from(new Set(stations.map((station) => station.state)));
-    return ["All States", ...uniqueStates];
-  }, [stations]);
-
-  const filteredStations = useMemo(() => {
-    const keyword = debouncedSearch.trim().toLowerCase();
-    return stations.filter((station) => {
-      const matchesSearch =
-        !keyword ||
-        station.stationName.toLowerCase().includes(keyword) ||
-        station.stationId.toLowerCase().includes(keyword) ||
-        station.location.toLowerCase().includes(keyword) ||
-        station.address.toLowerCase().includes(keyword);
-
-      const matchesState = stateFilter === "All States" || station.state === stateFilter;
-
-      return matchesSearch && matchesState;
-    });
-  }, [stations, debouncedSearch, stateFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredStations.length / PAGE_SIZE));
-
-  const paginatedStations = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredStations.slice(start, start + PAGE_SIZE);
-  }, [filteredStations, page]);
+    return [
+      { value: ALL_STATES_VALUE, label: "All States" },
+      ...outletStateOptions,
+    ];
+  }, [outletStateOptions]);
 
   const createFields: FormField[] = [
     {
@@ -253,7 +114,7 @@ export default function PickUpStations() {
       label: "State",
       type: "select",
       required: true,
-      options: ["Lagos State", "FCT", "Rivers State", "Kano State", "Kaduna State", "Oyo State"],
+      options: outletStateOptions,
     },
     {
       name: "region",
@@ -278,7 +139,7 @@ export default function PickUpStations() {
     },
   ];
 
-  const renderRow = (station: PickUpStation) => [
+  const renderRow = (station: PickupStationRowItem) => [
     <div key="stationName">
       <Text fw={500} size="sm">
         {station.stationName}
@@ -308,34 +169,10 @@ export default function PickUpStations() {
   ];
 
   const handleCreateStation = async (data: Record<string, unknown>) => {
-    const now = new Date();
-    const id = String(Date.now());
-    const newStation: PickUpStation = {
-      id,
-      stationId: id.slice(-4),
-      stationName: String(data.stationName ?? ""),
-      address: String(data.address ?? ""),
-      state: String(data.state ?? ""),
-      region: String(data.region ?? ""),
-      email: String(data.email ?? ""),
-      phoneNumber: String(data.phoneNumber ?? ""),
-      location: `${String(data.region ?? "")}, ${String(data.state ?? "")}`,
-      dateCreated: now.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-      timeCreated: now.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    };
-
-    setStations((prev) => [newStation, ...prev]);
+    // Create endpoint integration is out of scope for this phase.
+    void data;
     setCreateModalOpened(false);
     setSuccessModalOpened(true);
-    setPage(1);
   };
 
   return (
@@ -343,7 +180,7 @@ export default function PickUpStations() {
       <Group justify="space-between" mb="md" wrap="wrap">
         <Group>
           <Text fw={600} size="lg">
-            All Stations ({filteredStations.length})
+            All Stations ({total})
           </Text>
           <TextInput
             placeholder="Enter keyword"
@@ -362,7 +199,7 @@ export default function PickUpStations() {
           <Select
             value={stateFilter}
             onChange={(value) => {
-              setStateFilter(value ?? "All States");
+              setStateFilter(value ?? ALL_STATES_VALUE);
               setPage(1);
             }}
             data={stateOptions}
@@ -375,13 +212,9 @@ export default function PickUpStations() {
             color="#DD4F05"
             radius="xl"
             rightSection={<Upload size={16} />}
-            onClick={() =>
-              notifications.show({
-                title: "Export not available",
-                message: "Export is a design placeholder in this phase.",
-                color: "blue",
-              })
-            }
+            onClick={() => exportPickupStationsMutation.mutate()}
+            loading={exportPickupStationsMutation.isPending}
+            disabled={exportPickupStationsMutation.isPending}
           >
             Export
           </Button>
@@ -419,7 +252,8 @@ export default function PickUpStations() {
 
       <DynamicTableSection
         headers={headers}
-        data={paginatedStations}
+        data={stations}
+        loading={isLoading || isFetching}
         renderItems={renderRow}
         emptyTitle="No Stations Found"
         emptyMessage="There are currently no pick-up stations to display. Add a station to get started."

@@ -365,6 +365,30 @@ export interface OutletStatesData {
   states: string[];
 }
 
+export type PickupStationListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  state?: string;
+};
+
+export interface PickupStationListItemData {
+  id: string;
+  stationName: string;
+  stationEmail: string;
+  phoneNumber: string;
+  state: string;
+  region: string;
+  physicalAddress: string;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type BranchListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1275,6 +1299,25 @@ export const adminApi = {
 
   // ==================== Outlet ====================
   outlet: {
+    pickupStations: {
+      list: (params?: PickupStationListParams) =>
+        apiClient.get<ApiResponse<PickupStationListItemData[]>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.list,
+          { params }
+        ),
+      export: async (params?: PickupStationListParams) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.pickupStations.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+    },
     states: {
       list: () =>
         apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.outlet.states),

@@ -194,6 +194,15 @@ export const adminKeys = {
 
   outlet: {
     all: ["admin", "outlet"] as const,
+    pickupStations: {
+      all: () => [...adminKeys.outlet.all, "pickup-stations"] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        state?: string;
+      }) => [...adminKeys.outlet.pickupStations.all(), "list", params] as const,
+    },
     states: {
       all: () => [...adminKeys.outlet.all, "states"] as const,
       list: () => [...adminKeys.outlet.states.all(), "list"] as const,
