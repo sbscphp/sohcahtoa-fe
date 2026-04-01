@@ -389,6 +389,16 @@ export interface PickupStationListItemData {
   updatedAt: string;
 }
 
+export interface CreatePickupStationPayload {
+  stationName: string;
+  physicalAddress: string;
+  state: string;
+  region: string;
+  stationEmail: string;
+  phoneNumber: string;
+  status: string;
+}
+
 export type BranchListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1305,6 +1315,11 @@ export const adminApi = {
           API_ENDPOINTS.admin.outlet.pickupStations.list,
           { params }
         ),
+      create: (data: CreatePickupStationPayload) =>
+        apiClient.post<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.create,
+          data
+        ),
       export: async (params?: PickupStationListParams) => {
         const response = await apiClient.get<Blob | string>(
           API_ENDPOINTS.admin.outlet.pickupStations.export,
@@ -1321,6 +1336,10 @@ export const adminApi = {
     states: {
       list: () =>
         apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.outlet.states),
+      cities: (state: string) =>
+        apiClient.get<ApiResponse<string[]>>(
+          API_ENDPOINTS.admin.outlet.statesCities(state)
+        ),
     },
     franchises: {
       list: (params?: FranchiseListParams) =>

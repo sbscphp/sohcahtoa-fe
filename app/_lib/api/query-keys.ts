@@ -206,6 +206,8 @@ export const adminKeys = {
     states: {
       all: () => [...adminKeys.outlet.all, "states"] as const,
       list: () => [...adminKeys.outlet.states.all(), "list"] as const,
+      cities: (state?: string) =>
+        [...adminKeys.outlet.states.all(), "cities", state ?? ""] as const,
     },
     franchises: {
       all: () => [...adminKeys.outlet.all, "franchises"] as const,

@@ -168,6 +168,7 @@ export const API_ENDPOINTS = {
       pickupStations: {
         list: "/api/admin/outlet/pickup-stations",
         export: "/api/admin/outlet/pickup-stations/export",
+        create: "/api/admin/outlet/pickup-stations",
       },
       franchises: {
         list: "/api/admin/outlet/franchises",
@@ -199,6 +200,8 @@ export const API_ENDPOINTS = {
         },
       },
       states: "/api/admin/outlet/states",
+      statesCities: (state: string) =>
+        `/api/admin/outlet/states/${encodeURIComponent(state)}/cities`,
     },
     transactions: {
       list: "/api/admin/transactions",
