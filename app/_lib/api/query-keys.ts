@@ -196,6 +196,9 @@ export const adminKeys = {
     all: ["admin", "outlet"] as const,
     pickupStations: {
       all: () => [...adminKeys.outlet.all, "pickup-stations"] as const,
+      details: () => [...adminKeys.outlet.pickupStations.all(), "detail"] as const,
+      detail: (id: string) =>
+        [...adminKeys.outlet.pickupStations.details(), id] as const,
       list: (params?: {
         page?: number;
         limit?: number;

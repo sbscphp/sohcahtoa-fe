@@ -399,6 +399,20 @@ export interface CreatePickupStationPayload {
   status: string;
 }
 
+export interface PickupStationDetailsData {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  state: string;
+  region: string;
+  address: string;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type BranchListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1314,6 +1328,10 @@ export const adminApi = {
         apiClient.get<ApiResponse<PickupStationListItemData[]>>(
           API_ENDPOINTS.admin.outlet.pickupStations.list,
           { params }
+        ),
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<PickupStationDetailsData>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.getById(id)
         ),
       create: (data: CreatePickupStationPayload) =>
         apiClient.post<ApiResponse<unknown>>(
