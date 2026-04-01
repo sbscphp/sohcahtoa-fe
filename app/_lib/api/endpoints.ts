@@ -171,6 +171,7 @@ export const API_ENDPOINTS = {
         create: "/api/admin/outlet/pickup-stations",
         getById: (id: string) => `/api/admin/outlet/pickup-stations/${id}`,
         update: (id: string) => `/api/admin/outlet/pickup-stations/${id}`,
+        delete: (id: string) => `/api/admin/outlet/pickup-stations/${id}`,
       },
       franchises: {
         list: "/api/admin/outlet/franchises",

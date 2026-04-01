@@ -1354,6 +1354,10 @@ export const adminApi = {
           API_ENDPOINTS.admin.outlet.pickupStations.update(id),
           data
         ),
+      delete: (id: string) =>
+        apiClient.delete<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.delete(id)
+        ),
       export: async (params?: PickupStationListParams) => {
         const response = await apiClient.get<Blob | string>(
           API_ENDPOINTS.admin.outlet.pickupStations.export,

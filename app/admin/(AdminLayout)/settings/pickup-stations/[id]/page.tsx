@@ -103,6 +103,32 @@ export default function PickupStationDetailsPage() {
       },
     }
   );
+  const deletePickupStationMutation = useCreateData(
+    () => adminApi.outlet.pickupStations.delete(stationId!),
+    {
+      onSuccess: async () => {
+        setDeleteConfirmOpened(false);
+        setDeleteSuccessOpened(true);
+        setStationOverride((prev) => ({ ...(prev ?? {}), status: "Deleted" }));
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.outlet.pickupStations.all()],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Delete Pick-up Station Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to delete pick-up station at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const editFields: FormField[] = useMemo(
     () => [
@@ -185,10 +211,8 @@ export default function PickupStationDetailsPage() {
     });
   };
 
-  const performDelete = () => {
-    setDeleteConfirmOpened(false);
-    setDeleteSuccessOpened(true);
-    setStationOverride((prev) => ({ ...(prev ?? {}), status: "Deleted" }));
+  const performDelete = async () => {
+    await deletePickupStationMutation.mutateAsync(undefined);
   };
 
   if (!stationId) {
@@ -345,6 +369,7 @@ export default function PickupStationDetailsPage() {
         secondaryButtonText="No, Close"
         onPrimary={performDelete}
         onSecondary={() => setDeleteConfirmOpened(false)}
+        loading={deletePickupStationMutation.isPending}
       />
 
       <SuccessModal
@@ -358,7 +383,10 @@ export default function PickupStationDetailsPage() {
           setDeleteSuccessOpened(false);
           router.push(adminRoutes.adminSettingsPickupStations());
         }}
-        onSecondaryClick={() => setDeleteSuccessOpened(false)}
+        onSecondaryClick={() => {
+          setDeleteSuccessOpened(false);
+          router.push(adminRoutes.adminSettingsPickupStations());
+        }}
       />
     </div>
   );
