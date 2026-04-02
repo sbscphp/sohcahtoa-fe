@@ -424,6 +424,30 @@ export interface PickupStationDetailsData {
   updatedAt: string;
 }
 
+export type PickupStationRequestListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+};
+
+/** Loose DTO; align with UI mock row until backend contract is final. */
+export interface PickupStationRequestListItemData {
+  id?: string;
+  customerName?: string;
+  customerCode?: string;
+  phoneNumber?: string;
+  email?: string;
+  type?: string;
+  status?: string;
+  createdAt?: string;
+  date?: string;
+  time?: string;
+}
+
 export type BranchListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -1361,6 +1385,23 @@ export const adminApi = {
       export: async (params?: PickupStationListParams) => {
         const response = await apiClient.get<Blob | string>(
           API_ENDPOINTS.admin.outlet.pickupStations.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+      requests: (id: string, params?: PickupStationRequestListParams) =>
+        apiClient.get<ApiResponse<PickupStationRequestListItemData[]>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.requests(id),
+          { params }
+        ),
+      requestsExport: async (id: string, params?: PickupStationRequestListParams) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.pickupStations.requestsExport(id),
           { params }
         );
 

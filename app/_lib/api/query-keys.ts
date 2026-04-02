@@ -205,6 +205,16 @@ export const adminKeys = {
         search?: string;
         state?: string;
       }) => [...adminKeys.outlet.pickupStations.all(), "list", params] as const,
+      requests: (
+        stationId: string,
+        params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }
+      ) =>
+        [...adminKeys.outlet.pickupStations.all(), stationId, "requests", params] as const,
     },
     states: {
       all: () => [...adminKeys.outlet.all, "states"] as const,
