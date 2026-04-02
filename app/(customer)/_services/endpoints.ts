@@ -60,6 +60,9 @@ export const API_ENDPOINTS = {
     virtualAccount: (id: string) => `/api/customer/transactions/${id}/virtual-account`,
     depositInstructions: (id: string) => `/api/customer/transactions/${id}/deposit-instructions`,
     depositStatus: (id: string) => `/api/customer/transactions/${id}/deposit-status`,
+    pickupPoints: "/api/customer/transactions/pickup-points",
+    pickupLocationStates: "/api/customer/transactions/pickup-locations/states",
+    pickupLocationCities: "/api/customer/transactions/pickup-locations/cities",
   },
   
   // Payments

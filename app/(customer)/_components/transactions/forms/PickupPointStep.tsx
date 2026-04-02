@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -10,14 +11,60 @@ import { EmptyState } from "@/app/(customer)/_components/common";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDown } from "@hugeicons/core-free-icons";
 import { DateInput, TimeInput } from "@mantine/dates";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { customerKeys } from "@/app/_lib/api/query-keys";
 
-const pickupOnlySchema = z.object({
-  state: z.string().min(1, "State is required"),
-  city: z.string().min(1, "City is required"),
-  locationId: z.string().min(1, "Pickup location is required"),
-  pickupDate: z.string().min(1, "Date of collection is required"),
-  pickupTime: z.string().min(1, "Time of collection is required"),
-});
+function toStartOfDay(dateString: string) {
+  const trimmed = dateString.trim();
+  const isoLike = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+  if (isoLike) return new Date(`${trimmed}T00:00:00.000Z`);
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return parsed;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function validatePickupDate(
+  data: { pickupDate?: string; preference?: "pickup" | "bank" },
+  ctx: z.RefinementCtx
+) {
+  if (data.preference === "bank") return;
+  const rawDate = data.pickupDate?.trim() ?? "";
+  if (!rawDate) return;
+
+  const selectedDate = toStartOfDay(rawDate);
+  if (Number.isNaN(selectedDate.getTime())) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["pickupDate"],
+      message: "Pick Up Date is invalid",
+    });
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (selectedDate < today) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["pickupDate"],
+      message: "Pick Up Date cannot be earlier than today",
+    });
+  }
+}
+
+const pickupOnlySchema = z
+  .object({
+    state: z.string().optional(),
+    city: z.string().optional(),
+    locationId: z.string().min(1, "Pickup location is required"),
+    pickupDate: z.string().min(1, "Date of collection is required"),
+    pickupTime: z.string().min(1, "Time of collection is required"),
+  })
+  .superRefine(validatePickupDate);
 
 const pickupOrBankSchema = z
   .object({
@@ -33,8 +80,6 @@ const pickupOrBankSchema = z
     (data) => {
       if (data.preference === "pickup") {
         return (
-          data.state.trim().length > 0 &&
-          data.city.trim().length > 0 &&
           data.locationId.trim().length > 0 &&
           (data.pickupDate?.trim().length ?? 0) > 0 &&
           (data.pickupTime?.trim().length ?? 0) > 0
@@ -50,7 +95,8 @@ const pickupOrBankSchema = z
       return true;
     },
     { message: "Please select a bank account", path: ["selectedBankId"] }
-  );
+  )
+  .superRefine(validatePickupDate);
 
 export type PickupPointFormData = z.infer<typeof pickupOnlySchema>;
 
@@ -67,6 +113,9 @@ interface Location {
   id: string;
   name: string;
   address: string;
+  state?: string;
+  city?: string;
+  branch?: string;
 }
 
 export type PreferenceMode = "pickup-only" | "pickup-or-bank";
@@ -88,16 +137,6 @@ export interface PickupPointStepProps {
   onAddBank?: () => void;
 }
 
-const DEFAULT_LOCATIONS: Location[] = [
-  { id: "1", name: "SOHCAHTOA LAGOS", address: "ADEOLA ODEKU . RD VICTORIA ISLAND" },
-  { id: "2", name: "TRIGONOMETRY HUB", address: "LAGOS ISLAND" },
-  { id: "3", name: "GEOMETRIC SPACE", address: "LAGOS MAINLAND" },
-  { id: "4", name: "CALCULUS CIRCLE", address: "IKOYI" },
-];
-
-const DEFAULT_STATES = ["Lagos", "Abuja", "Port Harcourt", "Kano"];
-const DEFAULT_CITIES = ["Lagos Island", "Victoria Island", "Ikoyi", "Lekki"];
-
 const DEFAULT_SUBTITLE =
   "Select the closest sohcahtoa office to pick up your card and cash";
 
@@ -111,12 +150,12 @@ export default function PickupPointStep({
   initialValues,
   onSubmit,
   onBack,
-  locations = DEFAULT_LOCATIONS,
-  states = DEFAULT_STATES,
-  cities = DEFAULT_CITIES,
+  locations = [],
+  states = [],
+  cities = [],
   banks = [],
   onAddBank,
-}: PickupPointStepProps) {
+}: Readonly<PickupPointStepProps>) {
   const isPickupOrBank = preferenceMode === "pickup-or-bank";
 
   const pickupOnlyForm = useForm<PickupPointFormData>({
@@ -153,19 +192,99 @@ export default function PickupPointStep({
   const locationId = "locationId" in values ? values.locationId : "";
   const selectedBankId = isPickupOrBank ? (values as PickupOrBankFormData).selectedBankId : "";
 
+  const resolveOptionalLocationField = (selected?: string, formValue?: string) => {
+    const selectedValue = selected?.trim();
+    if (selectedValue) return selectedValue;
+    const fallbackValue = formValue?.trim();
+    if (fallbackValue) return fallbackValue;
+    return "N/A";
+  };
+
   const handleSubmit =
     preferenceMode === "pickup-only"
-      ? pickupOnlyForm.onSubmit((v) => onSubmit(v))
-      : pickupOrBankForm.onSubmit((v) => onSubmit(v));
+      ? pickupOnlyForm.onSubmit((v) => {
+          const selectedLocation = locationsData.find((location) => location.id === v.locationId);
+          onSubmit({
+            ...v,
+            state: resolveOptionalLocationField(selectedLocation?.state, v.state),
+            city: resolveOptionalLocationField(selectedLocation?.city, v.city),
+          });
+        })
+      : pickupOrBankForm.onSubmit((v) => {
+          if (v.preference !== "pickup") {
+            onSubmit(v);
+            return;
+          }
 
-  const filteredLocations =
-    state && city
-      ? locations.filter(
-          (loc) =>
-            loc.address.toLowerCase().includes(state.toLowerCase()) ||
-            loc.address.toLowerCase().includes(city.toLowerCase())
-        )
-      : locations;
+          const selectedLocation = locationsData.find((location) => location.id === v.locationId);
+          onSubmit({
+            ...v,
+            state: resolveOptionalLocationField(selectedLocation?.state, v.state),
+            city: resolveOptionalLocationField(selectedLocation?.city, v.city),
+          });
+        });
+
+  const { data: pickupPointsResponse } = useFetchData(
+    [...customerKeys.transactions.pickupPoints()],
+    () => customerApi.transactions.getPickupPoints()
+  );
+
+  const { data: pickupStatesResponse } = useFetchData(
+    [...customerKeys.transactions.pickupLocationStates()],
+    () => customerApi.transactions.getPickupLocationStates()
+  );
+
+  const { data: pickupCitiesResponse } = useFetchData(
+    [...customerKeys.transactions.pickupLocationCities({ state: state || undefined })],
+    () => customerApi.transactions.getPickupLocationCities({ state: state || undefined }),
+    Boolean(state)
+  );
+
+  const apiLocations = useMemo<Location[]>(
+    () =>
+      (pickupPointsResponse?.data ?? []).map((point) => ({
+        id: point.id,
+        name: point.name,
+        address: point.address,
+        state: point.location,
+        branch: point.branch,
+      })),
+    [pickupPointsResponse]
+  );
+
+  const statesData = useMemo(() => {
+    if (states.length > 0) return states;
+    const apiStates = pickupStatesResponse?.data?.states ?? [];
+    if (apiStates.length > 0) return apiStates;
+    const fallbackStates = Array.from(
+      new Set(apiLocations.map((location) => location.state).filter((item): item is string => Boolean(item)))
+    );
+    return fallbackStates;
+  }, [states, pickupStatesResponse, apiLocations]);
+
+  const citiesData = useMemo(() => {
+    if (cities.length > 0) return cities;
+    const apiCities = pickupCitiesResponse?.data?.cities ?? [];
+    if (apiCities.length > 0) return apiCities;
+    return [];
+  }, [cities, pickupCitiesResponse]);
+
+  const locationsData = locations.length > 0 ? locations : apiLocations;
+
+  const locationsFilteredData = locationsData.filter((loc) => {
+    const matchesState =
+      !state ||
+      loc.state?.toLowerCase() === state.toLowerCase() ||
+      loc.address.toLowerCase().includes(state.toLowerCase());
+
+    const matchesCity =
+      !city ||
+      loc.city?.toLowerCase() === city.toLowerCase() ||
+      loc.address.toLowerCase().includes(city.toLowerCase()) ||
+      loc.name.toLowerCase().includes(city.toLowerCase());
+
+    return matchesState && matchesCity;
+  });
 
   const showPickupForm = !isPickupOrBank || preference === "pickup";
   const showBankForm = isPickupOrBank && preference === "bank";
@@ -214,9 +333,8 @@ export default function PickupPointStep({
             <Select
               key={pickupOrBankForm.key("state")}
               label="Select State"
-              required
               placeholder="Select an Option"
-              data={states}
+              data={statesData}
               rightSection={
                 <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
               }
@@ -226,9 +344,8 @@ export default function PickupPointStep({
             <Select
               key={pickupOrBankForm.key("city")}
               label="Select City"
-              required
               placeholder="Select an Option"
-              data={cities}
+              data={citiesData}
               rightSection={
                 <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
               }
@@ -239,17 +356,17 @@ export default function PickupPointStep({
 
           <div className="box-border flex flex-col items-start p-4 gap-6 w-full bg-white border border-gray-100 rounded-2xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)]">
             <p className="text-body-text-200 text-base font-normal leading-6 flex-none">
-              Pickup Locations ({filteredLocations.length.toString().padStart(2, "0")})
+              Pickup Locations ({locationsFilteredData.length.toString().padStart(2, "0")})
             </p>
             <div className="flex flex-col items-start w-full gap-4 max-h-[200px] overflow-y-auto">
-              {!state || !city || filteredLocations.length === 0 ? (
+              {locationsFilteredData.length === 0 ? (
                 <EmptyState
                   title="No Data available"
-                  description="Select a state and city to display location option"
+                  description="No pickup location found for selected filter"
                   className="w-full py-4"
                 />
               ) : (
-                filteredLocations.map((location) => (
+                locationsFilteredData.map((location) => (
                   <SelectableLocationCard
                     key={location.id}
                     name={location.name}
@@ -288,9 +405,8 @@ export default function PickupPointStep({
             <Select
               key={pickupOnlyForm.key("state")}
               label="Select State"
-              required
               placeholder="Select an Option"
-              data={states}
+              data={statesData}
               rightSection={
                 <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
               }
@@ -300,9 +416,8 @@ export default function PickupPointStep({
             <Select
               key={pickupOnlyForm.key("city")}
               label="Select City"
-              required
               placeholder="Select an Option"
-              data={cities}
+              data={citiesData}
               rightSection={
                 <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
               }
@@ -331,17 +446,17 @@ export default function PickupPointStep({
 
           <div className="box-border flex flex-col items-start p-4 gap-6 w-full bg-white border border-gray-100 rounded-2xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)]">
             <p className="text-body-text-200 text-base font-normal leading-6 flex-none">
-              Pickup Locations ({filteredLocations.length.toString().padStart(2, "0")})
+              Pickup Locations ({locationsFilteredData.length.toString().padStart(2, "0")})
             </p>
             <div className="flex flex-col items-start w-full gap-4 max-h-[200px] overflow-y-auto">
-              {!state || !city || filteredLocations.length === 0 ? (
+              {locationsFilteredData.length === 0 ? (
                 <EmptyState
                   title="No Data available"
-                  description="Select a state and city to display location option"
+                  description="No pickup location found for selected filter"
                   className="w-full py-4"
                 />
               ) : (
-                filteredLocations.map((location) => (
+                locationsFilteredData.map((location) => (
                   <SelectableLocationCard
                     key={location.id}
                     name={location.name}

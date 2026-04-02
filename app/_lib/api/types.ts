@@ -452,6 +452,43 @@ export interface AgentCustomerTransactionsResponse
   };
 }
 
+// ==================== Agent Transaction Detail Types ====================
+
+export interface AgentTransactionDetailIdentification {
+  full_name: string | null;
+  email_address: string | null;
+  phone_number: string | null;
+  address: string | null;
+}
+
+export interface AgentTransactionDetailTransactionDetails {
+  transaction_id: string;
+  amount: number;
+  equivalent_amount: number;
+  currency: string;
+  date_initiated: string;
+}
+
+export interface AgentTransactionDetailRequiredDocuments {
+  bvn: string | null;
+  nin: string | null;
+  admission_type: string | null;
+  form_a_id: string | null;
+  evidence_of_admission: string | null;
+  school_invoice: string | null;
+  international_passport_number: string | null;
+}
+
+export interface AgentTransactionDetailData {
+  timestamp: string;
+  identification: AgentTransactionDetailIdentification;
+  transaction_details: AgentTransactionDetailTransactionDetails;
+  beneficiary_details: Record<string, unknown>;
+  required_documents: AgentTransactionDetailRequiredDocuments;
+}
+
+export type AgentTransactionDetailApiResponse = ApiResponseWrapper<AgentTransactionDetailData>;
+
 // ==================== Transaction Types ====================
 
 export type TransactionTypeAPI =
@@ -789,6 +826,58 @@ export interface SupportTicketDetailResponse {
   data: SupportTicketDetail;
 }
 
+export interface AgentSupportTicketListItem {
+  id: string;
+  caseType: SupportTicketCategory;
+  category: SupportTicketCategory;
+  timestamp: string;
+  status: string;
+  description: string;
+}
+
+export interface AgentSupportTicketListResponse {
+  success: boolean;
+  data: AgentSupportTicketListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  metadata?: {
+    timestamp?: string;
+    requestId?: string;
+    version?: string;
+  };
+}
+
+export interface AgentSupportTicketMessage {
+  senderMail: string;
+  senderTimestamp: string;
+  senderMessage: string;
+}
+
+export interface AgentSupportTicketDetailData {
+  ticketId: string;
+  reference: string;
+  category: SupportTicketCategory;
+  description: string;
+  status: string;
+  timestamp: string;
+  customerEmail: string;
+  messages: AgentSupportTicketMessage[];
+}
+
+export interface AgentSupportTicketDetailResponse {
+  success: boolean;
+  data: AgentSupportTicketDetailData;
+  metadata?: {
+    timestamp?: string;
+    requestId?: string;
+    version?: string;
+  };
+}
+
 export interface UpdateTransactionRequest {
   amount?: number;
   purpose?: string;
@@ -878,6 +967,25 @@ export interface CalculateTransactionRateData {
 
 export type CalculateTransactionRateResponse =
   ApiResponseWrapper<CalculateTransactionRateData>;
+
+export interface PickupPoint {
+  id: string;
+  name: string;
+  location: string;
+  address: string;
+  branch: string;
+}
+
+export type PickupPointsResponse = ApiResponseWrapper<PickupPoint[]>;
+
+export type PickupLocationStatesResponse = ApiResponseWrapper<{
+  states: string[];
+}>;
+
+export type PickupLocationCitiesResponse = ApiResponseWrapper<{
+  state?: string;
+  cities: string[];
+}>;
 
 export interface DepositInitiateRequest {
   transactionId: string;

@@ -1,156 +1,129 @@
 "use client";
 
-import { Card, Text, Group, Stack, Badge, Divider } from "@mantine/core";
-import { useRouter, useParams } from "next/navigation";
-import { MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@mantine/core";
+import { useParams } from "next/navigation";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Message01Icon } from "@hugeicons/core-free-icons";
+import { useFetchSingleData } from "@/app/_lib/api/hooks";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import type { AgentSupportTicketDetailData } from "@/app/_lib/api/types";
+import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
+import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import Loader from "@/components/loader";
 
-interface SupportDetail {
-  category: string;
-  status: string;
-  date: string;
-  email: string;
-  userMessage: string;
-  supportEmail: string;
-  supportDate: string;
-  supportMessage: string;
-}
-
-const mockDetails: Record<string, SupportDetail> = {
-  "1": {
-    category: "Failed login/password reset not working",
-    status: "Approved",
-    date: "Sep 29, 2025 10:28am",
-    email: "fiyinsohcahtoa@gmail.com",
-    userMessage:
-      "Hello Support,\n\nI'm writing to you that have been experiencing difficulties accessing my account. Each time I attempt to reset my password, I do receive the reset email, however, the link provided does not seem to function properly. I have tried multiple times, across different devices and browsers, but the issue persist.",
-    supportEmail: "support@sohcahtoa.com",
-    supportDate: "Sep 29, 2025 10:28am",
-    supportMessage:
-      "Hello Fiyin,\n\nThank you for reaching out to us regarding the difficulty you experienced with resetting your password. We have refreshed your account security settings and sent you a new password reset link to your registered email address. Once you open the link, you'll be able to create a new password and regain access to your account.\n\nThank you for your patience and for choosing our services.",
-  },
-};
-
-function DetailRow({
-  label,
-  value,
-  align = "left",
-  valueStyle,
-}: {
-  label: string;
-  value: string;
-  align?: "left" | "right";
-  valueStyle?: React.CSSProperties;
-}) {
-  return (
-    <div className={`flex flex-col ${align === "right" ? "items-end" : "items-start"}`}>
-      <Text size="xs" c="dimmed" mb={4}>
-        {label}
-      </Text>
-      <Text fw={500} size="sm" style={valueStyle}>
-        {value}
-      </Text>
-    </div>
-  );
+function getCategoryLabel(category: string): string {
+  const match = [
+    { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
+    { value: "ACCOUNT_ACCESS", label: "Account access" },
+    { value: "PAYMENT_ISSUE", label: "Payment issue" },
+    { value: "DOCUMENT_VERIFICATION", label: "Document verification" },
+    { value: "TECHNICAL_ISSUE", label: "Technical issue" },
+    { value: "COMPLIANCE_INQUIRY", label: "Compliance / regulatory inquiry" },
+    { value: "GENERAL_INQUIRY", label: "General inquiry" },
+    { value: "OTHER", label: "Other" },
+  ].find((opt) => opt.value === category);
+  return match?.label ?? category;
 }
 
 export default function ViewSupportRequestPage() {
-  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
-  const data = mockDetails[id] || mockDetails["1"];
+  const { data, isLoading } = useFetchSingleData(
+    agentKeys.support.tickets.detail(id) as unknown as unknown[],
+    () => agentApi.support.tickets.getById(id),
+    !!id
+  );
+
+  if (isLoading || !data) {
+    return (
+      <div className="flex items-center justify-center min-h-[320px]">
+        <Loader />
+      </div>
+    );
+  }
+
+  const detail = data.data as AgentSupportTicketDetailData;
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumbs */}
-      <Group gap="xs">
-        <Text
-          size="sm"
-          c="dimmed"
-          className="cursor-pointer hover:text-primary-400"
-          onClick={() => router.push("/agent/support/history")}
-        >
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 w-full max-w-[720px] mx-auto">
+      <div className="space-y-2 mb-6">
+        <h2 className="text-body-heading-300 text-xl md:text-2xl font-bold">
           Support
-        </Text>
-        <Text size="sm" c="dimmed">
-          /
-        </Text>
-        <Text size="sm" fw={500}>
+        </h2>
+        <p className="text-body-text-200 text-sm md:text-base">
           View request
-        </Text>
-      </Group>
+        </p>
+      </div>
 
-      {/* Support Request Card */}
-      <Card radius="md" padding="lg" withBorder>
-        <Stack gap="lg">
-          {/* Header */}
-          <div>
-            <Text fw={600} size="xl" mb="xs">
-              Support
-            </Text>
-            <Text size="sm" c="dimmed">
-              View request
-            </Text>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
+          <div className="flex flex-col w-full gap-1 py-2 items-start">
+            <span className="text-[#6C6969] text-sm font-normal">Category</span>
+            <span className="text-sm font-medium text-[#4D4B4B]">{getCategoryLabel(detail.category)}</span>
           </div>
-
-          {/* User Request Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
-            <DetailRow label="Category" value={data.category} />
-            <DetailRow
-              align="right"
-              label="Status"
-              value={data.status}
-              valueStyle={{
-                color: data.status === "Approved" ? "#2563eb" : undefined,
-              }}
-            />
-            <DetailRow label="Date & Time" value={data.date} />
-            <DetailRow label="Email" value={data.email} align="right" />
+          <div className="flex flex-col w-full gap-1 py-2 items-end text-right">
+            <span className="text-[#6C6969] text-sm font-normal">Status</span>
+            <span style={getStatusBadge(detail.status)}>{detail.status}</span>
           </div>
-
-          {/* User Message */}
+          <div className="flex flex-col w-full gap-1 py-2 items-start">
+            <span className="text-[#6C6969] text-sm font-normal">Reference</span>
+            <span className="text-sm font-medium text-[#4D4B4B]">{detail.reference}</span>
+          </div>
+          <div className="flex flex-col w-full gap-1 py-2 items-end text-right">
+            <span className="text-[#6C6969] text-sm font-normal">Date & Time</span>
+            <span className="text-sm font-medium text-[#4D4B4B]">
+              {formatHeaderDateTime(detail.timestamp) || detail.timestamp}
+            </span>
+          </div>
+        </div>
+        {detail.description && (
           <div className="pt-2">
-            <Text size="sm" className="whitespace-pre-wrap">
-              {data.userMessage}
-            </Text>
+            <p className="text-[#4D4B4B] text-sm font-normal leading-6 whitespace-pre-wrap">
+              {detail.description}
+            </p>
           </div>
+        )}
 
-          <Divider my="md" />
-
-          {/* Support Response Section */}
-          <div>
-            <Group gap="xs" mb="md">
-              <div className="w-8 h-8 rounded bg-primary-50 flex items-center justify-center">
-                <MessageSquare size={18} className="text-primary-400" />
-              </div>
-              <Text fw={500} size="sm">
-                Message
-              </Text>
-            </Group>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 mb-4">
-              <DetailRow label="Support team" value={data.supportEmail} />
-              <DetailRow
-                align="right"
-                label="Status"
-                value={data.status}
-                valueStyle={{
-                  color: data.status === "Approved" ? "#2563eb" : undefined,
-                }}
-              />
-              <DetailRow label="Date & Time" value={data.supportDate} />
-              <DetailRow label="Email" value={data.email} align="right" />
+        {detail.messages && detail.messages.length > 0 && (
+          <>
+            <hr className="border-t border-gray-100 my-6" />
+            <div className="flex items-center gap-2 mb-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded bg-[#FDF5F2] text-primary-400">
+                <HugeiconsIcon icon={Message01Icon} size={18} />
+              </span>
+              <span className="text-[#4D4B4B] font-semibold text-sm">Messages</span>
             </div>
-
-            {/* Support Message */}
-            <div className="pt-2">
-              <Text size="sm" className="whitespace-pre-wrap">
-                {data.supportMessage}
-              </Text>
+            <div className="space-y-4">
+              {detail.messages.map((m, idx) => (
+                <div key={`${m.senderTimestamp}-${idx}`} className="border border-gray-100 rounded-lg p-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-semibold text-[#6C6969]">{m.senderMail}</span>
+                    <span className="text-[11px] text-[#8F8B8B]">
+                      {formatHeaderDateTime(m.senderTimestamp) || m.senderTimestamp}
+                    </span>
+                  </div>
+                  <p className="text-[#4D4B4B] text-sm leading-5 whitespace-pre-wrap">{m.senderMessage}</p>
+                </div>
+              ))}
             </div>
-          </div>
-        </Stack>
-      </Card>
+          </>
+        )}
+      </div>
+
+      <div className="mt-8">
+        <Link href="/agent/support/history">
+          <Button
+            variant="outline"
+            radius="xl"
+            className="min-h-[44px] px-6 border-text-50 text-[#4D4B4B] hover:bg-gray-50"
+          >
+            Back to Support History
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

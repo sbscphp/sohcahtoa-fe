@@ -13,9 +13,8 @@ import {
 } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
-import { agentKeys, customerKeys } from "@/app/_lib/api/query-keys";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
-import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import { buildAgentDetailPayloadFromApi } from "@/app/agent/_utils/agent-transaction-detail-payload";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import {
   TransactionDetailsSection,
@@ -27,6 +26,8 @@ import {
   type PaymentDetailsData,
   type TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
+import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
+import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
 import TransactionRequestSheet from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
 import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
 import Loader from "@/components/loader";
@@ -55,14 +56,14 @@ export default function AgentTransactionDetailPage() {
   const id = typeof params.id === "string" ? params.id : "";
 
   const { data: apiResponse, isLoading: apiLoading } = useFetchSingleData(
-    [...customerKeys.transactions.detail(id)],
+    agentKeys.transactions.detail(id) as unknown as unknown[],
     () => agentApi.transactions.getById(id),
     !!id
   );
 
   const apiData = apiResponse?.data;
   const payload = useMemo(
-    () => (apiData ? buildDetailPayloadFromApi(apiData) : null),
+    () => (apiData ? buildAgentDetailPayloadFromApi(apiData) : null),
     [apiData]
   );
 
@@ -102,6 +103,12 @@ export default function AgentTransactionDetailPage() {
   const showSettlement = viewStatus === "transaction_settled";
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
+  const adminMessage =
+    viewStatus === "approved"
+      ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request."
+      : viewStatus === "rejected"
+        ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request."
+        : undefined;
 
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
@@ -167,18 +174,18 @@ export default function AgentTransactionDetailPage() {
           transactionId={payload.id}
           date={formatShortDate(payload.date)}
           time={formatShortTime(payload.date)}
-          adminMessage={
-            viewStatus === "approved"
-              ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request."
-              : viewStatus === "rejected"
-                ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request."
-                : undefined
-          }
+          adminMessage={adminMessage}
           onProceedToPayment={() => {}}
           onViewTransaction={() => setUpdatesSheetOpen(false)}
         />
 
         <div className="flex flex-col gap-4 pb-8">
+          <SectionBlock title="Identification Details">
+            <LabelText label="Full Name" text={payload.identification.fullName} />
+            <LabelText label="Phone Number" text={payload.identification.phoneNumber} />
+            <LabelText label="Email Address" text={payload.identification.emailAddress} />
+            <LabelText label="Address" text={payload.identification.address} className="w-full md:col-span-2 lg:col-span-2" />
+          </SectionBlock>
           <TransactionDetailsSection data={payload.transactionDetails} />
           <RequiredDocumentsSection
             data={payload.requiredDocuments}

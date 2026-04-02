@@ -4,10 +4,11 @@ import { collapsed_logo, logo } from "@/app/assets/asset";
 import { Avatar, UnstyledButton } from "@mantine/core";
 import {
   ArrowUpRight,
-  Building2,
   Calculator,
   CreditCard,
+  History,
   LayoutGrid,
+  LifeBuoy,
   Settings,
   Users,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const menuItems = [
   // { icon: Building2, label: "FX Inventory", href: "/agent/fx-inventory" },
   { icon: Users, label: "Customer Management", href: "/agent/customer-management" },
   { icon: Calculator, label: "Rate Calculator", href: "/agent/rate-calculator" },
+  { icon: LifeBuoy, label: "Support", href: "/agent/support" },
   { icon: Settings, label: "Settings", href: "/agent/settings" },
 ];
 
@@ -106,21 +108,22 @@ export default function AgentSidebar({ collapsed, onCollapse, onNavigate }: Agen
       {/* Need Help Section - Fixed at bottom */}
       {!collapsed && (
         <div className="p-4 space-y-4 ">
-          <div className="bg-primary-00 rounded-lg p-4 bg-bg-sidebar border-[0.3px] border-primary-400 space-y-1">
+          <div className="bg-primary-00 rounded-lg p-4 bg-bg-sidebar border-[0.3px] border-primary-400 space-y-3">
             <h2 className="capitalize text-body-heading-200 font-medium">Need help</h2>
             <p className="text-body-text-200 text-sm">
               For any questions or clarifications, kindly reach out to our support team.
             </p>
             <UnstyledButton
-              className="w-full flex items-center gap-5 h-8 rounded-lg hover:bg-primary-25! transition-colors"
+              className="w-full flex items-center justify-between h-8 rounded-lg hover:bg-primary-25! transition-colors px-1"
               onClick={() => {
                 router.push("/agent/support/chat");
                 onNavigate?.();
               }}
             >
               <span className="text-primary-400 text-sm">Contact Support</span>
-              <ArrowUpRight size={16} className="text-primary-400" />
+              <ArrowUpRight size={16} className="text-primary-400 shrink-0" />
             </UnstyledButton>
+
           </div>
 
           {/* User Profile - click goes to Settings */}

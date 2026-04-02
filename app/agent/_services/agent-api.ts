@@ -42,7 +42,7 @@ import type {
   CalculateTransactionRateResponse,
   TransactionListParams,
   TransactionsListApiResponse,
-  TransactionDetailApiResponse,
+  AgentTransactionDetailApiResponse,
   TransactionRatesListResponse,
   CreateTransactionRequest,
   UpdateTransactionRequest,
@@ -52,7 +52,8 @@ import type {
   TransactionOverviewRequest,
   TransactionOverviewResponse,
   SupportTicketDetailResponse,
-  SupportTicketListResponse,
+  AgentSupportTicketListResponse,
+  AgentSupportTicketDetailResponse,
 } from "@/app/_lib/api/types";
 
 interface AgentLoginResponseData {
@@ -234,7 +235,7 @@ export const agentApi = {
         }),
   
       getById: (id: string) =>
-        apiClient.get<TransactionDetailApiResponse>(AGENT_API_ENDPOINTS.transactions.getById(id)),
+        apiClient.get<AgentTransactionDetailApiResponse>(AGENT_API_ENDPOINTS.transactions.getById(id)),
   
       create: (data: CreateTransactionRequest & { userId: string }) =>
         apiClient.post<Transaction>(AGENT_API_ENDPOINTS.transactions.create, data),
@@ -290,14 +291,14 @@ export const agentApi = {
           formData
         ),
       list: (params?: { page?: number; limit?: number }) =>
-        apiClient.get<SupportTicketListResponse>(
+        apiClient.get<AgentSupportTicketListResponse>(
           AGENT_API_ENDPOINTS.support.tickets.list,
           {
             params: params as ApiRequestConfig["params"],
           }
         ),
       getById: (id: string) =>
-        apiClient.get<SupportTicketDetailResponse>(
+        apiClient.get<AgentSupportTicketDetailResponse>(
           AGENT_API_ENDPOINTS.support.tickets.getById(id)
         ),
     },
