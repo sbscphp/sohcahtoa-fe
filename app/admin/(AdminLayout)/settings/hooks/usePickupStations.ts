@@ -24,7 +24,10 @@ export interface PickupStationRowItem {
   timeCreated: string;
 }
 
-interface PickupStationsListResponse extends ApiResponse<PickupStationListItemData[]> {
+type PickupStationsListResponse = Omit<
+  ApiResponse<PickupStationListItemData[]>,
+  "metadata"
+> & {
   metadata?: {
     pagination?: {
       total?: number;
@@ -33,7 +36,7 @@ interface PickupStationsListResponse extends ApiResponse<PickupStationListItemDa
       totalPages?: number;
     };
   } | null;
-}
+};
 
 function formatDate(value?: string): string {
   if (!value) return "—";
@@ -84,8 +87,9 @@ export function usePickupStations(params: PickupStationListParams = {}) {
   );
 
   const rows = useMemo(
-    () => (Array.isArray(query.data?.data) ? query.data.data.map(mapPickupStation) : []),
-    [query.data?.data]
+    () =>
+      Array.isArray(query.data?.data) ? query.data.data.map(mapPickupStation) : [],
+    [query.data]
   );
   const pagination = query.data?.metadata?.pagination;
 
