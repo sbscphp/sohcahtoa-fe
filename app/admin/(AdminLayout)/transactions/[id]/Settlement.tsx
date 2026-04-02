@@ -8,89 +8,121 @@ import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 import { ArrowUpRight, File } from "lucide-react";
+import type {
+  TransactionActionDocumentViewModel,
+  TransactionSettlementViewModel,
+  TransactionWorkflowHistoryItemViewModel,
+} from "./hooks/useTransactionDetails";
 
-export default function Settlement({ isEmpty }: { isEmpty?: boolean }) {
+interface SettlementProps {
+  transaction: TransactionSettlementViewModel | null;
+  actionDocuments?: TransactionActionDocumentViewModel[];
+  workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  transactionId?: string;
+  isLoading?: boolean;
+  isError?: boolean;
+}
+
+const loadingFields = [
+  { label: "Settlement ID", value: "--" },
+  { label: "Settled By", value: "--" },
+  { label: "Settlement Date", value: "--" },
+  { label: "Settlement Time", value: "--" },
+  { label: "Total Settlement (FX)", value: "--" },
+  { label: "Total Settlement (₦)", value: "--" },
+  { label: "Settlement Structure (Cash)", value: "--" },
+  { label: "Settlement Structure (Prepaid Card)", value: "--" },
+  { label: "Settlement Status", value: "--" },
+];
+
+export default function Settlement({
+  transaction,
+  actionDocuments = [],
+  workflowHistory = [],
+  transactionId,
+  isLoading = false,
+  isError = false,
+}: SettlementProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
+  const hasData = Boolean(transaction);
+  const fieldsToRender = isLoading ? loadingFields : (transaction?.fields ?? []);
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">
       {/* Header */}
       <Group justify="space-between" align="flex-start" mb="xl">
         <div>
           <Title order={4} className="text-body-heading-300 font-medium! text-2xl!">
-            <span className="font-medium text-body-text-50 ">Buy FX:</span>{" "}
-            Business Travel Allowance
+            <span className="font-medium text-body-text-50 ">
+              {isLoading ? "Loading" : (transaction?.titlePrefix ?? "--")}:
+            </span>{" "}
+            {isLoading ? "Transaction Details" : (transaction?.titleValue ?? "--")}
           </Title>
 
           <Group gap="xs" mt={4}>
             <Text c="dimmed" className="text-body-text-200">
-              Nov 17 2025 | 11:00am
+              {isLoading ? "-- | --" : `${transaction?.dateLabel ?? "--"} | ${transaction?.timeLabel ?? "--"}`}
             </Text>
-            <StatusBadge status="Pending" size="sm" />
+            <StatusBadge status={isLoading ? "Loading" : (transaction?.statusLabel ?? "--")} size="sm" />
           </Group>
         </div>
 
-        <TakeActionButton />
+        <TakeActionButton
+          transactionId={transactionId}
+          transactionStatusLabel={
+            isLoading ? undefined : transaction?.statusLabel
+          }
+          documents={actionDocuments}
+          workflowHistory={workflowHistory}
+        />
       </Group>
 
-      {isEmpty && (
-        <div>
-          <div className="space-y-6">
-            <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
-              Settlement Details
-            </Text>
+      <div className="space-y-6">
+        <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
+          Settlement Details
+        </Text>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-              <DetailItem label="Settlement ID" value="GHAH7844" />
-              <DetailItem label="Settled By" value="Fatia Sikiru (ID: 9033)" />
-              <DetailItem label="Settlement Date" value="Nov 19 2025" />
-              <DetailItem label="Settlement Time" value="2:00 pm" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+          {fieldsToRender.map((item) => (
+            <DetailItem key={item.label} label={item.label} value={item.value} loading={isLoading} />
+          ))}
 
-              <DetailItem label="Total Settlement (FX)" value="$150" />
-              <DetailItem label="Total Settlement (₦)" value="₦1,4500,000" />
-              <DetailItem
-                label="Settlement Structure (Cash Pickup)"
-                value="100% ~ $1,000"
-              />
-              <div className="space-y-1">
-                <Text size="xs" className="text-body-text-50!" mb={4}>
-                  Settlement Status
-                </Text>
-                <StatusBadge status="Completed" size="sm" />
-              </div>
+          {(isLoading || transaction?.receipt) && (
+            <div className="space-y-1 md:col-span-2">
+              <Text size="xs" className="text-body-text-50!" mb={4}>
+                Settlement Receipt
+              </Text>
+              {isLoading ? (
+                <div className="h-16 rounded-md border border-gray-300 bg-gray-200/60 animate-pulse" />
+              ) : (
+                <a
+                  href={transaction?.receipt?.url ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex gap-2 mt-3 p-2 border border-gray-300 rounded-md cursor-pointer"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
+                      <File size={16} color="#DD4F05" />
+                    </div>
+                    <div>
+                      <Text fw={500} className="text-body-heading-300">
+                        {transaction?.receipt?.title ?? "Settlement Receipt"}
+                      </Text>
+                      <Text size="xs" className="text-body-text-50!">
+                        {transaction?.receipt?.fileSize ?? "--"}
+                      </Text>
+                    </div>
+                  </div>
+                  <ArrowUpRight size={16} color="#DD4F05" className="mt-2 ml-auto" />
+                </a>
+              )}
             </div>
-          </div>
-
-          <div className="space-y-6 mt-10 mb-5 max-w-[70%]">
-            <Text fw={600} c="orange" mb="lg" className="font-medium! text-lg!">
-              Payment Receipt
-            </Text>
-            <div className="flex gap-2 mb-2 p-2 border border-gray-300 rounded-md cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
-                  <File size={16} color="#DD4F05" />
-                </div>
-                <div>
-                  <Text fw={500} className="text-body-heading-300">
-                    Settlement Receipt
-                  </Text>
-                  <Text size="xs" className="text-body-text-50!">
-                    200 KB
-                  </Text>
-                </div>
-              </div>
-              <ArrowUpRight
-                size={16}
-                color="#DD4F05"
-                className="mt-2 ml-auto"
-              />
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* BTA Transaction Details */}
       <div className="space-y-6 mb-6">
-        {!isEmpty && (
+        {!isLoading && (((hasData && transaction?.isEmpty) || !hasData || isError)) && (
           <EmptyState
             title="Settlement is pending"
             description="Transaction Settlement process is pending for now."

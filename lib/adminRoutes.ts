@@ -11,7 +11,12 @@ const adminDashboard = () => `${admin()}/dashboard`;
 // Agent routes
 const adminAgent = () => `${admin()}/agent`;
 const adminAgentDetails = (id: string | number = ':id') => `${adminAgent()}/${id}`;
-const adminAgentTransactions = (id: string | number = ':id') => `${adminAgent()}/transactions/${id}`;
+const adminAgentTransactions = (id: string | number = ':id') =>
+  `${adminAgent()}/transactions/${id}`;
+const adminAgentTransactionDetails = (
+  agentId: string | number = ':agentId',
+  transactionId: string | number = ':transactionId'
+) => `${adminAgent()}/${agentId}/transactions/${transactionId}`;
 
 // Customer routes
 const adminCustomer = () => `${admin()}/customer`;
@@ -46,6 +51,7 @@ const adminOutletFranchiseTransactionDetail = (franchiseId: string | number, txI
   `${adminOutletFranchiseDetails(franchiseId)}/transactions?tx=${encodeURIComponent(txId)}`;
 const adminOutletBranchCreate = () => `${adminOutlet()}/branch/create`;
 const adminOutletBranchDetails = (id: string | number = ':id') => `${adminOutlet()}/branch/${id}`;
+const adminOutletBranchEditDetails = (id: string | number = ':id') => `${adminOutletBranchDetails(id)}/edit`;
 const adminOutletBranchTransactionDetail = (branchId: string | number, txId: string) =>
   `${adminOutletBranchDetails(branchId)}/transactions?tx=${encodeURIComponent(txId)}`;
 
@@ -62,7 +68,17 @@ const adminUserManagementRole = (id: string | number = ':id') => `${adminUserMan
 
 //settings routes
 const adminSettings = () => `${admin()}/settings`;
+const adminSettingsPassword = () => `${adminSettings()}?tab=password`;
+const adminSettingsAccountInformation = () => `${adminSettings()}?tab=account`;
+const adminSettingsNotifications = () => `${adminSettings()}?tab=notifications`;
+const adminSettingsPickupStations = () => `${adminSettings()}?tab=pickup-stations`;
+const adminSettingsPickupStationDetails = (
+  id: string | number = ':id'
+) => `${adminSettings()}/pickup-stations/${id}`;
 
+//settlement routes
+const adminSettlement = () => `${admin()}/settlement`;
+const adminSettlementRegisterEscrow = () => `${adminSettlement()}/register-escrow`;
 
 
 export const adminRoutes = {
@@ -80,6 +96,7 @@ export const adminRoutes = {
   adminAgent,
   adminAgentDetails,
   adminAgentTransactions,
+  adminAgentTransactionDetails,
   
   // Customers
   adminCustomer,
@@ -113,6 +130,7 @@ export const adminRoutes = {
   adminOutletFranchiseTransactionDetail,
   adminOutletBranchCreate,
   adminOutletBranchDetails,
+  adminOutletBranchEditDetails,
   adminOutletBranchTransactionDetail,
   
   // Workflow
@@ -128,4 +146,13 @@ export const adminRoutes = {
 
   // Settings
   adminSettings,
+  adminSettingsPickupStations,
+  adminSettingsPickupStationDetails,
+  adminSettingsPassword,
+  adminSettingsAccountInformation,
+  adminSettingsNotifications,
+
+  // Settlement
+  adminSettlement,
+  adminSettlementRegisterEscrow,
 };

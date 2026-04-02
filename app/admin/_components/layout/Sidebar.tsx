@@ -18,6 +18,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useAtomValue } from "jotai";
+import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -47,6 +49,10 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const adminUser = useAtomValue(adminUserAtom);
+
+  const displayName = adminUser?.fullName?.trim() || "Admin User";
+  const displayEmail = adminUser?.email?.trim() || "No email available";
 
   const handleLinkClick = () => {
     if (isMobile && closeMobile) {
@@ -161,17 +167,17 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
 
       {/* User Profile - Fixed at bottom */}
       {!collapsed && (
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 cursor-pointer hover:bg-gray-50/50! rounded-lg transition-colors mx-1 my-2" onClick={() => router.push(adminRoutes.adminSettings())}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-              <Avatar src={`https://placehold.co/600x400/?text=MS`} name="Michael Smith" color="initials" onClick={() => router.push(adminRoutes.adminSettings())} />
+              <Avatar name={displayName} color="initials" />
             </div>
             <div className="overflow-hidden flex-1">
               <p className="font-medium text-xs text-body-heading-300 truncate">
-                Michael Smith
+                {displayName}
               </p>
               <p className="text-body-text-100 text-xs truncate">
-                michaelsmith12@gmail.com
+                {displayEmail}
               </p>
             </div>
           </div>

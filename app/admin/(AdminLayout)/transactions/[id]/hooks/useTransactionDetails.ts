@@ -44,6 +44,56 @@ export interface TransactionOverviewViewModel {
   isEmpty: boolean;
 }
 
+export interface TransactionDocumentViewModel {
+  title: string;
+  fileName: string;
+  fileSize: string;
+  url: string;
+}
+
+export interface TransactionActionDocumentViewModel {
+  id: string;
+  title: string;
+  fileName: string;
+  fileSize: string;
+  url: string;
+  documentType: string;
+  verificationStatus: string;
+}
+
+export interface TransactionWorkflowHistoryItemViewModel {
+  id: string;
+  actorLabel: string;
+  actionLabel: string;
+  statusLabel: string;
+  date: string;
+  time: string;
+  comment: string;
+  documentType: string;
+}
+
+export interface TransactionReceiptViewModel {
+  titlePrefix: string;
+  titleValue: string;
+  dateLabel: string;
+  timeLabel: string;
+  statusLabel: string;
+  fields: OverviewField[];
+  document: TransactionDocumentViewModel | null;
+  isEmpty: boolean;
+}
+
+export interface TransactionSettlementViewModel {
+  titlePrefix: string;
+  titleValue: string;
+  dateLabel: string;
+  timeLabel: string;
+  statusLabel: string;
+  fields: OverviewField[];
+  receipt: TransactionDocumentViewModel | null;
+  isEmpty: boolean;
+}
+
 const LABEL_BY_TYPE: Partial<Record<TransactionType, string>> = {
   PTA: "Personal Travel Allowance",
   BTA: "Business Travel Allowance",
@@ -81,6 +131,7 @@ function asString(value: unknown): string {
 function pickString(...values: unknown[]): string {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) return value;
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
   }
   return "--";
 }
@@ -134,6 +185,37 @@ function formatAmount(value: unknown, prefix = ""): string {
   return "--";
 }
 
+function formatFileSize(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    if (value >= 1024 * 1024) {
+      return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    return `${Math.max(1, Math.round(value / 1024))} KB`;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return formatFileSize(parsed);
+    }
+  }
+  return "--";
+}
+
+function hasRecordValues(value: Record<string, unknown>): boolean {
+  return Object.keys(value).length > 0;
+}
+
+function buildHeaderData(data: AdminTransactionDetailsData, raw: Record<string, unknown>) {
+  const transactionType = (data.transactionType || "") as TransactionType;
+  return {
+    titlePrefix: pickString(data.fxType, formatEnum(raw.transactionMode), "Transaction"),
+    titleValue: LABEL_BY_TYPE[transactionType] ?? formatEnum(data.transactionType),
+    dateLabel: formatDate(data.date),
+    timeLabel: formatTime(data.time),
+    statusLabel: pickString(formatEnum(data.requestStatus), formatEnum(raw.status), "--"),
+  };
+}
+
 function buildOverview(data: AdminTransactionDetailsData | null): TransactionOverviewViewModel | null {
   if (!data) return null;
 
@@ -147,8 +229,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     asRecord((Array.isArray(raw.steps) ? raw.steps[0] : undefined)?.data)
   );
 
-  const titlePrefix = pickString(data.fxType, formatEnum(raw.transactionMode), "Transaction");
-  const titleValue = LABEL_BY_TYPE[transactionType] ?? formatEnum(data.transactionType);
+  const header = buildHeaderData(data, raw);
 
   const basicDetails: OverviewField[] = [
     { label: "Customer Name", value: pickString(data.customerName) },
@@ -241,15 +322,230 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   return {
     id: data.id || "--",
     reference: data.reference || data.id || "--",
-    titlePrefix,
-    titleValue,
-    dateLabel: formatDate(data.date),
-    timeLabel: formatTime(data.time),
-    statusLabel: pickString(formatEnum(data.requestStatus), formatEnum(raw.status), "--"),
+    titlePrefix: header.titlePrefix,
+    titleValue: header.titleValue,
+    dateLabel: header.dateLabel,
+    timeLabel: header.timeLabel,
+    statusLabel: header.statusLabel,
     basicDetails,
     sections: nonEmptySections,
     isEmpty: nonEmptySections.length === 0,
   };
+}
+
+function extractReceiptDocument(raw: Record<string, unknown>): TransactionDocumentViewModel | null {
+  const receipt = asRecord(raw.receipt);
+  const documents = Array.isArray(raw.documents)
+    ? raw.documents.filter((item) => item && typeof item === "object")
+    : [];
+
+  const receiptDocumentFromList =
+    (documents
+      .map((item) => asRecord(item))
+      .find((item) => asString(item.documentType).toUpperCase() === "RECEIPT") as
+      | Record<string, unknown>
+      | undefined) ?? null;
+
+  const source = hasRecordValues(receipt) ? receipt : (receiptDocumentFromList ?? {});
+  if (!hasRecordValues(source)) return null;
+
+  const url = pickString(source.fileUrl, source.url);
+  if (url === "--") return null;
+
+  return {
+    title: pickString(source.title, source.documentType, "Receipt of Payment"),
+    fileName: pickString(source.fileName, "receipt"),
+    fileSize: formatFileSize(source.fileSize),
+    url,
+  };
+}
+
+function buildReceipt(data: AdminTransactionDetailsData | null): TransactionReceiptViewModel | null {
+  if (!data) return null;
+
+  const raw = asRecord(data.raw);
+  const details = asRecord(data.details);
+  const receipt = asRecord(raw.receipt);
+  const header = buildHeaderData(data, raw);
+  const document = extractReceiptDocument(raw);
+
+  const fields: OverviewField[] = [
+    {
+      label: "Total payable",
+      value:
+        formatAmount(receipt.totalPayable, "₦") !== "--"
+          ? formatAmount(receipt.totalPayable, "₦")
+          : formatAmount(details.transactionValueNgn, "₦"),
+    },
+    {
+      label: "Receipt Transaction ID",
+      value: pickString(receipt.transactionId, receipt.id, data.reference, data.id),
+    },
+    { label: "Date", value: formatDate(receipt.createdAt ?? data.date) },
+    { label: "Time", value: formatTime(receipt.createdAt ?? data.time) },
+  ].filter((item) => item.value !== "--");
+
+  const hasContent = fields.length > 0 || Boolean(document);
+
+  return {
+    titlePrefix: header.titlePrefix,
+    titleValue: header.titleValue,
+    dateLabel: header.dateLabel,
+    timeLabel: header.timeLabel,
+    statusLabel: header.statusLabel,
+    fields,
+    document,
+    isEmpty: !hasContent,
+  };
+}
+
+function buildSettlement(data: AdminTransactionDetailsData | null): TransactionSettlementViewModel | null {
+  if (!data) return null;
+
+  const raw = asRecord(data.raw);
+  const details = asRecord(data.details);
+  const cashPickup = asRecord(raw.cashPickup);
+  const receipt = asRecord(raw.receipt);
+  const header = buildHeaderData(data, raw);
+
+  const prepaidCard = asRecord(raw.prepaidCard);
+  const prepaidCardSummary =
+    pickString(prepaidCard.bankName) !== "--" ||
+    pickString(prepaidCard.maskedPan) !== "--" ||
+    pickString(prepaidCard.accountName) !== "--"
+      ? `${pickString(prepaidCard.bankName)} | ${pickString(prepaidCard.maskedPan)} | ${pickString(prepaidCard.accountName)}`
+      : "--";
+
+  const fields: OverviewField[] = [
+    { label: "Settlement ID", value: pickString(cashPickup.id, receipt.id) },
+    { label: "Settled By", value: pickString(raw.settledBy, receipt.settledBy) },
+    { label: "Settlement Date", value: formatDate(cashPickup.pickedUpAt ?? cashPickup.updatedAt) },
+    { label: "Settlement Time", value: formatTime(cashPickup.pickedUpAt ?? cashPickup.updatedAt) },
+    { label: "Total Settlement (FX)", value: formatAmount(details.transactionValueFx) },
+    { label: "Total Settlement (₦)", value: formatAmount(details.transactionValueNgn, "₦") },
+    {
+      label: "Settlement Structure (Cash)",
+      value:
+        pickString(cashPickup.amount) !== "--"
+          ? `${pickString(cashPickup.amount)} ${pickString(cashPickup.currency)}`
+          : "--",
+    },
+    { label: "Settlement Structure (Prepaid Card)", value: prepaidCardSummary },
+    { label: "Settlement Status", value: formatEnum(cashPickup.status ?? raw.status) },
+  ].filter((item) => item.value !== "--");
+
+  const settlementReceipt: TransactionDocumentViewModel | null =
+    pickString(receipt.fileUrl) !== "--"
+      ? {
+          title: pickString(receipt.title, "Settlement Receipt"),
+          fileName: pickString(receipt.fileName, "settlement-receipt"),
+          fileSize: formatFileSize(receipt.fileSize),
+          url: pickString(receipt.fileUrl),
+        }
+      : null;
+
+  const hasContent =
+    fields.length > 0 || Boolean(settlementReceipt) || hasRecordValues(cashPickup);
+
+  return {
+    titlePrefix: header.titlePrefix,
+    titleValue: header.titleValue,
+    dateLabel: header.dateLabel,
+    timeLabel: header.timeLabel,
+    statusLabel: header.statusLabel,
+    fields,
+    receipt: settlementReceipt,
+    isEmpty: !hasContent,
+  };
+}
+
+function extractActionDocuments(
+  raw: Record<string, unknown>
+): TransactionActionDocumentViewModel[] {
+  const documents = Array.isArray(raw.documents)
+    ? raw.documents.filter((item) => item && typeof item === "object")
+    : [];
+
+  return documents
+    .map((item) => asRecord(item))
+    .map((source): TransactionActionDocumentViewModel | null => {
+      const id = pickString(source.id, source.documentId, source.uuid);
+      const url = pickString(source.fileUrl, source.url);
+      if (id === "--" || url === "--") return null;
+
+      return {
+        id,
+        title: pickString(
+          source.title,
+          source.documentName,
+          source.fileName,
+          source.documentType,
+          "Document"
+        ),
+        fileName: pickString(source.fileName, source.documentName, "document"),
+        fileSize: formatFileSize(source.fileSize),
+        url,
+        documentType: formatEnum(source.documentType),
+        verificationStatus: pickString(
+          formatEnum(source.verificationStatus),
+          formatEnum(source.status),
+          "No Action"
+        ),
+      };
+    })
+    .filter((item): item is TransactionActionDocumentViewModel => Boolean(item));
+}
+
+function getWorkflowStatusLabel(action: unknown): string {
+  const actionText = asString(action).toUpperCase();
+  if (actionText.includes("REJECT")) return "Rejected";
+  if (actionText.includes("APPROV") || actionText.includes("VERIF")) {
+    return "Review Completed";
+  }
+  if (actionText.includes("REQUEST") || actionText.includes("MORE_INFO")) {
+    return "Review Pending";
+  }
+  return "Review Pending";
+}
+
+function extractWorkflowHistory(
+  raw: Record<string, unknown>
+): TransactionWorkflowHistoryItemViewModel[] {
+  const history = Array.isArray(raw.history)
+    ? raw.history.filter((item) => item && typeof item === "object").map((item) => asRecord(item))
+    : [];
+
+  const sortedHistory = history.sort((a, b) => {
+    const aCreatedAt = pickString(a.createdAt);
+    const bCreatedAt = pickString(b.createdAt);
+    const aTs =
+      aCreatedAt !== "--" ? new Date(aCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
+    const bTs =
+      bCreatedAt !== "--" ? new Date(bCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
+    return (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs) -
+      (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs);
+  });
+
+  return sortedHistory
+    .map((source): TransactionWorkflowHistoryItemViewModel | null => {
+      const id = pickString(source.id);
+      if (id === "--") return null;
+
+      const metadata = asRecord(source.metadata);
+      const createdAt = pickString(source.createdAt);
+
+      return {
+        id,
+        actorLabel: pickString(source.performedBy, "Unknown"),
+        actionLabel: formatEnum(source.action),
+        statusLabel: getWorkflowStatusLabel(source.action),
+        date: formatDate(createdAt),
+        time: formatTime(createdAt),
+        comment: pickString(source.notes, "No notes provided"),
+        documentType: pickString(formatEnum(metadata.documentType), "--"),
+      };
+    })
+    .filter((item): item is TransactionWorkflowHistoryItemViewModel => Boolean(item));
 }
 
 export function useTransactionDetails(transactionId?: string) {
@@ -263,9 +559,23 @@ export function useTransactionDetails(transactionId?: string) {
   );
 
   const overview = useMemo(() => buildOverview(query.data?.data ?? null), [query.data?.data]);
+  const receipt = useMemo(() => buildReceipt(query.data?.data ?? null), [query.data?.data]);
+  const settlement = useMemo(() => buildSettlement(query.data?.data ?? null), [query.data?.data]);
+  const actionDocuments = useMemo(
+    () => extractActionDocuments(asRecord(query.data?.data?.raw)),
+    [query.data?.data?.raw]
+  );
+  const workflowHistory = useMemo(
+    () => extractWorkflowHistory(asRecord(query.data?.data?.raw)),
+    [query.data?.data?.raw]
+  );
 
   return {
     overview,
+    receipt,
+    settlement,
+    actionDocuments,
+    workflowHistory,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

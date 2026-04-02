@@ -13,9 +13,9 @@ import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
 
 export const REGULATORY_TABS = [
   { value: "overview", label: "Overview" },
-  { value: "submission", label: "Receipt of Payment" },
-  { value: "reporting", label: "Transaction Settlement" },
-  { value: "audit", label: "Transaction Settlement" },
+  { value: "submission", label: "TRMS Submissions" },
+  { value: "reporting", label: "FX window and CBN reporting" },
+  { value: "audit", label: "Audit and regulatory logs" },
 ] as const;
 
 export type RegulatoryTabValue = (typeof REGULATORY_TABS)[number]["value"];
