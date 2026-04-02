@@ -55,6 +55,11 @@ export interface FormModalProps {
   loading?: boolean;
   initialValues?: Record<string, any>;
   size?: "sm" | "md" | "lg" | "xl";
+  onFieldChange?: (
+    name: string,
+    value: any,
+    data: Record<string, any>
+  ) => Record<string, any> | void;
 }
 
 /* --------------------------------------------
@@ -71,7 +76,8 @@ export default function   FormModal({
   cancelLabel = "Close",
   loading = false,
   initialValues = {},
-  size = "lg"
+  size = "lg",
+  onFieldChange,
 }: FormModalProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -90,7 +96,12 @@ export default function   FormModal({
   }, [opened]);
 
   const handleChange = (name: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let nextData = { ...formData, [name]: value };
+    const maybeUpdatedData = onFieldChange?.(name, value, nextData);
+    if (maybeUpdatedData && typeof maybeUpdatedData === "object") {
+      nextData = maybeUpdatedData;
+    }
+    setFormData(nextData);
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => {

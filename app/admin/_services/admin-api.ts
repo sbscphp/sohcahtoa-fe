@@ -17,6 +17,11 @@ interface ValidateOtpResponseData {
   resetToken: string;
 }
 
+interface VerifyOldPasswordResponseData {
+  changeToken: string;
+  message: string;
+}
+
 export interface CreateAdminUserPayload {
   fullName: string;
   email: string;
@@ -358,6 +363,65 @@ export interface UpdateFranchiseStatusPayload {
 
 export interface OutletStatesData {
   states: string[];
+}
+
+export type PickupStationListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  state?: string;
+};
+
+export interface PickupStationListItemData {
+  id: string;
+  stationName: string;
+  stationEmail: string;
+  phoneNumber: string;
+  state: string;
+  region: string;
+  physicalAddress: string;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePickupStationPayload {
+  stationName: string;
+  physicalAddress: string;
+  state: string;
+  region: string;
+  stationEmail: string;
+  phoneNumber: string;
+  status: string;
+}
+
+export interface UpdatePickupStationPayload {
+  stationName: string;
+  physicalAddress: string;
+  state: string;
+  region: string;
+  stationEmail: string;
+  phoneNumber: string;
+  status: string;
+  isActive: boolean;
+}
+
+export interface PickupStationDetailsData {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  state: string;
+  region: string;
+  address: string;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type BranchListParams = Record<
@@ -905,6 +969,18 @@ export const adminApi = {
         { skipAuth: true }
       ),
 
+    verifyOldPassword: (data: { oldPassword: string }) =>
+      apiClient.post<ApiResponse<VerifyOldPasswordResponseData>>(
+        API_ENDPOINTS.admin.auth.password.verifyOld,
+        data
+      ),
+
+    changePassword: (data: { changeToken: string; newPassword: string }) =>
+      apiClient.post<ApiResponse<null>>(
+        API_ENDPOINTS.admin.auth.password.change,
+        data
+      ),
+
     logout: () =>
       apiClient.post<ApiResponse<null>>(API_ENDPOINTS.admin.auth.logout),
   },
@@ -1258,9 +1334,50 @@ export const adminApi = {
 
   // ==================== Outlet ====================
   outlet: {
+    pickupStations: {
+      list: (params?: PickupStationListParams) =>
+        apiClient.get<ApiResponse<PickupStationListItemData[]>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.list,
+          { params }
+        ),
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<PickupStationDetailsData>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.getById(id)
+        ),
+      create: (data: CreatePickupStationPayload) =>
+        apiClient.post<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.create,
+          data
+        ),
+      update: (id: string, data: UpdatePickupStationPayload) =>
+        apiClient.put<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.update(id),
+          data
+        ),
+      delete: (id: string) =>
+        apiClient.delete<ApiResponse<unknown>>(
+          API_ENDPOINTS.admin.outlet.pickupStations.delete(id)
+        ),
+      export: async (params?: PickupStationListParams) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.outlet.pickupStations.export,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+    },
     states: {
       list: () =>
         apiClient.get<ApiResponse<string[]>>(API_ENDPOINTS.admin.outlet.states),
+      cities: (state: string) =>
+        apiClient.get<ApiResponse<string[]>>(
+          API_ENDPOINTS.admin.outlet.statesCities(state)
+        ),
     },
     franchises: {
       list: (params?: FranchiseListParams) =>
