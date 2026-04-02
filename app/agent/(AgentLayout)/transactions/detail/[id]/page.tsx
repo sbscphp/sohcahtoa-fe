@@ -23,8 +23,6 @@ import {
   TransactionSettlementSection,
   type TransactionDetailsData,
   type RequiredDocumentsData,
-  type PaymentDetailsData,
-  type TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
 import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
 import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
@@ -34,21 +32,6 @@ import Loader from "@/components/loader";
 import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import EmptyState from "@/app/admin/_components/EmptyState";
 import { agentApi } from "@/app/agent/_services/agent-api";
-
-/** Full detail payload for a transaction (from API). Type/label come from backend. */
-export interface TransactionDetailPayload {
-  id: string;
-  date: string;
-  type: string;
-  transactionTypeLabel: string;
-  stage: string;
-  status: string;
-  currencyCode: string;
-  transactionDetails: TransactionDetailsData;
-  requiredDocuments: RequiredDocumentsData;
-  paymentDetails?: PaymentDetailsData;
-  settlement?: TransactionSettlementData;
-}
 
 export default function AgentTransactionDetailPage() {
   const params = useParams();

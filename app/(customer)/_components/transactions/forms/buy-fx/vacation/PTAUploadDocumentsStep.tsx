@@ -37,8 +37,13 @@ export type UploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 /** Form state allows null for file fields before validation */
 type UploadDocumentsFormValues = z.input<typeof uploadDocumentsSchema>;
 
+/** Saved PTA drafts may still use legacy keys (see initialValues mapping below). */
+type PTAUploadDocumentsInitialValues = Partial<UploadDocumentsFormValues> & {
+  formADocumentNumber?: string;
+};
+
 interface PTAUploadDocumentsStepProps {
-  initialValues?: Partial<UploadDocumentsFormValues>;
+  initialValues?: PTAUploadDocumentsInitialValues;
   onSubmit: (data: UploadDocumentsFormData) => void;
   onBack?: () => void;
 }

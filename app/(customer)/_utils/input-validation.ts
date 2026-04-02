@@ -84,7 +84,9 @@ export function validatePassportDates(
   }
 }
 
-export function formatDateToIso(date: Date | null): string {
-  if (!date) return "";
-  return date.toISOString().split("T")[0] ?? "";
+export function formatDateToIso(date: Date | string | null): string {
+  if (date == null || date === "") return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0] ?? "";
 }

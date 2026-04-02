@@ -1,7 +1,9 @@
 import type { AgentTransactionDetailData } from "@/app/_lib/api/types";
 import type {
+  PaymentDetailsData,
   RequiredDocumentsData,
   TransactionDetailsData,
+  TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
 import { formatShortDate } from "@/app/utils/helper/formatLocalDate";
 
@@ -21,6 +23,10 @@ export interface AgentTransactionDetailPayload {
   };
   transactionDetails: TransactionDetailsData;
   requiredDocuments: RequiredDocumentsData;
+  /** Present when API exposes payment details (e.g. post-approval). */
+  paymentDetails?: PaymentDetailsData;
+  /** Present when API exposes settlement (e.g. transaction settled). */
+  settlement?: TransactionSettlementData;
 }
 
 function toNumberOrNull(value: unknown): number | null {
