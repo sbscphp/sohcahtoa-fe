@@ -16,6 +16,7 @@ import Image from "next/image";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import { PASSPORT_NUMBER_REGEX } from "@/app/(customer)/_utils/input-validation";
 
 export default function UploadPassportPage() {
   const router = useRouter();
@@ -57,7 +58,16 @@ export default function UploadPassportPage() {
   };
 
   const handleUpload = () => {
-    if (file && userType && passportNumber && !isVerifying && !isUploading) {
+    const normalizedPassportNumber = passportNumber.trim().toUpperCase();
+    if (!PASSPORT_NUMBER_REGEX.test(normalizedPassportNumber) || normalizedPassportNumber.length > 9) {
+      handleApiError(
+        { message: "Invalid passport number", status: 400 },
+        { customMessage: "Passport number must be alphanumeric and at most 9 characters." }
+      );
+      return;
+    }
+
+    if (file && userType && normalizedPassportNumber && !isVerifying && !isUploading) {
       setIsUploading(true);
       
       const formData = new FormData();
@@ -72,12 +82,12 @@ export default function UploadPassportPage() {
               setIsUploading(false);
               
               verifyPassportMutation.mutate(
-                { passportNumber, passportDocumentUrl: uploadResponse.data.passportDocumentUrl },
+                { passportNumber: normalizedPassportNumber, passportDocumentUrl: uploadResponse.data.passportDocumentUrl },
                 {
                   onSuccess: (response) => {
                     if (response.success && response.data) {
                       sessionStorage.setItem("verificationToken", response.data.verificationToken);
-                      sessionStorage.setItem("passportNumber", passportNumber);
+                      sessionStorage.setItem("passportNumber", normalizedPassportNumber);
                       sessionStorage.setItem("userType", userType);
                       if (response.data.email) sessionStorage.setItem("email", response.data.email);
                       if (response.data.firstName) sessionStorage.setItem("firstName", response.data.firstName);
@@ -160,9 +170,12 @@ export default function UploadPassportPage() {
             </label>
             <TextInput
               value={passportNumber}
-              onChange={(e) => setPassportNumber(e.target.value.toUpperCase())}
+              onChange={(e) =>
+                setPassportNumber(e.target.value.toUpperCase().replaceAll(/[^A-Z0-9]/g, "").slice(0, 9))
+              }
               placeholder="Enter passport number"
               size="lg"
+              maxLength={9}
             />
           </div>
 
