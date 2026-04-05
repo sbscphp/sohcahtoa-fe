@@ -31,7 +31,7 @@ export default function ViewAdminUserDetails() {
   const [editOpen, setEditOpen] = useState(false);
   const isCurrentlyActive = status === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
-  const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
+  const pastTenseVerb = isCurrentlyActive ? "Reactivated" : " Deactivated";
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 

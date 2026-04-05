@@ -48,7 +48,7 @@ export default function ViewAdminRoleDetails() {
     statusOverride ?? (role?.isActive ? "Active" : "Deactivated");
   const isActive = status === "Active";
   const actionVerb = isActive ? "Deactivate" : "Reactivate";
-  const pastTenseVerb = isActive ? "Deactivated" : "Reactivated";
+  const pastTenseVerb = isActive ? "Reactivated" : "Deactivated";
 
   const formatDateTime = (iso?: string | null) => {
     if (!iso) return "—";
