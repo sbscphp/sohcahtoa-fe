@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Button } from "@mantine/core";
 import { ChevronLeft } from "lucide-react";
+import type { FileWithPath } from "@mantine/dropzone";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   getDetailViewStatus,
   getDetailViewStatusLabel,
@@ -52,6 +54,7 @@ export interface TransactionDetailPayload {
 export default function TransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = typeof params.id === "string" ? params.id : "";
 
   const { data: apiResponse, isLoading: apiLoading } = useFetchSingleData(
@@ -184,6 +187,18 @@ export default function TransactionDetailPage() {
             ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all"
             : undefined
         }
+        comments={apiData?.comments ?? []}
+        onResubmitDocuments={async (documents: Array<{ documentType: string; file: FileWithPath }>) => {
+          for (const document of documents) {
+            const formData = new FormData();
+            formData.append("documentType", document.documentType);
+            formData.append("documents", document.file);
+            await customerApi.transactions.uploadDocuments(id, formData);
+          }
+          await queryClient.invalidateQueries({
+            queryKey: [...customerKeys.transactions.detail(id)],
+          });
+        }}
         onProceedToPayment={() => {
           setUpdatesSheetOpen(false);
           setProceedToPaymentOpen(true);

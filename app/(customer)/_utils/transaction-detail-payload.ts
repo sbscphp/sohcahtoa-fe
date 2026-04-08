@@ -1,4 +1,5 @@
 import type {
+  TransactionDetailComment,
   TransactionDetailData,
   TransactionDetailRequiredDoc,
   TransactionDetailStep,
@@ -47,7 +48,39 @@ function formatStatusLabel(status?: string | null): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function mapRequiredDocsToDocumentItems(requiredDocuments: TransactionDetailRequiredDoc[]): TransactionDocumentItem[] {
+function commentActionToDocumentStatus(action?: string | null): string | null {
+  if (!action) return null;
+  const normalized = action.toUpperCase();
+  if (normalized.includes("MORE_INFO")) return "Request More Info";
+  if (normalized.includes("RESUBMIT")) return "Resubmit Document";
+  if (normalized.includes("REJECT")) return "Rejected";
+  return null;
+}
+
+function buildDocStatusOverrideMap(comments: TransactionDetailComment[] = []): Map<string, string> {
+  const byDocType = new Map<string, { createdAt: number; status: string }>();
+  comments.forEach((comment) => {
+    const docType = comment.metadata?.documentType;
+    if (!docType) return;
+    const mappedStatus = commentActionToDocumentStatus(comment.action);
+    if (!mappedStatus) return;
+    const createdAtTs = Date.parse(comment.createdAt);
+    const prev = byDocType.get(docType);
+    if (!prev || createdAtTs >= prev.createdAt) {
+      byDocType.set(docType, { createdAt: createdAtTs, status: mappedStatus });
+    }
+  });
+
+  const finalMap = new Map<string, string>();
+  byDocType.forEach((value, key) => finalMap.set(key, value.status));
+  return finalMap;
+}
+
+function mapRequiredDocsToDocumentItems(
+  requiredDocuments: TransactionDetailRequiredDoc[],
+  comments: TransactionDetailComment[] = []
+): TransactionDocumentItem[] {
+  const statusOverrides = buildDocStatusOverrideMap(comments);
   return requiredDocuments.map((doc) => {
     const uploaded = doc.uploaded;
 
@@ -58,7 +91,7 @@ function mapRequiredDocsToDocumentItems(requiredDocuments: TransactionDetailRequ
       id: doc.type,
       name: getDocumentDisplayName(doc.type),
       size: "—",
-      status: formatStatusLabel(uploaded?.status),
+      status: statusOverrides.get(doc.type) ?? formatStatusLabel(uploaded?.status),
       lastUploadDate,
       lastUploadTime,
       fileName: uploaded?.fileName,
@@ -109,7 +142,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     currencyCode: api.currency,
     transactionDetails,
     requiredDocuments,
-    documentsForSheet: mapRequiredDocsToDocumentItems(docs),
+    documentsForSheet: mapRequiredDocsToDocumentItems(docs, api.comments ?? []),
   };
 
   if (viewStatus === "awaiting_disbursement" || viewStatus === "transaction_settled") {

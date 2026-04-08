@@ -42,7 +42,10 @@ import type {
   CalculateTransactionRateResponse,
   TransactionListParams,
   TransactionsListApiResponse,
-  AgentTransactionDetailApiResponse,
+  TransactionDetailApiResponse,
+  TransactionVirtualAccountResponse,
+  TransactionDepositInstructionsResponse,
+  TransactionDepositStatusResponse,
   TransactionRatesListResponse,
   CreateTransactionRequest,
   UpdateTransactionRequest,
@@ -235,7 +238,7 @@ export const agentApi = {
         }),
   
       getById: (id: string) =>
-        apiClient.get<AgentTransactionDetailApiResponse>(AGENT_API_ENDPOINTS.transactions.getById(id)),
+        apiClient.get<TransactionDetailApiResponse>(AGENT_API_ENDPOINTS.transactions.getById(id)),
   
       create: (data: CreateTransactionRequest & { userId: string }) =>
         apiClient.post<Transaction>(AGENT_API_ENDPOINTS.transactions.create, data),
@@ -245,6 +248,39 @@ export const agentApi = {
   
       uploadDocuments: (id: string, formData: FormData) =>
         apiClient.post<void>(AGENT_API_ENDPOINTS.transactions.uploadDocuments(id), formData),
+
+      recordPayment: (transactionId: string, formData: FormData) =>
+        apiClient.post<void>(
+          AGENT_API_ENDPOINTS.transactions.recordPayment(transactionId),
+          formData
+        ),
+
+      recordDisbursement: (transactionId: string, formData: FormData) =>
+        apiClient.post<void>(
+          AGENT_API_ENDPOINTS.transactions.recordDisbursement(transactionId),
+          formData
+        ),
+
+      createVirtualAccount: (transactionId: string) =>
+        apiClient.post<TransactionVirtualAccountResponse>(
+          AGENT_API_ENDPOINTS.transactions.virtualAccount(transactionId),
+          {}
+        ),
+
+      getVirtualAccount: (transactionId: string) =>
+        apiClient.get<TransactionVirtualAccountResponse>(
+          AGENT_API_ENDPOINTS.transactions.virtualAccount(transactionId)
+        ),
+
+      getDepositInstructions: (transactionId: string) =>
+        apiClient.get<TransactionDepositInstructionsResponse>(
+          AGENT_API_ENDPOINTS.transactions.depositInstructions(transactionId)
+        ),
+
+      getDepositStatus: (transactionId: string) =>
+        apiClient.get<TransactionDepositStatusResponse>(
+          AGENT_API_ENDPOINTS.transactions.depositStatus(transactionId)
+        ),
   
       checkLimits: (data: CheckTransactionLimitsRequest) =>
         apiClient.post<CheckTransactionLimitsResponse>(AGENT_API_ENDPOINTS.transactions.checkLimits, data),
