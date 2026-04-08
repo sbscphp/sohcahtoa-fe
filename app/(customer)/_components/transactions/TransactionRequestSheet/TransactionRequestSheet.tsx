@@ -4,6 +4,9 @@ import { Drawer, Tabs } from "@mantine/core";
 import OverviewDetail from "./OverviewDetail";
 import DocumentDetail, { type TransactionDocumentItem } from "./DocumentDetail";
 import type { DetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
+import type { TransactionDetailComment } from "@/app/_lib/api/types";
+import type { FileWithPath } from "@mantine/dropzone";
+import type { ReactNode } from "react";
 
 interface TransactionRequestSheetProps {
   opened: boolean;
@@ -16,6 +19,12 @@ interface TransactionRequestSheetProps {
   time?: string;
   adminMessage?: string;
   onProceedToPayment?: () => void;
+  /** Optional custom actions rendered in Overview when approved (agent uses Cash/Bank buttons). */
+  approvedActions?: ReactNode;
+  comments?: TransactionDetailComment[];
+  onResubmitDocuments?: (
+    documents: Array<{ documentType: string; file: FileWithPath }>
+  ) => Promise<void>;
   /** Documents for Documentation tab (name, size, status, re-upload). */
   documents?: TransactionDocumentItem[];
   onViewTransaction?: () => void;
@@ -32,10 +41,13 @@ export default function TransactionRequestSheet({
   time,
   adminMessage,
   onProceedToPayment,
+  approvedActions,
+  comments,
+  onResubmitDocuments,
   documents,
   onViewTransaction,
   onOpenDocument,
-}: TransactionRequestSheetProps) {
+}: Readonly<TransactionRequestSheetProps>) {
   return (
     <Drawer
       opened={opened}
@@ -102,6 +114,8 @@ export default function TransactionRequestSheet({
               time={time}
               adminMessage={adminMessage}
               onProceedToPayment={onProceedToPayment}
+              approvedActions={approvedActions}
+              comments={comments}
             />
           </Tabs.Panel>
 
@@ -109,6 +123,7 @@ export default function TransactionRequestSheet({
             <DocumentDetail
               transactionTypeLabel={transactionTypeLabel}
               documents={documents}
+              onResubmitDocuments={onResubmitDocuments}
               onOpenDocument={onOpenDocument}
               onViewTransaction={onViewTransaction ?? onClose}
             />

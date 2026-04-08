@@ -1,11 +1,17 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import Image from "next/image";
-import { Button } from "@mantine/core";
-import { ChevronLeft } from "lucide-react";
+import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
+import {
+  PaymentDetailsSection,
+  RequiredDocumentsSection,
+  TransactionDetailsSection,
+  TransactionSettlementSection,
+  type RequiredDocumentsData,
+} from "@/app/(customer)/_components/transactions/details";
+import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
+import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
+import TransactionRequestSheet, { type TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
+import { getCurrencyByCode, getCurrencyFlagUrl, getCurrencySymbol } from "@/app/(customer)/_lib/currency";
 import {
   getDetailViewStatus,
   getDetailViewStatusLabel,
@@ -14,28 +20,27 @@ import {
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
-import { buildAgentDetailPayloadFromApi } from "@/app/agent/_utils/agent-transaction-detail-payload";
-import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
-import {
-  TransactionDetailsSection,
-  RequiredDocumentsSection,
-  PaymentDetailsSection,
-  TransactionSettlementSection,
-  type TransactionDetailsData,
-  type RequiredDocumentsData,
-} from "@/app/(customer)/_components/transactions/details";
-import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
-import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
-import TransactionRequestSheet from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
-import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
-import Loader from "@/components/loader";
-import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
+import type { TransactionDetailComment } from "@/app/_lib/api/types";
 import EmptyState from "@/app/admin/_components/EmptyState";
+import AgentProceedToPaymentModal from "@/app/agent/_components/transactions/details/AgentProceedToPaymentModal";
+import AgentRecordDisbursementModal from "@/app/agent/_components/transactions/details/AgentRecordDisbursementModal";
 import { agentApi } from "@/app/agent/_services/agent-api";
+import { buildAgentDetailPayloadFromApi } from "@/app/agent/_utils/agent-transaction-detail-payload";
+import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
+import Loader from "@/components/loader";
+import { Button } from "@mantine/core";
+import type { FileWithPath } from "@mantine/dropzone";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight, ChevronLeft } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 export default function AgentTransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = typeof params.id === "string" ? params.id : "";
 
   const { data: apiResponse, isLoading: apiLoading } = useFetchSingleData(
@@ -45,12 +50,22 @@ export default function AgentTransactionDetailPage() {
   );
 
   const apiData = apiResponse?.data;
+  const comments = apiData?.comments;
+  const latestComment: TransactionDetailComment | null = useMemo(() => {
+    if (!comments?.length) return null;
+    return [...comments].sort(
+      (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+    )[0] ?? null;
+  }, [comments]);
   const payload = useMemo(
     () => (apiData ? buildAgentDetailPayloadFromApi(apiData) : null),
     [apiData]
   );
 
   const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
+  const [proceedToPaymentOpen, setProceedToPaymentOpen] = useState(false);
+  const [recordDisbursementOpen, setRecordDisbursementOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
   const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
   const viewStatus: DetailViewStatus = useMemo(
     () =>
@@ -84,14 +99,25 @@ export default function AgentTransactionDetailPage() {
   const statusLabel = getDetailViewStatusLabel(viewStatus);
   const showPaymentDetails = viewStatus !== "under_review";
   const showSettlement = viewStatus === "transaction_settled";
+  const amountNgn = apiData?.nairaEquivalent
+    ? Number(apiData.nairaEquivalent)
+    : 0;
+  const foreignAmount = apiData?.foreignAmount
+    ? Number(apiData.foreignAmount)
+    : 0;
+    const isReceivedPaymentStep =
+    (apiData?.currentStep ?? "").toUpperCase() === "RECIEVED_PAYMENT"   
+
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
-  const adminMessage =
-    viewStatus === "approved"
-      ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request."
-      : viewStatus === "rejected"
-        ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request."
-        : undefined;
+  let adminMessage: string | undefined = latestComment?.message;
+  if (!adminMessage && viewStatus === "approved") {
+    adminMessage =
+      "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request.";
+  } else if (!adminMessage && viewStatus === "rejected") {
+    adminMessage =
+      "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request.";
+  }
 
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
@@ -158,16 +184,126 @@ export default function AgentTransactionDetailPage() {
           date={formatShortDate(payload.date)}
           time={formatShortTime(payload.date)}
           adminMessage={adminMessage}
-          onProceedToPayment={() => {}}
+          comments={apiData?.comments ?? []}
+          onResubmitDocuments={async (documents: Array<{ documentType: string; file: FileWithPath }>) => {
+            for (const document of documents) {
+              const formData = new FormData();
+              formData.append("documentType", document.documentType);
+              formData.append("documents", document.file);
+              await agentApi.transactions.uploadDocuments(id, formData);
+            }
+            await queryClient.invalidateQueries({
+              queryKey: agentKeys.transactions.detail(id) as unknown as readonly unknown[],
+            });
+          }}
+          approvedActions={
+            isReceivedPaymentStep ? (
+                <Button
+                  radius="xl"
+                  fullWidth
+                  className="bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] h-12!"
+                  onClick={() => {
+                    setUpdatesSheetOpen(false);
+                    setRecordDisbursementOpen(true);
+                  }}
+                  rightSection={<ArrowUpRight className="w-4 h-4" />}
+                >
+                  Record Disbursement
+                </Button>
+             
+            ) : (
+              <div className="-mx-4 w-[calc(100%+2rem)] rounded-t-3xl border border-[#F2F4F7] bg-white px-4 py-6 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                <div className="space-y-2">
+                  <h4 className="text-[#323131] text-lg font-bold leading-7">Select Payment Method</h4>
+                  <p className="text-[#6C6969] text-base leading-6">
+                    Kindly select your preferred payment method below to continue
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cash")}
+                    className={`w-full rounded-lg border px-4 py-4 text-left text-sm font-medium transition-colors ${
+                      paymentMethod === "cash"
+                        ? "bg-[#FFF6F1] border-[#DD4F05] text-[#4D4B4B]"
+                        : "bg-white border-[#E1E0E0] text-[#4D4B4B] hover:bg-[#FAFAFA]"
+                    }`}
+                  >
+                    Cash
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("bank_transfer")}
+                    className={`w-full rounded-lg border px-4 py-4 text-left text-sm font-medium transition-colors ${
+                      paymentMethod === "bank_transfer"
+                        ? "bg-[#FFF6F1] border-[#DD4F05] text-[#4D4B4B]"
+                        : "bg-white border-[#E1E0E0] text-[#4D4B4B] hover:bg-[#FAFAFA]"
+                    }`}
+                  >
+                    Bank Transfer
+                  </button>
+                </div>
+
+                <Button
+                  radius="xl"
+                  fullWidth
+                  className="mt-6! bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] h-12!"
+                  onClick={() => {
+                    setUpdatesSheetOpen(false);
+                    setProceedToPaymentOpen(true);
+                  }}
+                  rightSection={<ArrowUpRight className="w-4 h-4" />}
+                >
+                  Continue
+                </Button>
+              </div>
+            )
+          }
+          documents={payload.documentsForSheet as TransactionDocumentItem[]}
+          onOpenDocument={(doc) => {
+            if (doc.url) {
+              setDocumentViewer({
+                url: doc.url,
+                filename: doc.fileName ?? doc.name,
+              });
+            }
+          }}
           onViewTransaction={() => setUpdatesSheetOpen(false)}
+        />
+        <AgentProceedToPaymentModal
+          opened={proceedToPaymentOpen}
+          onClose={() => setProceedToPaymentOpen(false)}
+          transactionId={payload.id}
+          referenceNumber={apiData?.referenceNumber ?? payload.id}
+          amountNgn={amountNgn}
+          initialMethod={paymentMethod}
+          onSubmitted={async () => {
+            await queryClient.invalidateQueries({
+              queryKey: agentKeys.transactions.detail(id) as unknown as readonly unknown[],
+            });
+          }}
+        />
+        <AgentRecordDisbursementModal
+          opened={recordDisbursementOpen}
+          onClose={() => setRecordDisbursementOpen(false)}
+          transactionId={payload.id}
+          referenceNumber={apiData?.referenceNumber ?? payload.id}
+          currencyCode={payload.currencyCode}
+          currencySymbol={getCurrencySymbol(payload.currencyCode)}
+          foreignAmount={foreignAmount}
+          onSubmitted={async () => {
+            await queryClient.invalidateQueries({
+              queryKey: agentKeys.transactions.detail(id) as unknown as readonly unknown[],
+            });
+          }}
         />
 
         <div className="flex flex-col gap-4 pb-8">
           <SectionBlock title="Identification Details">
-            <LabelText label="Full Name" text={payload.identification.fullName} />
-            <LabelText label="Phone Number" text={payload.identification.phoneNumber} />
-            <LabelText label="Email Address" text={payload.identification.emailAddress} />
-            <LabelText label="Address" text={payload.identification.address} className="w-full md:col-span-2 lg:col-span-2" />
+            <LabelText label="BVN" text={payload.identification.bvn} />
+            <LabelText label="NIN" text={payload.identification.nin} />
+            <LabelText label="Admission Type" text={payload.identification.admissionType} />
           </SectionBlock>
           <TransactionDetailsSection data={payload.transactionDetails} />
           <RequiredDocumentsSection

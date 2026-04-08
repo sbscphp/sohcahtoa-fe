@@ -488,6 +488,12 @@ export const agentKeys = {
       [...agentKeys.transactions.lists(), params] as const,
     details: () => [...agentKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...agentKeys.transactions.details(), id] as const,
+    virtualAccount: (id: string) =>
+      [...agentKeys.transactions.detail(id), "virtual-account"] as const,
+    depositInstructions: (id: string) =>
+      [...agentKeys.transactions.detail(id), "deposit-instructions"] as const,
+    depositStatus: (id: string) =>
+      [...agentKeys.transactions.detail(id), "deposit-status"] as const,
   },
   
   notifications: {

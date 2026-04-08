@@ -744,10 +744,37 @@ export interface TransactionDetailCashPickup {
   updatedAt: string;
 }
 
+export interface TransactionDetailComment {
+  id: string;
+  action: string;
+  message: string;
+  createdAt: string;
+  performedBy?: string | null;
+  performedByName?: string | null;
+  previousValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, string | number | boolean | null>
+    | null;
+  newValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, string | number | boolean | null>
+    | null;
+  metadata?: {
+    documentId?: string;
+    documentType?: string;
+    [key: string]: unknown;
+  } | null;
+}
+
 export interface TransactionDetailData {
   transactionId: string;
   referenceNumber: string;
   type: string;
+  mode: string | null;
   status: string;
   currentStep: string;
   purpose: string;
@@ -756,12 +783,21 @@ export interface TransactionDetailData {
   foreignAmount: string;
   nairaEquivalent: string | null;
   exchangeRate: string | null;
-  disbursementMethod: string;
+  disbursementMethod: string | null;
+  formAId?: string | null;
+  taxClearanceNumber?: string | null;
+  personalInfo?: {
+    bvn: string | null;
+    nin: string | null;
+    admissionType: string | null;
+  } | null;
+  beneficiaryDetails?: Record<string, unknown> | null;
   rejection: string | null;
   requiredDocuments: TransactionDetailRequiredDoc[];
-  cashPickup: TransactionDetailCashPickup;
-  prepaidCard: unknown | null;
+  cashPickup: TransactionDetailCashPickup | null;
+  prepaidCard: Record<string, unknown> | null;
   steps: TransactionDetailStep[];
+  comments?: TransactionDetailComment[];
   createdAt: string;
   updatedAt: string;
 }
