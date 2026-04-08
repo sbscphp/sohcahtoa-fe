@@ -5,9 +5,8 @@ import { Button } from "@mantine/core";
 import { ChevronUp, Calendar, Clock } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
-import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { getStatusBadge, normalizeStatus } from "@/app/(customer)/_utils/status-badge";
 import ResubmitSuccessModal from "./ResubmitSuccessModal";
-import { normalizeStatus } from "@/app/(customer)/_utils/status-badge";
 
 export interface TransactionDocumentItem {
   id: string;
@@ -26,6 +25,9 @@ interface DocumentDetailProps {
   transactionTypeLabel?: string;
   /** Live documents from the single-transaction API (no stale defaults). */
   documents?: TransactionDocumentItem[];
+  onResubmitDocuments?: (
+    documents: Array<{ documentType: string; file: FileWithPath }>
+  ) => Promise<void>;
   onViewTransaction?: () => void;
   onOpenDocument?: (doc: TransactionDocumentItem) => void;
 }
@@ -34,12 +36,26 @@ interface DocumentDetailProps {
 export default function DocumentDetail({
   transactionTypeLabel = "Transaction",
   documents = [],
+  onResubmitDocuments,
   onViewTransaction,
   onOpenDocument,
-}: DocumentDetailProps) {
+}: Readonly<DocumentDetailProps>) {
   const [reuploadFiles, setReuploadFiles] = useState<Record<string, FileWithPath | null>>({});
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_MIME_TYPES = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ]);
+  const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "pdf", "doc", "docx"]);
 
   const canResubmit = (status: string) => {
     const normalized = normalizeStatus(status);
@@ -49,8 +65,52 @@ export default function DocumentDetail({
   const resubmitDocs = documents.filter((d) => canResubmit(d.status));
   const hasResubmit = resubmitDocs.length > 0;
 
-  const handleResubmit = () => {
-    setSuccessModalOpen(true);
+  const handleResubmit = async () => {
+    const selected = resubmitDocs
+      .map((doc) => {
+        const file = reuploadFiles[doc.id];
+        return file ? { documentType: doc.id, file } : null;
+      })
+      .filter((item): item is { documentType: string; file: FileWithPath } => item !== null);
+
+    if (selected.length === 0) {
+      setSubmitError("Please choose at least one document to re-upload.");
+      return;
+    }
+
+    const tooLarge = selected.find(({ file }) => file.size > MAX_FILE_SIZE_BYTES);
+    if (tooLarge) {
+      setSubmitError(`${tooLarge.file.name} exceeds 5MB. Please upload a smaller file.`);
+      return;
+    }
+
+    const unsupported = selected.find(({ file }) => {
+      const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+      return !(ALLOWED_MIME_TYPES.has(file.type) || ALLOWED_EXTENSIONS.has(extension));
+    });
+    if (unsupported) {
+      setSubmitError(
+        `${unsupported.file.name} is not supported. Use JPEG, PNG, WEBP, PDF, DOC or DOCX.`
+      );
+      return;
+    }
+
+    setSubmitError(null);
+    if (!onResubmitDocuments) {
+      setSuccessModalOpen(true);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await onResubmitDocuments(selected);
+      setSuccessModalOpen(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to resubmit documents.";
+      setSubmitError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCloseSuccess = () => {
@@ -139,6 +199,9 @@ export default function DocumentDetail({
       )}
 
  </div>
+      {submitError && (
+        <p className="mt-3 text-xs text-red-600">{submitError}</p>
+      )}
       
 {hasResubmit && (
             <Button
@@ -148,6 +211,7 @@ export default function DocumentDetail({
               size="md"
               className="mt-4 bg-primary-400 hover:bg-primary-500 text-white font-medium"
               onClick={handleResubmit}
+              loading={submitting}
             >
               Resubmit
             </Button>

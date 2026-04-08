@@ -11,6 +11,12 @@ import { z } from "zod";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
@@ -21,9 +27,9 @@ const uploadDocumentsSchema = z.object({
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "TCC (Tax Clearance Certificate) file is required",
   }),
-  passportDocumentNumber: z.string().min(1, "International passport document number is required").max(9, "International Passport number must be at most 9 characters"),
-  passportIssueDate: z.string().min(1, "Passport issue date is required"),
-  passportExpiryDate: z.string().min(1, "Passport expiry date is required"),
+  passportDocumentNumber: passportNumberSchema,
+  passportIssueDate: requiredIsoDateSchema("Passport issue date"),
+  passportExpiryDate: requiredIsoDateSchema("Passport expiry date"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
@@ -43,7 +49,7 @@ const uploadDocumentsSchema = z.object({
   tinCertificateFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Tax Identification Number (TIN) certificate file is required",
   }),
-});
+}).superRefine(validatePassportDates);
 
 export type BTAUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -60,7 +66,7 @@ export default function BTAUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
-}: BTAUploadDocumentsStepProps) {
+}: Readonly<BTAUploadDocumentsStepProps>) {
   const form = useForm<BTAUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
@@ -127,7 +133,7 @@ export default function BTAUploadDocumentsStep({
           onBlur={() => form.validateField("bvn")}
           error={form.errors.bvn}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
             form.setFieldValue("bvn", digits);
           }}
         />
@@ -144,7 +150,7 @@ export default function BTAUploadDocumentsStep({
           onBlur={() => form.validateField("ninNumber")}
           error={form.errors.ninNumber as string}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
             form.setFieldValue("ninNumber", digits);
           }}
         />
@@ -162,7 +168,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={9}
+          maxLength={8}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
@@ -171,7 +177,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Passport Number"
-          maxLength={30}
+          maxLength={9}
           autoComplete="off"
           {...form.getInputProps("passportDocumentNumber")}
         />
@@ -209,14 +215,30 @@ export default function BTAUploadDocumentsStep({
             placeholder="Select issue date"
               label="Passport issue date"
               required
-              {...form.getInputProps("passportIssueDate")}
+              value={
+                form.values.passportIssueDate?.trim()
+                  ? new Date(form.values.passportIssueDate)
+                  : null
+              }
+              onChange={(value) => {
+                form.setFieldValue("passportIssueDate", formatDateToIso(value));
+              }}
+              error={form.errors.passportIssueDate as string}
               rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
             />
             <DateInput
               placeholder="Select expiry date"
               label="Passport expiry date"
               required
-              {...form.getInputProps("passportExpiryDate")}
+              value={
+                form.values.passportExpiryDate?.trim()
+                  ? new Date(form.values.passportExpiryDate)
+                  : null
+              }
+              onChange={(value) => {
+                form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+              }}
+              error={form.errors.passportExpiryDate as string}
               rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
             />
           </div>

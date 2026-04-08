@@ -4,13 +4,13 @@ import FxTransactionTypeCard from "@/app/(customer)/_components/FxTransactionTyp
 import { Shield, KeyRound } from "lucide-react";
 
 const SECURITY_OPTIONS = [
-  {
-    icon: Shield,
-    title: "Create Security Question",
-    description:
-      "Create security questions, update your login password to keep your account secure.",
-    href: "/agent/settings/account-security/set-security-question",
-  },
+  // {
+  //   icon: Shield,
+  //   title: "Create Security Question",
+  //   description:
+  //     "Create security questions, update your login password to keep your account secure.",
+  //   href: "/agent/settings/account-security/set-security-question",
+  // },
   {
     icon: KeyRound,
     title: "Change Password",

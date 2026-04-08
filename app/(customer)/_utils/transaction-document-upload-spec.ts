@@ -39,7 +39,9 @@ export function getDocumentUploadSpec(
 
   switch (transactionType) {
     case "PTA":
-      collectFileAndType(uploadStepData, "passportFile", "VISA", spec);
+      collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
+      collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
+      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
       break;
     case "BTA":

@@ -11,11 +11,17 @@ import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
   ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
+  passportDocumentNumber: passportNumberSchema,
   workPermitNumber: z.string().min(1, "Work Permit Number is required").max(50, "Work Permit Number is too long"),
   internationalPassportFile: z
     .custom<FileWithPath | null>()
@@ -25,13 +31,13 @@ const uploadDocumentsSchema = z.object({
   workPermitFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Work Permit is required",
   }),
-  passportIssueDate: z.string().min(1, "Passport Issued Date is required"),
-  passportExpiryDate: z.string().min(1, "Passport Expiry Date is required"),
+  passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+  passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
   utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Utility Bill is required",
   }),
   utilityBillNumber: z.string().min(1, "Utility Bill Number is required").max(50, "Utility Bill Number is too long"),
-});
+}).superRefine(validatePassportDates);
 
 export type ExpatriateUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -47,7 +53,7 @@ export default function ExpatriateUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
-}: ExpatriateUploadDocumentsStepProps) {
+}: Readonly<ExpatriateUploadDocumentsStepProps>) {
   const form = useForm<ExpatriateUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
@@ -108,7 +114,7 @@ export default function ExpatriateUploadDocumentsStep({
           onBlur={() => form.validateField("bvn")}
           error={form.errors.bvn}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
             form.setFieldValue("bvn", digits);
           }}
         />
@@ -125,7 +131,7 @@ export default function ExpatriateUploadDocumentsStep({
           onBlur={() => form.validateField("ninNumber")}
           error={form.errors.ninNumber}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
             form.setFieldValue("ninNumber", digits);
           }}
         />
@@ -171,14 +177,9 @@ export default function ExpatriateUploadDocumentsStep({
           label="Passport Issued Date"
           required
           size="md"
-          value={form.values.passportIssueDate && form.values.passportIssueDate.trim() ? new Date(form.values.passportIssueDate) : null}
-          onChange={(value: string | null) => {
-            if (value === null) {
-              form.setFieldValue("passportIssueDate", "");
-            } else {
-              const date = new Date(value);
-              form.setFieldValue("passportIssueDate", date.toISOString().split('T')[0]);
-            }
+          value={form.values.passportIssueDate?.trim() ? new Date(form.values.passportIssueDate) : null}
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
           }}
           error={form.errors.passportIssueDate as string}
           rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
@@ -188,14 +189,9 @@ export default function ExpatriateUploadDocumentsStep({
           label="Passport Expiry Date"
           required
           size="md"
-          value={form.values.passportExpiryDate && form.values.passportExpiryDate.trim() ? new Date(form.values.passportExpiryDate) : null}
-          onChange={(value: string | null) => {
-            if (value === null) {
-              form.setFieldValue("passportExpiryDate", "");
-            } else {
-              const date = new Date(value);
-              form.setFieldValue("passportExpiryDate", date.toISOString().split('T')[0]);
-            }
+          value={form.values.passportExpiryDate?.trim() ? new Date(form.values.passportExpiryDate) : null}
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
           }}
           error={form.errors.passportExpiryDate as string}
           rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}

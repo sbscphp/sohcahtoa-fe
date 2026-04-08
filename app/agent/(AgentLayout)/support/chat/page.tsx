@@ -38,6 +38,16 @@ const CATEGORY_OPTIONS: { value: SupportTicketCategory; label: string }[] = [
   { value: "OTHER", label: "Other" },
 ];
 
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const ATTACHMENT_ACCEPT_MIME = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 export default function ChatSupportPage() {
   const router = useRouter();
   const [customerSearch, setCustomerSearch] = useState("");
@@ -191,6 +201,8 @@ export default function ChatSupportPage() {
                 required={false}
                 value={form.values.attachment}
                 onChange={(file) => form.setFieldValue("attachment", file)}
+                accept={ATTACHMENT_ACCEPT_MIME}
+                maxSizeBytes={MAX_ATTACHMENT_SIZE_BYTES}
                 placeholder="Click to upload"
               />
 

@@ -9,16 +9,23 @@ import { TextInput } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
 
 const uploadDocumentsSchema = z.object({
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
   ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
   formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
-  formADocumentNumber: z.string().min(1, "International Passport number is required").max(9, "International Passport number must be at most 9 characters"),
+  passportDocumentNumber: passportNumberSchema,
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "International Passport file is required",
+  }),
+  visaDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Visa Number is too long"),
+  visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
-  passportDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Visa Number is too long"),
+  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Form A file is required",
+  }),
   returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Return Ticket file is required",
   }),
@@ -30,8 +37,13 @@ export type UploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 /** Form state allows null for file fields before validation */
 type UploadDocumentsFormValues = z.input<typeof uploadDocumentsSchema>;
 
+/** Saved PTA drafts may still use legacy keys (see initialValues mapping below). */
+type PTAUploadDocumentsInitialValues = Partial<UploadDocumentsFormValues> & {
+  formADocumentNumber?: string;
+};
+
 interface PTAUploadDocumentsStepProps {
-  initialValues?: Partial<UploadDocumentsFormValues>;
+  initialValues?: PTAUploadDocumentsInitialValues;
   onSubmit: (data: UploadDocumentsFormData) => void;
   onBack?: () => void;
 }
@@ -40,16 +52,19 @@ export default function PTAUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
-}: PTAUploadDocumentsStepProps) {
+}: Readonly<PTAUploadDocumentsStepProps>) {
   const form = useForm<UploadDocumentsFormValues>({
     mode: "uncontrolled",
+    // Backwards-compat: older PTA step stored visa under `passportFile` and passport number under `formADocumentNumber`
     initialValues: {
       bvn: initialValues?.bvn || "",
       ninNumber: initialValues?.ninNumber || "",
       formAId: initialValues?.formAId || "",
-      formADocumentNumber: initialValues?.formADocumentNumber || "",
+      passportDocumentNumber: initialValues?.passportDocumentNumber || initialValues?.formADocumentNumber || "",
       passportFile: initialValues?.passportFile ?? null,
-      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      visaDocumentNumber: initialValues?.visaDocumentNumber || initialValues?.passportDocumentNumber || "",
+      visaFile: initialValues?.visaFile ?? (initialValues?.passportFile ?? null),
+      formAFile: initialValues?.formAFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
       returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
     },
@@ -100,7 +115,7 @@ export default function PTAUploadDocumentsStep({
           onBlur={() => form.validateField("bvn")}
           error={form.errors.bvn}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
             form.setFieldValue("bvn", digits);
           }}
         />
@@ -118,7 +133,7 @@ export default function PTAUploadDocumentsStep({
           onBlur={() => form.validateField("ninNumber")}
           error={form.errors.ninNumber}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
             form.setFieldValue("ninNumber", digits);
           }}
         />
@@ -126,10 +141,10 @@ export default function PTAUploadDocumentsStep({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
-          label="Form A"
+          label="Form A ID"
           required
           size="md"
-          placeholder="Enter Form A"
+          placeholder="Enter Form A ID"
           maxLength={8}
           autoComplete="off"
           {...form.getInputProps("formAId")}
@@ -141,17 +156,34 @@ export default function PTAUploadDocumentsStep({
           placeholder="Enter International Passport"
           maxLength={9}
           autoComplete="off"
-          {...form.getInputProps("formADocumentNumber")}
+          {...form.getInputProps("passportDocumentNumber")}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TransactionFileUploadInput
+          label="Upload International Passport"
+          required
+          value={form.values.passportFile}
+          onChange={(file) => form.setFieldValue("passportFile", file)}
+          error={form.errors.passportFile as string}
+        />
+        <TransactionFileUploadInput
+          label="Upload Form A"
+          required
+          value={form.values.formAFile}
+          onChange={(file) => form.setFieldValue("formAFile", file)}
+          error={form.errors.formAFile as string}
         />
       </div>
 
       <TransactionFileUploadInput
-            label="Valid Visa"
-            required
-            value={form.values.passportFile}
-            onChange={(file) => form.setFieldValue("passportFile", file)}
-            error={form.errors.passportFile as string}
-          />
+        label="Valid Visa"
+        required
+        value={form.values.visaFile}
+        onChange={(file) => form.setFieldValue("visaFile", file)}
+        error={form.errors.visaFile as string}
+      />
 
       <div className="space-y-3 ">
       <TextInput
@@ -160,7 +192,7 @@ export default function PTAUploadDocumentsStep({
               size="md"
               placeholder="Enter  Visa Number"
               maxLength={50}
-              {...form.getInputProps("passportDocumentNumber")}
+              {...form.getInputProps("visaDocumentNumber")}
             />
 
 
