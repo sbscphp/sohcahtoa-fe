@@ -1,21 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Button,
-  Divider,
-  Menu,
-  Skeleton,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Button, Divider, Menu, Skeleton, Stack, Text } from "@mantine/core";
 import { useParams } from "next/navigation";
 import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
-import FormModal, {
-  FormField,
-} from "@/app/admin/_components/FormModal";
+import FormModal, { FormField } from "@/app/admin/_components/FormModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import EmptySection from "@/app/admin/_components/EmptySection";
@@ -56,14 +47,18 @@ const formatNaira = (amount: number): string =>
     maximumFractionDigits: 2,
   })}`;
 
-
 export default function AgentDetailsPage() {
   const queryClient = useQueryClient();
   const params = useParams<{ id: string }>();
   const agentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const { agent: agentData, isLoading: isAgentLoading, isNotFound } =
-    useAgentDetails(agentId);
-  const [statusOverride, setStatusOverride] = useState<AgentStatus | null>(null);
+  const {
+    agent: agentData,
+    isLoading: isAgentLoading,
+    isNotFound,
+  } = useAgentDetails(agentId);
+  const [statusOverride, setStatusOverride] = useState<AgentStatus | null>(
+    null,
+  );
   const currentStatus: AgentStatus =
     statusOverride ?? (agentData?.isActive ? "Active" : "Deactivated");
   const [loading, setLoading] = useState(false);
@@ -71,8 +66,10 @@ export default function AgentDetailsPage() {
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editConfirmOpened, setEditConfirmOpened] = useState(false);
   const [editSuccessOpened, setEditSuccessOpened] = useState(false);
-  const [pendingEditAgentData, setPendingEditAgentData] =
-    useState<Record<string, unknown> | null>(null);
+  const [pendingEditAgentData, setPendingEditAgentData] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   const [statusAction, setStatusAction] = useState<
     "deactivate" | "reactivate" | null
@@ -114,7 +111,7 @@ export default function AgentDetailsPage() {
       documentLabel: agentData?.attachments?.[0]?.fileName ?? "No attachment",
       documentUrl: agentData?.attachments?.[0]?.fileUrl ?? null,
     }),
-    [agentData, currentStatus]
+    [agentData, currentStatus],
   );
 
   const { options: branchOptions, isLoading: branchesLoading } =
@@ -162,7 +159,7 @@ export default function AgentDetailsPage() {
         description: "Upload KYC document (Max: 2 MB)",
       },
     ],
-    [branchOptions, branchesLoading]
+    [branchOptions, branchesLoading],
   );
 
   const handleEditSubmit = (data: Record<string, unknown>) => {
@@ -270,7 +267,7 @@ export default function AgentDetailsPage() {
           color: "red",
         });
       },
-    }
+    },
   );
 
   const performStatusChange = async () => {
@@ -336,7 +333,9 @@ export default function AgentDetailsPage() {
                 size="md"
                 color="#DD4F05"
                 className="self-start md:self-auto"
-                disabled={!agentData || isAgentLoading || toggleStatusMutation.isPending}
+                disabled={
+                  !agentData || isAgentLoading || toggleStatusMutation.isPending
+                }
               >
                 Take Action
               </Button>
@@ -349,7 +348,9 @@ export default function AgentDetailsPage() {
               <Menu.Divider />
               <Menu.Item
                 onClick={() => {
-                  setStatusAction(isCurrentlyActive ? "deactivate" : "reactivate");
+                  setStatusAction(
+                    isCurrentlyActive ? "deactivate" : "reactivate",
+                  );
                   setStatusConfirmOpened(true);
                 }}
               >
@@ -368,10 +369,26 @@ export default function AgentDetailsPage() {
           </Text>
 
           <div className="grid gap-6 md:grid-cols-4">
-            <DetailItem label="Agent ID" value={agent.id} loading={isAgentLoading} />
-            <DetailItem label="Email Address" value={agent.email} loading={isAgentLoading} />
-            <DetailItem label="Phone Number" value={agent.phone} loading={isAgentLoading} />
-            <DetailItem label="Branch" value={agent.branch} loading={isAgentLoading} />
+            <DetailItem
+              label="Agent ID"
+              value={agent.id.slice(0, 6)}
+              loading={isAgentLoading}
+            />
+            <DetailItem
+              label="Email Address"
+              value={agent.email}
+              loading={isAgentLoading}
+            />
+            <DetailItem
+              label="Phone Number"
+              value={agent.phone}
+              loading={isAgentLoading}
+            />
+            <DetailItem
+              label="Branch"
+              value={agent.branch}
+              loading={isAgentLoading}
+            />
             <DetailItem
               label="Total Transactions"
               value={String(agent.totalTransactions)}
@@ -401,7 +418,11 @@ export default function AgentDetailsPage() {
                 disabled={isAgentLoading || !agent.documentUrl}
                 onClick={() => {
                   if (!agent.documentUrl) return;
-                  window.open(agent.documentUrl, "_blank", "noopener,noreferrer");
+                  window.open(
+                    agent.documentUrl,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
                 }}
               >
                 {agent.documentLabel}

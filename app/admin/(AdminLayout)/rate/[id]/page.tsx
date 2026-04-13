@@ -32,6 +32,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { CURRENCIES } from "@/app/admin/_lib/constants";
+import Image from "next/image";
+import Cbn from "@/app/assets/svg/cbn-logo.svg"
 
 const SECTION_TITLE_CLASS = "text-lg! font-semibold! text-orange-500!";
 const SECTION_DESC_CLASS = "text-base! text-body-text-100! mb-4!";
@@ -421,6 +423,16 @@ export default function RateDetailPage() {
                 </Text>
               )}
             </div>
+            <div className="flex justify-between border border-[#EEA782] bg-[#FFF6F1] rounded-2xl px-3 py-4">
+              <div className="flex items-center ">
+                <Image src={Cbn} alt="CBN Rate" className=" w-12" />
+                <div>
+                  <h4 className="text-[#DD4F05] font-medium">API: CBN Rate (€)</h4>
+                  <p className="text-[#4D4B4B] text-sm font-medium italic"><span className="text-[#F63D68] font-normal">Kindly note:</span> Your buy rate can exceed 2.0% of CBN recommended rate</p>
+                </div>
+              </div>
+              <h2 className="font-bold text-[#131212] text-base">₦ 1 = € 0.0018 </h2>
+            </div>
 
             <div className="p-4 rounded-xl! bg-gray-25">
               <Text size="sm" fw={500} mb={6} className="text-body-text-100!">
@@ -436,7 +448,7 @@ export default function RateDetailPage() {
                   value="1"
                   readOnly
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{ input: "text-xl! font-bold! text-start!" }}
                   styles={{
                     input: {
@@ -484,6 +496,16 @@ export default function RateDetailPage() {
                   {form.errors.sellCurrency}
                 </Text>
               )}
+            </div>
+            <div className="flex justify-between border border-[#EEA782] bg-[#FFF6F1] rounded-2xl px-3 py-4">
+              <div className="flex items-center ">
+                <Image src={Cbn} alt="CBN Rate" className=" w-12" />
+                <div>
+                  <h4 className="text-[#DD4F05] font-medium">API: CBN Rate (€)</h4>
+                  <p className="text-[#4D4B4B] text-sm font-medium italic"><span className="text-[#F63D68] font-normal">Kindly note:</span> Your buy rate can exceed 2.0% of CBN recommended rate</p>
+                </div>
+              </div>
+              <h2 className="font-bold text-[#131212] text-base">₦ 1 = € 0.0018 </h2>
             </div>
           </Stack>
         </section>

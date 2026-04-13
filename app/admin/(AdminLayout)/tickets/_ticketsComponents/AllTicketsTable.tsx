@@ -159,7 +159,7 @@ export default function AllTicketsTable() {
 
     return [
     <Text key="id" size="sm" fw={500}>
-      ID: {item.reference}
+      ID: {item.reference?.slice(0, 10)}
     </Text>,
     <div key="customer">
       <Text fw={500} size="sm">
@@ -204,7 +204,7 @@ export default function AllTicketsTable() {
 
   return (
     <div className="rounded-lg bg-white p-5 shadow-sm">
-      <Group justify="space-between" mb="md" wrap="wrap">
+      <div className="flex justify-between mb-4" >
         <div className="flex flex-wrap items-center gap-4">
           <h2 className="text-lg font-semibold text-gray-900">All Tickets</h2>
           <TextInput
@@ -220,7 +220,7 @@ export default function AllTicketsTable() {
           />
         </div>
         <Group>
-          <Select
+          {/* <Select
             value={status}
             onChange={(value) => {
               setStatus(value ?? "All");
@@ -231,8 +231,8 @@ export default function AllTicketsTable() {
             radius="xl"
             w={140}
             rightSection={<ListFilter size={16} />}
-          />
-          <TextInput
+          /> */}
+          {/* <TextInput
             placeholder="Category"
             value={category}
             onChange={(e) => {
@@ -241,7 +241,7 @@ export default function AllTicketsTable() {
             }}
             w={140}
             radius="xl"
-          />
+          /> */}
           <Select
             value={priority}
             onChange={(value) => {
@@ -250,7 +250,7 @@ export default function AllTicketsTable() {
             }}
             data={["All", "High", "Medium", "Low"]}
             placeholder="Priority"
-            radius="xl"
+            className="rounded-full!"
             w={130}
             rightSection={<ListFilter size={16} />}
           />
@@ -275,7 +275,7 @@ export default function AllTicketsTable() {
             Add New +
           </Button>
         </Group>
-      </Group>
+      </div>
       <DynamicTableSection
         headers={ticketHeaders}
         data={tickets}
