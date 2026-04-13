@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Group, Text, TextInput, Button, Tabs } from "@mantine/core";
-import { Search, Upload, Plus } from "lucide-react";
+import { Group, Text, TextInput, Button, Tabs, Select } from "@mantine/core";
+import { Search, Upload, Plus, ListFilter } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+// import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -16,6 +16,7 @@ import { useGetExportData } from "@/app/_lib/api/hooks";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { RoleFilter } from "../../user-management/_userManagementComponents/roles/RolesTable";
 
 const headers = [
   { label: "Date and time", key: "dateTime" },
@@ -23,11 +24,12 @@ const headers = [
   { label: "We buy at", key: "buyAt" },
   { label: "We sell at", key: "sellAt" },
   { label: "Last updated", key: "lastUpdated" },
-  { label: "Status", key: "status" },
+  // { label: "Status", key: "status" },
   { label: "Action", key: "action" },
 ];
 
 const PAGE_SIZE = 5;
+const FILTER_OPTIONS = ["Filter By", "Active", "Deactivated"] as const;
 
 function mapTabToStatus(tab: string): "" | "active" | "schedule" {
   if (tab === "active") return "active";
@@ -54,6 +56,7 @@ export default function RateTableSection() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
+  const [filter, setFilter] = useState<RoleFilter>("Filter By");
 
   const queryParams = useMemo(
     () => ({
@@ -62,7 +65,7 @@ export default function RateTableSection() {
       search: debouncedSearch.trim() || undefined,
       status: mapTabToStatus(activeTab),
     }),
-    [activeTab, debouncedSearch, page]
+    [activeTab, debouncedSearch, page],
   );
 
   const { rates, isLoading, totalPages } = useRates(queryParams);
@@ -96,7 +99,7 @@ export default function RateTableSection() {
           color: "red",
         });
       },
-    }
+    },
   );
 
   const renderRow = (item: RateListItem) => [
@@ -111,7 +114,7 @@ export default function RateTableSection() {
       {item.sellAt}
     </Text>,
     <div key="lastUpdated">{renderDateTimeCell(item.lastUpdated)}</div>,
-    <StatusBadge key="status" status={item.status} />,
+    // <StatusBadge key="status" status={item.status} />,
     <RowActionIcon
       key="action"
       onClick={() => {
@@ -136,12 +139,22 @@ export default function RateTableSection() {
             }}
             radius="xl"
             w={320}
-            className="min-w-[200px] flex-1"
+            className="min-w-50 flex-1"
           />
         </div>
 
         <Group gap="sm" className="flex-wrap">
-
+          <Select
+            value={filter}
+            onChange={(value) => {
+              setFilter((value as RoleFilter) ?? "Filter By");
+              setPage(1);
+            }}
+            data={[...FILTER_OPTIONS]}
+            radius="xl"
+            w={120}
+            rightSection={<ListFilter size={16} />}
+          />
           <Button
             variant="outline"
             radius="xl"

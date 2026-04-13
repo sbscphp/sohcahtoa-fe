@@ -94,6 +94,10 @@ export default function AuditTrailTable() {
       { value: "All", label: "All" },
       { value: "DEPARTMENT", label: "Department" },
       { value: "ROLE", label: "Role" },
+      { value: "RATE", label: "Rate" },
+      { value: "TRANSACTION", label: "Transaction" },
+      { value: "TRANS-DOC", label: "Transaction Document" },
+      { value: "REPORT", label: "Report" },
     ],
     []
   );
@@ -190,20 +194,7 @@ export default function AuditTrailTable() {
               w={320}
             />
           </div>
-
-          <Button
-            variant="outline"
-            radius="xl"
-            rightSection={<Upload size={16} />}
-            onClick={() => exportAuditTrailMutation.mutate()}
-            loading={exportAuditTrailMutation.isPending}
-            disabled={exportAuditTrailMutation.isPending}
-          >
-            Export
-          </Button>
-        </Group>
-
-        <Group wrap="wrap">
+          <Group wrap="wrap">
           <Select
             value={moduleFilter}
             onChange={(value) => {
@@ -217,7 +208,23 @@ export default function AuditTrailTable() {
             placeholder="Module"
           />
 
-          <Select
+          <Button
+            variant="outline"
+            radius="xl"
+            rightSection={<Upload size={16} />}
+            onClick={() => exportAuditTrailMutation.mutate()}
+            loading={exportAuditTrailMutation.isPending}
+            disabled={exportAuditTrailMutation.isPending}
+          >
+            Export
+          </Button>
+        </Group>
+
+        </Group>
+
+        
+
+          {/* <Select
             value={statusFilter}
             onChange={(value) => {
               setStatusFilter(value ?? "All");
@@ -241,8 +248,7 @@ export default function AuditTrailTable() {
               valueFormat="YYYY-MM-DD"
               placeholder="Select date range"
             />
-          </div>
-        </Group>
+          </div> */}
       </Stack>
 
       {/* Table */}
