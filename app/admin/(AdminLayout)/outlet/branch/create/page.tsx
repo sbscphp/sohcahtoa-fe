@@ -56,17 +56,33 @@ export default function CreateBranchPage() {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const trimmedManagerEmail = managerEmail.trim();
+  const trimmedBranchEmail = branchEmail.trim();
+  const isManagerEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedManagerEmail);
+  const isBranchEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedBranchEmail);
 
   const isStep1Valid = useMemo(
     () =>
       branchName.trim().length > 0 &&
       !!state &&
       branchManager.trim().length > 0 &&
-      managerEmail.trim().length > 0 &&
-      branchEmail.trim().length > 0 &&
+      trimmedManagerEmail.length > 0 &&
+      isManagerEmailValid &&
+      trimmedBranchEmail.length > 0 &&
+      isBranchEmailValid &&
       address.trim().length > 0 &&
       phoneNumber.trim().length > 0,
-    [address, branchEmail, branchManager, branchName, managerEmail, phoneNumber, state]
+    [
+      address,
+      branchManager,
+      branchName,
+      isBranchEmailValid,
+      isManagerEmailValid,
+      phoneNumber,
+      state,
+      trimmedBranchEmail,
+      trimmedManagerEmail,
+    ]
   );
 
   const createBranchMutation = useCreateData(adminApi.outlet.branches.create, {
@@ -145,6 +161,18 @@ export default function CreateBranchPage() {
     }
 
     if (!isStep1Valid) {
+      if (
+        (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
+        (trimmedBranchEmail.length > 0 && !isBranchEmailValid)
+      ) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter valid manager and branch email addresses before proceeding.",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Incomplete Form",
         message: "Please complete all required fields before proceeding.",
@@ -172,6 +200,18 @@ export default function CreateBranchPage() {
     }
 
     if (!isStep1Valid) {
+      if (
+        (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
+        (trimmedBranchEmail.length > 0 && !isBranchEmailValid)
+      ) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter valid manager and branch email addresses before creating the branch.",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Incomplete Form",
         message: "Please complete all required fields before creating the branch.",
@@ -203,14 +243,22 @@ export default function CreateBranchPage() {
 
   const handleConfirmCreate = () => {
     if (!state || !selectedAgent || createBranchMutation.isPending) return;
+    if (!isManagerEmailValid || !isBranchEmailValid) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter valid manager and branch email addresses before creating the branch.",
+        color: "red",
+      });
+      return;
+    }
 
     const payload: CreateBranchPayload = {
       branchName: branchName.trim(),
-      branchEmail: branchEmail.trim(),
+      branchEmail: trimmedBranchEmail,
       state,
       address: address.trim(),
       branchManager: branchManager.trim(),
-      email: managerEmail.trim(),
+      email: trimmedManagerEmail,
       phoneNumber: phoneNumber.trim(),
       agentName: selectedAgent.name,
       agentEmail: selectedAgent.email,
@@ -326,6 +374,11 @@ export default function CreateBranchPage() {
                   type="email"
                   required
                   radius="md"
+                  error={
+                    trimmedManagerEmail.length > 0 && !isManagerEmailValid
+                      ? "Enter a valid email address"
+                      : undefined
+                  }
                 />
                 <TextInput
                   label="Email Address"
@@ -336,6 +389,11 @@ export default function CreateBranchPage() {
                   type="email"
                   required
                   radius="md"
+                  error={
+                    trimmedBranchEmail.length > 0 && !isBranchEmailValid
+                      ? "Enter a valid email address"
+                      : undefined
+                  }
                 />
               </Group>
 

@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { DateRangePicker } from "@/app/admin/_components/DateRangePicker";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useGetExportData } from "@/app/_lib/api/hooks";
 import { useAuditTrail, type AuditTrailRowItem } from "./hooks/useAuditTrail";
@@ -39,10 +38,11 @@ export default function AuditTrailTable() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
   const [moduleFilter, setModuleFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const statusFilter = "All";
+  const dateFrom = "";
+  const dateTo = "";
   const [viewActionOpened, setViewActionOpened] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<AuditTrailRowItem | null>(null);
 
   const { entries, isLoading, totalPages } = useAuditTrail({
     page,
@@ -102,15 +102,6 @@ export default function AuditTrailTable() {
     []
   );
 
-  const statusOptions = useMemo(
-    () => [
-      { value: "All", label: "All" },
-      { value: "SUCCESS", label: "Success" },
-      { value: "PENDING", label: "Pending" },
-      { value: "FAILED", label: "Failed" },
-    ],
-    []
-  );
   const safeTotalPages = Math.max(1, totalPages);
 
   /* Table Headers */
@@ -168,7 +159,10 @@ export default function AuditTrailTable() {
       radius="xl"
       variant="light"
       color="orange"
-      onClick={() => setViewActionOpened(true)}
+      onClick={() => {
+        setSelectedEntry(item);
+        setViewActionOpened(true);
+      }}
     >
       <ChevronRight size={14} />
     </ActionIcon>,
@@ -269,7 +263,11 @@ export default function AuditTrailTable() {
       />
       <ViewUserActionModal
         opened={viewActionOpened}
-        onClose={() => setViewActionOpened(false)}
+        action={selectedEntry}
+        onClose={() => {
+          setViewActionOpened(false);
+          setSelectedEntry(null);
+        }}
       />
     </div>
   );

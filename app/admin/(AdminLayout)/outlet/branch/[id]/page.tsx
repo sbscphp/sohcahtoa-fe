@@ -268,7 +268,7 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
                 </Text>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   <DetailItem label="Branch ID" value={branch.id} />
-                  <DetailItem label="Total Agents" value="--" />
+                  {branch.totalAgents &&  <DetailItem label="Total Agents" value={String(branch.totalAgents)} />}
                   <DetailItem
                     label="Manager Email"
                     value={branch.email?.trim() ? branch.email : "--"}

@@ -77,7 +77,7 @@ export function OtpForm({
             <span
               role="button"
               tabIndex={0}
-              onClick={isResending ? undefined : onResend}
+              onClick={(isResending || (timeLeft > 0)) ? undefined : onResend}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
@@ -85,11 +85,11 @@ export function OtpForm({
                 }
               }}
               className={
-                isResending
+                isResending || timeLeft > 0
                   ? "text-error-600/60 cursor-not-allowed"
                   : "text-error-600 cursor-pointer font-medium underline"
               }
-              aria-disabled={isResending}
+              aria-disabled={isResending || timeLeft > 0}
             >
               Resend OTP
             </span>

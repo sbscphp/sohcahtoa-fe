@@ -8,6 +8,7 @@ import {
   type AdminTransactionDetailsData,
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 type TransactionType =
   | "PTA"
@@ -185,6 +186,15 @@ function formatAmount(value: unknown, prefix = ""): string {
   return "--";
 }
 
+function formatAmountByCurrency(value: unknown, currency: unknown): string {
+  const amount = pickString(value);
+  if (amount === "--") return "--";
+
+  const code = pickString(currency);
+  const formatted = formatCurrency(amount, code === "--" ? undefined : code);
+  return formatted || "--";
+}
+
 function formatFileSize(value: unknown): string {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     if (value >= 1024 * 1024) {
@@ -248,7 +258,13 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   ];
 
   const commonFields: OverviewField[] = [
-    { label: "Transaction Value (FX)", value: formatAmount(details.transactionValueFx) },
+    {
+      label: "Transaction Value (FX)",
+      value: formatAmountByCurrency(
+        details.transactionValueFx,
+        pickString(raw.currency, details.transactionCurrency)
+      ),
+    },
     { label: "Transaction Value (₦)", value: formatAmount(details.transactionValueNgn, "₦") },
     { label: "Requestor Type", value: pickString(details.requesterType) },
     {
@@ -421,7 +437,13 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
     { label: "Settled By", value: pickString(raw.settledBy, receipt.settledBy) },
     { label: "Settlement Date", value: formatDate(cashPickup.pickedUpAt ?? cashPickup.updatedAt) },
     { label: "Settlement Time", value: formatTime(cashPickup.pickedUpAt ?? cashPickup.updatedAt) },
-    { label: "Total Settlement (FX)", value: formatAmount(details.transactionValueFx) },
+    {
+      label: "Total Settlement (FX)",
+      value: formatAmountByCurrency(
+        details.transactionValueFx,
+        pickString(raw.currency, details.transactionCurrency)
+      ),
+    },
     { label: "Total Settlement (₦)", value: formatAmount(details.transactionValueNgn, "₦") },
     {
       label: "Settlement Structure (Cash)",
