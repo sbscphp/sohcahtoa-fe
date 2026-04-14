@@ -37,6 +37,8 @@ export default function CreateFranchisePage() {
   } = useOutletStates();
 
   const hasStateOptions = states.length > 0;
+  const trimmedEmail = emailAddress.trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
   const isFormValid = useMemo(
     () =>
@@ -44,15 +46,17 @@ export default function CreateFranchisePage() {
       !!state &&
       address.trim().length > 0 &&
       contactPersonName.trim().length > 0 &&
-      emailAddress.trim().length > 0 &&
+      trimmedEmail.length > 0 &&
+      isEmailValid &&
       phoneNumber1.trim().length > 0,
     [
       address,
       contactPersonName,
-      emailAddress,
       franchiseName,
+      isEmailValid,
       phoneNumber1,
       state,
+      trimmedEmail,
     ]
   );
 
@@ -119,6 +123,15 @@ export default function CreateFranchisePage() {
     }
 
     if (!isFormValid) {
+      if (trimmedEmail.length > 0 && !isEmailValid) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter a valid email address before proceeding.",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Incomplete Form",
         message: "Please complete all required fields before proceeding.",
@@ -140,12 +153,21 @@ export default function CreateFranchisePage() {
       return;
     }
 
+    if (!isEmailValid) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter a valid email address before creating a franchise.",
+        color: "red",
+      });
+      return;
+    }
+
     const payload: CreateFranchisePayload = {
       franchiseName: franchiseName.trim(),
       state,
       address: address.trim(),
       contactPersonName: contactPersonName.trim(),
-      email: emailAddress.trim(),
+      email: trimmedEmail,
       phoneNumber: phoneNumber1.trim(),
       altPhoneNumber: phoneNumber2.trim(),
     };
@@ -225,6 +247,11 @@ export default function CreateFranchisePage() {
             type="email"
             required
             radius="md"
+            error={
+              trimmedEmail.length > 0 && !isEmailValid
+                ? "Enter a valid email address"
+                : undefined
+            }
           />
 
           <Group grow align="flex-start">

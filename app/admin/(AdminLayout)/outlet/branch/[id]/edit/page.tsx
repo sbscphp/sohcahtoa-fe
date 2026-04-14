@@ -67,6 +67,10 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
   const [branchEmail, setBranchEmail] = useState("");
   const [address, setAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const trimmedManagerEmail = managerEmail.trim();
+  const trimmedBranchEmail = branchEmail.trim();
+  const isManagerEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedManagerEmail);
+  const isBranchEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedBranchEmail);
 
   // Step 2: Select agent
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -159,11 +163,23 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
       branchName.trim().length > 0 &&
       !!state &&
       branchManager.trim().length > 0 &&
-      managerEmail.trim().length > 0 &&
-      branchEmail.trim().length > 0 &&
+      trimmedManagerEmail.length > 0 &&
+      isManagerEmailValid &&
+      trimmedBranchEmail.length > 0 &&
+      isBranchEmailValid &&
       address.trim().length > 0 &&
       phoneNumber.trim().length > 0,
-    [address, branchEmail, branchManager, branchName, managerEmail, phoneNumber, state]
+    [
+      address,
+      branchManager,
+      branchName,
+      isBranchEmailValid,
+      isManagerEmailValid,
+      phoneNumber,
+      state,
+      trimmedBranchEmail,
+      trimmedManagerEmail,
+    ]
   );
 
   const buildPayload = (): CreateBranchPayload | null => {
@@ -236,6 +252,18 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
     }
 
     if (!isStep1Valid) {
+      if (
+        (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
+        (trimmedBranchEmail.length > 0 && !isBranchEmailValid)
+      ) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter valid manager and branch email addresses before proceeding.",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Incomplete Form",
         message: "Please complete all required fields before proceeding.",
@@ -259,6 +287,18 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
     }
 
     if (!isStep1Valid) {
+      if (
+        (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
+        (trimmedBranchEmail.length > 0 && !isBranchEmailValid)
+      ) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter valid manager and branch email addresses before saving.",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Incomplete Form",
         message: "Please complete all required fields before saving.",
@@ -290,6 +330,14 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
 
   const handleConfirmSave = () => {
     if (updateBranchMutation.isPending) return;
+    if (!isManagerEmailValid || !isBranchEmailValid) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter valid manager and branch email addresses before saving changes.",
+        color: "red",
+      });
+      return;
+    }
 
     const payload = buildPayload();
     if (!payload) return;
@@ -431,6 +479,11 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
                   type="email"
                   required
                   radius="md"
+                  error={
+                    trimmedManagerEmail.length > 0 && !isManagerEmailValid
+                      ? "Enter a valid email address"
+                      : undefined
+                  }
                 />
                 <TextInput
                   label="Email Address"
@@ -441,6 +494,11 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
                   type="email"
                   required
                   radius="md"
+                  error={
+                    trimmedBranchEmail.length > 0 && !isBranchEmailValid
+                      ? "Enter a valid email address"
+                      : undefined
+                  }
                 />
               </Group>
 
