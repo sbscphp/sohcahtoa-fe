@@ -56,6 +56,7 @@ export default function DepartmentsTable() {
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
+    isActive: filter === "Active" ? true : filter === "Deactivated" ? false : undefined,
   });
 
   /* ---- Status toggle mutation ---- */

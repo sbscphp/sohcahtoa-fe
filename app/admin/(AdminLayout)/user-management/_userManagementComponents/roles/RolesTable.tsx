@@ -27,7 +27,7 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const PAGE_SIZE = 10;
 const FILTER_OPTIONS = ["Filter By", "Active", "Deactivated"] as const;
-type RoleFilter = (typeof FILTER_OPTIONS)[number];
+export type RoleFilter = (typeof FILTER_OPTIONS)[number];
 
 export default function RolesTable() {
   const router = useRouter();

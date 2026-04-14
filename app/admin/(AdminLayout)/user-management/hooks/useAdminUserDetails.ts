@@ -21,8 +21,10 @@ export interface AdminUserDetails {
   roleName?: string | null;
   departmentName?: string | null;
   rolePermissions?: Record<string, unknown>;
+  status: UserStatus;
 }
 
+export type UserStatus = "ACTIVE" | "DEACTIVATED" | "PENDING";
 interface AdminUserDetailsResponse {
   success: boolean;
   data:

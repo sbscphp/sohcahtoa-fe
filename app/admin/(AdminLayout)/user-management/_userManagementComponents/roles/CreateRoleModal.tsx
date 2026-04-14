@@ -46,6 +46,7 @@ export function CreateRoleModal({
   const queryClient = useQueryClient();
   const [step, setStep] = useState<"details" | "permissions">("details");
   const [isDefault, setIsDefault] = useState(false);
+  const [permissionsError, setPermissionsError] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<CreateRolePayload | null>(null);
@@ -136,7 +137,17 @@ export function CreateRoleModal({
     return values.some(Boolean) && !values.every(Boolean);
   };
 
+  const hasSelectedPermission = () =>
+    roleModules.some((roleModule) =>
+      roleModule.scopes.some((scope) =>
+        PERMISSION_ACTIONS.some(
+          (action) => permissions[roleModule.key]?.[scope]?.[action] ?? false
+        )
+      )
+    );
+
   const toggleModule = (moduleKey: string, checked: boolean) => {
+    setPermissionsError("");
     setPermissions((prev) => ({
       ...prev,
       [moduleKey]: {
@@ -188,6 +199,12 @@ export function CreateRoleModal({
     if (!departmentName) {
       form.setFieldError("departmentId", "Department is required");
       setStep("details");
+      return;
+    }
+
+    if (!hasSelectedPermission()) {
+      setPermissionsError("Select at least one permission to continue.");
+      setStep("permissions");
       return;
     }
 
@@ -341,6 +358,11 @@ export function CreateRoleModal({
         </Stack>
       ) : (
         <Stack gap="md" mt="lg">
+          {permissionsError ? (
+            <Text size="sm" c="red">
+              {permissionsError}
+            </Text>
+          ) : null}
           {modulesLoading ? (
             <Text size="sm" c="dimmed">
               Loading permission modules...
@@ -388,6 +410,7 @@ export function CreateRoleModal({
                                 checked={permissions[roleModule.key]?.[scope]?.[action] ?? false}
                                 onChange={(e) => {
                                   const checked = e.currentTarget.checked ?? false;
+                                  setPermissionsError("");
                                   setPermissions((prev) => ({
                                     ...prev,
                                     [roleModule.key]: {

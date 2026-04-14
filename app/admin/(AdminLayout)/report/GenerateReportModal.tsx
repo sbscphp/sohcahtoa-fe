@@ -9,6 +9,7 @@ import {
   Divider,
   Chip,
 } from "@mantine/core";
+import { useEffect } from "react";
 import { DatePickerInput } from "@mantine/dates";
 import { Calendar, X } from "lucide-react";
 import { useState } from "react";
@@ -71,6 +72,14 @@ export default function GenerateReportModal({
   const [format, setFormat] = useState<"CSV" | "PDF">("CSV");
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!opened) {
+      setStartDate(null);
+      setEndDate(null);
+    }
+  }, [opened]);
+
   const generateReportMutation = useCreateData<GeneratedReportFile, GenerateReportPayload>(
     (payload) => adminApi.reports.generate(payload),
     {
@@ -200,6 +209,7 @@ export default function GenerateReportModal({
             value={startDate}
             onChange={setStartDate}
             required
+            maxDate={new Date()}
             rightSection={<Calendar size={14} />}
           />
 
@@ -209,6 +219,7 @@ export default function GenerateReportModal({
             value={endDate}
             onChange={setEndDate}
             required
+            maxDate={new Date()}
             rightSection={<Calendar size={14} />}
           />
         </Group>

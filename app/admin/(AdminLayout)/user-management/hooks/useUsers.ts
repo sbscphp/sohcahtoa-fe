@@ -17,6 +17,7 @@ export interface AdminUserItem {
   permissions: Record<string, unknown> | null;
   isActive: boolean;
   createdAt: string;
+  status: string;
   updatedAt: string;
   roleName: string | null;
   departmentName: string | null;

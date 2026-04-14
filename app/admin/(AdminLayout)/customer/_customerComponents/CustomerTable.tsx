@@ -108,7 +108,7 @@ export default function CustomerTable() {
         {item.customerName}
       </Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id}
+        ID: {item.id.toString().slice(0, 8)}
       </Text>
     </div>,
 

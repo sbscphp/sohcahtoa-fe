@@ -45,6 +45,8 @@ export interface AdminProfileData {
   altPhoneNumber: string | null;
   position: string | null;
   branch: string;
+  roleName: string;
+  departmentName: string;
   roleId: string;
   departmentId: string;
   permissions: unknown;
@@ -109,7 +111,7 @@ export interface AgentDetailsResponseData {
     createdAt?: string;
   }>;
   totalTransactions?: number;
-  transactionValue?: number;
+  totalTransactionsVolume?: number;
 }
 
 export interface AgentAllData {
@@ -267,6 +269,7 @@ export interface BranchListItemData {
 
 export interface BranchDetailsData {
   id: string;
+  totalAgents: number;
   franchiseId: string | null;
   name: string;
   branchEmail: string;
@@ -1128,6 +1131,7 @@ export const adminApi = {
       params?: {
         page?: number;
         limit?: number;
+        search?: string;
         status?: string;
         dateFrom?: string;
         dateTo?: string;
@@ -1137,6 +1141,27 @@ export const adminApi = {
         API_ENDPOINTS.admin.agent.transactions(id),
         { params }
       ),
+
+    transactionsExport: async (
+      id: string,
+      params?: {
+        search?: string;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.agent.transactionsExport(id),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
 
     getTransactionById: (id: string, transactionId: string) =>
       apiClient.get<ApiResponse<AgentSingleTransactionData>>(

@@ -9,9 +9,14 @@ import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
-import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
+import {
+  useFetchDataSeperateLoading,
+  useGetExportData,
+} from "@/app/_lib/api/hooks";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { adminKeys } from "@/app/_lib/api/query-keys";
+import { notifications } from "@mantine/notifications";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 type TransactionStatus = "Posted" | "Pending" | "Rejected";
 
@@ -55,12 +60,16 @@ interface AgentTransactionsResponse {
   } | null;
 }
 
-function formatValue(amount: number, currency?: string): string {
-  const formatted = amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return currency ? `${formatted} ${currency}` : formatted;
+interface AgentTransactionQueryParams {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+}
+
+interface AgentTransactionExportParams {
+  search?: string;
+  status?: string;
 }
 
 function parseNumber(value: unknown): number {
@@ -126,36 +135,38 @@ export default function AgentTransactionsTable({
   const [statusFilter, setStatusFilter] = useState<string | null>("All");
   const [page, setPage] = useState(1);
   const pageSize = 20;
-  const uiStatus =
-    !statusFilter || statusFilter === "All"
-      ? undefined
-      : (statusFilter as TransactionStatus);
+  const queryParams: AgentTransactionQueryParams = useMemo(() => {
+    const uiStatus =
+      !statusFilter || statusFilter === "All"
+        ? undefined
+        : (statusFilter as TransactionStatus);
 
-  const apiStatus =
-    uiStatus === "Pending"
-      ? "AWAITING_VERIFICATION"
-      : uiStatus === "Posted"
-        ? "SETTLED"
-        : uiStatus === "Rejected"
-          ? "REJECTED"
-          : undefined;
+    const status =
+      uiStatus === "Pending"
+        ? "AWAITING_VERIFICATION"
+        : uiStatus === "Posted"
+          ? "SETTLED"
+          : uiStatus === "Rejected"
+            ? "REJECTED"
+            : undefined;
+
+    return {
+      page,
+      limit: pageSize,
+      search: debouncedSearch.trim() || undefined,
+      status,
+    };
+  }, [debouncedSearch, page, pageSize, statusFilter]);
 
   const query = useFetchDataSeperateLoading<AgentTransactionsResponse>(
     agentId
-      ? [
-          ...adminKeys.agent.transactions(agentId, {
-            page,
-            limit: pageSize,
-            status: apiStatus,
-          }),
-        ]
+      ? [...adminKeys.agent.transactions(agentId, queryParams)]
       : [],
     () =>
-      adminApi.agent.transactions(agentId, {
-        page,
-        limit: pageSize,
-        status: apiStatus,
-      }) as unknown as Promise<AgentTransactionsResponse>,
+      adminApi.agent.transactions(
+        agentId,
+        queryParams
+      ) as unknown as Promise<AgentTransactionsResponse>,
     !!agentId
   );
 
@@ -172,24 +183,47 @@ export default function AgentTransactionsTable({
     mapTransaction
   );
 
-  const filteredTransactions = useMemo(() => {
-    return entries.filter((tx) => {
-      const matchesSearch =
-        tx.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        tx.type.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        (tx.referenceNumber?.toLowerCase().includes(debouncedSearch.toLowerCase()) ?? false);
+  const exportParams: AgentTransactionExportParams = useMemo(
+    () => ({
+      search: queryParams.search,
+      status: queryParams.status,
+    }),
+    [queryParams.search, queryParams.status]
+  );
 
-      const matchesStatus = !uiStatus || tx.status === uiStatus;
+  const exportTransactionsMutation = useGetExportData(
+    () =>
+      adminApi.agent.transactionsExport(
+        agentId,
+        exportParams
+      ) as Promise<Blob>,
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [entries, debouncedSearch, uiStatus]);
+        link.href = objectUrl;
+        link.download = `agent-${agentId}-transactions-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        notifications.show({
+          title: "Export Transactions Failed",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to export agent transactions at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const totalPages = Math.max(1, query.data?.metadata?.pagination?.totalPages ?? 1);
-
-  const paginatedTransactions = useMemo(() => {
-    return filteredTransactions;
-  }, [filteredTransactions]);
 
   const renderTransactionRow = (tx: AgentTransaction) => [
     <Text key="transactionId" size="sm" fw={500}>
@@ -205,7 +239,7 @@ export default function AgentTransactionsTable({
       {tx.type}
     </Text>,
     <Text key="transactionValue" size="sm" fw={500}>
-      {formatValue(tx.transactionValue, tx.transactionCurrency)}
+      {formatCurrency(tx.transactionValue, tx.transactionCurrency)}
     </Text>,
     <StatusBadge key="actionEffect" status={tx.status} />,
     <RowActionIcon
@@ -250,7 +284,14 @@ export default function AgentTransactionsTable({
             placeholder="Filter By"
           />
 
-          <Button variant="outline" color="#E36C2F" radius="xl">
+          <Button
+            variant="outline"
+            color="#E36C2F"
+            radius="xl"
+            onClick={() => exportTransactionsMutation.mutate()}
+            loading={exportTransactionsMutation.isPending}
+            disabled={exportTransactionsMutation.isPending}
+          >
             Export
           </Button>
         </Group>
@@ -258,8 +299,8 @@ export default function AgentTransactionsTable({
 
       <DynamicTableSection
         headers={headers}
-        data={paginatedTransactions}
-        loading={query.isLoading}
+        data={entries}
+        loading={query.isLoading || query.isFetching}
         renderItems={renderTransactionRow}
         emptyTitle="No Transactions Found"
         emptyMessage="There are currently no transactions for this agent."

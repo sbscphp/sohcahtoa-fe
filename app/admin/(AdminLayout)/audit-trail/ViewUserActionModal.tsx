@@ -2,9 +2,11 @@
 
 import { Modal, Text, Group, Badge, Button, Divider } from "@mantine/core";
 import { StatusBadge } from "../../_components/StatusBadge";
+import type { AuditTrailRowItem } from "./hooks/useAuditTrail";
 
 interface ViewUserActionModalProps {
   opened: boolean;
+  action: AuditTrailRowItem | null;
   onClose: () => void;
 }
 
@@ -21,6 +23,7 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 
 export default function ViewUserActionModal({
   opened,
+  action,
   onClose,
 }: ViewUserActionModalProps) {
   return (
@@ -54,34 +57,34 @@ export default function ViewUserActionModal({
     >
       <Divider my="sm" />
 
-      <Row label="Admin Name" value="Adewale Adeolu (ID:90310)" />
+      <Row label="Admin Name" value={action?.actionBy || "--"} />
       <Divider bg="#E1E0E0" />
 
-      <Row label="Role" value="Head of Settlement" />
+      <Row label="Role / Email" value={action?.role || "--"} />
       <Divider />
 
-      <Row label="Department" value="Internal Control and Audit" />
+      <Row label="Action ID" value={action?.id || "--"} />
       <Divider />
 
-      <Row label="Action ID" value="783836739" />
-      <Divider c="#E1E0E0" />
-
-      <Row label="Action Date and Time" value="September 19, 2025 ; 11:00 am" />
+      <Row
+        label="Action Date and Time"
+        value={`${action?.timestamp || "--"} ; ${action?.time || "--"}`}
+      />
       <Divider />
 
-      <Row label="Affected Module" value="Transaction Management" />
+      <Row label="Affected Module" value={action?.module || "--"} />
       <Divider />
 
-      <Row label="Action Taken" value="Resolve and Settled PTA" />
+      <Row label="Action Taken" value={action?.actionTaken || "--"} />
       <Divider />
 
-      <Row label="Action Effect" value={<StatusBadge status="Posted" />} />
+      <Row
+        label="Action Effect"
+        value={<StatusBadge status={action?.status || "Pending"} variant="light" />}
+      />
       <Divider />
 
-      <Row label="Approved by" value="Jide Adeola (ID:99301)" />
-      <Divider />
-
-      <Row label="IP Address" value="7843H:8933:2033" />
+      <Row label="Affected System" value={action?.affectedSystem || "--"} />
 
       <Group justify="flex-end" mt="lg">
         <Button variant="outline" radius="xl" onClick={onClose}>
