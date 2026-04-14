@@ -1130,6 +1130,7 @@ export const adminApi = {
       params?: {
         page?: number;
         limit?: number;
+        search?: string;
         status?: string;
         dateFrom?: string;
         dateTo?: string;
@@ -1139,6 +1140,27 @@ export const adminApi = {
         API_ENDPOINTS.admin.agent.transactions(id),
         { params }
       ),
+
+    transactionsExport: async (
+      id: string,
+      params?: {
+        search?: string;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.agent.transactionsExport(id),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
 
     getTransactionById: (id: string, transactionId: string) =>
       apiClient.get<ApiResponse<AgentSingleTransactionData>>(

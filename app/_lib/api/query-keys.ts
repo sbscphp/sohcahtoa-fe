@@ -126,6 +126,7 @@ export const adminKeys = {
       params?: {
         page?: number;
         limit?: number;
+        search?: string;
         status?: string;
         dateFrom?: string;
         dateTo?: string;
