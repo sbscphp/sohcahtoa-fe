@@ -100,10 +100,6 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         type: "text",
         required: true,
         placeholder: "e.g. Sterling Exchange",
-        validation: (value) =>
-          String(value).length < 2
-            ? "Franchise name must be at least 2 characters"
-            : null,
       },
       {
         name: "state",
@@ -114,27 +110,13 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         options: states,
         disabled: isStatesLoading || !hasStateOptions,
       },
-      {
-        name: "address",
-        label: "Address",
-        type: "text",
-        required: true,
-        placeholder: "Enter address",
-        validation: (value) =>
-          String(value).length < 5
-            ? "Address must be at least 5 characters"
-            : null,
-      },
+      { name: "address", label: "Address", type: "text", required: true, placeholder: "Enter address" },
       {
         name: "contactPerson",
         label: "Contact Person",
         type: "text",
         required: true,
         placeholder: "e.g. Adekunle, Ibrahim Olamide",
-        validation: (value) =>
-          String(value).length < 3
-            ? "Contact person name must be at least 3 characters"
-            : null,
       },
       {
         name: "emailAddress",
@@ -149,12 +131,6 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         type: "tel",
         required: true,
         placeholder: "+234 8056283635",
-        validation: (value) => {
-          const val = String(value).replace(/\s+/g, "");
-          return !/^\+?[0-9]{11,14}$/.test(val)
-            ? "Invalid phone number format (e.g. 080... or +234...)"
-            : null;
-        },
       },
       {
         name: "phoneNumber2",
@@ -162,13 +138,6 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
         type: "tel",
         required: false,
         placeholder: "+234 000000000",
-        validation: (value) => {
-          if (!value) return null;
-          const val = String(value).replace(/\s+/g, "");
-          return !/^\+?[0-9]{11,14}$/.test(val)
-            ? "Invalid phone number format (e.g. 080... or +234...)"
-            : null;
-        },
       },
     ],
     [hasStateOptions, isStatesLoading, states]

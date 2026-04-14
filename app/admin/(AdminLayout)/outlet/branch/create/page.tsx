@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Group } from "@mantine/core";
-import { useForm } from "@mantine/form";
 import { Check } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
@@ -11,85 +10,38 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { notifications } from "@mantine/notifications";
 import { useCreateData } from "@/app/_lib/api/hooks";
-import {
-  adminApi,
-  type CreateBranchPayload,
-} from "@/app/admin/_services/admin-api";
+import { adminApi, type CreateBranchPayload } from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useOutletStates } from "../../hooks/useOutletStates";
 import { useAgentsAll } from "../../hooks/useAgentsAll";
 
-type FormValues = {
-  branchName: string;
-  state: string | null;
-  branchManager: string;
-  managerEmail: string;
-  branchEmail: string;
-  address: string;
-  phoneNumber: string;
-  agentId: string | null;
-};
-
 export default function CreateBranchPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
-  const form = useForm<FormValues>({
-    initialValues: {
-      branchName: "",
-      state: "",
-      branchManager: "",
-      managerEmail: "",
-      branchEmail: "",
-      address: "",
-      phoneNumber: "",
-      agentId: null,
-    },
-    validate: {
-      branchName: (v) => (v.trim().length >= 2 ? null : "Branch name is too short"),
-      state: (v) => (v ? null : "State is required"),
-      branchManager: (v) => (v.trim().length >= 3 ? null : "Manager name is required"),
-      managerEmail: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : "Invalid manager email"),
-      branchEmail: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : "Invalid branch email"),
-      address: (v) => (v.trim().length >= 5 ? null : "Full address is required"),
-      phoneNumber: (v) => (/^\+234\d{10}$/.test(v.trim()) ? null : "Use format +2348031234567"),
-    },
-  });
-  const handleCreateBranchClick = () => {
-  // 1. Run full form validation
-  const validation = form.validate();
-  if (validation.hasErrors) {
-    notifications.show({
-      title: "Validation Error",
-      message: "Please select an agent and ensure all fields are correct.",
-      color: "red",
-    });
-    return;
-  }
-
-  if (!selectedAgent) {
-    notifications.show({
-      title: "Agent Required",
-      message: "Please select a valid agent from the list.",
-      color: "red",
-    });
-    return;
-  }
-  setIsConfirmOpen(true);
-};
+  // Step 1: Basic Branch Information
+  const [branchName, setBranchName] = useState("");
+  const [state, setState] = useState<string | null>(null);
+  const [branchManager, setBranchManager] = useState("");
+  const [managerEmail, setManagerEmail] = useState("");
+  const [branchEmail, setBranchEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const {
     states,
     isLoading: isStatesLoading,
     isError: isStatesError,
+    error: statesError,
   } = useOutletStates();
+  const hasStateOptions = states.length > 0;
+
   const {
     agentOptions,
     agents,
     isLoading: isAgentsLoading,
     isError: isAgentsError,
+    error: agentsError,
   } = useAgentsAll();
 
   // Step 2: Add Agents
@@ -137,35 +89,52 @@ export default function CreateBranchPage() {
     onSuccess: () => {
       setIsConfirmOpen(false);
       setIsSuccessOpen(true);
+      notifications.show({
+        title: "Branch Created",
+        message: "Branch was created successfully.",
+        color: "green",
+      });
     },
     onError: (error) => {
       const apiResponse = (error as unknown as ApiError).data as ApiResponse;
       notifications.show({
-        title: "Error",
-        message: apiResponse?.error?.message ?? "Failed to create branch",
+        title: "Create Branch Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create branch. Please try again.",
         color: "red",
       });
     },
   });
 
-  const handleNext = () => {
-  const step1Fields = [
-    "branchName",
-    "state",
-    "branchManager",
-    "managerEmail",
-    "branchEmail",
-    "address",
-    "phoneNumber",
-  ];
+  useEffect(() => {
+    if (!isStatesError) {
+      hasShownStateErrorRef.current = false;
+      return;
+    }
 
-  let hasStep1Errors = false;
-  step1Fields.forEach((field) => {
-    const error = form.validateField(field as keyof FormValues);
-    if (error.hasError) hasStep1Errors = true;
-  });
+    if (hasShownStateErrorRef.current) return;
 
-  if (hasStep1Errors) {
+    notifications.show({
+      title: "Unable to Load States",
+      message:
+        statesError?.message ??
+        "States could not be fetched. You cannot create a branch until states are available.",
+      color: "red",
+    });
+
+    hasShownStateErrorRef.current = true;
+  }, [isStatesError, statesError?.message]);
+
+  useEffect(() => {
+    if (!isAgentsError) {
+      hasShownAgentsErrorRef.current = false;
+      return;
+    }
+
+    if (hasShownAgentsErrorRef.current) return;
+
     notifications.show({
       title: "Unable to Load Agents",
       message:
@@ -300,75 +269,100 @@ export default function CreateBranchPage() {
     createBranchMutation.mutate(payload);
   };
 
-  // Prevent invalid characters in phone
-  const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!/[0-9+]/.test(e.key) && e.key !== "Backspace" && e.key !== "Tab") {
-      e.preventDefault();
-    }
+  const handleManageBranch = () => {
+    setIsSuccessOpen(false);
+    router.push(adminRoutes.adminOutlet());
   };
 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="rounded-2xl bg-white shadow-sm p-6 md:p-8">
-        {/* Progress Tracker UI */}
-        <div className="mb-10">
+        {/* Progress Tracker - matches design */}
+        <div className="mb-8">
           <div className="relative flex items-center justify-between px-2">
+            {/* Connecting line */}
             <div
-              className={`absolute left-4 right-4 top-1/2 h-0.5 -translate-y-1/2 ${step === 2 ? "bg-orange-500" : "bg-gray-200"}`}
+              className={`absolute left-4 right-4 top-1/2 h-0.5 -translate-y-1/2 ${
+                step === 2 ? "bg-orange-500" : "bg-gray-200"
+              }`}
             />
-            <div
-              className={`relative z-10 flex h-6 w-6 items-center justify-center rounded-full ${step === 2 ? "bg-orange-500" : "border-2 border-orange-500 bg-white"}`}
-            >
-              {step === 2 && (
-                <Check className="h-3 w-3 text-white" strokeWidth={3} />
+
+            {/* Left step: Basic Branch Information */}
+            <div className="relative z-10 flex flex-col items-start">
+              {step === 2 ? (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500">
+                  <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                </div>
+              ) : (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-orange-500 bg-white" />
               )}
             </div>
-            <div
-              className={`relative z-10 flex h-6 w-6 items-center justify-center rounded-full ${step === 2 ? "bg-orange-500" : "bg-gray-300"}`}
-            />
+
+            {/* Right step: Add Agents */}
+            <div className="relative z-10 flex flex-col items-end">
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                  step === 2 ? "bg-orange-500" : "bg-gray-300"
+                }`}
+              />
+            </div>
           </div>
-          <div className="mt-2 flex items-center justify-between px-1 text-xs font-bold uppercase tracking-wider">
-            <span className="text-orange-600">Branch Info</span>
-            <span className={step === 2 ? "text-orange-600" : "text-gray-400"}>
+
+          {/* Labels */}
+          <div className="mt-2 flex items-center justify-between px-1 text-xs font-medium">
+            <span className="text-orange-500">Basic Branch Information</span>
+            <span className={step === 2 ? "text-orange-500" : "text-gray-500"}>
               Add Agents
             </span>
           </div>
         </div>
 
         {step === 1 ? (
-          <Stack gap="lg">
-            <div className="text-center mb-4">
-              <Text fw={700} size="xl">
-                Branch Information
+          <>
+            <div className="text-center mb-8">
+              <Text className="text-xl! font-bold! text-gray-900!" mb={4}>
+                Fill in Branch Information
               </Text>
-              <Text size="sm" c="dimmed">
-                Provide core details for the new location
+              <Text className="text-base! font-normal! text-gray-600!">
+                Enter the necessary fields to create a new Sohcahtoa branch
               </Text>
             </div>
 
-            <TextInput
-              label="Branch Name"
-              placeholder="e.g. Ikeja Branch"
-              required
-              {...form.getInputProps("branchName")}
-            />
-
-            <Group grow align="flex-start">
-              <Select
-                label="State"
-                placeholder="Select State"
-                data={states}
-                required
-                searchable
-                {...form.getInputProps("state")}
-              />
+            <Stack gap="lg">
               <TextInput
-                label="Branch Manager"
-                placeholder="Full Name"
+                label="Branch Name"
+                placeholder="e.g. Yaba"
+                value={branchName}
+                onChange={(e) => setBranchName(e.currentTarget.value)}
                 required
-                {...form.getInputProps("branchManager")}
+                radius="md"
               />
-            </Group>
+
+              <Group grow align="flex-start">
+                <Select
+                  label="State"
+                  placeholder={isStatesLoading ? "Loading states..." : "Select state"}
+                  data={states}
+                  value={state}
+                  onChange={setState}
+                  required
+                  radius="md"
+                  searchable
+                  clearable
+                  disabled={isStatesLoading || !hasStateOptions}
+                  error={
+                    isStatesError ? "Unable to load states. Please try again later." : undefined
+                  }
+                />
+                <TextInput
+                  label="Branch Manager"
+                  placeholder="e.g. Bashorun Dauda"
+                  value={branchManager}
+                  onChange={(e) => setBranchManager(e.currentTarget.value)}
+                  required
+                  radius="md"
+                />
+              </Group>
 
               <Group grow align="flex-start">
                 <TextInput
@@ -403,120 +397,133 @@ export default function CreateBranchPage() {
                 />
               </Group>
 
-            <TextInput
-              label="Address"
-              placeholder="Street Address"
-              required
-              {...form.getInputProps("address")}
-            />
+              <TextInput
+                label="Address"
+                placeholder="e.g. No 14, Unilag Rd, Yaba Lagos."
+                value={address}
+                onChange={(e) => setAddress(e.currentTarget.value)}
+                required
+                radius="md"
+              />
 
-            <TextInput
-              label="Phone Number"
-              placeholder="+2348000000000"
-              required
-              maxLength={14}
-              onKeyDown={handlePhoneKeyPress}
-              {...form.getInputProps("phoneNumber")}
-            />
+              <TextInput
+                label="Phone Number"
+                placeholder="e.g. +234 8138989206"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.currentTarget.value)}
+                required
+                radius="md"
+              />
+            </Stack>
 
-            <Group justify="center" mt="xl">
+            <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
               <CustomButton
+                fullWidth
+                size="md"
                 buttonType="secondary"
-                onClick={() => router.back()}
-                className="w-40"
+                onClick={handleCancel}
               >
                 Cancel
               </CustomButton>
               <CustomButton
+                fullWidth
+                size="md"
                 buttonType="primary"
                 onClick={handleNext}
-                className="w-40"
+                disabled={isStatesLoading || !hasStateOptions}
               >
-                Next Step
+                Next
               </CustomButton>
             </Group>
-          </Stack>
+          </>
         ) : (
-          <Stack gap="lg">
-            <div className="text-center mb-4">
-              <Text fw={700} size="xl">
-                Assign Agent
+          <>
+            <div className="text-center mb-8">
+              <Text className="text-xl! font-bold! text-gray-900!" mb={4}>
+                Add Agents to Branch
               </Text>
-              <Text size="sm" c="dimmed">
-                Select an agent to manage this branch
+              <Text className="text-base! font-normal! text-gray-600!">
+                Fill out the information to add an agent
               </Text>
             </div>
 
-            <Select
-              label="Select Agent"
-              placeholder={isAgentsLoading ? "Loading..." : "Search Agents"}
-              data={agentOptions}
-              required
-              searchable
-              disabled={isAgentsLoading}
-              {...form.getInputProps("agentId")}
-            />
+            <Stack gap="lg">
+              <Select
+                label="Agent"
+                placeholder={isAgentsLoading ? "Loading agents..." : "Select an agent"}
+                data={agentOptions}
+                value={agentId}
+                onChange={setAgentId}
+                required
+                radius="md"
+                searchable
+                clearable={false}
+                disabled={isAgentsLoading || isAgentsError || agentOptions.length === 0}
+                error={
+                  isAgentsError ? "Unable to load agents. Please try again later." : undefined
+                }
+              />
 
-            {selectedAgent && (
-              <div className="p-4 rounded-lg bg-gray-50 border border-gray-100 grid grid-cols-2 gap-4">
-                <div>
-                  <Text size="xs" c="dimmed" fw={600}>
-                    AGENT EMAIL
-                  </Text>
-                  <Text size="sm" fw={500}>
-                    {selectedAgent.email}
-                  </Text>
-                </div>
-                <div>
-                  <Text size="xs" c="dimmed" fw={600}>
-                    PHONE NUMBER
-                  </Text>
-                  <Text size="sm" fw={500}>
-                    {selectedAgent.phoneNumber}
-                  </Text>
-                </div>
-              </div>
-            )}
+              <Group grow align="flex-start">
+                <TextInput
+                  label="Agent Email"
+                  placeholder={selectedAgent ? "" : "Select an agent"}
+                  value={selectedAgent?.email ?? ""}
+                  disabled
+                  radius="md"
+                />
+                <TextInput
+                  label="Agent Phone Number"
+                  placeholder={selectedAgent ? "" : "Select an agent"}
+                  value={selectedAgent?.phoneNumber ?? ""}
+                  disabled
+                  radius="md"
+                />
+              </Group>
+            </Stack>
 
-            <Group justify="center" mt="xl">
+            <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
               <CustomButton
+                fullWidth
+                size="md"
                 buttonType="secondary"
-                onClick={() => setStep(1)}
-                className="w-40"
+                onClick={handleBack}
               >
                 Back
               </CustomButton>
               <CustomButton
+                fullWidth
+                size="md"
                 buttonType="primary"
                 onClick={handleCreateBranchClick}
-                className="w-40"
-                loading={createBranchMutation.isPending}
-                disabled={createBranchMutation.isError}
+                disabled={createBranchMutation.isPending || isAgentsLoading || isAgentsError || !selectedAgent}
               >
                 Create Branch
               </CustomButton>
             </Group>
-          </Stack>
+          </>
         )}
       </div>
 
       <ConfirmationModal
         opened={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
-        title="Create Branch?"
-        message="Confirmation invites will be sent to the manager and assigned agent."
+        title="Create a Branch ?"
+        message="Are you sure you want to create this Branch? An invite will be sent to the branch email, branch manager and agents added."
         primaryButtonText="Yes, Create"
+        secondaryButtonText="No, Close"
         onPrimary={handleConfirmCreate}
+        onSecondary={() => setIsConfirmOpen(false)}
         loading={createBranchMutation.isPending}
       />
 
       <SuccessModal
         opened={isSuccessOpen}
-        onClose={() => router.push(adminRoutes.adminOutlet())}
+        onClose={() => setIsSuccessOpen(false)}
         title="Branch Created"
-        message="The new branch has been added to the system successfully."
-        primaryButtonText="Back to Outlets"
-        onPrimaryClick={() => router.push(adminRoutes.adminOutlet())}
+        message="Branch successfully created. Agents can now be added to branches."
+        primaryButtonText="Manage Branch"
+        onPrimaryClick={handleManageBranch}
       />
     </div>
   );

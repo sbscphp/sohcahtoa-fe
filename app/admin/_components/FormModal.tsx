@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Button,
@@ -13,21 +13,13 @@ import {
   NumberInput,
   Grid,
 } from "@mantine/core";
-import { useForm } from "@mantine/form";
 import { X } from "lucide-react";
 import FileUpload from "./FileUpload";
 
 /* --------------------------------------------
 | Types
 --------------------------------------------- */
-export type InputType =
-  | "text"
-  | "email"
-  | "tel"
-  | "number"
-  | "select"
-  | "file"
-  | "textarea";
+export type InputType = "text" | "email" | "tel" | "number" | "select" | "file" | "textarea";
 
 export interface FormField {
   name: string;
@@ -49,8 +41,6 @@ export interface FormField {
   // General
   disabled?: boolean;
   description?: string;
-  // Validation
-  validation?: (value: any) => React.ReactNode;
 }
 
 export interface FormModalProps {
@@ -75,7 +65,7 @@ export interface FormModalProps {
 /* --------------------------------------------
 | Component
 --------------------------------------------- */
-export default function FormModal({
+export default function   FormModal({
   opened,
   onClose,
   title,
@@ -89,60 +79,8 @@ export default function FormModal({
   size = "lg",
   onFieldChange,
 }: FormModalProps) {
-  const form = useForm<Record<string, any>>({
-    initialValues: {},
-    validate: (values) => {
-      const errors: Record<string, any> = {};
-      fields.forEach((field) => {
-        const value = values[field.name];
-
-        // Required validation
-        if (
-          field.required &&
-          (!value || (typeof value === "string" && !value.trim()))
-        ) {
-          errors[field.name] = `${field.label} is required`;
-          return;
-        }
-
-        // Custom validation
-        if (field.validation && value) {
-          const error = field.validation(value);
-          if (error) {
-            errors[field.name] = error;
-            return;
-          }
-        }
-
-        // Email validation
-        if (
-          field.type === "email" &&
-          value &&
-          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-        ) {
-          errors[field.name] = "Invalid email address";
-          return;
-        }
-
-        // Phone validation (basic)
-        if (field.type === "tel" && value && !/^[+]?[\d\s()-]+$/.test(value)) {
-          errors[field.name] = "Invalid phone number";
-          return;
-        }
-
-        // Number validation
-        if (field.type === "number" && value !== undefined && value !== "") {
-          if (field.min !== undefined && value < field.min) {
-            errors[field.name] = `Value must be at least ${field.min}`;
-          }
-          if (field.max !== undefined && value > field.max) {
-            errors[field.name] = `Value must be at most ${field.max}`;
-          }
-        }
-      });
-      return errors;
-    },
-  });
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Initialize form data with initial values
   useEffect(() => {
@@ -151,9 +89,8 @@ export default function FormModal({
       fields.forEach((field) => {
         initialData[field.name] = initialValues[field.name] || "";
       });
-      form.setInitialValues(initialData);
-      form.setValues(initialData);
-      form.clearErrors();
+      setFormData(initialData);
+      setErrors({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
@@ -175,15 +112,100 @@ export default function FormModal({
     }
   };
 
-  const handleSubmit = async (values: typeof form.values) => {
-    await onSubmit(values);
+  const handleFileChange = (name: string, file: File | null) => {
+    if (file) {
+      const field = fields.find((f) => f.name === name);
+      const maxSize = field?.maxSize || 2;
+
+      // Validate file size
+      if (file.size > maxSize * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: `File size must be less than ${maxSize} MB`,
+        }));
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, [name]: file }));
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    fields.forEach((field) => {
+      if (field.required) {
+        const value = formData[field.name];
+        if (!value || (typeof value === "string" && !value.trim())) {
+          newErrors[field.name] = `${field.label} is required`;
+        }
+      }
+
+      // Email validation
+      if (
+        field.type === "email" &&
+        formData[field.name] &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData[field.name])
+      ) {
+        newErrors[field.name] = "Invalid email address";
+      }
+
+      // Phone validation (basic)
+      if (
+        field.type === "tel" &&
+        formData[field.name] &&
+        !/^[+]?[\d\s()-]+$/.test(formData[field.name])
+      ) {
+        newErrors[field.name] = "Invalid phone number";
+      }
+
+      // Number validation
+      if (field.type === "number") {
+        const value = formData[field.name];
+        if (field.min !== undefined && value < field.min) {
+          newErrors[field.name] = `Value must be at least ${field.min}`;
+        }
+        if (field.max !== undefined && value > field.max) {
+          newErrors[field.name] = `Value must be at most ${field.max}`;
+        }
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) {
+      return;
+    }
+
+    await onSubmit(formData);
   };
 
   const renderField = (field: FormField) => {
-    const colSpan =
-      field.type === "file" || field.type === "textarea"
-        ? 12
-        : { base: 12, sm: 6 };
+    const commonProps = {
+      label: field.label,
+      placeholder: field.placeholder,
+      required: field.required,
+      disabled: field.disabled || loading,
+      description: field.description,
+      error: errors[field.name],
+    };
+
+    // File and textarea inputs take full width, others take half on larger screens
+    const colSpan = field.type === "file" || field.type === "textarea" ? 12 : { base: 12, sm: 6 };
 
     let inputElement;
 
@@ -193,13 +215,10 @@ export default function FormModal({
       case "tel":
         inputElement = (
           <TextInput
-            label={field.label}
-            placeholder={field.placeholder}
-            required={field.required}
-            disabled={field.disabled || loading}
-            description={field.description}
+            {...commonProps}
             type={field.type === "tel" ? "number" : field.type}
-            {...form.getInputProps(field.name)}
+            value={formData[field.name] || ""}
+            onChange={(e) => handleChange(field.name, e.currentTarget.value)}
           />
         );
         break;
@@ -207,14 +226,11 @@ export default function FormModal({
       case "number":
         inputElement = (
           <NumberInput
-            label={field.label}
-            placeholder={field.placeholder}
-            required={field.required}
-            disabled={field.disabled || loading}
-            description={field.description}
+            {...commonProps}
+            value={formData[field.name] || ""}
+            onChange={(value) => handleChange(field.name, value)}
             min={field.min}
             max={field.max}
-            {...form.getInputProps(field.name)}
           />
         );
         break;
@@ -222,15 +238,12 @@ export default function FormModal({
       case "textarea":
         inputElement = (
           <Textarea
-            label={field.label}
-            placeholder={field.placeholder}
-            required={field.required}
-            disabled={field.disabled || loading}
-            description={field.description}
+            {...commonProps}
+            value={formData[field.name] || ""}
+            onChange={(e) => handleChange(field.name, e.currentTarget.value)}
             rows={field.rows}
             minRows={field.minRows}
             autosize
-            {...form.getInputProps(field.name)}
           />
         );
         break;
@@ -238,15 +251,12 @@ export default function FormModal({
       case "select":
         inputElement = (
           <Select
-            label={field.label}
-            placeholder={field.placeholder}
-            required={field.required}
-            disabled={field.disabled || loading}
-            description={field.description}
+            {...commonProps}
+            value={formData[field.name] || ""}
+            onChange={(value) => handleChange(field.name, value)}
             data={field.options || []}
             searchable
             clearable={!field.required}
-            {...form.getInputProps(field.name)}
           />
         );
         break;
@@ -255,27 +265,13 @@ export default function FormModal({
         inputElement = (
           <FileUpload
             label={field.label}
-            value={form.values[field.name] || null}
-            onChange={(file) => {
-              if (file) {
-                const maxSize = field.maxSize || 2;
-                if (file.size > maxSize * 1024 * 1024) {
-                  form.setFieldError(
-                    field.name,
-                    `File size must be less than ${maxSize} MB`,
-                  );
-                  return;
-                }
-                form.setFieldValue(field.name, file);
-              } else {
-                form.setFieldValue(field.name, null);
-              }
-            }}
+            value={formData[field.name] || null}
+            onChange={(file) => handleFileChange(field.name, file)}
             accept={field.accept}
             maxSize={field.maxSize}
             required={field.required}
             disabled={field.disabled || loading}
-            error={form.errors[field.name] as string | undefined}
+            error={errors[field.name]}
           />
         );
         break;
@@ -301,26 +297,25 @@ export default function FormModal({
             {title}
           </Text>
           {description && (
-            <Text className="text-body-text-50! text-sm!">{description}</Text>
+            <Text className="text-body-text-50! text-sm!">
+              {description}
+            </Text>
           )}
         </div>
       }
       size={size}
       radius="md"
       closeButtonProps={{
-        icon: (
-          <X
-            size={20}
-            className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!"
-          />
-        ),
+        icon: <X size={20} className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!" />,
       }}
       centered
     >
       <LoadingOverlay visible={loading} />
 
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Grid gutter="md">{fields.map((field) => renderField(field))}</Grid>
+      <form onSubmit={handleSubmit}>
+        <Grid gutter="md">
+          {fields.map((field) => renderField(field))}
+        </Grid>
 
         <Group justify="flex-end" mt="xl" gap="sm">
           <Button

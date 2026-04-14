@@ -303,7 +303,7 @@ export default function AgentDetailsPage() {
                   <Text size="xl" fw={600}>
                     {agent.name}
                   </Text>
-                  {/* <StatusBadge status={currentStatus} /> */}
+                  <StatusBadge status={currentStatus} />
                 </>
               )}
             </div>
