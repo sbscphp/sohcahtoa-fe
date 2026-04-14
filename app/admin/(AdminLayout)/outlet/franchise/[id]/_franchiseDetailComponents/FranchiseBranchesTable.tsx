@@ -9,7 +9,10 @@ import { adminRoutes } from "@/lib/adminRoutes";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { useFranchiseBranches, type FranchiseBranchListItem } from "../../../hooks/useFranchiseBranches";
+import {
+  useFranchiseBranches,
+  type FranchiseBranchListItem,
+} from "../../../hooks/useFranchiseBranches";
 
 const branchHeaders = [
   { label: "Branch Name", key: "name" },
@@ -28,11 +31,18 @@ function getIsActiveParam(value: string | null): boolean | undefined {
   return undefined;
 }
 
+const statusOptions = [
+  { value: "Active", label: "Active" },
+  { value: "Deactivated", label: "Deactivated" },
+];
+
 interface FranchiseBranchesTableProps {
   franchiseId: string;
 }
 
-export function FranchiseBranchesTable({ franchiseId }: FranchiseBranchesTableProps) {
+export function FranchiseBranchesTable({
+  franchiseId,
+}: FranchiseBranchesTableProps) {
   const router = useRouter();
   const [branchSearch, setBranchSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string | null>(null);
@@ -49,7 +59,11 @@ export function FranchiseBranchesTable({ franchiseId }: FranchiseBranchesTablePr
     };
   }, [branchFilter, branchPage, debouncedSearch]);
 
-  const { branches, isLoading, totalPages } = useFranchiseBranches(franchiseId, queryParams);
+  const { branches, isLoading, isFetching, totalPages } = useFranchiseBranches(
+    franchiseId,
+    queryParams,
+  );
+  const safeTotalPages = Math.max(1, totalPages);
 
   const renderBranchRow = (item: FranchiseBranchListItem) => [
     <div key="name">
@@ -100,11 +114,11 @@ export function FranchiseBranchesTable({ franchiseId }: FranchiseBranchesTablePr
               setBranchFilter(value);
               setBranchPage(1);
             }}
-            data={["Active", "Deactivated"]}
+            data={statusOptions}
             placeholder="Filter By"
             clearable
             radius="xl"
-            w={120}
+            w={150}
             rightSection={<ListFilter size={16} />}
           />
           <Button
@@ -120,14 +134,14 @@ export function FranchiseBranchesTable({ franchiseId }: FranchiseBranchesTablePr
       <DynamicTableSection
         headers={branchHeaders}
         data={branches}
-        loading={isLoading}
+        loading={isLoading || isFetching}
         renderItems={renderBranchRow}
         emptyTitle="No Branches Found"
         emptyMessage="There are no branches for this franchise."
         pagination={{
           page: branchPage,
-          totalPages,
-          onNext: () => setBranchPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setBranchPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setBranchPage((p) => Math.max(p - 1, 1)),
           onPageChange: setBranchPage,
         }}
