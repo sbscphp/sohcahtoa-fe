@@ -8,7 +8,7 @@ import type { ApiResponse } from "@/app/_lib/api/client";
 export interface UserStatsData {
   totalUsers: number;
   activeUsers: number;
-  deactivatedUsers: number;
+  inactiveUsers: number;
 }
 
 export function useUserStats() {
