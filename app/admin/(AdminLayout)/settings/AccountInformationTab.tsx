@@ -43,7 +43,7 @@ export default function AccountInformationTab() {
           <InfoField label="Date Joined" loading />
           <InfoField label="Role" loading />
           <InfoField label="Department" loading />
-          <InfoField label="Gender" loading />
+          <InfoField label="Branch" loading />
           <InfoField label="Last Active" loading />
         </div>
       </div>
@@ -85,9 +85,9 @@ export default function AccountInformationTab() {
           <InfoField label="Email Address" value={profile.email} />
           <InfoField label="Phone Number" value={profile.phoneNumber} />
           <InfoField label="Date Joined" value={formatDate(profile.createdAt)} />
-          <InfoField label="Role" value={profile.roleId} />
-          <InfoField label="Department" value={profile.departmentId} />
-          <InfoField label="Gender" value={profile.position ?? "--"} />
+          <InfoField label="Role" value={profile.roleName} />
+          <InfoField label="Department" value={profile.departmentName} />
+          <InfoField label="Branch" value={profile.branch ?? "--"} />
           <InfoField label="Last Active" value={formatDate(profile.updatedAt)} />
         </div>
       </div>

@@ -45,6 +45,8 @@ export interface AdminProfileData {
   altPhoneNumber: string | null;
   position: string | null;
   branch: string;
+  roleName: string;
+  departmentName: string;
   roleId: string;
   departmentId: string;
   permissions: unknown;
@@ -109,7 +111,7 @@ export interface AgentDetailsResponseData {
     createdAt?: string;
   }>;
   totalTransactions?: number;
-  transactionValue?: number;
+  totalTransactionsVolume?: number;
 }
 
 export interface AgentAllData {
