@@ -11,7 +11,6 @@ import {
   Menu,
   Accordion,
   Checkbox,
-  Switch,
 } from "@mantine/core";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
@@ -224,23 +223,7 @@ export default function ViewAdminRoleDetails() {
             <DetailItem label="Users" value={String(role?._count?.users ?? 0)} loading={isLoading} />
             <DetailItem label="Branch" value={role?.branch ?? "—"} loading={isLoading} />
             <DetailItem label="Department" value={role?.departmentId ?? "—"} loading={isLoading} />
-            <div>
-              <Text size="xs" c="dimmed" mb={4}>
-                Set As Default Role
-              </Text>
-              <div className=" flex items-center gap-2">
-                {isLoading ? (
-                  <Skeleton height={24} width={120} />
-                ) : (
-                  <>
-                    <Switch checked={Boolean(role?.isDefault)} readOnly color="orange" />
-                    <Text size="sm" fw={500}>
-                      {role?.isDefault ? "On" : "Off"}
-                    </Text>
-                  </>
-                )}
-              </div>
-            </div>
+            
             <DetailItem label="Role ID" value={role?.id ?? "—"} loading={isLoading} />
             <DetailItem
               label="Description"
