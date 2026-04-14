@@ -17,6 +17,7 @@ import {
   useTrmsSubmissions,
   type TrmsSubmissionRowItem,
 } from "../../hooks/useTrmsSubmissions";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 const pageSize = 5;
 
@@ -107,6 +108,10 @@ export default function SubmissionTable() {
     setSelectedTransactionId(null);
   };
 
+  const getCurrency = (currencyPair: string) => {
+    return currencyPair.substring(0, 3);
+  };
+
   const renderRow = (item: TrmsSubmissionRowItem) => [
     <Text key="transactionId" fw={500} size="sm">
       {item.transactionId}
@@ -125,7 +130,7 @@ export default function SubmissionTable() {
     </Text>,
 
     <Text key="amount" size="sm">
-      {item.amount}
+      {formatCurrency(item.amount, getCurrency(item.currencyPair))}
     </Text>,
 
     <StatusBadge key="status" status={item.status} />,
