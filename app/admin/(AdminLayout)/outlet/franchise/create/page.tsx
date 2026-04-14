@@ -56,6 +56,28 @@ export default function CreateFranchisePage() {
   } = useOutletStates();
 
   const hasStateOptions = states.length > 0;
+  const trimmedEmail = emailAddress.trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+
+  const isFormValid = useMemo(
+    () =>
+      franchiseName.trim().length > 0 &&
+      !!state &&
+      address.trim().length > 0 &&
+      contactPersonName.trim().length > 0 &&
+      trimmedEmail.length > 0 &&
+      isEmailValid &&
+      phoneNumber1.trim().length > 0,
+    [
+      address,
+      contactPersonName,
+      franchiseName,
+      isEmailValid,
+      phoneNumber1,
+      state,
+      trimmedEmail,
+    ]
+  );
 
   useEffect(() => {
     if (isStatesError && !hasShownStateErrorRef.current) {
@@ -84,9 +106,26 @@ export default function CreateFranchisePage() {
   });
 
   const handleCreateFranchiseClick = () => {
-    // 3. Trigger Mantine Validation
-    const validation = form.validate();
-    if (validation.hasErrors) {
+    if (!hasStateOptions) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "State options are unavailable. Please try again when states are loaded.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!isFormValid) {
+      if (trimmedEmail.length > 0 && !isEmailValid) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter a valid email address before proceeding.",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Incomplete Form",
         message: "Please correct the errors in the form before proceeding.",
@@ -98,14 +137,32 @@ export default function CreateFranchisePage() {
   };
 
   const handleConfirmCreate = () => {
+    if (!state || !hasStateOptions) {
+      notifications.show({
+        title: "State Required",
+        message: "Select a valid state before creating a franchise.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!isEmailValid) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter a valid email address before creating a franchise.",
+        color: "red",
+      });
+      return;
+    }
+
     const payload: CreateFranchisePayload = {
-      franchiseName: form.values.franchiseName.trim(),
-      state: form.values.state,
-      address: form.values.address.trim(),
-      contactPersonName: form.values.contactPersonName.trim(),
-      email: form.values.emailAddress.trim(),
-      phoneNumber: form.values.phoneNumber1.trim(),
-      altPhoneNumber: form.values.phoneNumber2.trim() || null,
+      franchiseName: franchiseName.trim(),
+      state,
+      address: address.trim(),
+      contactPersonName: contactPersonName.trim(),
+      email: trimmedEmail,
+      phoneNumber: phoneNumber1.trim(),
+      altPhoneNumber: phoneNumber2.trim(),
     };
 
     createFranchiseMutation.mutate(payload);
@@ -171,7 +228,11 @@ export default function CreateFranchisePage() {
             placeholder="e.g. olamide@sohcahtoa.com"
             required
             radius="md"
-            {...form.getInputProps("emailAddress")}
+            error={
+              trimmedEmail.length > 0 && !isEmailValid
+                ? "Enter a valid email address"
+                : undefined
+            }
           />
 
           <Group grow align="flex-start">

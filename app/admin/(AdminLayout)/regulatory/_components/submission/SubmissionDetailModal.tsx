@@ -13,6 +13,7 @@ import {
 import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { useTrmsSubmissionDetails } from "../../hooks/useTrmsSubmissions";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 interface SubmissionDetailModalProps {
   opened: boolean;
@@ -50,6 +51,10 @@ export function SubmissionDetailModal({
     const resolvedUrl = resolveFileUrl(details.fileUrl);
     if (!resolvedUrl) return;
     window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const getCurrency = (currencyPair: string) => {
+    return currencyPair.substring(0, 3);
   };
 
   const renderBody = () => {
@@ -100,7 +105,7 @@ export function SubmissionDetailModal({
         <DetailRow label="Currency Pair" value={details.currencyPair} />
         <Divider />
 
-        <DetailRow label="Amount" value={details.amount} />
+        <DetailRow label="Amount" value={formatCurrency(details.amount, getCurrency(details.currencyPair))} />
         <Divider />
 
         <DetailRow label="Documents" value={details.documentsLabel} />

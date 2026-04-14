@@ -96,6 +96,10 @@ export const API_ENDPOINTS = {
       verifyLogin: "/api/admin/auth/verify-login",
       forgotPassword: "/api/admin/auth/forgot-password",
       resetPassword: "/api/admin/auth/reset-password",
+      password: {
+        verifyOld: "/api/admin/auth/password/verify-old",
+        change: "/api/admin/auth/password/change",
+      },
       logout: "/api/admin/auth/logout",
       otp: {
         validate: "/api/admin/auth/otp/validate",
@@ -118,6 +122,8 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/agent/${id}`,
       updateStatus: (id: string) => `/api/admin/agent/${id}/status`,
       transactions: (id: string) => `/api/admin/agent/${id}/transactions`,
+      transactionsExport: (id: string) =>
+        `/api/admin/agent/${id}/transactions/export`,
       getTransactionById: (id: string, transactionId: string) =>
         `/api/admin/agent/${id}/transactions/${transactionId}`,
       downloadTransactionReceipt: (id: string, transactionId: string) =>
@@ -161,6 +167,17 @@ export const API_ENDPOINTS = {
       stats: "/api/admin/rate/stats",
     },
     outlet: {
+      pickupStations: {
+        list: "/api/admin/outlet/pickup-stations",
+        export: "/api/admin/outlet/pickup-stations/export",
+        create: "/api/admin/outlet/pickup-stations",
+        getById: (id: string) => `/api/admin/outlet/pickup-stations/${id}`,
+        update: (id: string) => `/api/admin/outlet/pickup-stations/${id}`,
+        delete: (id: string) => `/api/admin/outlet/pickup-stations/${id}`,
+        requests: (id: string) => `/api/admin/outlet/pickup-stations/${id}/requests`,
+        requestsExport: (id: string) =>
+          `/api/admin/outlet/pickup-stations/${id}/requests/export`,
+      },
       franchises: {
         list: "/api/admin/outlet/franchises",
         create: "/api/admin/outlet/franchises",
@@ -191,6 +208,8 @@ export const API_ENDPOINTS = {
         },
       },
       states: "/api/admin/outlet/states",
+      statesCities: (state: string) =>
+        `/api/admin/outlet/states/${encodeURIComponent(state)}/cities`,
     },
     transactions: {
       list: "/api/admin/transactions",

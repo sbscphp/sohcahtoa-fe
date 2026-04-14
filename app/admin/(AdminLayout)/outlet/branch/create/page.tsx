@@ -92,7 +92,46 @@ export default function CreateBranchPage() {
     isError: isAgentsError,
   } = useAgentsAll();
 
-  const selectedAgent = agents?.find((agent) => agent.id === form.values.agentId) ?? null;
+  // Step 2: Add Agents
+  const [agentId, setAgentId] = useState<string | null>(null);
+  const selectedAgent = useMemo(
+    () => agents?.find((agent) => agent.id === agentId) ?? null,
+    [agents, agentId]
+  );
+
+  const hasShownStateErrorRef = useRef(false);
+  const hasShownAgentsErrorRef = useRef(false);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const trimmedManagerEmail = managerEmail.trim();
+  const trimmedBranchEmail = branchEmail.trim();
+  const isManagerEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedManagerEmail);
+  const isBranchEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedBranchEmail);
+
+  const isStep1Valid = useMemo(
+    () =>
+      branchName.trim().length > 0 &&
+      !!state &&
+      branchManager.trim().length > 0 &&
+      trimmedManagerEmail.length > 0 &&
+      isManagerEmailValid &&
+      trimmedBranchEmail.length > 0 &&
+      isBranchEmailValid &&
+      address.trim().length > 0 &&
+      phoneNumber.trim().length > 0,
+    [
+      address,
+      branchManager,
+      branchName,
+      isBranchEmailValid,
+      isManagerEmailValid,
+      phoneNumber,
+      state,
+      trimmedBranchEmail,
+      trimmedManagerEmail,
+    ]
+  );
 
   const createBranchMutation = useCreateData(adminApi.outlet.branches.create, {
     onSuccess: () => {
@@ -128,28 +167,130 @@ export default function CreateBranchPage() {
 
   if (hasStep1Errors) {
     notifications.show({
-      title: "Incomplete Form",
-      message: "Please fix the errors in Step 1 before proceeding.",
+      title: "Unable to Load Agents",
+      message:
+        agentsError?.message ?? "Agents could not be fetched. Please try again later.",
       color: "red",
     });
-    return;
-  }
-  
-  setStep(2);
-};
 
+    hasShownAgentsErrorRef.current = true;
+  }, [isAgentsError, agentsError?.message]);
+
+  const handleCancel = () => {
+    router.push(adminRoutes.adminOutlet());
+  };
+
+  const handleNext = () => {
+    if (isStatesError || !hasStateOptions) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "Unable to load state options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!isStep1Valid) {
+      if (
+        (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
+        (trimmedBranchEmail.length > 0 && !isBranchEmailValid)
+      ) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter valid manager and branch email addresses before proceeding.",
+          color: "red",
+        });
+        return;
+      }
+
+      notifications.show({
+        title: "Incomplete Form",
+        message: "Please complete all required fields before proceeding.",
+        color: "red",
+      });
+      return;
+    }
+
+    setStep(2);
+  };
+
+  const handleBack = () => {
+    setStep(1);
+  };
+
+  const handleCreateBranchClick = () => {
+    if (isStatesError || !hasStateOptions) {
+      notifications.show({
+        title: "State Required",
+        message:
+          "Unable to load state options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!isStep1Valid) {
+      if (
+        (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
+        (trimmedBranchEmail.length > 0 && !isBranchEmailValid)
+      ) {
+        notifications.show({
+          title: "Invalid Email Address",
+          message: "Enter valid manager and branch email addresses before creating the branch.",
+          color: "red",
+        });
+        return;
+      }
+
+      notifications.show({
+        title: "Incomplete Form",
+        message: "Please complete all required fields before creating the branch.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (isAgentsError) {
+      notifications.show({
+        title: "Unable to Load Agents",
+        message: "Agents could not be fetched. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (!selectedAgent) {
+      notifications.show({
+        title: "Agent Required",
+        message: "Please select an agent before creating the branch.",
+        color: "red",
+      });
+      return;
+    }
+
+    setIsConfirmOpen(true);
+  };
 
   const handleConfirmCreate = () => {
-    if (!selectedAgent) return;
+    if (!state || !selectedAgent || createBranchMutation.isPending) return;
+    if (!isManagerEmailValid || !isBranchEmailValid) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter valid manager and branch email addresses before creating the branch.",
+        color: "red",
+      });
+      return;
+    }
 
     const payload: CreateBranchPayload = {
-      branchName: form.values.branchName.trim(),
-      branchEmail: form.values.branchEmail.trim(),
-      state: form.values.state!,
-      address: form.values.address.trim(),
-      branchManager: form.values.branchManager.trim(),
-      email: form.values.managerEmail.trim(),
-      phoneNumber: form.values.phoneNumber.trim(),
+      branchName: branchName.trim(),
+      branchEmail: trimmedBranchEmail,
+      state,
+      address: address.trim(),
+      branchManager: branchManager.trim(),
+      email: trimmedManagerEmail,
+      phoneNumber: phoneNumber.trim(),
       agentName: selectedAgent.name,
       agentEmail: selectedAgent.email,
       agentId: selectedAgent.id,
@@ -229,20 +370,38 @@ export default function CreateBranchPage() {
               />
             </Group>
 
-            <Group grow align="flex-start">
-              <TextInput
-                label="Manager Email"
-                placeholder="manager@company.com"
-                required
-                {...form.getInputProps("managerEmail")}
-              />
-              <TextInput
-                label="Branch Public Email"
-                placeholder="branch@company.com"
-                required
-                {...form.getInputProps("branchEmail")}
-              />
-            </Group>
+              <Group grow align="flex-start">
+                <TextInput
+                  label="Email Address"
+                  placeholder="e.g. bashorun@sohcahtoa.com"
+                  description="For manager"
+                  value={managerEmail}
+                  onChange={(e) => setManagerEmail(e.currentTarget.value)}
+                  type="email"
+                  required
+                  radius="md"
+                  error={
+                    trimmedManagerEmail.length > 0 && !isManagerEmailValid
+                      ? "Enter a valid email address"
+                      : undefined
+                  }
+                />
+                <TextInput
+                  label="Email Address"
+                  placeholder="e.g. yababranch@sohcahtoa.com"
+                  description="For branch"
+                  value={branchEmail}
+                  onChange={(e) => setBranchEmail(e.currentTarget.value)}
+                  type="email"
+                  required
+                  radius="md"
+                  error={
+                    trimmedBranchEmail.length > 0 && !isBranchEmailValid
+                      ? "Enter a valid email address"
+                      : undefined
+                  }
+                />
+              </Group>
 
             <TextInput
               label="Address"

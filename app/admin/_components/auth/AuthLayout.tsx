@@ -2,23 +2,26 @@
 
 import { ReactNode } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { AuthSlideshow } from "@/app/admin/login/AuthSlideshow";
 import { logo } from "@/app/assets/asset";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 interface AuthLayoutProps {
   children: ReactNode;
 }
 
 export function AuthLayout({ children}: AuthLayoutProps) {
+  const router = useRouter();
   return (
     <div className="min-h-screen flex p-3">
       {/* Left Column - Marketing/Information */}
       <div className="hidden lg:flex lg:w-2/5 xl:w-1/3 bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg">
         <div>
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-12">
-            <Image src={logo} alt="SohCahToa" />
+          <div className="flex cursor-pointer items-center gap-3 mb-12">
+            <Image src={logo} alt="SohCahToa" onClick={() => router.push(adminRoutes.adminLogin())} />
           </div>
 
           {/* Headline and Description */}

@@ -7,7 +7,7 @@ import { EditUserModal } from "./EditUserModal";
 import { useState } from "react";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomerStatus } from "../../../customer/[id]/page";
+import { UserStatus } from "../../hooks/useAdminUserDetails";
 import { useParams, useRouter } from "next/navigation";
 import { useAdminUserDetails } from "../../hooks/useAdminUserDetails";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
@@ -21,17 +21,19 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
 export default function ViewAdminUserDetails() {
   const queryClient = useQueryClient();
   const params = useParams<{ id: string }>();
   const userId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
   const { user, isLoading } = useAdminUserDetails(userId);
-  const status: CustomerStatus = user?.isActive ? "Active" : "Deactivated";
+  const status: UserStatus = user?.status ?? "PENDING";
   const [editOpen, setEditOpen] = useState(false);
-  const isCurrentlyActive = status === "Active";
-  const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
-  const pastTenseVerb = isCurrentlyActive ? "Reactivated" : " Deactivated";
+  const isCurrentlyActive = status === "ACTIVE";
+  const actionVerb = status === "ACTIVE" ? "Deactivate" : status === "PENDING" ? "Activate" : "Reactivate";
+  const pastTenseVerb = status === "ACTIVE" ? "Deactivated" : status === "PENDING" ? "Activated" : "Reactivated";
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
@@ -139,7 +141,7 @@ export default function ViewAdminUserDetails() {
                   <Text size="xs" c="dimmed">
                     Date Created: {formatDateTime(user?.createdAt)}
                   </Text>
-                  <StatusBadge status={status} />
+                  <StatusBadge status={capitalize(status)} />
                 </Group>
               </Stack>
 
@@ -157,7 +159,7 @@ export default function ViewAdminUserDetails() {
                   <Divider />
 
                   <Menu.Item color="red" onClick={handleToggleClick}>
-                    {isCurrentlyActive ? "Deactivate" : "Reactivate"}
+                    {actionVerb}
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>

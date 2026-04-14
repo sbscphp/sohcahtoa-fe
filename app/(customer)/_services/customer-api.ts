@@ -76,6 +76,9 @@ import type {
   TransactionVirtualAccountResponse,
   TransactionDepositInstructionsResponse,
   TransactionDepositStatusResponse,
+  PickupPointsResponse,
+  PickupLocationStatesResponse,
+  PickupLocationCitiesResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -219,6 +222,24 @@ export const customerApi = {
     getDepositStatus: (transactionId: string) =>
       apiClient.get<TransactionDepositStatusResponse>(
         API_ENDPOINTS.transactions.depositStatus(transactionId)
+      ),
+
+    getPickupPoints: (params?: { state?: string; city?: string }) =>
+      apiClient.get<PickupPointsResponse>(API_ENDPOINTS.transactions.pickupPoints, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    getPickupLocationStates: () =>
+      apiClient.get<PickupLocationStatesResponse>(
+        API_ENDPOINTS.transactions.pickupLocationStates
+      ),
+
+    getPickupLocationCities: (params?: { state?: string; city?: string }) =>
+      apiClient.get<PickupLocationCitiesResponse>(
+        API_ENDPOINTS.transactions.pickupLocationCities,
+        {
+          params: params as ApiRequestConfig["params"],
+        }
       ),
   },
 

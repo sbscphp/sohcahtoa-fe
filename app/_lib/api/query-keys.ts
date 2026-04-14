@@ -30,6 +30,12 @@ export const customerKeys = {
       [...customerKeys.transactions.detail(id), "deposit-instructions"] as const,
     depositStatus: (id: string) =>
       [...customerKeys.transactions.detail(id), "deposit-status"] as const,
+    pickupPoints: (params?: { state?: string; city?: string }) =>
+      [...customerKeys.transactions.all, "pickup-points", params] as const,
+    pickupLocationStates: () =>
+      [...customerKeys.transactions.all, "pickup-location-states"] as const,
+    pickupLocationCities: (params?: { state?: string; city?: string }) =>
+      [...customerKeys.transactions.all, "pickup-location-cities", params] as const,
   },
   
   payments: {
@@ -120,6 +126,7 @@ export const adminKeys = {
       params?: {
         page?: number;
         limit?: number;
+        search?: string;
         status?: string;
         dateFrom?: string;
         dateTo?: string;
@@ -200,9 +207,33 @@ export const adminKeys = {
 
   outlet: {
     all: ["admin", "outlet"] as const,
+    pickupStations: {
+      all: () => [...adminKeys.outlet.all, "pickup-stations"] as const,
+      details: () => [...adminKeys.outlet.pickupStations.all(), "detail"] as const,
+      detail: (id: string) =>
+        [...adminKeys.outlet.pickupStations.details(), id] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        state?: string;
+      }) => [...adminKeys.outlet.pickupStations.all(), "list", params] as const,
+      requests: (
+        stationId: string,
+        params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }
+      ) =>
+        [...adminKeys.outlet.pickupStations.all(), stationId, "requests", params] as const,
+    },
     states: {
       all: () => [...adminKeys.outlet.all, "states"] as const,
       list: () => [...adminKeys.outlet.states.all(), "list"] as const,
+      cities: (state?: string) =>
+        [...adminKeys.outlet.states.all(), "cities", state ?? ""] as const,
     },
     franchises: {
       all: () => [...adminKeys.outlet.all, "franchises"] as const,
@@ -456,6 +487,14 @@ export const agentKeys = {
     lists: () => [...agentKeys.transactions.all, "list"] as const,
     list: (params?: { page?: number; limit?: number }) =>
       [...agentKeys.transactions.lists(), params] as const,
+    details: () => [...agentKeys.transactions.all, "detail"] as const,
+    detail: (id: string) => [...agentKeys.transactions.details(), id] as const,
+    virtualAccount: (id: string) =>
+      [...agentKeys.transactions.detail(id), "virtual-account"] as const,
+    depositInstructions: (id: string) =>
+      [...agentKeys.transactions.detail(id), "deposit-instructions"] as const,
+    depositStatus: (id: string) =>
+      [...agentKeys.transactions.detail(id), "deposit-status"] as const,
   },
   
   notifications: {
@@ -464,5 +503,17 @@ export const agentKeys = {
     list: (params?: { limit?: number; offset?: number }) =>
       [...agentKeys.notifications.lists(), params] as const,
     unreadCount: () => [...agentKeys.notifications.all, "unread-count"] as const,
+  },
+
+  support: {
+    all: ["agent", "support"] as const,
+    tickets: {
+      all: ["agent", "support", "tickets"] as const,
+      lists: () => [...agentKeys.support.tickets.all, "list"] as const,
+      list: (params?: { page?: number; limit?: number }) =>
+        [...agentKeys.support.tickets.lists(), params] as const,
+      details: () => [...agentKeys.support.tickets.all, "detail"] as const,
+      detail: (id: string) => [...agentKeys.support.tickets.details(), id] as const,
+    },
   },
 } as const;

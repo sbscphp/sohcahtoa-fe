@@ -16,7 +16,7 @@ import type {
   AgentDashboardRecentTransactionsResponse,
 } from "@/app/_lib/api/types";
 import { IconRecurring } from "@/components/icons";
-import { LucideIcon } from "lucide-react";
+import { Loader2, LucideIcon } from "lucide-react";
 
 const FILTER_TABS = [
   { value: "all", label: "All" },
@@ -46,7 +46,7 @@ export function RecentTransactions() {
 
   const { data, isLoading } = useFetchData<AgentDashboardRecentTransactionsResponse>(
     ["agent", "dashboard", "recent-transactions", { type: filterType }],
-    () => agentApi.dashboard.recentTransactions({ page: 1, limit: 20, type: filterType }),
+    () => agentApi.dashboard.recentTransactions({ page: 1, limit: 6, type: filterType }),
     true
   );
 
@@ -84,31 +84,46 @@ export function RecentTransactions() {
           <FilterTabs items={FILTER_TABS} value={activeFilter} />
         </div>
         {FILTER_TABS.map((tab) => {
+          const emptyMessage =
+            tab.value === "all"
+              ? "No transactions"
+              : `No ${tab.label.toLowerCase()} transactions`;
+
+          const panelContent = (() => {
+            if (isLoading) {
+              return (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="size-5 animate-spin text-gray-500" />
+                </div>
+              );
+            }
+
+            if (transactions.length === 0) {
+              return (
+                <p className="py-8 text-center text-sm text-gray-500">
+                  {emptyMessage}
+                </p>
+              );
+            }
+
+            return transactions.map((tx: AgentDashboardRecentTransaction, i) => (
+              <TransactionListItem
+                key={`${tx.transactionId}-${i}`}
+                icon={IconRecurring as unknown as LucideIcon}
+                primaryText={tx.transactionId}
+                secondaryText={formatTxDate(tx.timestamp)}
+                amount={formatCurrency(tx.amount, tx.currency).formatted}
+              />
+            ));
+          })();
+
           return (
             <Tabs.Panel
               key={tab.value}
               value={tab.value}
               className="min-h-[300px]"
             >
-              <div>
-                {!isLoading && transactions.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-gray-500">
-                    {tab.value === "all"
-                      ? "No transactions"
-                      : `No ${tab.label.toLowerCase()} transactions`}
-                  </p>
-                ) : (
-                  transactions.map((tx: AgentDashboardRecentTransaction, i) => (
-                    <TransactionListItem
-                      key={`${tx.transactionId}-${i}`}
-                      icon={IconRecurring as unknown as LucideIcon}
-                      primaryText={tx.transactionId}
-                      secondaryText={formatTxDate(tx.timestamp)}
-                      amount={formatCurrency(tx.amount, tx.currency).formatted}
-                    />
-                  ))
-                )}
-              </div>
+              <div>{panelContent}</div>
             </Tabs.Panel>
           );
         })}

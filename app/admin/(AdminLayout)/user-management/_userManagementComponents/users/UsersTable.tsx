@@ -18,6 +18,8 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const PAGE_SIZE = 10;
 
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
 export default function UsersTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -98,7 +100,7 @@ export default function UsersTable() {
       </Text>
     </div>,
 
-    <StatusBadge key="status" status={user.isActive ? "Active" : "Deactivated"} />,
+    <StatusBadge key="status" status={capitalize(user.status)} />,
 
     <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(user.id))} />,
   ];

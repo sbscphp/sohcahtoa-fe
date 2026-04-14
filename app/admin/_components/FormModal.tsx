@@ -65,6 +65,11 @@ export interface FormModalProps {
   loading?: boolean;
   initialValues?: Record<string, any>;
   size?: "sm" | "md" | "lg" | "xl";
+  onFieldChange?: (
+    name: string,
+    value: any,
+    data: Record<string, any>
+  ) => Record<string, any> | void;
 }
 
 /* --------------------------------------------
@@ -82,6 +87,7 @@ export default function FormModal({
   loading = false,
   initialValues = {},
   size = "lg",
+  onFieldChange,
 }: FormModalProps) {
   const form = useForm<Record<string, any>>({
     initialValues: {},
@@ -150,7 +156,24 @@ export default function FormModal({
       form.clearErrors();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, initialValues]);
+  }, [opened]);
+
+  const handleChange = (name: string, value: any) => {
+    let nextData = { ...formData, [name]: value };
+    const maybeUpdatedData = onFieldChange?.(name, value, nextData);
+    if (maybeUpdatedData && typeof maybeUpdatedData === "object") {
+      nextData = maybeUpdatedData;
+    }
+    setFormData(nextData);
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
 
   const handleSubmit = async (values: typeof form.values) => {
     await onSubmit(values);

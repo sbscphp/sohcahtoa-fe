@@ -10,7 +10,7 @@ export default function AgentDashboardPage() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[6fr_4fr]">
       {/* Left column: 60% */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 min-w-[500px]">
         <CashOverview />
         <RecentTransactions />
       </div>

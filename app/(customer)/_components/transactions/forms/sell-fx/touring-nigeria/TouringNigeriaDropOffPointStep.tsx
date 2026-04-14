@@ -15,23 +15,14 @@ interface TouringNigeriaDropOffPointStepProps {
   cities?: string[];
 }
 
-const DEFAULT_LOCATIONS = [
-  { id: "1", name: "SOHCAHTOA LAGOS", address: "ADEOLA ODEKU . RD VICTORIA ISLAND" },
-  { id: "2", name: "TRIGONOMETRY HUB", address: "LAGOS ISLAND" },
-  { id: "3", name: "GEOMETRIC SPACE", address: "LAGOS MAINLAND" },
-  { id: "4", name: "CALCULUS CIRCLE", address: "IKOYI" },
-];
-const DEFAULT_STATES = ["Lagos", "Abuja", "Port Harcourt", "Kano"];
-const DEFAULT_CITIES = ["Lagos Island", "Victoria Island", "Ikoyi", "Lekki"];
-
 export default function TouringNigeriaDropOffPointStep({
   initialValues,
   onSubmit,
   onBack,
-  locations = DEFAULT_LOCATIONS,
-  states = DEFAULT_STATES,
-  cities = DEFAULT_CITIES,
-}: TouringNigeriaDropOffPointStepProps) {
+  locations,
+  states,
+  cities,
+}: Readonly<TouringNigeriaDropOffPointStepProps>) {
   return (
     <PickupPointStep
       preferenceMode="pickup-only"

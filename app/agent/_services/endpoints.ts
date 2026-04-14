@@ -35,6 +35,13 @@ export const AGENT_API_ENDPOINTS = {
     getById: (id: string) => `/api/agent/transactions/${id}`,
     update: (id: string) => `/api/agent/transactions/${id}`,
     uploadDocuments: (id: string) => `/api/agent/transactions/${id}/documents`,
+    recordPayment: (id: string) => `/api/agent/transactions/${id}/payment/record`,
+    recordDisbursement: (id: string) =>
+      `/api/agent/transactions/${id}/disbursement/record`,
+    virtualAccount: (id: string) => `/api/agent/transactions/${id}/virtual-account`,
+    depositInstructions: (id: string) =>
+      `/api/agent/transactions/${id}/deposit-instructions`,
+    depositStatus: (id: string) => `/api/agent/transactions/${id}/deposit-status`,
     checkLimits: "/api/agent/transactions/limits/check",
     health: "/api/agent/transactions/health",
     export: "/api/agent/transactions/export",

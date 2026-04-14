@@ -35,8 +35,8 @@ interface AgentDetails {
   phone: string;
   branch: string;
   totalTransactions: number;
-  transactionValue: number;
-  lastTransaction: string;
+  totalTransactionsVolume: number;
+  // lastTransaction: string;
   documentLabel: string;
   documentUrl: string | null;
 }
@@ -106,8 +106,8 @@ export default function AgentDetailsPage() {
       phone: agentData?.phoneNumber ?? "—",
       branch: agentData?.branch?.name ?? "—",
       totalTransactions: agentData?.totalTransactions ?? 0,
-      transactionValue: agentData?.transactionValue ?? 0,
-      lastTransaction: "—",
+      totalTransactionsVolume: agentData?.totalTransactionsVolume ?? 0,
+      // lastTransaction: "—",
       documentLabel: agentData?.attachments?.[0]?.fileName ?? "No attachment",
       documentUrl: agentData?.attachments?.[0]?.fileUrl ?? null,
     }),
@@ -315,14 +315,6 @@ export default function AgentDetailsPage() {
                 </span>{" "}
                 {agent.createdAt} | {agent.createdTime}
               </span>
-              {!isAgentLoading && (
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-emerald-700 font-medium">
-                    {currentStatus}
-                  </span>
-                </span>
-              )}
             </div>
           </Stack>
 
@@ -396,16 +388,16 @@ export default function AgentDetailsPage() {
             />
             <DetailItem
               label="Transaction Value"
-              value={formatNaira(agent.transactionValue)}
+              value={formatNaira(agent.totalTransactionsVolume)}
               loading={isAgentLoading}
             />
-            <DetailItem
+            {/* <DetailItem
               label="Last Transaction"
               value={agent.lastTransaction}
               loading={isAgentLoading}
-            />
+            /> */}
 
-            <div className="space-y-1">
+            <div className="space-y-1 max-w-full overflow-hidden">
               <Text size="xs" className="text-body-text-50!" mb={4}>
                 Doc
               </Text>
@@ -414,7 +406,7 @@ export default function AgentDetailsPage() {
                 color="orange"
                 size="xs"
                 leftSection={<Download size={14} />}
-                className="px-0"
+                className="px-0 truncate max-w-full"
                 disabled={isAgentLoading || !agent.documentUrl}
                 onClick={() => {
                   if (!agent.documentUrl) return;

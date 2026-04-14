@@ -36,7 +36,7 @@ export interface TrmsSubmissionRowItem {
   customerName: string;
   currencyPair: string;
   transactionType: string;
-  amount: string;
+  amount: number;
   documents: number;
   status: string;
   createdAt: string;
@@ -47,7 +47,7 @@ export interface TrmsSubmissionDetailViewModel {
   transactionId: string;
   type: string;
   currencyPair: string;
-  amount: string;
+  amount: number;
   documentsLabel: string;
   status: string;
   formAId: string;
@@ -123,18 +123,6 @@ function formatDateTime(value: unknown): string {
   });
 }
 
-function formatAmount(value: unknown): string {
-  const source = String(value ?? "").trim();
-  if (!source) return "--";
-
-  const parsed = Number(source);
-  if (!Number.isNaN(parsed)) {
-    return parsed.toLocaleString("en-US");
-  }
-
-  return source;
-}
-
 function normalizeListItem(item: AdminTrmsSubmissionListItem | UnknownRecord): TrmsSubmissionRowItem {
   const record = asRecord(item);
   return {
@@ -143,7 +131,7 @@ function normalizeListItem(item: AdminTrmsSubmissionListItem | UnknownRecord): T
     customerName: asString(record.customerName, "--"),
     currencyPair: asString(record.currencyPair, "--"),
     transactionType: toTitleCase(asString(record.type, "--")),
-    amount: formatAmount(record.amount),
+    amount: asNumber(record.amount, 0),
     documents: asNumber(record.documents, 0),
     status: mapTrmsApiStatusToUi(record.status),
     createdAt: asString(record.createdAt, ""),
@@ -201,7 +189,7 @@ function normalizeDetail(data: AdminTrmsSubmissionDetailsData | null): TrmsSubmi
     transactionId: asString(data.transactionId, "--"),
     type: toTitleCase(asString(data.type, "--")),
     currencyPair: asString(data.currencyPair, "--"),
-    amount: formatAmount(data.amount),
+    amount: asNumber(data.amount, 0),
     documentsLabel: `${documentsCount} ${fileWord} uploaded`,
     status: mapTrmsApiStatusToUi(data.status),
     formAId: asString(data.formAId, "--"),
