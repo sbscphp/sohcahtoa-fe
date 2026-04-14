@@ -51,6 +51,8 @@ export default function ResetPasswordPage() {
   // API hooks
   const requestPasswordReset = useRequestPasswordReset({
     onSuccess: () => {
+      setCurrentStep("otp");
+      setTimeLeft(300); // Start/reset timer exactly when API succeeds
       setOtpSentModalOpened(true);
     },
   });
@@ -83,8 +85,6 @@ export default function ResetPasswordPage() {
 
   const handleOtpSentModalClose = () => {
     setOtpSentModalOpened(false);
-    setCurrentStep("otp");
-    setTimeLeft(600); // Reset timer to 10 minutes
   };
 
   const handleOtpSuccessModalClose = () => {
