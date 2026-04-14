@@ -30,6 +30,7 @@ export interface TransactionListItem {
   workflow: string;
   amount: number;
   status: string;
+  currency: string;
 }
 
 export type UseTransactionsParams = AdminTransactionListParams;
@@ -98,6 +99,7 @@ function parseTransaction(raw: UnknownRecord): TransactionListItem {
 
   return {
     customerName: getCustomerName(raw),
+    currency: asString(raw.currency),
     id: getId(raw),
     date: formatDate(
       dateAndId?.date ?? raw.createdAt ?? raw.date ?? raw.transactionDate ?? raw.updatedAt

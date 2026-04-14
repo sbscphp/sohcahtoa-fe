@@ -161,8 +161,8 @@ export default function ResetPasswordPage() {
       <SuccessModal
         opened={otpSuccessModalOpened}
         onClose={handleOtpSuccessModalClose}
-        title="Validation successful"
-        message="You have successfully verified your account."
+        title="Password Reset Successful"
+        message="You have successfully reset your password."
         primaryButtonText="Continue"
         onPrimaryClick={handleOtpSuccessModalClose}
       />
