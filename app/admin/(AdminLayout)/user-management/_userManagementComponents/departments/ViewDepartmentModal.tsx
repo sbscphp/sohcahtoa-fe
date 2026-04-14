@@ -44,7 +44,6 @@ export function ViewDepartmentModal({
   const queryClient = useQueryClient();
   const isEdit = mode === "edit";
 
-  const [isDefault, setIsDefault] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
@@ -57,6 +56,7 @@ export function ViewDepartmentModal({
       departmentEmail: "",
       branch: "",
       description: "",
+      isDefault: false,
     },
     validate: isEdit
       ? {
@@ -79,15 +79,14 @@ export function ViewDepartmentModal({
         departmentEmail: department.departmentEmail ?? "",
         branch: department.branch ?? "",
         description: department.description ?? "",
+        isDefault: department.isDefault ?? false,
       });
-      setIsDefault(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [department, opened]);
 
   const resetAll = () => {
     form.reset();
-    setIsDefault(false);
     setIsConfirmOpen(false);
   };
 
@@ -110,7 +109,7 @@ export function ViewDepartmentModal({
       departmentEmail: form.values.departmentEmail.trim() || null,
       branch: form.values.branch,
       description: form.values.description.trim() || null,
-      isDefault,
+      isDefault: form.values.isDefault,
     };
     updateDepartmentMutation.mutate({ id: department.id, data: payload });
   };
@@ -231,17 +230,17 @@ export function ViewDepartmentModal({
 
           <div
             className={`rounded-xl border p-4 ${
-              isDefault
+              form.values.isDefault
                 ? "border-[#EA580C] bg-[#FFF7ED]"
                 : "border-gray-200 bg-[#F9FAFB]"
             }`}
           >
             <div className="flex gap-2">
               <Switch
-                checked={isDefault}
+                checked={form.values.isDefault}
                 onChange={
                   isEdit
-                    ? (e) => setIsDefault(e.currentTarget.checked)
+                    ? (e) => form.setFieldValue("isDefault", e.currentTarget.checked)
                     : undefined
                 }
                 readOnly={!isEdit}
