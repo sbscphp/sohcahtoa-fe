@@ -19,11 +19,13 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 const PAGE_SIZE = 6;
 
 const transactionHeaders = [
-  { label: "Transaction ID", key: "transactionId" },
-  { label: "Action Date", key: "actionDate" },
-  { label: "Branch/Agent", key: "branchAgent" },
+  { label: "Customer", key: "customer" },
+  { label: "Transaction", key: "transaction" },
   { label: "Type", key: "type" },
-  { label: "Action Effect", key: "actionEffect" },
+  { label: "Transaction Stage", key: "transactionStage" },
+  { label: "Workflow Stage", key: "workflowStage" },
+  { label: "Value", key: "value" },
+  { label: "Status", key: "status" },
   { label: "Action", key: "action" },
 ];
 
@@ -104,27 +106,28 @@ export function BranchTransactionsTable({ branchId }: { branchId: string }) {
   );
 
   const renderTransactionRow = (item: BranchTransactionListItem) => [
-    <Text key="transactionId" size="sm">
-      {item.transactionId}
+    <Text key="customer" size="sm" fw={500}>
+      {item.customerName}
     </Text>,
-    <div key="actionDate">
-      <Text size="sm">{item.actionDate}</Text>
+    <div key="transaction">
+      <Text size="sm">{item.transactionId}</Text>
       <Text size="xs" c="dimmed">
-        {item.actionTime}
-      </Text>
-    </div>,
-    <div key="branchAgent">
-      <Text fw={500} size="sm">
-        {item.branchName}
-      </Text>
-      <Text size="xs" c="dimmed">
-        Agent: {item.agentName}
+        {item.transactionDate} {item.transactionTime !== "--" ? `• ${item.transactionTime}` : ""}
       </Text>
     </div>,
     <Text key="type" size="sm">
-      {item.type}
+      {item.transactionType}
     </Text>,
-    <StatusBadge key="actionEffect" status={item.actionEffect} />,
+    <Text key="transactionStage" size="sm">
+      {item.transactionStage}
+    </Text>,
+    <Text key="workflowStage" size="sm">
+      {item.workflowStage}
+    </Text>,
+    <Text key="value" size="sm">
+      {item.transactionValue}
+    </Text>,
+    <StatusBadge key="status" status={item.status} />,
     <RowActionIcon
       key="action"
       onClick={() => router.push(adminRoutes.adminOutletBranchTransactionDetail(branchId, item.id))}

@@ -269,6 +269,7 @@ export interface BranchListItemData {
 
 export interface BranchDetailsData {
   id: string;
+  totalAgents: number;
   franchiseId: string | null;
   name: string;
   branchEmail: string;
