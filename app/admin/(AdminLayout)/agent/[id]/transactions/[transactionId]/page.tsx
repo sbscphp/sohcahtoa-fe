@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Avatar, Button, Divider, Group, Skeleton, Stack, Text } from "@mantine/core";
+import {
+  Avatar,
+  Button,
+  Divider,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
@@ -23,7 +31,8 @@ const PLACEHOLDER = "—";
 function formatDateTime(iso?: string | null): { date: string; time: string } {
   if (!iso) return { date: PLACEHOLDER, time: PLACEHOLDER };
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return { date: PLACEHOLDER, time: PLACEHOLDER };
+  if (Number.isNaN(date.getTime()))
+    return { date: PLACEHOLDER, time: PLACEHOLDER };
   return {
     date: date.toLocaleDateString("en-NG", {
       year: "numeric",
@@ -38,7 +47,10 @@ function formatDateTime(iso?: string | null): { date: string; time: string } {
   };
 }
 
-function formatAmount(currency?: string | null, value?: number | string | null): string {
+function formatAmount(
+  currency?: string | null,
+  value?: number | string | null,
+): string {
   if (value === null || value === undefined || value === "") return PLACEHOLDER;
   const numeric = Number(value);
   if (Number.isFinite(numeric)) {
@@ -62,10 +74,12 @@ export default function AgentTransactionDetailsPage() {
     ? params.transactionId[0]
     : params?.transactionId;
 
-  const transactionDetailsQuery = useFetchSingleData<ApiResponse<AgentSingleTransactionData>>(
+  const transactionDetailsQuery = useFetchSingleData<
+    ApiResponse<AgentSingleTransactionData>
+  >(
     [...adminKeys.agent.transactionDetail(agentId ?? "", transactionId ?? "")],
     () => adminApi.agent.getTransactionById(agentId!, transactionId!),
-    Boolean(agentId && transactionId)
+    Boolean(agentId && transactionId),
   );
 
   const transaction = transactionDetailsQuery.data?.data;
@@ -75,8 +89,11 @@ export default function AgentTransactionDetailsPage() {
   const title = transaction?.type ?? "Agent Transaction";
   const created = formatDateTime(transaction?.createdAt);
   const currencyCode = transaction?.currency ?? PLACEHOLDER;
-  const currencyFlagUrl = transaction?.currency ? getCurrencyFlagUrl(transaction.currency) : null;
-  const docsList = (transaction?.meta?.documentsList ?? []) as AgentTransactionDocumentItem[];
+  const currencyFlagUrl = transaction?.currency
+    ? getCurrencyFlagUrl(transaction.currency)
+    : null;
+  const docsList = (transaction?.meta?.documentsList ??
+    []) as AgentTransactionDocumentItem[];
   const docsCount =
     transaction?.meta?.documents?.count ??
     (docsList.length > 0 ? docsList.length : PLACEHOLDER);
@@ -87,7 +104,10 @@ export default function AgentTransactionDetailsPage() {
 
     try {
       setIsDownloadingReceipt(true);
-      const file = await adminApi.agent.downloadTransactionReceipt(agentId, transactionId);
+      const file = await adminApi.agent.downloadTransactionReceipt(
+        agentId,
+        transactionId,
+      );
       const objectUrl = URL.createObjectURL(file.blob);
       const link = document.createElement("a");
       const fallbackFileName = `transaction-receipt-${transactionId}.pdf`;
@@ -98,7 +118,9 @@ export default function AgentTransactionDetailsPage() {
       link.remove();
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
-      const apiResponse = (error as unknown as ApiError).data as ApiResponse | undefined;
+      const apiResponse = (error as unknown as ApiError).data as
+        | ApiResponse
+        | undefined;
       notifications.show({
         title: "Receipt Download Failed",
         message:
@@ -144,6 +166,7 @@ export default function AgentTransactionDetailsPage() {
       </div>
     );
   }
+  console.log(transaction);
 
   return (
     <div className="space-y-6">
@@ -171,7 +194,9 @@ export default function AgentTransactionDetailsPage() {
                   src={currencyFlagUrl ?? undefined}
                   className="ring-2 ring-white"
                 >
-                  {currencyCode !== PLACEHOLDER ? currencyCode.slice(0, 2).toUpperCase() : PLACEHOLDER}
+                  {currencyCode !== PLACEHOLDER
+                    ? currencyCode.slice(0, 2).toUpperCase()
+                    : PLACEHOLDER}
                 </Avatar>
 
                 <Text size="sm" fw={500} className="text-body-heading-300">
@@ -205,12 +230,22 @@ export default function AgentTransactionDetailsPage() {
               Agent Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Agent ID" value={transaction.agent?.id ?? PLACEHOLDER} />
+              <DetailItem
+                label="Agent ID"
+                value={transaction.agent?.id ?? PLACEHOLDER}
+              />
               <DetailItem
                 label="Agent Name"
-                value={transaction.agent?.name ?? transaction.agent?.fullName ?? PLACEHOLDER}
+                value={
+                  transaction.agent?.name ??
+                  transaction.agent?.fullName ??
+                  PLACEHOLDER
+                }
               />
-              <DetailItem label="Email Address" value={transaction.agent?.email ?? PLACEHOLDER} />
+              <DetailItem
+                label="Email Address"
+                value={transaction.agent?.email ?? PLACEHOLDER}
+              />
               <DetailItem
                 label="Phone Number"
                 value={transaction.agent?.phoneNumber ?? PLACEHOLDER}
@@ -232,14 +267,14 @@ export default function AgentTransactionDetailsPage() {
                 label="Amount"
                 value={formatAmount(
                   "NGN",
-                  transaction.amounts?.nairaEquivalent
+                  transaction.amounts?.nairaEquivalent,
                 )}
               />
               <DetailItem
                 label="Equivalent Amount"
                 value={formatAmount(
                   transaction.currency,
-                  transaction.amounts?.foreignAmount
+                  transaction.amounts?.foreignAmount,
                 )}
               />
               <DetailItem label="Date initiated" value={created.date} />
@@ -256,7 +291,10 @@ export default function AgentTransactionDetailsPage() {
               Required Documents
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="BVN" value={transaction.customer?.bvn ?? PLACEHOLDER} />
+              <DetailItem
+                label="BVN"
+                value={transaction.customer?.bvn ?? PLACEHOLDER}
+              />
               <DetailItem label="Documents Count" value={String(docsCount)} />
               {docsList.length > 0 ? (
                 docsList.map((doc, index) => (
@@ -274,7 +312,7 @@ export default function AgentTransactionDetailsPage() {
                           {doc.fileName ?? doc.fileUrl}
                         </a>
                       ) : (
-                        doc.fileName ?? PLACEHOLDER
+                        (doc.fileName ?? PLACEHOLDER)
                       )
                     }
                   />
@@ -291,14 +329,20 @@ export default function AgentTransactionDetailsPage() {
               Payment Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Transaction ID" value={transaction.transactionId} />
+              <DetailItem
+                label="Transaction ID"
+                value={transaction.transactionId}
+              />
               <DetailItem label="Transaction Date" value={created.date} />
               <DetailItem label="Transaction Time" value={created.time} />
               <DetailItem
                 label="Transaction Receipt"
                 value={receiptUrl ?? PLACEHOLDER}
               />
-              <DetailItem label="Paid to" value={transaction.customer?.name ?? PLACEHOLDER} />
+              <DetailItem
+                label="Paid to"
+                value={transaction.customer?.name ?? PLACEHOLDER}
+              />
               <DetailItem label="Bank Name" value={PLACEHOLDER} />
             </div>
           </section>
@@ -313,8 +357,14 @@ export default function AgentTransactionDetailsPage() {
               <DetailItem label="Settlement Date" value={PLACEHOLDER} />
               <DetailItem label="Settlement Time" value={PLACEHOLDER} />
               <DetailItem label="Settlement Receipt" value={PLACEHOLDER} />
-              <DetailItem label="Settlement Structure (Cash)" value={PLACEHOLDER} />
-              <DetailItem label="Settlement Structure (Prepaid Card)" value={PLACEHOLDER} />
+              <DetailItem
+                label="Settlement Structure (Cash)"
+                value={PLACEHOLDER}
+              />
+              <DetailItem
+                label="Settlement Structure (Prepaid Card)"
+                value={PLACEHOLDER}
+              />
               <DetailItem label="75% Paid Into" value={PLACEHOLDER} />
               <div className="space-y-1">
                 <Text size="xs" className="text-body-text-50!" mb={4}>
@@ -329,4 +379,3 @@ export default function AgentTransactionDetailsPage() {
     </div>
   );
 }
-

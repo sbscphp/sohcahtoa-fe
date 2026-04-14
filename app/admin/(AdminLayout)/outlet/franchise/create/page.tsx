@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Group } from "@mantine/core";
+import { useForm } from "@mantine/form";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -18,16 +19,34 @@ import { useOutletStates } from "../../hooks/useOutletStates";
 
 export default function CreateFranchisePage() {
   const router = useRouter();
-  const [franchiseName, setFranchiseName] = useState("");
-  const [state, setState] = useState<string | null>(null);
-  const [address, setAddress] = useState("");
-  const [contactPersonName, setContactPersonName] = useState("");
-  const [emailAddress, setEmailAddress] = useState("");
-  const [phoneNumber1, setPhoneNumber1] = useState("");
-  const [phoneNumber2, setPhoneNumber2] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const hasShownStateErrorRef = useRef(false);
+
+  // 2. Initialize Form with Zod Resolver
+  const form = useForm({
+    initialValues: {
+      franchiseName: "",
+      state: "",
+      address: "",
+      contactPersonName: "",
+      emailAddress: "",
+      phoneNumber1: "",
+      phoneNumber2: "",
+    },
+    validate: {
+      franchiseName: (v) => (v.trim().length ? null : "Franchise name is required"),
+      state: (v) => (v ? null : "Please select a state"),
+      address: (v) => (v.trim().length ? null : "Address is required"),
+      contactPersonName: (v) => (v.trim().length ? null : "Contact person name is required"),
+      emailAddress: (v) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : "Invalid email address",
+      phoneNumber1: (v) =>
+        /^\+234\d{10}$/.test(v.trim()) ? null : "Phone number must be in +234 format (e.g., +2348031234567)",
+      phoneNumber2: (v) =>
+        !v || /^\+234\d{10}$/.test(v.trim()) ? null : "Invalid +234 format",
+    },
+  });
 
   const {
     states,
@@ -38,55 +57,19 @@ export default function CreateFranchisePage() {
 
   const hasStateOptions = states.length > 0;
 
-  const isFormValid = useMemo(
-    () =>
-      franchiseName.trim().length > 0 &&
-      !!state &&
-      address.trim().length > 0 &&
-      contactPersonName.trim().length > 0 &&
-      emailAddress.trim().length > 0 &&
-      phoneNumber1.trim().length > 0,
-    [
-      address,
-      contactPersonName,
-      emailAddress,
-      franchiseName,
-      phoneNumber1,
-      state,
-    ]
-  );
-
   useEffect(() => {
-    if (!isStatesError) {
-      hasShownStateErrorRef.current = false;
-      return;
+    if (isStatesError && !hasShownStateErrorRef.current) {
+      notifications.show({
+        title: "Unable to Load States",
+        message: statesError?.message ?? "States could not be fetched.",
+        color: "red",
+      });
+      hasShownStateErrorRef.current = true;
     }
-
-    if (hasShownStateErrorRef.current) {
-      return;
-    }
-
-    notifications.show({
-      title: "Unable to Load States",
-      message:
-        statesError?.message ??
-        "States could not be fetched. You cannot create a franchise until states are available.",
-      color: "red",
-    });
-    hasShownStateErrorRef.current = true;
-  }, [isStatesError, statesError?.message]);
+  }, [isStatesError, statesError]);
 
   const createFranchiseMutation = useCreateData(adminApi.outlet.franchises.create, {
     onSuccess: (response) => {
-      const apiResponse = response as ApiResponse<{ message?: string }>;
-      notifications.show({
-        title: "Franchise Created",
-        message:
-          apiResponse?.message ??
-          apiResponse?.data?.message ??
-          "Franchise successfully created.",
-        color: "green",
-      });
       setIsConfirmOpen(false);
       setIsSuccessOpen(true);
     },
@@ -94,68 +77,44 @@ export default function CreateFranchisePage() {
       const apiResponse = (error as unknown as ApiError).data as ApiResponse;
       notifications.show({
         title: "Create Franchise Failed",
-        message:
-          apiResponse?.error?.message ??
-          error.message ??
-          "Unable to create franchise. Please try again.",
+        message: apiResponse?.error?.message ?? "Unable to create franchise.",
         color: "red",
       });
     },
   });
 
-  const handleCancel = () => {
-    router.push(adminRoutes.adminOutlet());
-  };
-
   const handleCreateFranchiseClick = () => {
-    if (!hasStateOptions) {
-      notifications.show({
-        title: "State Required",
-        message:
-          "State options are unavailable. Please try again when states are loaded.",
-        color: "red",
-      });
-      return;
-    }
-
-    if (!isFormValid) {
+    // 3. Trigger Mantine Validation
+    const validation = form.validate();
+    if (validation.hasErrors) {
       notifications.show({
         title: "Incomplete Form",
-        message: "Please complete all required fields before proceeding.",
+        message: "Please correct the errors in the form before proceeding.",
         color: "red",
       });
       return;
     }
-
     setIsConfirmOpen(true);
   };
 
   const handleConfirmCreate = () => {
-    if (!state || !hasStateOptions) {
-      notifications.show({
-        title: "State Required",
-        message: "Select a valid state before creating a franchise.",
-        color: "red",
-      });
-      return;
-    }
-
     const payload: CreateFranchisePayload = {
-      franchiseName: franchiseName.trim(),
-      state,
-      address: address.trim(),
-      contactPersonName: contactPersonName.trim(),
-      email: emailAddress.trim(),
-      phoneNumber: phoneNumber1.trim(),
-      altPhoneNumber: phoneNumber2.trim(),
+      franchiseName: form.values.franchiseName.trim(),
+      state: form.values.state,
+      address: form.values.address.trim(),
+      contactPersonName: form.values.contactPersonName.trim(),
+      email: form.values.emailAddress.trim(),
+      phoneNumber: form.values.phoneNumber1.trim(),
+      altPhoneNumber: form.values.phoneNumber2.trim() || null,
     };
 
     createFranchiseMutation.mutate(payload);
   };
 
-  const handleManageFranchise = () => {
-    setIsSuccessOpen(false);
-    router.push(adminRoutes.adminOutlet());
+  const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!/[0-9+]/.test(e.key) && e.key !== "Backspace" && e.key !== "Tab") {
+      e.preventDefault();
+    }
   };
 
   return (
@@ -174,74 +133,64 @@ export default function CreateFranchisePage() {
           <TextInput
             label="Franchise Name"
             placeholder="e.g. Sterling Exchange"
-            value={franchiseName}
-            onChange={(e) => setFranchiseName(e.currentTarget.value)}
             required
             radius="md"
+            {...form.getInputProps("franchiseName")}
           />
 
           <Group grow align="flex-start">
             <Select
               label="State"
-              placeholder={isStatesLoading ? "Loading states..." : "Select state"}
+              placeholder={isStatesLoading ? "Loading..." : "Select state"}
               data={states}
-              value={state}
-              onChange={setState}
               required
               radius="md"
               searchable
-              clearable
               disabled={isStatesLoading || !hasStateOptions}
-              error={
-                isStatesError
-                  ? "Unable to load states. Please try again later."
-                  : undefined
-              }
+              {...form.getInputProps("state")}
             />
             <TextInput
               label="Address"
               placeholder="Enter address"
-              value={address}
-              onChange={(e) => setAddress(e.currentTarget.value)}
               required
               radius="md"
+              {...form.getInputProps("address")}
             />
           </Group>
 
           <TextInput
             label="Contact Person Name"
             placeholder="e.g. Adekunle, Ibrahim Olamide"
-            value={contactPersonName}
-            onChange={(e) => setContactPersonName(e.currentTarget.value)}
             required
             radius="md"
+            {...form.getInputProps("contactPersonName")}
           />
 
           <TextInput
             label="Email Address"
             placeholder="e.g. olamide@sohcahtoa.com"
-            value={emailAddress}
-            onChange={(e) => setEmailAddress(e.currentTarget.value)}
-            type="email"
             required
             radius="md"
+            {...form.getInputProps("emailAddress")}
           />
 
           <Group grow align="flex-start">
             <TextInput
               label="Phone Number 1"
-              placeholder="+234 90 4747 2791"
-              value={phoneNumber1}
-              onChange={(e) => setPhoneNumber1(e.currentTarget.value)}
+              placeholder="+2348031234567"
               required
               radius="md"
+              maxLength={14}
+              onKeyDown={handlePhoneKeyPress}
+              {...form.getInputProps("phoneNumber1")}
             />
             <TextInput
               label="Phone Number 2 (optional)"
-              placeholder="+234 00 0000 0000"
-              value={phoneNumber2}
-              onChange={(e) => setPhoneNumber2(e.currentTarget.value)}
+              placeholder="+2348031234567"
               radius="md"
+              maxLength={14}
+              onKeyDown={handlePhoneKeyPress}
+              {...form.getInputProps("phoneNumber2")}
             />
           </Group>
         </Stack>
@@ -251,8 +200,7 @@ export default function CreateFranchisePage() {
             fullWidth
             size="md"
             buttonType="secondary"
-            onClick={handleCancel}
-            disabled={createFranchiseMutation.isPending}
+            onClick={() => router.push(adminRoutes.adminOutlet())}
           >
             Cancel
           </CustomButton>
@@ -261,12 +209,7 @@ export default function CreateFranchisePage() {
             size="md"
             buttonType="primary"
             onClick={handleCreateFranchiseClick}
-            disabled={
-              createFranchiseMutation.isPending ||
-              isStatesLoading ||
-              !hasStateOptions ||
-              !isFormValid
-            }
+            disabled={createFranchiseMutation.isPending || isStatesLoading}
           >
             Create Franchise
           </CustomButton>
@@ -281,7 +224,6 @@ export default function CreateFranchisePage() {
         primaryButtonText="Yes, Create"
         secondaryButtonText="No, Close"
         onPrimary={handleConfirmCreate}
-        onSecondary={() => setIsConfirmOpen(false)}
         loading={createFranchiseMutation.isPending}
       />
 
@@ -289,9 +231,9 @@ export default function CreateFranchisePage() {
         opened={isSuccessOpen}
         onClose={() => setIsSuccessOpen(false)}
         title="Franchise Created"
-        message="Franchise successfully created. An email for onboarding will be sent to the franchise created."
+        message="Franchise successfully created. An email for onboarding will be sent."
         primaryButtonText="Manage Franchise"
-        onPrimaryClick={handleManageFranchise}
+        onPrimaryClick={() => router.push(adminRoutes.adminOutlet())}
       />
     </div>
   );
