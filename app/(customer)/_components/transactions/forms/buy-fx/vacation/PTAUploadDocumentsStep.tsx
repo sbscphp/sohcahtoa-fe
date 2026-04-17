@@ -8,13 +8,20 @@ import { Info } from "lucide-react";
 import { TextInput } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
 
 const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
-  ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
-  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
+  bvn: kycBvnSchema,
+  ninNumber: kycNinRequiredSchema,
+  formAId: formAIdSchema,
   passportDocumentNumber: passportNumberSchema,
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
@@ -53,12 +60,16 @@ export default function PTAUploadDocumentsStep({
   onSubmit,
   onBack,
 }: Readonly<PTAUploadDocumentsStepProps>) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(kyc.hasBvnFromProfile, initialValues?.bvn);
+  const ninLocked = shouldLockKycPrefill(kyc.hasNinFromProfile, initialValues?.ninNumber);
+
   const form = useForm<UploadDocumentsFormValues>({
     mode: "uncontrolled",
     // Backwards-compat: older PTA step stored visa under `passportFile` and passport number under `formADocumentNumber`
     initialValues: {
-      bvn: initialValues?.bvn || "",
-      ninNumber: initialValues?.ninNumber || "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || initialValues?.formADocumentNumber || "",
       passportFile: initialValues?.passportFile ?? null,
@@ -70,6 +81,8 @@ export default function PTAUploadDocumentsStep({
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as UploadDocumentsFormData);
@@ -93,12 +106,13 @@ export default function PTAUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
+          Please note the maximum you can
           transact is <strong>$4,000 per quarter</strong>.
         </p>
-        <p className="text-body-text-200 mt-2">
+        {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
-        </p>
+        </p> */}
       </Alert>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -106,36 +120,20 @@ export default function PTAUploadDocumentsStep({
           label="BVN"
           required
           size="md"
-          placeholder="Enter 11-digit BVN"
-          maxLength={11}
-          inputMode="numeric"
-          pattern="[0-9]*"
+          placeholder="BVN"
           autoComplete="off"
-          value={form.values.bvn}
-          onBlur={() => form.validateField("bvn")}
-          error={form.errors.bvn}
-          onChange={(e) => {
-            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
-            form.setFieldValue("bvn", digits);
-          }}
+          {...form.getInputProps("bvn")}
+          disabled={bvnLocked}
         />
 
         <TextInput
           label="NIN Number"
           required
           size="md"
-          placeholder="Enter 11-digit NIN"
-          maxLength={11}
-          inputMode="numeric"
-          pattern="[0-9]*"
+          placeholder="NIN"
           autoComplete="off"
-          value={form.values.ninNumber}
-          onBlur={() => form.validateField("ninNumber")}
-          error={form.errors.ninNumber}
-          onChange={(e) => {
-            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
-            form.setFieldValue("ninNumber", digits);
-          }}
+          {...form.getInputProps("ninNumber")}
+          disabled={ninLocked}
         />
       </div>
 
@@ -145,15 +143,15 @@ export default function PTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={8}
+          maxLength={10}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
         <TextInput
-          label="International Passport"
+          label="International Passport Number"
           required
           size="md"
-          placeholder="Enter International Passport"
+          placeholder="Enter International Passport Number"
           maxLength={9}
           autoComplete="off"
           {...form.getInputProps("passportDocumentNumber")}

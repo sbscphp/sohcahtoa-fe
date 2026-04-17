@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOver10k } from "../../amount-step-utils";
+import { isAmountOverRequiredAmount } from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
@@ -38,6 +38,7 @@ export default function BTATransactionAmountStep({
   exchangeRate = "USD1 - NGN1500",
 }: BTATransactionAmountStepProps) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [proofOfFundAttached, setProofOfFundAttached] = useState(false);
   const form = useForm<BTATransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -56,6 +57,23 @@ export default function BTATransactionAmountStep({
     setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
     defaultLabel: exchangeRate,
   });
+
+  const needsProofOfFund = isAmountOverRequiredAmount(
+    form.values.receiveAmount,
+    form.values.receiveCurrency,
+    form.values.sendAmount,
+    form.values.sendCurrency,
+    4000
+  );
+
+  useEffect(() => {
+    if (!needsProofOfFund) setProofOfFundAttached(false);
+  }, [needsProofOfFund]);
+
+  const nextDisabled =
+    !form.values.receiveAmount?.trim() ||
+    !form.values.sendAmount?.trim() ||
+    (needsProofOfFund && !proofOfFundAttached);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values);
@@ -108,12 +126,8 @@ export default function BTATransactionAmountStep({
           />
           <div className="w-full">
             <ProofOfFundPrompt
-              show={isAmountOver10k(
-                form.values.receiveAmount,
-                form.values.receiveCurrency,
-                form.values.sendAmount,
-                form.values.sendCurrency
-              )}
+              show={needsProofOfFund}
+              thresholdUsd={4000}
               onUploadClick={() => setProofModalOpen(true)}
             />
           </div>
@@ -123,7 +137,7 @@ export default function BTATransactionAmountStep({
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
-            console.log("Proof of fund attached", files);
+            setProofOfFundAttached(files.length > 0);
             setProofModalOpen(false);
           }}
         />
@@ -180,6 +194,7 @@ export default function BTATransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

@@ -75,7 +75,7 @@ export function CreatePasswordForm({
                   : "text-body-text-100"
               }`}
             >
-              {passwordRequirements.length ? "✓" : "•"} 8–12 characters
+              {passwordRequirements.length ? "✓" : "•"} At least 8 characters
             </div>
             <div
               className={`text-xs ${

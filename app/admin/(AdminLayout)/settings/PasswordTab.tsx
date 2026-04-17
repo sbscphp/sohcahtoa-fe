@@ -18,6 +18,7 @@ import { useCreateData } from "@/app/_lib/api/hooks";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { adminRoutes } from "@/lib/adminRoutes";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { isPasswordPolicyCompliant } from "@/app/_lib/password-policy";
 
 type PasswordStep = "change" | "create";
 
@@ -40,13 +41,7 @@ export default function PasswordTab() {
   const [showDeletedModal, setShowDeletedModal] = useState(false);
 
   /* ---------------- Password Validation ---------------- */
-  const hasLength = newPassword.length >= 8 && newPassword.length <= 12;
-  const hasUpperAndLower =
-    /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword);
-  const hasNumber = /[0-9]/.test(newPassword);
-  const hasSpecial = /[!@#$%*&?]/.test(newPassword);
-
-  const allValid = hasLength && hasUpperAndLower && hasNumber && hasSpecial;
+  const allValid = isPasswordPolicyCompliant(newPassword);
   const passwordsMatch =
     newPassword === confirmNewPassword && confirmNewPassword.length > 0;
   const oldPasswordsMatch =
@@ -223,7 +218,7 @@ export default function PasswordTab() {
 
             {/* Requirements — static bullet list */}
             <ul className="space-y-1 pl-1">
-              <PasswordRule label="8–12 characters" />
+              <PasswordRule label="At least 8 characters" />
               <PasswordRule label="Use both Uppercase letters (A-Z) and Lowercase letter (a-z)." />
               <PasswordRule label="Include Numbers (0–9)" />
               <PasswordRule label="Special characters (e.g. ! @ # $ % ^ & *)" />

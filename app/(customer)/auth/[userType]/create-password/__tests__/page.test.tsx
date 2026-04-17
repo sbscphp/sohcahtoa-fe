@@ -74,7 +74,7 @@ describe("Create Password Page - Onboarding", () => {
 
   it("displays password requirements", () => {
     render(<CreatePasswordPage />);
-    expect(screen.getByText(/8-12 characters/i)).toBeInTheDocument();
+    expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
     expect(screen.getByText(/uppercase letters/i)).toBeInTheDocument();
     expect(screen.getByText(/numbers/i)).toBeInTheDocument();
     expect(screen.getByText(/special characters/i)).toBeInTheDocument();

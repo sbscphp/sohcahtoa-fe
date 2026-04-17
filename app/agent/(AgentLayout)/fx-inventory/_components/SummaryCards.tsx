@@ -32,7 +32,7 @@ export function SummaryCards({
   return (
     <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
       {cards.map((card, index) => (
-        <Card key={index} radius="md" padding="lg" withBorder>
+        <Card key={index} radius="lg" padding="lg" withBorder>
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <Text size="sm" c="dimmed" mb="xs">

@@ -1,6 +1,7 @@
 "use client";
 
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
 import { Alert, Button, TextInput } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { FileWithPath } from "@mantine/dropzone";
@@ -17,12 +18,18 @@ import {
   requiredIsoDateSchema,
   validatePassportDates,
 } from "@/app/(customer)/_utils/input-validation";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 
 const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
-  ninNumber: z.string().max(50).refine((v) => !v || v.trim() === "" || /^\d{11}$/.test(v.trim()), "NIN must be exactly 11 digits when provided"),
+  bvn: kycBvnSchema,
+  ninNumber: kycNinOptionalSchema,
   tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
-  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
+  formAId: formAIdSchema,
   tccDocumentNumber: z.string().min(1, "TCC document number is required").max(50, "Document number is too long"),
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "TCC (Tax Clearance Certificate) file is required",
@@ -67,11 +74,15 @@ export default function BTAUploadDocumentsStep({
   onSubmit,
   onBack,
 }: Readonly<BTAUploadDocumentsStepProps>) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(kyc.hasBvnFromProfile, initialValues?.bvn);
+  const ninLocked = shouldLockKycPrefill(kyc.hasNinFromProfile, initialValues?.ninNumber);
+
   const form = useForm<BTAUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
-      bvn: initialValues?.bvn || "",
-      ninNumber: initialValues?.ninNumber ?? "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber ?? kyc.defaultNin ?? "",
       tinNumber: initialValues?.tinNumber || "",
       formAId: initialValues?.formAId || "",
       tccDocumentNumber: initialValues?.tccDocumentNumber || "",
@@ -89,6 +100,8 @@ export default function BTAUploadDocumentsStep({
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as BTAUploadDocumentsFormData);
@@ -112,47 +125,32 @@ export default function BTAUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
+          Please note the maximum you can
           transact is <strong>$5,000 per quarter</strong>.
         </p>
-        <p className="text-body-text-200 mt-2">
+        {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
-        </p>
+        </p> */}
       </Alert>
 
         <TextInput
           label="BVN"
           required
           size="md"
-          placeholder="Enter 11-digit BVN"
-          maxLength={11}
-          inputMode="numeric"
-          pattern="[0-9]*"
+          placeholder="BVN"
           autoComplete="off"
-          value={form.values.bvn}
-          onBlur={() => form.validateField("bvn")}
-          error={form.errors.bvn}
-          onChange={(e) => {
-            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
-            form.setFieldValue("bvn", digits);
-          }}
+          {...form.getInputProps("bvn")}
+          disabled={bvnLocked}
         />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
           label="NIN (for API validation)"
           size="md"
-          placeholder="Enter 11-digit NIN"
-          maxLength={11}
-          inputMode="numeric"
-          pattern="[0-9]*"
+          placeholder="NIN"
           autoComplete="off"
-          value={form.values.ninNumber ?? ""}
-          onBlur={() => form.validateField("ninNumber")}
-          error={form.errors.ninNumber as string}
-          onChange={(e) => {
-            const digits = e.target.value.replaceAll(/\D/g, "").slice(0, 11);
-            form.setFieldValue("ninNumber", digits);
-          }}
+          {...form.getInputProps("ninNumber")}
+          disabled={ninLocked}
         />
         <TextInput
           label="TIN Number"
@@ -168,7 +166,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={8}
+          maxLength={10}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
@@ -193,14 +191,14 @@ export default function BTAUploadDocumentsStep({
             error={form.errors.tccFile as string}
           />
 
-<TextInput
+{/* <TextInput
             label="TCC document number"
             required
             size="md"
             placeholder="Document number for API"
             maxLength={50}
             {...form.getInputProps("tccDocumentNumber")}
-          />
+          /> */}
 
         <div className="space-y-2">
           <TransactionFileUploadInput
@@ -244,13 +242,13 @@ export default function BTAUploadDocumentsStep({
           </div>
         </div>
 
-        <TransactionFileUploadInput
+        {/* <TransactionFileUploadInput
             label="Tax Identification Number (TIN)"
             required
             value={form.values.tinCertificateFile}
             onChange={(file) => form.setFieldValue("tinCertificateFile", file)}
             error={form.errors.tinCertificateFile as string}
-          />
+          /> */}
         <div className="space-y-2">
           <TransactionFileUploadInput
             label="Valid Visa"
@@ -278,7 +276,7 @@ export default function BTAUploadDocumentsStep({
         />
 
         <TransactionFileUploadInput
-            label="Letter of request from Corporate Body"
+            label="Letter of request from Employer"
             required
             value={form.values.letterFromCompanyFile}
             onChange={(file) => form.setFieldValue("letterFromCompanyFile", file)}
@@ -286,7 +284,7 @@ export default function BTAUploadDocumentsStep({
           />
 
         <TransactionFileUploadInput
-            label="Letter of Invitation from Partner"
+            label="Letter of Invitation from Oversea Partner"
             required
             value={form.values.letterOfInvitationFile}
             onChange={(file) => form.setFieldValue("letterOfInvitationFile", file)}

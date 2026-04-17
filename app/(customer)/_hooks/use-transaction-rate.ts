@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 
@@ -12,11 +12,23 @@ export interface TransactionRateFormSlice {
   exchangeRate?: string;
 }
 
+export const DEFAULT_RATE_FROM_CURRENCY = "USD";
+export const DEFAULT_RATE_TO_CURRENCY = "NGN";
+
 interface UseTransactionRateCalculatorOptions {
   getValues: () => TransactionRateFormSlice;
   setSendAmount: (value: string) => void;
   setExchangeRateLabel?: (label: string) => void;
   defaultLabel?: string;
+  skipInitialFetch?: boolean;
+}
+
+function parseAmountInput(raw: string | undefined): number {
+  if (raw == null || raw === "") return Number.NaN;
+  const cleaned = raw.replaceAll(",", "").trim();
+  if (cleaned === "") return Number.NaN;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : Number.NaN;
 }
 
 export function useTransactionRateCalculator({
@@ -24,58 +36,84 @@ export function useTransactionRateCalculator({
   setSendAmount,
   setExchangeRateLabel,
   defaultLabel = "USD1 - NGN1500",
+  skipInitialFetch = false,
 }: UseTransactionRateCalculatorOptions) {
   const [displayRate, setDisplayRate] = useState(defaultLabel);
-  const calculateRate = useCreateData(customerApi.transactionRates.calculate);
+  const { mutateAsync, isPending } = useCreateData(customerApi.transactionRates.calculate);
+
+  const getValuesRef = useRef(getValues);
+  const setSendAmountRef = useRef(setSendAmount);
+  const setExchangeRateLabelRef = useRef(setExchangeRateLabel);
+
+  useLayoutEffect(() => {
+    getValuesRef.current = getValues;
+    setSendAmountRef.current = setSendAmount;
+    setExchangeRateLabelRef.current = setExchangeRateLabel;
+  }, [getValues, setSendAmount, setExchangeRateLabel]);
 
   const recalculate = useCallback(
-    (overrideAmount?: string, overrideFromCurrency?: string, overrideToCurrency?: string) => {
-      const { receiveAmount, receiveCurrency, sendCurrency } = getValues();
+    async (
+      overrideAmount?: string,
+      overrideFromCurrency?: string,
+      overrideToCurrency?: string,
+    ) => {
+      const { receiveAmount, receiveCurrency, sendCurrency } = getValuesRef.current();
 
-      const fromCurrency = overrideFromCurrency ?? receiveCurrency;
-      const toCurrency = overrideToCurrency ?? sendCurrency;
+      const fromCurrency =
+        (overrideFromCurrency ?? receiveCurrency ?? "").trim() || DEFAULT_RATE_FROM_CURRENCY;
+      const toCurrency =
+        (overrideToCurrency ?? sendCurrency ?? "").trim() || DEFAULT_RATE_TO_CURRENCY;
+
       const rawAmount = overrideAmount ?? receiveAmount;
-      const numericAmount = Number(rawAmount ?? "");
+      const numericAmount = parseAmountInput(rawAmount);
+      const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0;
+      const amountForApi = hasValidAmount ? numericAmount : 1;
 
-      if (!fromCurrency || !toCurrency || !Number.isFinite(numericAmount) || numericAmount <= 0) {
-        setSendAmount("");
-        return;
+      if (!hasValidAmount) {
+        setSendAmountRef.current("");
       }
 
-      calculateRate.mutate(
-        {
+      try {
+        const response = await mutateAsync({
           fromCurrency,
           toCurrency,
-          amount: numericAmount,
-        },
-        {
-          onSuccess: (response) => {
-            const data = (response as any).data;
-            if (!data) return;
+          amount: amountForApi,
+        });
 
-            const converted = data.convertedAmount as number;
-            const sellRate = data.sellRate as number;
+        const data = response.data;
+        if (!data) return;
 
-            if (Number.isFinite(converted)) {
-              setSendAmount(converted.toString());
-            }
+        const converted = Number(data.convertedAmount);
+        const sellRate = Number(data.sellRate);
 
-            if (Number.isFinite(sellRate)) {
-              const label = `${fromCurrency}1 - ${sellRate} ${toCurrency}`;
-              setDisplayRate(label);
-              setExchangeRateLabel?.(label);
-            }
-          },
-        },
-      );
+        if (hasValidAmount && Number.isFinite(converted)) {
+          setSendAmountRef.current(converted.toString());
+        }
+
+        if (Number.isFinite(sellRate)) {
+          const label = `${fromCurrency}1 - ${sellRate} ${toCurrency}`;
+          setDisplayRate(label);
+          setExchangeRateLabelRef.current?.(label);
+        }
+      } catch {
+        // Network / API error — keep previous displayRate
+      }
     },
-    [calculateRate, getValues, setSendAmount, setExchangeRateLabel],
+    [mutateAsync],
   );
+
+  const didBootstrap = useRef(false);
+  useEffect(() => {
+    if (skipInitialFetch || didBootstrap.current) return;
+    didBootstrap.current = true;
+    queueMicrotask(() => {
+      void recalculate();
+    });
+  }, [skipInitialFetch, recalculate]);
 
   return {
     displayRate,
     recalculate,
-    isCalculating: calculateRate.isPending,
+    isCalculating: isPending,
   };
 }
-

@@ -25,6 +25,8 @@ import {
   PaymentDetailsSection,
   ProceedToPaymentModal,
   TransactionSettlementSection,
+  CashPickupDetailsSection,
+  BeneficiaryDetailsSection,
   type TransactionDetailsData,
   type RequiredDocumentsData,
   type PaymentDetailsData,
@@ -102,6 +104,8 @@ export default function TransactionDetailPage() {
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
   const paymentAmountNgn = apiData?.nairaEquivalent != null ? Number(apiData.nairaEquivalent) : 5000;
+  const cashPickup = apiData?.cashPickup ?? null;
+  const beneficiaryDetails = apiData?.beneficiaryDetails;
 
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
@@ -224,14 +228,16 @@ export default function TransactionDetailPage() {
       {/* Sections */}
       <div className="flex flex-col gap-4 pb-8">
         <TransactionDetailsSection data={payload.transactionDetails} />
+        {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
+        {beneficiaryDetails ? (
+          <BeneficiaryDetailsSection data={beneficiaryDetails} />
+        ) : null}
         <RequiredDocumentsSection
           data={payload.requiredDocuments}
           onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}
           onDownload={(docKey) => {
-            const doc = payload.requiredDocuments[docKey as keyof RequiredDocumentsData];
-            if (doc && typeof doc === "object" && "url" in doc && (doc as { url?: string }).url) {
-              window.open((doc as { url: string }).url, "_blank");
-            }
+            const file = payload.requiredDocuments.uploadedFiles.find((f) => f.documentType === docKey);
+            if (file?.url) window.open(file.url, "_blank");
           }}
         />
         <DocumentViewerModal

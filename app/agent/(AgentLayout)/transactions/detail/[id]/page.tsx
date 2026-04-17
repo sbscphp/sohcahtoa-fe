@@ -6,7 +6,6 @@ import {
   RequiredDocumentsSection,
   TransactionDetailsSection,
   TransactionSettlementSection,
-  type RequiredDocumentsData,
 } from "@/app/(customer)/_components/transactions/details";
 import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
 import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
@@ -105,18 +104,19 @@ export default function AgentTransactionDetailPage() {
   const foreignAmount = apiData?.foreignAmount
     ? Number(apiData.foreignAmount)
     : 0;
-    const isReceivedPaymentStep =
-    (apiData?.currentStep ?? "").toUpperCase() === "RECIEVED_PAYMENT"   
-
+  const isReceivedPaymentStep =
+    (apiData?.status ?? "").toUpperCase() === "PENDING_VALIDATION_RECORD";
+console.log(apiData?.currentStep);
+console.log(isReceivedPaymentStep);
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
   let adminMessage: string | undefined = latestComment?.message;
   if (!adminMessage && viewStatus === "approved") {
     adminMessage =
-      "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request.";
+      "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point";
   } else if (!adminMessage && viewStatus === "rejected") {
     adminMessage =
-      "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request.";
+      "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all";
   }
 
   return (
@@ -130,13 +130,17 @@ export default function AgentTransactionDetailPage() {
       </Link>
 
       <div className="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden">
+        {/* Header */}
         <div className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-[#F2F4F7] px-8 pt-8 pb-6">
           <div className="flex flex-col gap-3 flex-1 min-w-0">
             <h1 className="font-medium text-2xl leading-8 text-[#131212] tracking-[-0.032px]">
               {title}
             </h1>
             <div className="flex flex-row items-center gap-3 flex-wrap">
-              <span className="text-base font-normal leading-6 text-[#6C6969]">
+              <span
+                className="text-base font-normal leading-6 text-[#6C6969]"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
                 {formatHeaderDateTime(payload.date)}
               </span>
               <div style={getStatusBadge(statusLabel)}>{statusLabel}</div>
@@ -145,7 +149,10 @@ export default function AgentTransactionDetailPage() {
               {flagUrl && (
                 <Image src={flagUrl} alt="" width={24} height={24} className="shrink-0" />
               )}
-              <span className="text-base font-medium leading-6 text-[#1F1E1E] px-1">
+              <span
+                className="text-base font-medium leading-6 text-[#1F1E1E] px-1"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
                 {currency?.code ?? payload.currencyCode} · Currency Transacted
               </span>
             </div>
@@ -157,6 +164,7 @@ export default function AgentTransactionDetailPage() {
                 radius="xl"
                 size="md"
                 className="border-[#E88A58] bg-[#FFF6F1] text-[#E36C2F] hover:bg-[#FFF6F1]/90 font-medium text-base"
+                style={{ fontWeight: 500, fontSize: "14px" }}
                 onClick={() => {}}
               >
                 Download Receipt
@@ -167,6 +175,7 @@ export default function AgentTransactionDetailPage() {
                 radius="xl"
                 size="md"
                 className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
+                style={{ fontWeight: 500, fontSize: "14px" }}
                 onClick={() => setUpdatesSheetOpen(true)}
               >
                 View Updates
@@ -299,6 +308,7 @@ export default function AgentTransactionDetailPage() {
           }}
         />
 
+        {/* Sections */}
         <div className="flex flex-col gap-4 pb-8">
           <SectionBlock title="Identification Details">
             <LabelText label="BVN" text={payload.identification.bvn} />
@@ -310,10 +320,8 @@ export default function AgentTransactionDetailPage() {
             data={payload.requiredDocuments}
             onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}
             onDownload={(docKey) => {
-              const doc = payload.requiredDocuments[docKey as keyof RequiredDocumentsData];
-              if (doc && typeof doc === "object" && "url" in doc && (doc as { url?: string }).url) {
-                window.open((doc as { url: string }).url, "_blank");
-              }
+              const file = payload.requiredDocuments.uploadedFiles.find((f) => f.documentType === docKey);
+              if (file?.url) window.open(file.url, "_blank");
             }}
           />
           <DocumentViewerModal

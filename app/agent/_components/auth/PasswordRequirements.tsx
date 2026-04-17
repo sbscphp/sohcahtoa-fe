@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  passwordLengthOk,
+  passwordNumberOk,
+  passwordSpecialOk,
+  passwordUpperLowerOk,
+} from "@/app/_lib/password-policy";
+
 interface PasswordRequirementsProps {
   password: string;
   showAll?: boolean;
@@ -8,20 +15,20 @@ interface PasswordRequirementsProps {
 export function PasswordRequirements({ password, showAll = false }: PasswordRequirementsProps) {
   const requirements = [
     {
-      text: "8-12 characters",
-      met: password.length >= 8 && password.length <= 12,
+      text: "At least 8 characters",
+      met: passwordLengthOk(password),
     },
     {
       text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-      met: /[a-z]/.test(password) && /[A-Z]/.test(password),
+      met: passwordUpperLowerOk(password),
     },
     {
       text: "Include Numbers (0-9)",
-      met: /\d/.test(password),
+      met: passwordNumberOk(password),
     },
     {
-      text: "Special characters (e.g. ! @ # $ % ^ & *)",
-      met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+      text: "At least one symbol (e.g. ! ? @ # $ % ^ & * ( ) _ +)",
+      met: passwordSpecialOk(password),
     },
   ];
 

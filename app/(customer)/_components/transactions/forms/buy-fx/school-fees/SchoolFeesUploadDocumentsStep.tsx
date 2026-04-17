@@ -1,22 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "@mantine/form";
-import { zod4Resolver } from "mantine-form-zod-resolver";
-import { z } from "zod";
-import { Alert, Button, Select, TextInput } from "@mantine/core";
-import { Info } from "lucide-react";
-import { FileWithPath } from "@mantine/dropzone";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
 import { ChevronDown } from "@hugeicons/core-free-icons";
-import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
-import UndergraduateForm from './components/UndergraduateForm';
-import PostgraduateForm from './components/PostgraduateForm';
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Alert, Button, Select, TextInput } from "@mantine/core";
+import { FileWithPath } from "@mantine/dropzone";
+import { useForm } from "@mantine/form";
+import { Info } from "lucide-react";
+import { zod4Resolver } from "mantine-form-zod-resolver";
+import { useState } from "react";
+import { z } from "zod";
 import OtherForm from './components/OtherForm';
+import PostgraduateForm from './components/PostgraduateForm';
+import UndergraduateForm from './components/UndergraduateForm';
 
 const undergraduateSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
-  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
+  formAId: formAIdSchema,
   schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "School Invoice is required",
   }),
@@ -32,7 +32,7 @@ const undergraduateSchema = z.object({
 
 const postgraduateSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
-  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
+  formAId: formAIdSchema,
   schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "School Invoice is required",
   }),
@@ -53,7 +53,7 @@ const postgraduateSchema = z.object({
 
 const otherSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
-  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
+  formAId: formAIdSchema,
   transactionFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Transaction Document is required",
   }),
@@ -92,7 +92,7 @@ type SchoolFeesUploadDocumentsFormValues = {
   transactionDescription?: string;
 };
 
-const ADMISSION_TYPES = ["Undergraduate", "Postgraduate", "Other"];
+const ADMISSION_TYPES = ["Undergraduate", "Postgraduate"];
 
 interface SchoolFeesUploadDocumentsStepProps {
   initialValues?: Partial<SchoolFeesUploadDocumentsFormValues>;
@@ -156,20 +156,21 @@ export default function SchoolFeesUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
+          Please note the maximum you can
           transact is <strong>$10,000 per year</strong>.
         </p>
-        <p className="text-body-text-200 mt-2">
+        {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
-        </p>
+        </p> */}
       </Alert>
 
       <TextInput
-        label="Form A"
+        label="Form A ID"
         required
         size="md"
         placeholder="Enter Form A ID"
-        maxLength={8}
+        maxLength={10}
         autoComplete="off"
         {...form.getInputProps("formAId")}
       />

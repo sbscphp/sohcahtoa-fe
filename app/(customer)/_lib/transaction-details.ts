@@ -3,7 +3,7 @@
  * Do not derive or map transaction type labels on the frontend.
  */
 
-export type DetailViewStatus = "under_review" | "awaiting_disbursement" | "transaction_settled" | "approved" | "rejected";
+export type DetailViewStatus = "under_review" | "awaiting_disbursement" | "transaction_settled" | "approved" | "rejected" | "deposit_confirmed";
 
 /**
  * Derives which detail view to show from stage/status.
@@ -38,6 +38,12 @@ export function getDetailViewStatus(
   ) {
     return "awaiting_disbursement";
   }
+  if (
+    stageLower.includes("deposit_confirmation") ||
+    stageLower.includes("deposit_confirmed")
+  ) {
+    return "deposit_confirmed";
+  }
   return "under_review";
 }
 
@@ -47,6 +53,7 @@ const DETAIL_VIEW_STATUS_LABELS: Record<DetailViewStatus, string> = {
   transaction_settled: "Transaction Settled",
   approved: "Request Approved",
   rejected: "Request Rejected",
+  deposit_confirmed: "Deposit Confirmed",
 };
 
 export function getDetailViewStatusLabel(viewStatus: DetailViewStatus): string {

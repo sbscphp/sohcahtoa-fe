@@ -19,7 +19,6 @@ export const createPasswordSchema = z
       .string()
       .trim()
       .min(8, "Password must be at least 8 characters")
-      .max(12, "Password must not exceed 12 characters")
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[a-z]/, "Password must contain at least one lowercase letter")
       .regex(/[0-9]/, "Password must contain at least one number")
@@ -39,7 +38,7 @@ export type CreatePasswordFormValues = z.infer<typeof createPasswordSchema>;
 // Helper function to check individual password requirements
 export const checkPasswordRequirements = (password: string) => {
   return {
-    length: password.length >= 8 && password.length <= 12,
+    length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /[0-9]/.test(password),

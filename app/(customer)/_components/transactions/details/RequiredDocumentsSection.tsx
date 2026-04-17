@@ -1,5 +1,6 @@
 "use client";
 
+import { getDocumentLabelForApiType } from "@/app/(customer)/_utils/transaction-validation";
 import LabelText from "./LabelText";
 import SectionBlock from "./SectionBlock";
 
@@ -8,10 +9,12 @@ export interface RequiredDocumentsData {
   nin?: string;
   tin?: string;
   formAId: string;
-  formA?: { filename: string; url?: string };
-  utilityBill?: { filename: string; url?: string };
-  visa?: { filename: string; url?: string };
-  returnTicket?: { filename: string; url?: string };
+  /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
+  uploadedFiles: Array<{
+    documentType: string;
+    filename: string;
+    url?: string;
+  }>;
 }
 
 interface RequiredDocumentsSectionProps {
@@ -31,7 +34,13 @@ export default function RequiredDocumentsSection({
       ? {
           filename: d.filename,
           url: d.url,
-          onView: d.url && onViewDocument ? () => onViewDocument(key, d.filename, d.url!) : undefined,
+          onView:
+            d.url && onViewDocument
+              ? () => {
+                  const url = d.url;
+                  if (url) onViewDocument(key, d.filename, url);
+                }
+              : undefined,
           onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
         }
       : undefined;
@@ -42,18 +51,16 @@ export default function RequiredDocumentsSection({
       {data.nin != null && <LabelText label="NIN" text={data.nin} />}
       {data.tin != null && <LabelText label="TIN" text={data.tin} />}
       <LabelText label="Form A ID" text={data.formAId} />
-      {data.formA && (
-        <LabelText label="Form A" document={makeDoc(data.formA, "formA")} />
-      )}
-      {data.utilityBill && (
-        <LabelText label="Utility Bill" document={makeDoc(data.utilityBill, "utilityBill")} />
-      )}
-      {data.visa && (
-        <LabelText label="Visa" document={makeDoc(data.visa, "visa")} />
-      )}
-      {data.returnTicket && (
-        <LabelText label="Return Ticket" document={makeDoc(data.returnTicket, "returnTicket")} />
-      )}
+      {data.uploadedFiles.map((file) => (
+        <LabelText
+          key={file.documentType}
+          label={getDocumentLabelForApiType(file.documentType)}
+          document={makeDoc(
+            { filename: file.filename, url: file.url },
+            file.documentType
+          )}
+        />
+      ))}
     </SectionBlock>
   );
 }

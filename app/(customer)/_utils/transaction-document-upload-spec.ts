@@ -1,5 +1,5 @@
 import type { DocumentType, TransactionType } from "./transaction-document-requirements";
-import { isAmountOver10k } from "@/app/(customer)/_components/transactions/forms/amount-step-utils";
+import { isAmountOverRequiredAmount } from "@/app/(customer)/_components/transactions/forms/amount-step-utils";
 
 export interface DocumentUploadSpec {
   files: File[];
@@ -27,11 +27,14 @@ function collectFileAndType(
 
 /**
  * Returns files and document types to upload for the given transaction type and upload-step form data.
+ * For school fees, pass `bankDetailsData` so the optional bank-step invoice is uploaded as `BANK_VERIFICATION`
+ * (school invoice from the documents step remains `INVOICE` via `schoolInvoiceFile`).
  * Pure function: no side effects, easily testable.
  */
 export function getDocumentUploadSpec(
   transactionType: TransactionType,
-  uploadStepData: UploadStepData | null
+  uploadStepData: UploadStepData | null,
+  bankDetailsData?: UploadStepData | null
 ): DocumentUploadSpec | null {
   if (!uploadStepData || typeof uploadStepData !== "object") return null;
 
@@ -62,12 +65,15 @@ export function getDocumentUploadSpec(
       collectFileAndType(uploadStepData, "receiptForInitialNairaPurchaseFile", "RECEIPT", spec);
       break;
     case "SCHOOL_FEES":
-      // Buy FX – School Fees
+      // Buy FX – School Fees: INVOICE = school invoice (upload step); BANK_VERIFICATION = optional bank-step invoice
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "evidenceOfAdmissionFile", "SCHOOL_ADMISSION", spec);
       collectFileAndType(uploadStepData, "schoolInvoiceFile", "INVOICE", spec);
       collectFileAndType(uploadStepData, "statementOfResultFile", "STATEMENT_OF_RESULT", spec);
       collectFileAndType(uploadStepData, "firstDegreeCertificateFile", "DEGREE", spec);
+      if (bankDetailsData && typeof bankDetailsData === "object") {
+        collectFileAndType(bankDetailsData, "invoiceFile", "BANK_VERIFICATION", spec);
+      }
       break;
     case "MEDICAL":
       // Buy FX – Medical
@@ -159,7 +165,7 @@ export function getSellOver10kDocumentUploadSpec(
   const receiveCurrency = getStringField(amountStepData, "receiveCurrency");
   const sendAmount = getStringField(amountStepData, "sendAmount");
   const sendCurrency = getStringField(amountStepData, "sendCurrency");
-  if (!isAmountOver10k(receiveAmount, receiveCurrency, sendAmount, sendCurrency)) return null;
+  if (!isAmountOverRequiredAmount(receiveAmount, receiveCurrency, sendAmount, sendCurrency)) return null;
 
   const signature = readSignature(amountStepData);
 
