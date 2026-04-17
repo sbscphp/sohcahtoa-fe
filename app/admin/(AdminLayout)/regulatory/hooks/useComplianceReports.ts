@@ -236,10 +236,14 @@ function normalizeDetail(data: AdminComplianceReportDetailsData | null): Complia
 }
 
 export function useComplianceReports(params: AdminComplianceReportsListParams = {}) {
+  const cleanParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== "")
+  );
+
   const query = useFetchDataSeperateLoading<ComplianceListResponse>(
-    [...adminKeys.regulatory.compliance.reports.list(params)],
+    [...adminKeys.regulatory.compliance.reports.list(cleanParams), cleanParams],
     () =>
-      adminApi.regulatory.compliance.list(params) as unknown as Promise<ComplianceListResponse>,
+      adminApi.regulatory.compliance.list(cleanParams) as unknown as Promise<ComplianceListResponse>,
     true
   );
 

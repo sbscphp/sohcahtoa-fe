@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
@@ -42,7 +42,7 @@ export default function ComplianceTable() {
       search: debouncedSearch.trim() || undefined,
       status: mappedStatus || undefined,
     }),
-    [debouncedSearch, mappedStatus]
+    [debouncedSearch, mappedStatus],
   );
 
   const exportComplianceMutation = useGetExportData(
@@ -70,15 +70,18 @@ export default function ComplianceTable() {
           color: "red",
         });
       },
-    }
+    },
   );
 
   const { reports, isLoading, isFetching, totalPages } = useComplianceReports({
     page,
     limit: pageSize,
-    search: debouncedSearch || undefined,
+    keyword: debouncedSearch.trim() || undefined,
     status: mappedStatus || undefined,
   });
+  useEffect(() => {
+    console.log("Searching for:", debouncedSearch);
+  }, [debouncedSearch]);
 
   const safeTotalPages = Math.max(1, totalPages);
 
@@ -127,7 +130,10 @@ export default function ComplianceTable() {
       {item.channel}
     </Text>,
 
-    <RowActionIcon key="action" onClick={() => handleOpenReportSummary(item.id)} />,
+    <RowActionIcon
+      key="action"
+      onClick={() => handleOpenReportSummary(item.id)}
+    />,
   ];
 
   return (
@@ -141,7 +147,8 @@ export default function ComplianceTable() {
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
               onChange={(e) => {
-                setSearch(e.currentTarget.value);
+                const val = e.currentTarget.value;
+                setSearch(val);
                 setPage(1);
               }}
               w={320}
