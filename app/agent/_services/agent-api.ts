@@ -59,6 +59,10 @@ import type {
   SupportTicketDetailResponse,
   AgentSupportTicketListResponse,
   AgentSupportTicketDetailResponse,
+  AgentDashboardCashStatsPeriod,
+  AgentDashboardCashStatsResponse,
+  AgentPaymentMovementType,
+  AgentPaymentMovementsResponse,
 } from "@/app/_lib/api/types";
 
 interface AgentLoginResponseData {
@@ -188,6 +192,13 @@ export const agentApi = {
           params: { range },
         }
       ),
+    cashStats: (period: AgentDashboardCashStatsPeriod) =>
+      apiClient.get<AgentDashboardCashStatsResponse>(
+        AGENT_API_ENDPOINTS.dashboard.cashStats,
+        {
+          params: { period },
+        }
+      ),
   },
 
   rates: {
@@ -295,6 +306,18 @@ export const agentApi = {
         }),
       stats: () =>
         apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
+
+      paymentMovements: (params: {
+        type: AgentPaymentMovementType;
+        page?: number;
+        limit?: number;
+      }) =>
+        apiClient.get<AgentPaymentMovementsResponse>(
+          AGENT_API_ENDPOINTS.transactions.paymentsMovements,
+          {
+            params: params as ApiRequestConfig["params"],
+          }
+        ),
 
       getPickupTerminals: (params?: PickupTerminalsQueryParams) => {
         const p: Record<string, string> = {};

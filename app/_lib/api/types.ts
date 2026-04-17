@@ -348,6 +348,53 @@ export interface AgentDashboardTransactionsByTypeData {
 export type AgentDashboardTransactionsByTypeResponse =
   ApiResponseWrapper<AgentDashboardTransactionsByTypeData>;
 
+export type AgentDashboardCashStatsPeriod =
+  | "last_month"
+  | "last_3_months"
+  | "last_6_months"
+  | "last_year";
+
+export interface AgentDashboardCashStatsData {
+  currency: string;
+  currencyName: string;
+  period: {
+    preset: string;
+    start: string;
+    end: string;
+  };
+  totalCashReceivedFromCustomer: number;
+  totalCashReceivedFromAdmin: number;
+  totalCashDisbursed: number;
+}
+
+export type AgentDashboardCashStatsResponse =
+  ApiResponseWrapper<AgentDashboardCashStatsData>;
+
+export type AgentPaymentMovementType =
+  | "cash_disbursed"
+  | "cash_received_from_admin"
+  | "cash_received_from_customer";
+
+
+export interface AgentPaymentMovementItem {
+  transaction_id: string;
+  transaction_date: string;
+  customer_full_name?: string | null;
+  sender_full_name?: string | null;
+  amount_disbursed?: number | null;
+  amount_received?: number | null;
+  currency_pair?: string | null;
+  prepaid_amount?: number | null;
+  transaction_type?: string | null;
+  admin_full_name?: string | null;
+  [key: string]: unknown;
+}
+
+export interface AgentPaymentMovementsResponse
+  extends ApiResponseWrapper<AgentPaymentMovementItem[]> {
+  pagination: PaginationMetadata;
+}
+
 export interface PaginationMetadata {
   page: number;
   limit: number;

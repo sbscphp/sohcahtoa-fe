@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Group, Select } from "@mantine/core";
 import { CurrencySelectorWithSearch } from "@/app/agent/(AgentLayout)/rate-calculator/_components/CurrencySelectorWithSearch";
 import {
@@ -8,10 +8,14 @@ import {
   getCurrencyByCode,
   type Currency,
 } from "@/app/(customer)/_lib/currency";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import type { AgentDashboardCashStatsResponse } from "@/app/_lib/api/types";
+import { agentApi } from "@/app/agent/_services/agent-api";
 import { SummaryCards } from "./_components/SummaryCards";
-import { BalanceSection } from "./_components/BalanceSection";
 import { CashInventoryTable } from "./_components/CashInventoryTable";
 import { SELECT_WIDTH } from "../../utils/constants";
+import { dateRangeLabelToCashStatsPeriod, formatNgnAmount } from "./_lib/format-inventory";
 
 export default function FXInventoryPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
@@ -19,15 +23,46 @@ export default function FXInventoryPage() {
   );
   const [dateRange, setDateRange] = useState("last 3 months");
 
-  // Mock data - replace with actual API calls
-  const cashReceivedFromCustomer = "$ 13,700,075";
-  const cashReceivedFromAdmin = "$ 13,700,075";
-  const cashDisbursed = "$ 13,700,075";
-  const totalFxUnits = "67,048.00";
+  const period = useMemo(() => dateRangeLabelToCashStatsPeriod(dateRange), [dateRange]);
+
+  const statsQueryKey = useMemo(
+    () => agentKeys.dashboard.cashStats(period) as unknown as unknown[],
+    [period]
+  );
+
+  const { data: cashStatsData, isLoading: statsLoading } = useFetchData(
+    statsQueryKey,
+    () => agentApi.dashboard.cashStats(period),
+    true
+  );
+
+  const stats = cashStatsData as AgentDashboardCashStatsResponse | undefined;
+  const s = stats?.data;
+  const currencyCode = s?.currency ?? "NGN";
+
+  const summary = useMemo(() => {
+    if (!s) {
+      return {
+        cashReceivedFromCustomer: "—",
+        cashReceivedFromAdmin: "—",
+        cashDisbursed: "—",
+      };
+    }
+    return {
+      cashReceivedFromCustomer: formatNgnAmount(
+        s.totalCashReceivedFromCustomer,
+        currencyCode
+      ),
+      cashReceivedFromAdmin: formatNgnAmount(
+        s.totalCashReceivedFromAdmin,
+        currencyCode
+      ),
+      cashDisbursed: formatNgnAmount(s.totalCashDisbursed, currencyCode),
+    };
+  }, [s, currencyCode]);
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
       <Group justify="flex-end" gap="md">
         <CurrencySelectorWithSearch
           selectedCurrency={selectedCurrency}
@@ -49,33 +84,13 @@ export default function FXInventoryPage() {
         />
       </Group>
 
-      {/* Summary Cards */}
       <SummaryCards
-        cashReceivedFromCustomer={cashReceivedFromCustomer}
-        cashReceivedFromAdmin={cashReceivedFromAdmin}
-        cashDisbursed={cashDisbursed}
+        cashReceivedFromCustomer={summary.cashReceivedFromCustomer}
+        cashReceivedFromAdmin={summary.cashReceivedFromAdmin}
+        cashDisbursed={summary.cashDisbursed}
+        isLoading={statsLoading}
       />
 
-      {/* Balance Section */}
-      {/* <BalanceSection
-        totalFxUnits={totalFxUnits}
-        currency={selectedCurrency}
-        onCurrencyChange={setSelectedCurrency}
-        onBuyFx={() => {
-          // Handle buy FX action
-          console.log("Buy FX clicked");
-        }}
-        onSellFx={() => {
-          // Handle sell FX action
-          console.log("Sell FX clicked");
-        }}
-        onReceiveMoney={() => {
-          // Handle receive money action
-          console.log("Receive money clicked");
-        }}
-      /> */}
-
-      {/* Cash Inventory Table */}
       <CashInventoryTable />
     </div>
   );
