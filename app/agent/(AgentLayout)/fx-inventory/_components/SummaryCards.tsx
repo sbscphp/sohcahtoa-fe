@@ -1,18 +1,19 @@
 "use client";
 
-import { Card, Text, SimpleGrid } from "@mantine/core";
-import { ArrowUpRight } from "lucide-react";
+import { Card, Text, SimpleGrid, Skeleton } from "@mantine/core";
 
 interface SummaryCardsProps {
   cashReceivedFromCustomer: string;
   cashReceivedFromAdmin: string;
   cashDisbursed: string;
+  isLoading?: boolean;
 }
 
 export function SummaryCards({
   cashReceivedFromCustomer,
   cashReceivedFromAdmin,
   cashDisbursed,
+  isLoading = false,
 }: SummaryCardsProps) {
   const cards = [
     {
@@ -38,9 +39,13 @@ export function SummaryCards({
               <Text size="sm" c="dimmed" mb="xs">
                 {card.title}
               </Text>
-              <Text fw={700} size="xl" className="text-body-heading-300">
-                {card.value}
-              </Text>
+              {isLoading ? (
+                <Skeleton height={28} mt={4} radius="sm" />
+              ) : (
+                <Text fw={700} size="xl" className="text-body-heading-300">
+                  {card.value}
+                </Text>
+              )}
             </div>
           </div>
         </Card>

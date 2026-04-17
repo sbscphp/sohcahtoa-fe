@@ -33,6 +33,10 @@ interface TableWrapperProps<T> {
   data: T[];
   columns: PaginatedTableColumn<T>[];
   pageSize?: number;
+  /** Server-side pagination (pass with onPageChange + totalPages). */
+  page?: number;
+  onPageChange?: (page: number) => void;
+  totalPages?: number;
   onRowClick?: (item: T) => void;
   keyExtractor?: (item: T, index: number) => string | number;
   emptyTitle?: string;
@@ -57,6 +61,9 @@ export default function TableWrapper<T>({
   data,
   columns,
   pageSize = 10,
+  page: serverPage,
+  onPageChange,
+  totalPages: serverTotalPages,
   onRowClick,
   keyExtractor,
   emptyTitle,
@@ -137,6 +144,9 @@ export default function TableWrapper<T>({
         data={data}
         columns={columns}
         pageSize={pageSize}
+        page={serverPage}
+        onPageChange={onPageChange}
+        totalPages={serverTotalPages}
         onRowClick={onRowClick}
         keyExtractor={keyExtractor}
         emptyTitle={emptyTitle}

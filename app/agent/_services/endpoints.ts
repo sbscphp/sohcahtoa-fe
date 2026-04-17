@@ -45,7 +45,7 @@ export const AGENT_API_ENDPOINTS = {
     checkLimits: "/api/agent/transactions/limits/check",
     health: "/api/agent/transactions/health",
     export: "/api/agent/transactions/export",
-    // pickupLocationTerminals: "/api/agent/transactions/pickup-locations/terminals",
+    paymentsMovements: "/api/agent/transactions/payments/movements",
     pickupLocationTerminals: "/api/customer/transactions/pickup-locations/terminals",
   },
 
@@ -57,6 +57,7 @@ export const AGENT_API_ENDPOINTS = {
   dashboard: {
     recentTransactions: "/api/agent/dashboard/recent-transactions",
     transactionsByType: "/api/agent/dashboard/transactions-by-type",
+    cashStats: "/api/agent/dashboard/cash-stats",
   },
 
   support: {

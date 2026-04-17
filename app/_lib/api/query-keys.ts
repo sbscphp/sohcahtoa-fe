@@ -459,6 +459,12 @@ export const agentKeys = {
       [...agentKeys.rates.all, "list", params] as const,
   },
 
+  dashboard: {
+    all: ["agent", "dashboard"] as const,
+    cashStats: (period?: string) =>
+      [...agentKeys.dashboard.all, "cash-stats", period] as const,
+  },
+
   customers: {
     all: ["agent", "customers"] as const,
     stats: () => [...agentKeys.customers.all, "stats"] as const,
@@ -495,6 +501,11 @@ export const agentKeys = {
       [...agentKeys.transactions.detail(id), "deposit-instructions"] as const,
     depositStatus: (id: string) =>
       [...agentKeys.transactions.detail(id), "deposit-status"] as const,
+    paymentMovements: (params: {
+      type: string;
+      page?: number;
+      limit?: number;
+    }) => [...agentKeys.transactions.all, "payments", "movements", params] as const,
   },
   
   notifications: {
