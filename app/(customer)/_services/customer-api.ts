@@ -77,6 +77,7 @@ import type {
   TransactionDepositInstructionsResponse,
   TransactionDepositStatusResponse,
   PickupPointsResponse,
+  PickupTerminalsQueryParams,
   PickupLocationStatesResponse,
   PickupLocationCitiesResponse,
 } from "@/app/_lib/api/types";
@@ -224,10 +225,17 @@ export const customerApi = {
         API_ENDPOINTS.transactions.depositStatus(transactionId)
       ),
 
-    getPickupPoints: (params?: { state?: string; city?: string }) =>
-      apiClient.get<PickupPointsResponse>(API_ENDPOINTS.transactions.pickupPoints, {
-        params: params as ApiRequestConfig["params"],
-      }),
+    getPickupTerminals: (params?: PickupTerminalsQueryParams) => {
+      const p: Record<string, string> = {};
+      if (params?.state?.trim()) p.state = params.state.trim();
+      if (params?.city?.trim()) p.city = params.city.trim();
+      if (params?.pickupDate?.trim()) p.pickupDate = params.pickupDate.trim();
+      if (params?.pickupTime?.trim()) p.pickupTime = params.pickupTime.trim();
+      return apiClient.get<PickupPointsResponse>(
+        API_ENDPOINTS.transactions.pickupLocationTerminals,
+        Object.keys(p).length > 0 ? { params: p as ApiRequestConfig["params"] } : undefined
+      );
+    },
 
     getPickupLocationStates: () =>
       apiClient.get<PickupLocationStatesResponse>(

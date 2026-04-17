@@ -12,6 +12,7 @@ import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import { getInstructionsText, getStringField } from "@/app/(customer)/_utils/transaction-payment";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
+import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 
 type PaymentMethod = "cash" | "bank_transfer";
 type ModalStep = "cash" | "bank" | "receipt" | "success";
@@ -72,7 +73,13 @@ export default function AgentProceedToPaymentModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!opened) return;
+    if (!opened) {
+      setStep("cash");
+      setNotes("");
+      setReceiptFile(null);
+      setErrorMessage(null);
+      return;
+    }
     const method = initialMethod ?? "cash";
     const nextStep: ModalStep = method === "cash" ? "cash" : "bank";
     setSelectedMethod(method);
@@ -307,40 +314,12 @@ export default function AgentProceedToPaymentModal({
     </div>
   );
 
-  const successModal = (
-    <div className="px-6 py-10 sm:py-12 text-center">
-      <div className="mx-auto h-24 w-24 rounded-full border-4 border-[#2DBA45] flex items-center justify-center text-[#2DBA45] text-5xl">
-        ✓
-      </div>
-      <h3 className="text-[#131212] text-5xl sm:text-4xl font-bold mt-8">Payment Successful</h3>
-      <p className="text-[#6C6969] text-2xl sm:text-xl mt-3">
-        Your payment has been received and your funds will be released soon.
-      </p>
-      <div className="mt-10 space-y-4">
-        <Button
-          radius="xl"
-          fullWidth
-          className="bg-[#DD4F05] hover:bg-[#B84204] text-white h-14 text-xl"
-          onClick={onClose}
-        >
-          View Transaction
-        </Button>
-        <Button
-          radius="xl"
-          fullWidth
-          variant="outline"
-          className="border-[#CCCACA] text-[#4D4B4B] h-14 text-xl"
-          onClick={onClose}
-        >
-          No, Close
-        </Button>
-      </div>
-    </div>
-  );
+  const handlePaymentSuccessClose = () => {
+    onClose();
+  };
 
   const content = (() => {
     if (step === "receipt") return receiptModal;
-    if (step === "success") return successModal;
     return (
       <div>
         {commonHeader(
@@ -356,18 +335,30 @@ export default function AgentProceedToPaymentModal({
   })();
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      centered
-      withCloseButton={false}
-      size="lg"
-      radius={24}
-      classNames={{ body: "p-0" }}
-      styles={{ content: { width: "min(780px, calc(100vw - 24px))" } }}
-    >
-      {content}
-    </Modal>
+    <>
+      <Modal
+        opened={opened && step !== "success"}
+        onClose={onClose}
+        centered
+        withCloseButton={false}
+        size="lg"
+        radius={24}
+        classNames={{ body: "p-0" }}
+        styles={{ content: { width: "min(780px, calc(100vw - 24px))" } }}
+      >
+        {content}
+      </Modal>
+      <SuccessModal
+        opened={opened && step === "success"}
+        onClose={handlePaymentSuccessClose}
+        title="Payment Successful"
+        message="Your payment has been received and your funds will be released soon."
+        primaryButtonText="View Transaction"
+        onPrimaryClick={handlePaymentSuccessClose}
+        secondaryButtonText="No, Close"
+        onSecondaryClick={handlePaymentSuccessClose}
+      />
+    </>
   );
 }
 

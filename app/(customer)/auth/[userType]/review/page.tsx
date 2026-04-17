@@ -239,7 +239,7 @@ export default function ReviewPage() {
           fullWidth
           rightSection={!isSendingOTP && <ArrowUpRight size={18} />}
         >
-          {isSendingOTP ? "Sending OTP..." : "Send OTP"}
+          {isSendingOTP ? "Sending OTP..." : "Continue"}
         </Button>
 
         <SecurityBadges />

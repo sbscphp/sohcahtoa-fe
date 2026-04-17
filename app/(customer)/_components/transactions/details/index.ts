@@ -10,3 +10,5 @@ export type { PaymentDetailsData } from "./PaymentDetailsSection";
 export { default as ProceedToPaymentModal } from "./ProceedToPaymentModal";
 export { default as TransactionSettlementSection } from "./TransactionSettlementSection";
 export type { TransactionSettlementData } from "./TransactionSettlementSection";
+export { default as CashPickupDetailsSection } from "./CashPickupDetailsSection";
+export { default as BeneficiaryDetailsSection } from "./BeneficiaryDetailsSection";

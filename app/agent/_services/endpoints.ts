@@ -45,6 +45,8 @@ export const AGENT_API_ENDPOINTS = {
     checkLimits: "/api/agent/transactions/limits/check",
     health: "/api/agent/transactions/health",
     export: "/api/agent/transactions/export",
+    // pickupLocationTerminals: "/api/agent/transactions/pickup-locations/terminals",
+    pickupLocationTerminals: "/api/customer/transactions/pickup-locations/terminals",
   },
 
   rates: {

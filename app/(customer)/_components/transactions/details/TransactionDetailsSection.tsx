@@ -22,7 +22,7 @@ export default function TransactionDetailsSection({ data }: TransactionDetailsSe
       <LabelText label="Amount" amount={data.amount} />
       <LabelText label="Equivalent Amount" amount={data.equivalentAmount} />
       <LabelText label="Date initiated" text={data.dateInitiated} />
-      <LabelText label="Pickup Address" text={data.pickupAddress} className="w-full basis-full" />
+      {/* <LabelText label="Pickup Address" text={data.pickupAddress} className="w-full basis-full" /> */}
     </SectionBlock>
   );
 }

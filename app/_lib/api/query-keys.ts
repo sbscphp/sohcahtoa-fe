@@ -4,7 +4,7 @@
  * Usage: customerKeys.profile(), adminKeys.transactions.list({ page: 1 })
  */
 
-import type { TransactionListParams } from "./types";
+import type { PickupTerminalsQueryParams, TransactionListParams } from "./types";
 
 // ==================== Customer Query Keys ====================
 
@@ -30,8 +30,8 @@ export const customerKeys = {
       [...customerKeys.transactions.detail(id), "deposit-instructions"] as const,
     depositStatus: (id: string) =>
       [...customerKeys.transactions.detail(id), "deposit-status"] as const,
-    pickupPoints: (params?: { state?: string; city?: string }) =>
-      [...customerKeys.transactions.all, "pickup-points", params] as const,
+    pickupTerminals: (params?: PickupTerminalsQueryParams | "all") =>
+      [...customerKeys.transactions.all, "pickup-terminals", params ?? "all"] as const,
     pickupLocationStates: () =>
       [...customerKeys.transactions.all, "pickup-location-states"] as const,
     pickupLocationCities: (params?: { state?: string; city?: string }) =>

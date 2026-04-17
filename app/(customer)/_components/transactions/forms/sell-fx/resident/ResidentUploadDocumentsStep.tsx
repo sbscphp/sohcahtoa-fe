@@ -69,15 +69,16 @@ export default function ResidentUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
-          transact is <strong>$10,000</strong> per transaction. For transactions of $10,000 or more, you will need to complete a source of funds declaration on the next step.
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
+          Please note the maximum you can
+          transact is <strong>$10,000</strong> per transaction.
         </p>
-        <p className="text-body-text-200 mt-2">
+        {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
-        </p>
-        <p className="text-body-text-200 mt-2 text-sm">
+        </p> */}
+        {/* <p className="text-body-text-200 mt-2 text-sm">
           If you have provided these details before, they may be pre-filled from your account.
-        </p>
+        </p> */}
       </Alert>
 
 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

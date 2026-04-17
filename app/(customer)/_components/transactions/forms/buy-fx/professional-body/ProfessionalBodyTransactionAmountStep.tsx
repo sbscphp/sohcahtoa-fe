@@ -9,7 +9,7 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOver10k } from "../../amount-step-utils";
+import { isAmountOverRequiredAmount } from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
@@ -101,7 +101,7 @@ export default function ProfessionalBodyTransactionAmountStep({
           />
           <div className="w-full">
             <ProofOfFundPrompt
-              show={isAmountOver10k(
+              show={isAmountOverRequiredAmount(
                 form.values.receiveAmount,
                 form.values.receiveCurrency,
                 form.values.sendAmount,

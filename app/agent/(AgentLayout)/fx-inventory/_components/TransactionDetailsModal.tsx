@@ -35,7 +35,7 @@ export function TransactionDetailsModal({
         </div>
       }
       size="md"
-      radius="md"
+      radius="lg"
       closeButtonProps={{
         icon: <X size={16} />,
       }}

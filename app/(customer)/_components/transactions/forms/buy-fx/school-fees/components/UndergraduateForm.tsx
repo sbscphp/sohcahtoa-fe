@@ -57,7 +57,7 @@ export default function UndergraduateForm({
         error={schoolInvoiceError}
       />
 
-      <TextInput
+      {/* <TextInput
         label="School Invoice Number"
         required
         size="md"
@@ -67,7 +67,7 @@ export default function UndergraduateForm({
         value={schoolInvoiceNumber}
         onChange={(e) => onSchoolInvoiceNumberChange(e.target.value)}
         error={schoolInvoiceNumberError}
-      />
+      /> */}
 
       <TransactionFileUploadInput
         label="International Passport"

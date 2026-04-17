@@ -9,7 +9,7 @@ import CurrencyAmountInput from "@/app/(customer)/_components/forms/CurrencyAmou
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOver10k } from "../../amount-step-utils";
+import { isAmountOverRequiredAmount } from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import SourceOfFundsDeclaration from "./SourceOfFundsDeclaration";
@@ -83,7 +83,7 @@ export default function ResidentTransactionAmountStep({
     defaultLabel: exchangeRate,
   });
 
-  const over10k = isAmountOver10k(
+  const over10k = isAmountOverRequiredAmount(
     form.values.receiveAmount,
     form.values.receiveCurrency,
     form.values.sendAmount,

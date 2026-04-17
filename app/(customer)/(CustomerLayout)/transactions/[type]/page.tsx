@@ -39,6 +39,7 @@ import TouristUploadDocumentsStep from "@/app/(customer)/_components/transaction
 import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
 import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
 import type { PickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
@@ -201,8 +202,11 @@ export default function TransactionCreationPage() {
     }
 
     try {
-      const spec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
-      console.log("spec", spec);
+      const spec = getDocumentUploadSpec(
+        transactionType,
+        bag.uploadDocumentsData,
+        bag.bankDetailsData
+      );
       const uploaded = spec
         ? await uploadDocuments.mutateAsync({
             file: spec.files,
@@ -210,11 +214,8 @@ export default function TransactionCreationPage() {
             documentType: spec.documentTypes,
           })
         : [];
-      console.log("uploaded", uploaded);
       const documents = toTransactionDocuments(uploaded);
-      console.log("documents", documents);
       const payload = buildTransactionPayload(transactionType, bag, documents);
-      console.log("payload", payload);
       const created = await createTransaction.mutateAsync(payload);
       setConfirmationOpened(false);
       router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
@@ -433,27 +434,16 @@ export default function TransactionCreationPage() {
   };
 
   const confirmTitle = isProfessionalBody
-    ? "Initiate Professional Fee?"
+    ? "Initiate Professional Fee Transaction request?"
     : isMedical
-      ? "Initiate Medical Fee?"
+      ? "Initiate Medical Fee Transaction request?"
       : isSchoolFees
-        ? "Initiate School Fees?"
+        ? "Initiate School Fees Transaction request?"
         : isBTA
-          ? "Initiate BTA?"
+          ? "Initiate BTA Transaction request?"
           : isTourist
-            ? "Initiate Tourist?"
-            : "Initiate PTA?";
-  const confirmDescription = isProfessionalBody
-    ? "Are you sure you want to initiate this professional fee transaction?"
-    : isMedical
-      ? "Are you sure you want to initiate this medical fee transaction?"
-      : isSchoolFees
-        ? "Are you sure you want to initiate this school fees transaction?"
-        : isBTA
-          ? "Are you sure you want to initiate a new BTA?"
-          : isTourist
-            ? "Are you sure you want to initiate this tourist transaction?"
-            : "Are you sure you want to initiate a new PTA?";
+            ? "Initiate Tourist Transaction request?"
+            : "Initiate PTA Transaction request?";
 
   return (
     <div className="space-y-6">
@@ -466,8 +456,8 @@ export default function TransactionCreationPage() {
         opened={confirmationOpened}
         onClose={() => setConfirmationOpened(false)}
         title={confirmTitle}
-        description={confirmDescription}
-        confirmLabel="View Transaction"
+        notices={getBuyFxInitiateNotices(flowType)}
+        confirmLabel="Yes, Initiate Request"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
         requireInfoConfirmation

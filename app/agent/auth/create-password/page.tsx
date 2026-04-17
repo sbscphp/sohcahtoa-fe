@@ -13,17 +13,19 @@ import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
+import { passwordSpecialOk } from "@/app/_lib/password-policy";
 
 const passwordSchema = z
   .object({
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .max(12, "Password must be at most 12 characters")
       .regex(/[a-z]/, "Password must contain lowercase letters")
       .regex(/[A-Z]/, "Password must contain uppercase letters")
       .regex(/\d/, "Password must contain numbers")
-      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain special characters"),
+      .refine((pwd) => passwordSpecialOk(pwd), {
+        message: "Password must contain at least one symbol",
+      }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

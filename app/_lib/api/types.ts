@@ -247,6 +247,8 @@ export interface UserProfileProfile {
 export interface UserProfileKyc {
   status: string;
   bvn?: string | null;
+  /** National Identification Number (when returned on profile / login). */
+  nin?: string | null;
   tin?: string | null;
   passportNumber?: string | null;
   passportDocumentUrl?: string | null;
@@ -731,8 +733,8 @@ export interface TransactionDetailCashPickup {
   pickupState: string | null;
   pickupCity: string | null;
   pickupCode: string;
-  recipientName: string;
-  recipientPhone: string;
+  recipientName: string | null;
+  recipientPhone: string | null;
   amount: string;
   currency: string;
   status: string;
@@ -1004,15 +1006,32 @@ export interface CalculateTransactionRateData {
 export type CalculateTransactionRateResponse =
   ApiResponseWrapper<CalculateTransactionRateData>;
 
-export interface PickupPoint {
+/** Item from GET .../pickup-locations/terminals (`data.terminals`). */
+export interface PickupTerminal {
   id: string;
   name: string;
-  location: string;
   address: string;
-  branch: string;
+  state: string;
+  city?: string;
+  region?: string;
+  email?: string;
+  phoneNumber?: string;
+  available?: boolean;
 }
 
-export type PickupPointsResponse = ApiResponseWrapper<PickupPoint[]>;
+export type PickupTerminalsData = {
+  terminals: PickupTerminal[];
+};
+
+export type PickupPointsResponse = ApiResponseWrapper<PickupTerminalsData>;
+
+/** Query params for GET .../pickup-locations/terminals (all optional; omit for full list). */
+export interface PickupTerminalsQueryParams {
+  state?: string;
+  city?: string;
+  pickupDate?: string;
+  pickupTime?: string;
+}
 
 export type PickupLocationStatesResponse = ApiResponseWrapper<{
   states: string[];

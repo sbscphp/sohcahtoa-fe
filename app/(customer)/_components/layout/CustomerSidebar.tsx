@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
@@ -36,6 +36,11 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
   const [userProfile] = useAtom(userProfileAtom);
   const [logoutModalOpened, { open: openLogoutModal, close: closeLogoutModal }] = useDisclosure(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [avatarReady, setAvatarReady] = useState(false);
+
+  useEffect(() => {
+    setAvatarReady(true);
+  }, []);
 
   const displayName = userProfile?.profile?.fullName || 
     [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
@@ -153,7 +158,16 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
             }}
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
-              <Avatar src={avatarUrl} name={displayName} color="initials"/>
+              {avatarReady ? (
+                <Avatar src={avatarUrl} name={displayName} color="initials" />
+              ) : (
+                <div
+                  className="flex h-full w-full items-center justify-center bg-gray-200 text-[10px] font-medium text-gray-500"
+                  aria-hidden
+                >
+                  …
+                </div>
+              )}
             </div>
             <div className="min-w-0 flex-1 overflow-hidden text-left">
               <p className="truncate text-xs font-medium text-body-heading-300">

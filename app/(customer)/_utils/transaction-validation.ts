@@ -101,6 +101,7 @@ export function getDocumentName(documentType: DocumentType): string {
     OVERSEAS_MEDICAL_LETTER: "Letter from Overseas Doctor/Hospital",
     MEMBERSHIP_CARD: "Evidence of Membership",
     INVOICE: "Invoice from Professional Body",
+    BANK_VERIFICATION: "Bank Verification Document",
     SCHOOL_ADMISSION: "School Admission / Offer Letter",
     STATEMENT_OF_RESULT: "Statement of Result",
     DEGREE: "Degree Certificate",
@@ -111,4 +112,14 @@ export function getDocumentName(documentType: DocumentType): string {
     DIGITAL_SIGNATURE: "Digital Signature",
   };
   return names[documentType] || documentType;
+}
+
+/** Label for API `requiredDocuments[].type` strings (known `DocumentType` or unknown future values). */
+export function getDocumentLabelForApiType(documentType: string): string {
+  const label = getDocumentName(documentType as DocumentType);
+  if (label !== documentType) return label;
+  return documentType
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

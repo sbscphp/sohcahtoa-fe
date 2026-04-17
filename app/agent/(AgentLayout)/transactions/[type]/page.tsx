@@ -2,6 +2,7 @@
 
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
 import type { BTATransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
 import BTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
 import type { BTAUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
@@ -13,6 +14,7 @@ import MedicalTransactionAmountStep from "@/app/(customer)/_components/transacti
 import type { MedicalUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalUploadDocumentsStep";
 import MedicalUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalUploadDocumentsStep";
 import type { ProfessionalBodyBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyBankDetailsStep";
+import ProfessionalBodyBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyBankDetailsStep";
 import type { ProfessionalBodyTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyTransactionAmountStep";
 import ProfessionalBodyTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyTransactionAmountStep";
 import type { ProfessionalBodyUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/professional-body/ProfessionalBodyUploadDocumentsStep";
@@ -145,7 +147,7 @@ export default function AgentTransactionCreationPage() {
       | TouristTransactionAmountFormData
   ) => {
     setTransactionAmountData(data);
-    if (isSchoolFees || isMedical) {
+    if (isSchoolFees || isMedical || isProfessionalBody) {
       setActiveStep("bank-details");
     } else {
       setConfirmationOpened(true);
@@ -187,7 +189,7 @@ export default function AgentTransactionCreationPage() {
       bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
     };
 
-    if ((isSchoolFees || isMedical) && !bankDetailsData) {
+    if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
       setConfirmationOpened(false);
       notifications.show({
         title: "Error",
@@ -198,7 +200,11 @@ export default function AgentTransactionCreationPage() {
     }
 
     try {
-      const spec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
+      const spec = getDocumentUploadSpec(
+        transactionType,
+        bag.uploadDocumentsData,
+        bag.bankDetailsData
+      );
       const uploaded = spec
         ? await uploadDocuments.mutateAsync({
             file: spec.files,
@@ -298,6 +304,14 @@ export default function AgentTransactionCreationPage() {
             <ProfessionalBodyTransactionAmountStep
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
+              onBack={handleBack}
+            />
+          );
+        case "bank-details":
+          return (
+            <ProfessionalBodyBankDetailsStep
+              initialValues={bankDetailsData || undefined}
+              onSubmit={handleBankDetailsSubmit}
               onBack={handleBack}
             />
           );
@@ -418,27 +432,16 @@ export default function AgentTransactionCreationPage() {
   };
 
   const confirmTitle = isProfessionalBody
-    ? "Initiate Professional Fee?"
+    ? "Initiate Professional Fee Transaction request?"
     : isMedical
-      ? "Initiate Medical Fee?"
+      ? "Initiate Medical Fee Transaction request?"
       : isSchoolFees
-        ? "Initiate School Fees?"
+        ? "Initiate School Fees Transaction request?"
         : isBTA
-          ? "Initiate BTA?"
+          ? "Initiate BTA Transaction request?"
           : isTourist
-            ? "Initiate Tourist?"
-            : "Initiate PTA?";
-  const confirmDescription = isProfessionalBody
-    ? "Are you sure you want to initiate this professional fee transaction?"
-    : isMedical
-      ? "Are you sure you want to initiate this medical fee transaction?"
-      : isSchoolFees
-        ? "Are you sure you want to initiate this school fees transaction?"
-        : isBTA
-          ? "Are you sure you want to initiate a new BTA?"
-          : isTourist
-            ? "Are you sure you want to initiate this tourist transaction?"
-            : "Are you sure you want to initiate a new PTA?";
+            ? "Initiate Tourist Transaction request?"
+            : "Initiate PTA Transaction request?";
 
   return (
     <>
@@ -452,8 +455,8 @@ export default function AgentTransactionCreationPage() {
           opened={confirmationOpened}
           onClose={() => setConfirmationOpened(false)}
           title={confirmTitle}
-          description={confirmDescription}
-          confirmLabel="Create Transaction"
+          notices={getBuyFxInitiateNotices(flowType)}
+          confirmLabel="Yes, Initiate Request"
           cancelLabel="No, Close"
           onConfirm={handleConfirmInitiate}
           requireInfoConfirmation

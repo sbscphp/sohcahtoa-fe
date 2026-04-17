@@ -16,7 +16,7 @@ export default function SectionBlock({ title, children }: SectionBlockProps) {
       <div className="flex items-center px-8">
         <h3 className={sectionTitleClass}>{title}</h3>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 px-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 px-8">
         {children}
       </div>
     </div>

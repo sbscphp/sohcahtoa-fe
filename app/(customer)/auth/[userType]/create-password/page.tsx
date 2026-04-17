@@ -12,6 +12,13 @@ import { validateUserType, checkAndClearSessionIfUserTypeChanged, clearOnboardin
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import {
+  isPasswordPolicyCompliant,
+  passwordLengthOk,
+  passwordNumberOk,
+  passwordSpecialOk,
+  passwordUpperLowerOk,
+} from "@/app/_lib/password-policy";
 
 export default function CreatePasswordPage() {
   const router = useRouter();
@@ -71,18 +78,8 @@ export default function CreatePasswordPage() {
     }
   );
 
-  const validatePassword = (pwd: string) => {
-    const hasLength = pwd.length >= 8 && pwd.length <= 12;
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasNumber = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*]/.test(pwd);
-
-    return hasLength && hasUpper && hasLower && hasNumber && hasSpecial;
-  };
-
   const handleCreatePassword = () => {
-    if (!validatePassword(password)) {
+    if (!isPasswordPolicyCompliant(password)) {
       setError("Password does not meet all requirements");
       return;
     }
@@ -147,18 +144,18 @@ export default function CreatePasswordPage() {
 
   const passwordRequirements = [
     {
-      text: "8-12 characters",
-      met: password.length >= 8 && password.length <= 12
+      text: "At least 8 characters",
+      met: passwordLengthOk(password),
     },
     {
       text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-      met: /[A-Z]/.test(password) && /[a-z]/.test(password)
+      met: passwordUpperLowerOk(password),
     },
-    { text: "Include Numbers (0-9)", met: /[0-9]/.test(password) },
+    { text: "Include Numbers (0-9)", met: passwordNumberOk(password) },
     {
-      text: "Special characters (e.g. ! @ # $ % ^ & *)",
-      met: /[!@#$%^&*]/.test(password)
-    }
+      text: "At least one symbol (e.g. ! ? @ # $ % ^ & * ( ) _ +)",
+      met: passwordSpecialOk(password),
+    },
   ];
 
   if (!userType) {
@@ -193,7 +190,7 @@ export default function CreatePasswordPage() {
             onChange={setPassword}
             placeholder="Enter password"
             size="lg"
-            error={error && !validatePassword(password) ? error : undefined}
+            error={error && !isPasswordPolicyCompliant(password) ? error : undefined}
           />
 
           <div className="">
@@ -236,7 +233,7 @@ export default function CreatePasswordPage() {
           disabled={
             !password ||
             !confirmPassword ||
-            !validatePassword(password) ||
+            !isPasswordPolicyCompliant(password) ||
             password !== confirmPassword ||
             isCreating
           }

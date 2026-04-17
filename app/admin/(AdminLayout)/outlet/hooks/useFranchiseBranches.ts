@@ -45,22 +45,53 @@ function parseBranch(item: BranchListItemData): FranchiseBranchListItem {
 }
 
 function extractBranches(data: unknown): FranchiseBranchListItem[] {
-  if (!Array.isArray(data)) return [];
+  if (Array.isArray(data)) {
+    return data
+      .filter(
+        (item): item is BranchListItemData =>
+          typeof item === "object" && item !== null,
+      )
+      .map(parseBranch);
+  }
 
-  return data
-    .filter((item): item is BranchListItemData => typeof item === "object" && item !== null)
-    .map(parseBranch);
+  if (!data || typeof data !== "object") return [];
+
+  const dataObj = data as Record<string, unknown>;
+  const candidates = [
+    dataObj.branches,
+    dataObj.items,
+    dataObj.rows,
+    dataObj.entries,
+    dataObj.results,
+    dataObj.data,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate
+        .filter(
+          (item): item is BranchListItemData =>
+            typeof item === "object" && item !== null,
+        )
+        .map(parseBranch);
+    }
+  }
+
+  return [];
 }
 
-export function useFranchiseBranches(franchiseId: string, params: BranchListParams = {}) {
+export function useFranchiseBranches(
+  franchiseId: string,
+  params: BranchListParams = {},
+) {
   const query = useFetchDataSeperateLoading<FranchiseBranchesResponse>(
     [...adminKeys.outlet.franchises.branches.list(franchiseId, params)],
     () =>
       adminApi.outlet.franchises.branches.list(
         franchiseId,
-        params
+        params,
       ) as unknown as Promise<FranchiseBranchesResponse>,
-    Boolean(franchiseId)
+    Boolean(franchiseId),
   );
 
   const branches = extractBranches(query.data?.data);
@@ -70,6 +101,7 @@ export function useFranchiseBranches(franchiseId: string, params: BranchListPara
     branches,
     totalPages: pagination?.totalPages ?? 1,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
   };

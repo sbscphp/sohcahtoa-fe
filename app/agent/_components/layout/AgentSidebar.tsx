@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   Settings,
   Users,
+  Building2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,7 +29,7 @@ type AgentSidebarProps = {
 const menuItems = [
   { icon: LayoutGrid, label: "Dashboard", href: "/agent/dashboard" },
   { icon: CreditCard, label: "Transactions", href: "/agent/transactions" },
-  // { icon: Building2, label: "FX Inventory", href: "/agent/fx-inventory" },
+  { icon: Building2, label: "FX Inventory", href: "/agent/fx-inventory" },
   { icon: Users, label: "Customer Management", href: "/agent/customer-management" },
   { icon: Calculator, label: "Rate Calculator", href: "/agent/rate-calculator" },
   { icon: LifeBuoy, label: "Support", href: "/agent/support" },

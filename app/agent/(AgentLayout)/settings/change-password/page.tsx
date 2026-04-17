@@ -12,6 +12,13 @@ import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import type { ApiError } from "@/app/_lib/api/client";
+import {
+  isPasswordPolicyCompliant,
+  passwordLengthOk,
+  passwordNumberOk,
+  passwordSpecialOk,
+  passwordUpperLowerOk,
+} from "@/app/_lib/password-policy";
 
 function PasswordVisibilityIcon({ reveal }: Readonly<{ reveal: boolean }>) {
   return (
@@ -27,15 +34,6 @@ function renderPasswordVisibilityIcon({
   reveal,
 }: Readonly<{ reveal: boolean }>) {
   return <PasswordVisibilityIcon reveal={reveal} />;
-}
-
-function validateNewPassword(pwd: string) {
-  const hasLength = pwd.length >= 8 && pwd.length <= 12;
-  const hasUpper = /[A-Z]/.test(pwd);
-  const hasLower = /[a-z]/.test(pwd);
-  const hasNumber = /\d/.test(pwd);
-  const hasSpecial = /[!@#$%^&*]/.test(pwd);
-  return hasLength && hasUpper && hasLower && hasNumber && hasSpecial;
 }
 
 export default function ChangePasswordPage() {
@@ -71,7 +69,7 @@ export default function ChangePasswordPage() {
 
   const newPasswordValid =
     newPassword.length > 0 &&
-    validateNewPassword(newPassword) &&
+    isPasswordPolicyCompliant(newPassword) &&
     newPassword === confirmNewPassword;
   const isValid = currentPassword.length > 0 && newPasswordValid;
 
@@ -118,17 +116,17 @@ export default function ChangePasswordPage() {
           <ul className="space-y-1">
             {[
               {
-                text: "8-12 characters",
-                met: newPassword.length >= 8 && newPassword.length <= 12,
+                text: "At least 8 characters",
+                met: passwordLengthOk(newPassword),
               },
               {
                 text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-                met: /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword),
+                met: passwordUpperLowerOk(newPassword),
               },
-              { text: "Include Numbers (0-9)", met: /\d/.test(newPassword) },
+              { text: "Include Numbers (0-9)", met: passwordNumberOk(newPassword) },
               {
-                text: "Special characters (e.g. ! @ # $ % ^ & *)",
-                met: /[!@#$%^&*]/.test(newPassword),
+                text: "At least one symbol (e.g. ! ? @ # $ % ^ & * ( ) _ +)",
+                met: passwordSpecialOk(newPassword),
               },
             ].map((req) => (
               <li key={req.text} className="flex items-start gap-2">

@@ -7,12 +7,19 @@ import { Alert, Button, TextInput } from "@mantine/core";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 
 const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
-  ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
-  formAId: z.string().min(1, "Form A ID is required").max(8, "Form A ID must be at most 8 characters"),
+  bvn: kycBvnSchema,
+  ninNumber: kycNinRequiredSchema,
+  formAId: formAIdSchema,
   passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
   evidenceOfMembershipFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Evidence of Membership is required",
@@ -39,11 +46,15 @@ export default function ProfessionalBodyUploadDocumentsStep({
   onSubmit,
   onBack,
 }: ProfessionalBodyUploadDocumentsStepProps) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(kyc.hasBvnFromProfile, initialValues?.bvn);
+  const ninLocked = shouldLockKycPrefill(kyc.hasNinFromProfile, initialValues?.ninNumber);
+
   const form = useForm<ProfessionalBodyUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
-      bvn: initialValues?.bvn || "",
-      ninNumber: initialValues?.ninNumber || "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       evidenceOfMembershipFile: initialValues?.evidenceOfMembershipFile ?? null,
@@ -53,6 +64,8 @@ export default function ProfessionalBodyUploadDocumentsStep({
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as ProfessionalBodyUploadDocumentsFormData);
@@ -76,30 +89,23 @@ export default function ProfessionalBodyUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {APPROVAL_BEFORE_PAYMENT_MESSAGE} Please note the maximum you can
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
+          Please note the maximum you can
           transact is <strong>$2,000 per quarter</strong>.
         </p>
-        <p className="text-body-text-200 mt-2">
+        {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
-        </p>
+        </p> */}
       </Alert>
 
       <TextInput
         label="BVN"
         required
         size="md"
-        placeholder="Enter 11-digit BVN"
-        maxLength={11}
-        inputMode="numeric"
-        pattern="[0-9]*"
+        placeholder="BVN"
         autoComplete="off"
-        value={form.values.bvn}
-        onBlur={() => form.validateField("bvn")}
-        error={form.errors.bvn}
-        onChange={(e) => {
-          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-          form.setFieldValue("bvn", digits);
-        }}
+        {...form.getInputProps("bvn")}
+        disabled={bvnLocked}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -107,25 +113,17 @@ export default function ProfessionalBodyUploadDocumentsStep({
           label="NIN"
           required
           size="md"
-          placeholder="Enter NIN"
-          maxLength={11}
-          inputMode="numeric"
-          pattern="[0-9]*"
+          placeholder="NIN"
           autoComplete="off"
-          value={form.values.ninNumber}
-          onBlur={() => form.validateField("ninNumber")}
-          error={form.errors.ninNumber}
-          onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-            form.setFieldValue("ninNumber", digits);
-          }}
+          {...form.getInputProps("ninNumber")}
+          disabled={ninLocked}
         />
         <TextInput
           label="Form A ID"
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={8}
+          maxLength={10}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />

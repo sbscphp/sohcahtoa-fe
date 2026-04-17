@@ -1,21 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { ActionIcon, Badge, Card, TextInput } from "@mantine/core";
 import {
-  Card,
-  Text,
-  Group,
-  TextInput,
-  Button,
-  Tabs,
-  Badge,
-  Select,
-} from "@mantine/core";
-import { Search, ListFilter, Upload, ChevronRight } from "lucide-react";
-import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import { ActionButton } from "@/app/admin/_components/ActionButton";
+  TableWrapper,
+  type FilterTabOption,
+  type PaginatedTableColumn,
+} from "@/app/agent/_components/common";
+import {
+  type TableFilterGroup,
+  type TableFilterValues,
+} from "@/app/agent/_components/common/table/TableFilterSheet";
+import { IconArrowRight } from "@/components/icons/IconArrowRight";
 import { TransactionDetailsModal } from "./TransactionDetailsModal";
-import { SELECT_WIDTH } from "@/app/agent/utils/constants";
 
 type TransactionType =
   | "disbursed"
@@ -33,6 +30,25 @@ interface CashTransaction {
   transactionType?: string;
   nameOfAdmin?: string;
 }
+
+const FILTER_TABS: FilterTabOption[] = [
+  { value: "disbursed", label: "Cash Disbursed" },
+  { value: "received_from_customer", label: "Cash Received from Customer" },
+  { value: "received_from_admin", label: "Cash Received from Admin" },
+];
+
+const CASH_FILTER_GROUPS: TableFilterGroup[] = [
+  {
+    label: "Status",
+    key: "status",
+    type: "single",
+    options: [
+      { label: "All", value: "all" },
+      { label: "Pending", value: "pending" },
+      { label: "Completed", value: "completed" },
+    ],
+  },
+];
 
 const generateMockTransactions = (type: TransactionType): CashTransaction[] => {
   const baseTransactions: CashTransaction[] = [
@@ -129,7 +145,7 @@ const generateMockTransactions = (type: TransactionType): CashTransaction[] => {
   if (type === "disbursed") {
     return baseTransactions.map((t) => ({
       ...t,
-      receivedFrom: t.receivedFrom, // Customer name for disbursed
+      receivedFrom: t.receivedFrom,
     }));
   }
 
@@ -137,18 +153,16 @@ const generateMockTransactions = (type: TransactionType): CashTransaction[] => {
 };
 
 export function CashInventoryTable() {
-  const [activeTab, setActiveTab] = useState<TransactionType>(
-    "received_from_customer",
-  );
+  const [activeTab, setActiveTab] = useState<TransactionType>("received_from_customer");
   const [search, setSearch] = useState("");
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<CashTransaction | null>(null);
+  const [filterValues, setFilterValues] = useState<TableFilterValues>({
+    selections: {},
+    dateRange: null,
+  });
+  const [selectedTransaction, setSelectedTransaction] = useState<CashTransaction | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
 
-  const transactions = useMemo(
-    () => generateMockTransactions(activeTab),
-    [activeTab],
-  );
+  const transactions = useMemo(() => generateMockTransactions(activeTab), [activeTab]);
 
   const filteredTransactions = useMemo(() => {
     if (!search.trim()) return transactions;
@@ -162,153 +176,179 @@ export function CashInventoryTable() {
     );
   }, [search, transactions]);
 
-  const getHeaders = () => {
+  const openDetails = useCallback((item: CashTransaction) => {
+    setSelectedTransaction(item);
+    setModalOpened(true);
+  }, []);
+
+  const columns = useMemo((): PaginatedTableColumn<CashTransaction>[] => {
     if (activeTab === "disbursed") {
       return [
-        { label: "Transaction ID", key: "transactionId" },
-        { label: "Customer Name", key: "customerName" },
-        { label: "Cash Disbursed", key: "cashDisbursed" },
-        { label: "Currency Pair", key: "currencyPair" },
-        { label: "Prepaid Amount", key: "prepaidAmount" },
-        { label: "Transaction type", key: "transactionType" },
-        { label: "Transaction Date", key: "transactionDate" },
-        { label: "Action", key: "action" },
+        {
+          key: "transactionId",
+          label: "Transaction ID",
+          render: (t) => (
+            <p className="text-body-text-300 font-medium text-sm leading-5">{t.transactionId}</p>
+          ),
+        },
+        {
+          key: "customerName",
+          label: "Customer Name",
+          render: (t) => (
+            <p className="text-body-text-400 text-sm leading-5">{t.receivedFrom}</p>
+          ),
+        },
+        {
+          key: "cashDisbursed",
+          label: "Cash Disbursed",
+          render: (t) => (
+            <p className="text-body-text-300 font-medium text-sm leading-5">{t.cashAmount}</p>
+          ),
+        },
+        {
+          key: "currencyPair",
+          label: "Currency Pair",
+          render: (t) => (
+            <p className="text-body-text-400 text-sm leading-5">{t.currencyPair}</p>
+          ),
+        },
+        {
+          key: "prepaidAmount",
+          label: "Prepaid Amount",
+          render: (t) => (
+            <p className="text-body-text-400 text-sm leading-5">{t.prepaidAmount}</p>
+          ),
+        },
+        {
+          key: "transactionType",
+          label: "Transaction type",
+          render: (t) => (
+            <Badge variant="light" color="orange" size="sm">
+              {t.transactionType}
+            </Badge>
+          ),
+        },
+        {
+          key: "transactionDate",
+          label: "Transaction Date",
+          render: (t) => (
+            <p className="text-body-text-200 text-sm leading-5">{t.transactionDate}</p>
+          ),
+        },
+        {
+          key: "action",
+          label: "",
+          headerClassName: "w-12",
+          className: "w-12",
+          render: (row) => (
+            <ActionIcon
+              radius="md"
+              variant="light"
+              w={40}
+              h={40}
+              className="bg-[#FFF6F1]! border border-[#FFF6F1]!"
+              style={{
+                boxShadow: "0px 1px 2px rgba(16, 24, 40, 0.05)",
+                padding: "10px",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openDetails(row);
+              }}
+              aria-label="View transaction details"
+            >
+              <IconArrowRight className="w-8 h-8" />
+            </ActionIcon>
+          ),
+        },
       ];
     }
-    return [
-      { label: "Received From", key: "receivedFrom" },
-      { label: "Cash Received", key: "cashReceived" },
-      { label: "Transaction Date", key: "transactionDate" },
-      { label: "Action", key: "action" },
-    ];
-  };
-
-  const renderRow = (item: CashTransaction) => {
-    if (activeTab === "disbursed") {
-      return [
-        <Text key="transactionId" size="sm" fw={500}>
-          {item.transactionId}
-        </Text>,
-        <Text key="customerName" size="sm">
-          {item.receivedFrom}
-        </Text>,
-        <Text key="cashDisbursed" size="sm" fw={500}>
-          {item.cashAmount}
-        </Text>,
-        <Text key="currencyPair" size="sm">
-          {item.currencyPair}
-        </Text>,
-        <Text key="prepaidAmount" size="sm">
-          {item.prepaidAmount}
-        </Text>,
-        <Badge key="transactionType" variant="light" color="orange" size="sm">
-          {item.transactionType}
-        </Badge>,
-        <Text key="transactionDate" size="sm" c="dimmed">
-          {item.transactionDate}
-        </Text>,
-        <ActionButton
-          key="action"
-          onClick={() => {
-            setSelectedTransaction(item);
-            setModalOpened(true);
-          }}
-          aria-label="View transaction details"
-        />,
-      ];
-    }
 
     return [
-      <Text key="receivedFrom" size="sm" fw={500}>
-        {item.receivedFrom}
-      </Text>,
-      <Text key="cashReceived" size="sm" fw={500}>
-        {item.cashAmount}
-      </Text>,
-      <Text key="transactionDate" size="sm" c="dimmed">
-        {item.transactionDate}
-      </Text>,
-      <ActionButton
-        key="action"
-        onClick={() => {
-          setSelectedTransaction(item);
-          setModalOpened(true);
-        }}
-        aria-label="View transaction details"
-      />,
+      {
+        key: "receivedFrom",
+        label: "Received From",
+        render: (t) => (
+          <p className="text-body-text-300 font-medium text-sm leading-5">{t.receivedFrom}</p>
+        ),
+      },
+      {
+        key: "cashReceived",
+        label: "Cash Received",
+        render: (t) => (
+          <p className="text-body-text-300 font-medium text-sm leading-5">{t.cashAmount}</p>
+        ),
+      },
+      {
+        key: "transactionDate",
+        label: "Transaction Date",
+        render: (t) => (
+          <p className="text-body-text-200 text-sm leading-5">{t.transactionDate}</p>
+        ),
+      },
+      {
+        key: "action",
+        label: "",
+        headerClassName: "w-12",
+        className: "w-12",
+        render: (row) => (
+          <ActionIcon
+            radius="md"
+            variant="light"
+            w={40}
+            h={40}
+            className="bg-[#FFF6F1]! border border-[#FFF6F1]!"
+            style={{
+              boxShadow: "0px 1px 2px rgba(16, 24, 40, 0.05)",
+              padding: "10px",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetails(row);
+            }}
+            aria-label="View transaction details"
+          >
+            <IconArrowRight className="w-8 h-8" />
+          </ActionIcon>
+        ),
+      },
     ];
-  };
+  }, [activeTab, openDetails]);
 
   return (
     <>
       <Card radius="md" padding="lg" withBorder>
-        <Group justify="space-between" mb="md">
-          <Tabs
-            value={activeTab}
-            onChange={(v) => setActiveTab(v as TransactionType)}
-          >
-            <Tabs.List className="w-full flex flex-1 flex-wrap items-start gap-3 border-0 bg-transparent pb-3">
-              {[
-                { value: "disbursed" as const, label: "Cash Disbursed" },
-                {
-                  value: "received_from_customer" as const,
-                  label: "Cash Received from Customer",
-                },
-                {
-                  value: "received_from_admin" as const,
-                  label: "Cash Received from Admin",
-                },
-              ].map((tab) => {
-                const isActive = activeTab === tab.value;
-                return (
-                  <Tabs.Tab
-                    key={tab.value}
-                    value={tab.value}
-                    className={`shrink-0 cursor-pointer rounded-full! border px-2.5 py-1.5 text-sm font-normal leading-[120%] transition-colors mx-2 ${
-                      isActive
-                        ? "border! border-primary-100! bg-[#FFF6F1]! text-primary-400!"
-                        : "border! border-[#E4E4E7]! bg-white! text-gray-900! hover:border-gray-300!"
-                    }`}
-                  >
-                    {tab.label}
-                  </Tabs.Tab>
-                );
-              })}
-            </Tabs.List>
-          </Tabs>
-        </Group>
-        <div className="flex items-center gap-2 justify-between pt-2 pb-6">
-          <TextInput
-            placeholder="Enter keyword"
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            size="sm"
-          />
-          <div className="flex items-center gap-2">
-            <Select
-              placeholder="Filter By"
-              data={["All", "Pending", "Completed"]}
-              size="sm"
-              w={SELECT_WIDTH}
-            />
-            <Button
-              variant="outline"
-              color="orange"
-              size="sm"
-              rightSection={<Upload size={16} />}
-              w={SELECT_WIDTH}
-            >
-              Export
-            </Button>
-          </div>
-        </div>
-        <DynamicTableSection
-          headers={getHeaders()}
+        <TableWrapper<CashTransaction>
+          title="Cash inventory"
+          filterOptions={FILTER_TABS}
+          activeFilter={activeTab}
+          onFilterChange={(v) => setActiveTab(v as TransactionType)}
+          filters={CASH_FILTER_GROUPS}
+          filterValues={filterValues}
+          onFiltersApply={setFilterValues}
+          filterSheetTitle="Filter By"
+          onExportClick={() => {
+            // Wire to export API when available
+          }}
+          toolbarBelowFilters={
+            <div className="flex flex-col gap-3 pt-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
+              <TextInput
+                placeholder="Enter keyword"
+                value={search}
+                onChange={(e) => setSearch(e.currentTarget.value)}
+                size="sm"
+                className="w-full sm:max-w-xs"
+              />
+            </div>
+          }
           data={filteredTransactions}
-          loading={false}
-          renderItems={renderRow}
+          columns={columns}
+          pageSize={10}
+          onRowClick={openDetails}
+          keyExtractor={(t) => t.id}
           emptyTitle="No data available yet"
           emptyMessage="You currently have not have any data available yet. Check back Later."
+          isLoading={false}
         />
       </Card>
 
