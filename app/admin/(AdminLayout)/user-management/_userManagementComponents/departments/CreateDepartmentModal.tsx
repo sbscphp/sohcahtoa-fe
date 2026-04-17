@@ -51,13 +51,12 @@ export function CreateDepartmentModal({
       description: "",
     },
     validate: {
-      name: (value) =>
-        value.trim().length ? null : "Department Name is required",
+      name: (value) => (value.trim().length ? null : "Department Name is required"),
+      departmentEmail: (value) =>
+        !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? null : "Invalid email address",
       branch: (value) => (value ? null : "Branch is required"),
       description: (value) =>
-        value.trim().length > 32
-          ? "Description must not exceed 32 characters"
-          : null,
+        value.trim().length <= 32 ? null : "Description must not exceed 32 characters",
     },
   });
 
@@ -120,123 +119,124 @@ export function CreateDepartmentModal({
   return (
     <>
       <Modal
-      opened={opened}
-      onClose={handleClose}
-      title={
-        <Text className="text-body-heading-300! text-xl! font-bold! leading-tight!">
-          Create New Department
-        </Text>
-      }
-      closeButtonProps={{
-        icon: (
-          <X
-            size={20}
-            className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!"
-          />
-        ),
-      }}
-      radius="md"
-      size="xl"
-      centered
-    >
-      <Divider my="xs" />
+        opened={opened}
+        onClose={handleClose}
+        title={
+          <Text className="text-body-heading-300! text-xl! font-bold! leading-tight!">
+            Create New Department
+          </Text>
+        }
+        closeButtonProps={{
+          icon: (
+            <X
+              size={20}
+              className="bg-[#e69fb6]! text-pink-500! font-bold! rounded-full! p-1! hover:bg-[#e69fb6]/80! transition-all! duration-300!"
+            />
+          ),
+        }}
+        radius="md"
+        size="xl"
+        centered
+      >
+        <Divider my="xs" />
 
-      <Stack gap="md" mt="lg">
-        <Group grow>
-          <TextInput
-            label="Department Name"
-            placeholder="Department Name"
-            required
-            {...form.getInputProps("name")}
-          />
-
-          <TextInput
-            label="Department Email Address (Optional)"
-            placeholder="Department Email Address (Optional)"
-            {...form.getInputProps("departmentEmail")}
-          />
-        </Group>
-
-        <Group grow>
-          <Select
-            label="Branch Applicable"
-            placeholder="Select an Option"
-            required
-            data={branchOptions}
-            disabled={branchesLoading}
-            searchable
-            value={form.values.branch}
-            onChange={(value) => form.setFieldValue("branch", value ?? "")}
-            error={form.errors.branch}
-          />
-
-          <Stack gap={4}>
+        <Stack gap="md" mt="lg">
+          <Group grow>
             <TextInput
-              label="Short description (Optional)"
-              placeholder="Short description"
-              {...form.getInputProps("description")}
-            />
-            <Text size="xs" c="dimmed">
-              Not more than 32 character counts
-            </Text>
-          </Stack>
-        </Group>
-
-        <div
-          className={`rounded-xl border p-4 ${
-            isDefault
-              ? "border-[#EA580C] bg-[#FFF7ED]"
-              : "border-gray-200 bg-[#F9FAFB]"
-          }`}
-        >
-          <div className="flex gap-2">
-            <Switch
-              checked={isDefault}
-              onChange={(e) => setIsDefault(e.currentTarget.checked)}
-              color="orange"
-              size="md"
+              label="Department Name"
+              placeholder="Department Name"
+              required
+              {...form.getInputProps("name")}
             />
 
-            <Stack gap={6}>
-              <Text fw={600} size="sm">
-                Set Department as Default
-              </Text>
+            <TextInput
+              label="Department Email Address (Optional)"
+              placeholder="Department Email Address (Optional)"
+              {...form.getInputProps("departmentEmail")}
+            />
+          </Group>
 
-              <Text size="sm" c="dimmed">
-                1. If another department is deactivated, its admin user will be
-                temporarily moved here
-              </Text>
-              <Text size="sm" c="dimmed">
-                2. If another department is deleted, its admin user will be
-                permanently moved here until assigned to a new department.
+          <Group grow>
+            <Select
+              label="Branch Applicable"
+              placeholder="Select an Option"
+              required
+              data={branchOptions}
+              disabled={branchesLoading}
+              searchable
+              value={form.values.branch}
+              onChange={(value) => form.setFieldValue("branch", value ?? "")}
+              error={form.errors.branch}
+            />
+
+            <Stack gap={4}>
+              <TextInput
+                label="Short description (Optional)"
+                placeholder="Short description"
+                {...form.getInputProps("description")}
+              />
+              <Text size="xs" c="dimmed">
+                Not more than 32 character counts
               </Text>
             </Stack>
+          </Group>
+
+          <div
+            className={`rounded-xl border p-4 ${
+              isDefault
+                ? "border-[#EA580C] bg-[#FFF7ED]"
+                : "border-gray-200 bg-[#F9FAFB]"
+            }`}
+          >
+            <div className="flex gap-2">
+              <Switch
+                checked={isDefault}
+                onChange={(e) => setIsDefault(e.currentTarget.checked)}
+                color="orange"
+                size="md"
+              />
+
+              <Stack gap={6}>
+                <Text fw={600} size="sm">
+                  Set Department as Default
+                </Text>
+
+                <Text size="sm" c="dimmed">
+                  1. If another department is deactivated, its admin user will be
+                  temporarily moved here
+                </Text>
+                <Text size="sm" c="dimmed">
+                  2. If another department is deleted, its admin user will be
+                  permanently moved here until assigned to a new department.
+                </Text>
+              </Stack>
+            </div>
           </div>
-        </div>
 
-        <Divider my="lg" />
+          <Divider my="lg" />
 
-        <Group justify="flex-end">
-          <Button
-            variant="outline"
-            radius="xl"
-            onClick={handleClose}
-            disabled={createDepartmentMutation.isPending || isConfirmOpen}
-          >
-            No, close
-          </Button>
+          <Group justify="flex-end">
+            <Button
+              variant="outline"
+              radius="xl"
+              onClick={handleClose}
+              disabled={createDepartmentMutation.isPending || isConfirmOpen}
+            >
+              No, close
+            </Button>
 
-          <Button
-            color="orange"
-            radius="xl"
-            onClick={handleSubmit}
-            disabled={createDepartmentMutation.isPending}
-          >
-            Save
-          </Button>
-        </Group>
-      </Stack>
+            <Button
+              color="orange"
+              radius="xl"
+              onClick={handleSubmit}
+              disabled={createDepartmentMutation.isPending}
+            >
+              Save
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
+
       <ConfirmationModal
         opened={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}

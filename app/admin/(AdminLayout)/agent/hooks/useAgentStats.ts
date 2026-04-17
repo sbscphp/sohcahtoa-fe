@@ -6,7 +6,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
 
 export interface AgentStatsData {
-  totalAgents: number;
+  total: number;
   activeAgents: number;
   deactivatedAgents: number;
   pendingApproval: number;

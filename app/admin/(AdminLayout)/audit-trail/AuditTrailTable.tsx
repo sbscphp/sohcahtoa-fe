@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { DateRangePicker } from "@/app/admin/_components/DateRangePicker";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useGetExportData } from "@/app/_lib/api/hooks";
 import { useAuditTrail, type AuditTrailRowItem } from "./hooks/useAuditTrail";
@@ -39,10 +38,11 @@ export default function AuditTrailTable() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
   const [moduleFilter, setModuleFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const statusFilter = "All";
+  const dateFrom = "";
+  const dateTo = "";
   const [viewActionOpened, setViewActionOpened] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<AuditTrailRowItem | null>(null);
 
   const { entries, isLoading, totalPages } = useAuditTrail({
     page,
@@ -94,19 +94,14 @@ export default function AuditTrailTable() {
       { value: "All", label: "All" },
       { value: "DEPARTMENT", label: "Department" },
       { value: "ROLE", label: "Role" },
+      { value: "RATE", label: "Rate" },
+      { value: "TRANSACTION", label: "Transaction" },
+      { value: "TRANS-DOC", label: "Transaction Document" },
+      { value: "REPORT", label: "Report" },
     ],
     []
   );
 
-  const statusOptions = useMemo(
-    () => [
-      { value: "All", label: "All" },
-      { value: "SUCCESS", label: "Success" },
-      { value: "PENDING", label: "Pending" },
-      { value: "FAILED", label: "Failed" },
-    ],
-    []
-  );
   const safeTotalPages = Math.max(1, totalPages);
 
   /* Table Headers */
@@ -164,7 +159,10 @@ export default function AuditTrailTable() {
       radius="xl"
       variant="light"
       color="orange"
-      onClick={() => setViewActionOpened(true)}
+      onClick={() => {
+        setSelectedEntry(item);
+        setViewActionOpened(true);
+      }}
     >
       <ChevronRight size={14} />
     </ActionIcon>,
@@ -190,20 +188,7 @@ export default function AuditTrailTable() {
               w={320}
             />
           </div>
-
-          <Button
-            variant="outline"
-            radius="xl"
-            rightSection={<Upload size={16} />}
-            onClick={() => exportAuditTrailMutation.mutate()}
-            loading={exportAuditTrailMutation.isPending}
-            disabled={exportAuditTrailMutation.isPending}
-          >
-            Export
-          </Button>
-        </Group>
-
-        <Group wrap="wrap">
+          <Group wrap="wrap">
           <Select
             value={moduleFilter}
             onChange={(value) => {
@@ -217,7 +202,23 @@ export default function AuditTrailTable() {
             placeholder="Module"
           />
 
-          <Select
+          <Button
+            variant="outline"
+            radius="xl"
+            rightSection={<Upload size={16} />}
+            onClick={() => exportAuditTrailMutation.mutate()}
+            loading={exportAuditTrailMutation.isPending}
+            disabled={exportAuditTrailMutation.isPending}
+          >
+            Export
+          </Button>
+        </Group>
+
+        </Group>
+
+        
+
+          {/* <Select
             value={statusFilter}
             onChange={(value) => {
               setStatusFilter(value ?? "All");
@@ -241,8 +242,7 @@ export default function AuditTrailTable() {
               valueFormat="YYYY-MM-DD"
               placeholder="Select date range"
             />
-          </div>
-        </Group>
+          </div> */}
       </Stack>
 
       {/* Table */}
@@ -263,7 +263,11 @@ export default function AuditTrailTable() {
       />
       <ViewUserActionModal
         opened={viewActionOpened}
-        onClose={() => setViewActionOpened(false)}
+        action={selectedEntry}
+        onClose={() => {
+          setViewActionOpened(false);
+          setSelectedEntry(null);
+        }}
       />
     </div>
   );

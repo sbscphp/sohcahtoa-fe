@@ -12,12 +12,14 @@ type UnknownRecord = Record<string, unknown>;
 export interface BranchTransactionListItem {
   id: string;
   transactionId: string;
-  actionDate: string;
-  actionTime: string;
-  branchName: string;
-  agentName: string;
-  type: string;
-  actionEffect: string;
+  transactionDate: string;
+  transactionTime: string;
+  customerName: string;
+  transactionType: string;
+  transactionStage: string;
+  workflowStage: string;
+  transactionValue: string;
+  status: string;
 }
 
 interface Pagination {
@@ -75,31 +77,33 @@ function formatDateAndTime(value: unknown): { date: string; time: string } {
 }
 
 function parseTransaction(raw: UnknownRecord): BranchTransactionListItem {
+  const dateAndId =
+    raw.dateAndId && typeof raw.dateAndId === "object"
+      ? (raw.dateAndId as UnknownRecord)
+      : null;
   const createdAt =
-    raw.createdAt ?? raw.transactionDate ?? raw.date ?? raw.updatedAt;
+    dateAndId?.date ?? raw.createdAt ?? raw.transactionDate ?? raw.date ?? raw.updatedAt;
   const { date, time } = formatDateAndTime(createdAt);
-
-  const branch =
-    raw.branch && typeof raw.branch === "object" ? (raw.branch as UnknownRecord) : null;
-  const agent =
-    raw.agent && typeof raw.agent === "object" ? (raw.agent as UnknownRecord) : null;
+  const transactionValue =
+    typeof raw.transactionValue === "number" || typeof raw.transactionValue === "string"
+      ? Number(raw.transactionValue).toLocaleString("en-US")
+      : "--";
 
   return {
     id: String(raw.id ?? raw.transactionId ?? ""),
     transactionId:
+      asString(dateAndId?.reference) ||
       asString(raw.transactionId) ||
       asString(raw.reference) ||
       String(raw.id ?? "--"),
-    actionDate: date,
-    actionTime: time,
-    branchName: asString(raw.branchName) || asString(branch?.name) || "--",
-    agentName:
-      asString(raw.agentName) ||
-      asString(agent?.fullName) ||
-      asString(agent?.name) ||
-      "--",
-    type: toSentenceCase(asString(raw.type) || asString(raw.transactionType) || "--"),
-    actionEffect: toSentenceCase(asString(raw.status) || "Pending"),
+    transactionDate: date,
+    transactionTime: time,
+    customerName: asString(raw.customerName) || "--",
+    transactionType: toSentenceCase(asString(raw.transactionType) || asString(raw.type) || "--"),
+    transactionStage: toSentenceCase(asString(raw.transactionStage) || "--"),
+    workflowStage: toSentenceCase(asString(raw.workflowStage) || "--"),
+    transactionValue,
+    status: toSentenceCase(asString(raw.status) || "Pending"),
   };
 }
 

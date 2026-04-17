@@ -30,7 +30,7 @@ export default function AgentPage() {
             <>
               <StatCard
                 title="No. of Agents"
-                value={stats?.totalAgents ?? 0}
+                value={stats?.total ?? 0}
                 icon={totalAgentsIcon}
                 iconBg="bg-orange-100"
                 isEmpty={isStatsEmpty}

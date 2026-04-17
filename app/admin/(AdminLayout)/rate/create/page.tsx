@@ -21,7 +21,10 @@ import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { notifications } from "@mantine/notifications";
 import { useCreateData } from "@/app/_lib/api/hooks";
-import { adminApi, type CreateRatePayload } from "@/app/admin/_services/admin-api";
+import {
+  adminApi,
+  type CreateRatePayload,
+} from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
@@ -58,7 +61,9 @@ function buildDateTimeIso(date: string | null, time: string): string | null {
   let minutes = 0;
   let seconds = 0;
 
-  const amPmMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])$/);
+  const amPmMatch = trimmed.match(
+    /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])$/,
+  );
   const twentyFourHourMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
 
   if (amPmMatch) {
@@ -91,13 +96,20 @@ function buildDateTimeIso(date: string | null, time: string): string | null {
   return Number.isNaN(dateTime.getTime()) ? null : dateTime.toISOString();
 }
 
-function buildCreateRatePayload(values: RateFormValues): CreateRatePayload | null {
+function buildCreateRatePayload(
+  values: RateFormValues,
+): CreateRatePayload | null {
   const buyRate = parseRateValue(values.buyRateInput);
   const sellRate = parseRateValue(values.sellRateInput);
   const validFrom = buildDateTimeIso(values.startDate, values.startTime);
   const validUntil = buildDateTimeIso(values.endDate, values.endTime);
 
-  if (!values.buyCurrency || !values.sellCurrency || buyRate === null || sellRate === null) {
+  if (
+    !values.buyCurrency ||
+    !values.sellCurrency ||
+    buyRate === null ||
+    sellRate === null
+  ) {
     return null;
   }
 
@@ -142,14 +154,20 @@ export default function CreateRatePage() {
     validate: {
       buyCurrency: (value) => (value ? null : "Select buy currency"),
       buyRateInput: (value) =>
-        parseRateValue(value) !== null ? null : "Enter a valid buy rate greater than 0",
+        parseRateValue(value) !== null
+          ? null
+          : "Enter a valid buy rate greater than 0",
       sellCurrency: (value) => (value ? null : "Select sell currency"),
       sellRateInput: (value) =>
-        parseRateValue(value) !== null ? null : "Enter a valid sell rate greater than 0",
+        parseRateValue(value) !== null
+          ? null
+          : "Enter a valid sell rate greater than 0",
       startDate: (value) => (value ? null : "Effective start date is required"),
       startTime: (value, values) => {
         if (!value.trim()) return "Effective start time is required";
-        return buildDateTimeIso(values.startDate, value) ? null : "Enter a valid start time";
+        return buildDateTimeIso(values.startDate, value)
+          ? null
+          : "Enter a valid start time";
       },
       endDate: (value) => (value ? null : "Effective end date is required"),
       endTime: (value, values) => {
@@ -158,11 +176,18 @@ export default function CreateRatePage() {
         if (!validUntil) return "Enter a valid end time";
 
         const validFrom = buildDateTimeIso(values.startDate, values.startTime);
-        if (validFrom && new Date(validUntil).getTime() <= new Date(validFrom).getTime()) {
+        if (
+          validFrom &&
+          new Date(validUntil).getTime() <= new Date(validFrom).getTime()
+        ) {
           return "Effective end must be after effective start";
         }
 
         return null;
+      },
+      note: (value) => {
+        const words = value.trim().split(/\s+/).length;
+        return words > 32 ? "Note must not exceed 32 words" : null;
       },
     },
   });
@@ -186,7 +211,9 @@ export default function CreateRatePage() {
       setIsSuccessOpen(true);
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: [...adminKeys.rate.all] }),
-        queryClient.invalidateQueries({ queryKey: [...adminKeys.rate.stats()] }),
+        queryClient.invalidateQueries({
+          queryKey: [...adminKeys.rate.stats()],
+        }),
       ]);
     },
     onError: (error) => {
@@ -203,12 +230,8 @@ export default function CreateRatePage() {
   });
 
   const handleSwapConversion = () => {
-    const {
-      buyCurrency,
-      sellCurrency,
-      buyRateInput,
-      sellRateInput,
-    } = form.values;
+    const { buyCurrency, sellCurrency, buyRateInput, sellRateInput } =
+      form.values;
 
     form.setValues({
       ...form.values,
@@ -281,7 +304,7 @@ export default function CreateRatePage() {
                   value="1"
                   readOnly
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{
                     input: "text-xl! font-bold! text-start!",
                   }}
@@ -310,10 +333,12 @@ export default function CreateRatePage() {
                 <TextInput
                   placeholder="Naira (₦) Equivalent"
                   value={form.values.buyRateInput}
-                  onChange={(e) => form.setFieldValue("buyRateInput", e.currentTarget.value)}
+                  onChange={(e) =>
+                    form.setFieldValue("buyRateInput", e.currentTarget.value)
+                  }
                   error={form.errors.buyRateInput}
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{
                     input: "text-xl! font-bold! text-end!",
                   }}
@@ -343,13 +368,15 @@ export default function CreateRatePage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CurrencySelector
                   value={form.values.sellCurrency}
-                  onChange={(value) => form.setFieldValue("sellCurrency", value)}
+                  onChange={(value) =>
+                    form.setFieldValue("sellCurrency", value)
+                  }
                 />
                 <TextInput
                   value="1"
                   readOnly
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{
                     input: "text-xl! font-bold! text-start!",
                   }}
@@ -378,10 +405,12 @@ export default function CreateRatePage() {
                 <TextInput
                   placeholder="Naira (₦) Equivalent"
                   value={form.values.sellRateInput}
-                  onChange={(e) => form.setFieldValue("sellRateInput", e.currentTarget.value)}
+                  onChange={(e) =>
+                    form.setFieldValue("sellRateInput", e.currentTarget.value)
+                  }
                   error={form.errors.sellRateInput}
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{
                     input: "text-xl! font-bold! text-end!",
                   }}
@@ -412,7 +441,8 @@ export default function CreateRatePage() {
             Other Setting
           </Text>
           <Text className={SECTION_DESC_CLASS}>
-            Other important currency setting that impact transaction and FX exchange
+            Other important currency setting that impact transaction and FX
+            exchange
           </Text>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8!">
@@ -429,8 +459,8 @@ export default function CreateRatePage() {
                   rightSection={<Calendar size={16} />}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
-                  When this rate goes live, it will affect foreign exchange transactions on the
-                  system
+                  When this rate goes live, it will affect foreign exchange
+                  transactions on the system
                 </Text>
               </div>
               <div>
@@ -439,14 +469,16 @@ export default function CreateRatePage() {
                   required
                   placeholder="Hour:Minutes:Seconds AM"
                   value={form.values.startTime}
-                  onChange={(e) => form.setFieldValue("startTime", e.currentTarget.value)}
+                  onChange={(e) =>
+                    form.setFieldValue("startTime", e.currentTarget.value)
+                  }
                   error={form.errors.startTime}
                   radius="md"
                   rightSection={<Clock size={16} />}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
-                  From the stated start time, this rate will apply to all foreign exchange
-                  transactions on the system
+                  From the stated start time, this rate will apply to all
+                  foreign exchange transactions on the system
                 </Text>
               </div>
             </Stack>
@@ -464,8 +496,8 @@ export default function CreateRatePage() {
                   rightSection={<Calendar size={16} />}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
-                  When this rate ends, it will no longer apply to foreign exchange transactions on
-                  the system.
+                  When this rate ends, it will no longer apply to foreign
+                  exchange transactions on the system.
                 </Text>
               </div>
               <div>
@@ -474,14 +506,16 @@ export default function CreateRatePage() {
                   required
                   placeholder="Hour:Minutes:Seconds AM"
                   value={form.values.endTime}
-                  onChange={(e) => form.setFieldValue("endTime", e.currentTarget.value)}
+                  onChange={(e) =>
+                    form.setFieldValue("endTime", e.currentTarget.value)
+                  }
                   error={form.errors.endTime}
                   radius="md"
                   rightSection={<Clock size={16} />}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
-                  After the stated end time, this rate will no longer apply to foreign exchange
-                  transactions on the system.
+                  After the stated end time, this rate will no longer apply to
+                  foreign exchange transactions on the system.
                 </Text>
               </div>
             </Stack>
@@ -494,20 +528,32 @@ export default function CreateRatePage() {
           <Text className={SECTION_TITLE_CLASS} mb={4}>
             Note
           </Text>
-          <Text className={SECTION_DESC_CLASS}>For documentation and approval processes</Text>
+          <Text className={SECTION_DESC_CLASS}>
+            For documentation and approval processes
+          </Text>
 
           <div>
             <Textarea
               label="Justification Note (Optional)"
               placeholder="Start Typing"
               value={form.values.note}
-              onChange={(e) => form.setFieldValue("note", e.currentTarget.value)}
+              onChange={(e) =>
+                form.setFieldValue("note", e.currentTarget.value)
+              }
+              error={form.errors.note}
               minRows={4}
               radius="md"
             />
-            <Text size="xs" c="dimmed" mt={6}>
-              Optional field ({justificationWordCount} word{justificationWordCount === 1 ? "" : "s"}
-              )
+
+            <Text
+              size="xs"
+              c={justificationWordCount > 32 ? "red" : "dimmed"}
+              fw={justificationWordCount > 32 ? 500 : undefined}
+              mt={6}
+            >
+              Optional field ({justificationWordCount}/32 word
+              {justificationWordCount === 1 ? "" : "s"}
+              {justificationWordCount > 32 && " - Maximum 32 words exceeded"}
             </Text>
           </div>
         </section>

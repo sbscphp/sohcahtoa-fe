@@ -47,6 +47,10 @@ function buildUpdatePayload(data: Record<string, unknown>): UpdateFranchisePaylo
   };
 }
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export default function FranchiseDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
@@ -219,6 +223,16 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
   };
 
   const handleEditSubmit = (data: Record<string, unknown>) => {
+    const email = String(data.emailAddress ?? "").trim();
+    if (!isValidEmail(email)) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter a valid email address before saving changes.",
+        color: "red",
+      });
+      return;
+    }
+
     setPendingEditData(data);
     setEditModalOpened(false);
     setEditConfirmOpen(true);
@@ -227,6 +241,17 @@ function FranchiseDetailPageInner({ franchiseId }: { franchiseId: string }) {
   const handleEditConfirmSave = async () => {
     if (!pendingEditData) return;
     const payload = buildUpdatePayload(pendingEditData);
+    if (!isValidEmail(payload.email)) {
+      notifications.show({
+        title: "Invalid Email Address",
+        message: "Enter a valid email address before updating this franchise.",
+        color: "red",
+      });
+      setEditConfirmOpen(false);
+      setEditModalOpened(true);
+      return;
+    }
+
     try {
       await updateFranchiseMutation.mutateAsync({ id: franchiseId, payload });
       await queryClient.invalidateQueries({

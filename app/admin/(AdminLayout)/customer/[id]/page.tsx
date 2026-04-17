@@ -195,7 +195,7 @@ export default function CustomerDetailsPage() {
         opened={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         title={`${actionVerb} Customer ?`}
-        message={`Are you sure, ${actionVerb.toLowerCase()} this customer profile? Kindly note that this action implies the customer will ${
+        message={`Are you sure you want to ${actionVerb.toLowerCase()} this customer profile? Kindly note that this action implies the customer will ${
           isCurrentlyActive
             ? "no longer be able to access both the mobile app and web app."
             : "again be able to access both the mobile app and web app."

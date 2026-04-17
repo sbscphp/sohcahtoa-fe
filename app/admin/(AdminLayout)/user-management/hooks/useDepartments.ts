@@ -9,6 +9,7 @@ export interface DepartmentItem {
   name: string;
   departmentEmail: string | null;
   description: string | null;
+  isDefault: boolean;
   branch: string | null;
   isActive: boolean;
   createdAt: string;
@@ -41,6 +42,7 @@ export interface UseDepartmentsParams {
   page?: number;
   limit?: number;
   search?: string;
+  isActive?: boolean;
 }
 
 export function useDepartments(params: UseDepartmentsParams = {}) {

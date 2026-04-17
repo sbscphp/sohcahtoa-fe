@@ -21,7 +21,7 @@ interface AgentApiItem {
   transactionCount?: number | string;
   numberOfTransactions?: number | string;
   transactionVolume?: number | string;
-  totalTransactionVolume?: number | string;
+  totalTransactionsVolume?: number | string;
   totalVolume?: number | string;
   isActive?: boolean;
   status?: string;
@@ -78,7 +78,7 @@ function mapAgent(item: AgentApiItem): AgentRowItem {
       item.totalTransactions ?? item.transactionCount ?? item.numberOfTransactions
     ),
     transactionVolume: parseNumber(
-      item.transactionVolume ?? item.totalTransactionVolume ?? item.totalVolume
+      item.transactionVolume ?? item.totalTransactionsVolume ?? item.totalVolume
     ),
     status: toStatus(item),
   };

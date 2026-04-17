@@ -125,8 +125,9 @@ export function FranchiseTransactionsTable({ franchiseId }: FranchiseTransaction
           }}
           data={statusOptions}
           radius="xl"
-          w={190}
+          w={200}
           rightSection={<ListFilter size={16} />}
+          placeholder="Filter By"
         />
       </Group>
       <DynamicTableSection
