@@ -13,6 +13,10 @@ import {
   useWorkflowActions,
   type WorkflowActionTableRow,
 } from "../hooks/useWorkflowActions";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { notifications } from "@mantine/notifications";
 
 type FilterTab = "all" | "pending" | "completed" | "rejected";
 
@@ -42,10 +46,50 @@ export default function WorkflowActionTable() {
       status: mapWorkflowTabToApiStatus(activeTab),
       module: filter !== "Filter By" && filter !== "All" ? filter : undefined,
     }),
-    [activeTab, debouncedSearch, filter, page]
+    [activeTab, debouncedSearch, filter, page],
   );
 
-  const { actions, isLoading, isFetching, isError, totalPages } = useWorkflowActions(queryParams);
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      status: mapWorkflowTabToApiStatus(activeTab),
+      module: filter !== "Filter By" && filter !== "All" ? filter : undefined,
+    }),
+    [activeTab, debouncedSearch, filter]
+  );
+
+  const exportMutation = useGetExportData(
+    () => adminApi.workflow.exportActions(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = objectUrl;
+        link.download = `workflow-actions-${activeTab}-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+
+        notifications.show({
+          title: "Export Successful",
+          message: "Workflow actions report has been downloaded.",
+          color: "green",
+        });
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Failed",
+          message: apiResponse?.error?.message ?? "Unable to export report.",
+          color: "red",
+        });
+      },
+    }
+  );
+  const { actions, isLoading, isFetching, isError, totalPages } =
+    useWorkflowActions(queryParams);
   const safeTotalPages = Math.max(1, totalPages);
 
   const renderRow = (item: WorkflowActionTableRow) => [
@@ -83,8 +127,14 @@ export default function WorkflowActionTable() {
   ];
 
   const moduleOptions = useMemo(() => {
-    const modules = [...new Set(actions.map((action) => action.module).filter(Boolean))];
-    if (filter !== "Filter By" && filter !== "All" && !modules.includes(filter)) {
+    const modules = [
+      ...new Set(actions.map((action) => action.module).filter(Boolean)),
+    ];
+    if (
+      filter !== "Filter By" &&
+      filter !== "All" &&
+      !modules.includes(filter)
+    ) {
       modules.unshift(filter);
     }
     return ["Filter By", "All", ...modules];
@@ -94,7 +144,9 @@ export default function WorkflowActionTable() {
     <div className="my-5 rounded-lg bg-white p-5">
       <Group justify="space-between" mb="md" wrap="wrap">
         <div className="flex flex-wrap items-center gap-4">
-          <h2 className="text-lg font-semibold text-gray-900">All Workflow Actions</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            All Workflow Actions
+          </h2>
           <TextInput
             placeholder="Enter keyword"
             leftSection={<Search size={16} color="#DD4F05" />}
@@ -119,7 +171,15 @@ export default function WorkflowActionTable() {
             w={120}
             rightSection={<ListFilter size={16} />}
           />
-          <Button variant="outline" color="#E36C2F" radius="xl" rightSection={<Upload size={16} />}>
+          <Button 
+            variant="outline" 
+            color="#E36C2F" 
+            radius="xl" 
+            rightSection={<Upload size={16} />}
+            onClick={() => exportMutation.mutate()}
+            loading={exportMutation.isPending}
+            disabled={exportMutation.isPending}
+          >
             Export
           </Button>
         </Group>
