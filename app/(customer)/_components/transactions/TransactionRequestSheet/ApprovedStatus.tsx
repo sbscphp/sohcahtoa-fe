@@ -9,6 +9,8 @@ interface ApprovedStatusProps {
   time?: string;
   adminMessage?: string;
   onProceedToPayment?: () => void;
+  /** When overview shows a comment timeline above, only render the CTA. */
+  variant?: "full" | "actionsOnly";
 }
 
 /** Approved status block: green background, admin message, "Proceed to Payment" button. */
@@ -17,8 +19,27 @@ export default function ApprovedStatus({
   date = "16 Nov 2025",
   time = "11:00 am",
   adminMessage = "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point",
-  onProceedToPayment
+  onProceedToPayment,
+  variant = "full",
 }: ApprovedStatusProps) {
+  if (variant === "actionsOnly") {
+    return (
+      <div className="w-full mt-2">
+        <Button
+          variant="filled"
+          fullWidth
+          radius="xl"
+          size="md"
+          className="bg-primary-400 hover:bg-primary-500 text-white font-medium! text-sm! leading-6"
+          rightSection={<ArrowUpRight size={18} />}
+          onClick={onProceedToPayment}
+        >
+          Proceed to Payment
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center py-5">
       <div className="w-full min-h-[500px] ">

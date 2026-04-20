@@ -14,20 +14,25 @@ import OtherForm from './components/OtherForm';
 import PostgraduateForm from './components/PostgraduateForm';
 import UndergraduateForm from './components/UndergraduateForm';
 
+/** Undergraduate: school invoice file required; invoice number not collected in UI (optional). */
 const undergraduateSchema = z.object({
   admissionType: z.string().min(1, "Admission type is required"),
   formAId: formAIdSchema,
   schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "School Invoice is required",
   }),
-  schoolInvoiceNumber: z.string().min(1, "School Invoice Number is required").max(50, "School Invoice Number is too long"),
+  schoolInvoiceNumber: z.string().max(50, "School Invoice Number is too long").optional(),
   evidenceOfAdmissionFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Evidence of Admission is required",
   }),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
+  passportDocumentNumber: z
+    .string()
+    .min(1, "International Passport Number is required")
+    .max(20, "International Passport Number must be at most 20 characters")
+    .regex(/^[A-Za-z0-9]+$/, "International Passport Number must contain only letters and numbers"),
 });
 
 const postgraduateSchema = z.object({
@@ -110,7 +115,7 @@ export default function SchoolFeesUploadDocumentsStep({
   const [admissionType, setAdmissionType] = useState<string>(initialValues?.admissionType || "");
 
   const form = useForm<FormValues>({
-    mode: "uncontrolled",
+    mode: "controlled",
     initialValues: {
       formAId: initialValues?.formAId || "",
       admissionType: initialValues?.admissionType || "",
@@ -193,19 +198,16 @@ export default function SchoolFeesUploadDocumentsStep({
 
       {isUndergraduate && (
         <UndergraduateForm
-          evidenceOfAdmissionFile={(form.values as FormValues).evidenceOfAdmissionFile ?? null}
-          schoolInvoiceFile={(form.values as FormValues).schoolInvoiceFile ?? null}
-          schoolInvoiceNumber={(form.values as FormValues).schoolInvoiceNumber || ""}
-          passportFile={(form.values as FormValues).passportFile ?? null}
-          passportDocumentNumber={(form.values as FormValues).passportDocumentNumber || ""}
+          evidenceOfAdmissionFile={form.values.evidenceOfAdmissionFile ?? null}
+          schoolInvoiceFile={form.values.schoolInvoiceFile ?? null}
+          passportFile={form.values.passportFile ?? null}
+          passportDocumentNumber={form.values.passportDocumentNumber || ""}
           onEvidenceOfAdmissionChange={(file) => form.setFieldValue("evidenceOfAdmissionFile", file)}
           onSchoolInvoiceChange={(file) => form.setFieldValue("schoolInvoiceFile", file)}
-          onSchoolInvoiceNumberChange={(value) => form.setFieldValue("schoolInvoiceNumber", value)}
           onPassportChange={(file) => form.setFieldValue("passportFile", file)}
           onPassportNumberChange={(value) => form.setFieldValue("passportDocumentNumber", value)}
           evidenceOfAdmissionError={form.errors.evidenceOfAdmissionFile as string}
           schoolInvoiceError={form.errors.schoolInvoiceFile as string}
-          schoolInvoiceNumberError={form.errors.schoolInvoiceNumber as string}
           passportError={form.errors.passportFile as string}
           passportNumberError={form.errors.passportDocumentNumber as string}
         />

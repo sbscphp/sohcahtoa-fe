@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -9,18 +8,28 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
-import ProofOfFundPrompt from "../../ProofOfFundPrompt";
-import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-});
+const MAX_PTA_BTA_AMOUNT = 4000;
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const parsedAmount = Number.parseFloat(data.receiveAmount.replaceAll(",", ""));
+    if (Number.isFinite(parsedAmount) && parsedAmount > MAX_PTA_BTA_AMOUNT) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: `Maximum amount is ${MAX_PTA_BTA_AMOUNT.toLocaleString()}`,
+      });
+    }
+  });
 
 export type BTATransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -37,8 +46,6 @@ export default function BTATransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: BTATransactionAmountStepProps) {
-  const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [proofOfFundAttached, setProofOfFundAttached] = useState(false);
   const form = useForm<BTATransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -58,22 +65,16 @@ export default function BTATransactionAmountStep({
     defaultLabel: exchangeRate,
   });
 
-  const needsProofOfFund = isAmountOverRequiredAmount(
-    form.values.receiveAmount,
-    form.values.receiveCurrency,
-    form.values.sendAmount,
-    form.values.sendCurrency,
-    4000
-  );
-
-  useEffect(() => {
-    if (!needsProofOfFund) setProofOfFundAttached(false);
-  }, [needsProofOfFund]);
+  const capAmount = (value: string): string => {
+    const parsedAmount = Number.parseFloat(value.replaceAll(",", ""));
+    if (!Number.isFinite(parsedAmount)) return value;
+    if (parsedAmount <= MAX_PTA_BTA_AMOUNT) return value;
+    return String(MAX_PTA_BTA_AMOUNT);
+  };
 
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
-    !form.values.sendAmount?.trim() ||
-    (needsProofOfFund && !proofOfFundAttached);
+    !form.values.sendAmount?.trim();
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values);
@@ -84,13 +85,15 @@ export default function BTATransactionAmountStep({
     const currentSend = form.values.sendAmount;
     const currentReceiveCurrency = form.values.receiveCurrency;
     const currentSendCurrency = form.values.sendCurrency;
+    const cappedReceiveAmount = capAmount(currentSend);
 
     form.setValues({
-      receiveAmount: currentSend,
+      receiveAmount: cappedReceiveAmount,
       receiveCurrency: currentSendCurrency,
       sendAmount: currentReceive,
       sendCurrency: currentReceiveCurrency,
     });
+    recalculate(cappedReceiveAmount, currentSendCurrency);
   };
 
   return (
@@ -110,8 +113,9 @@ export default function BTATransactionAmountStep({
             label="You Get Exactly"
             value={form.values.receiveAmount}
             onChange={(value) => {
-              form.setFieldValue("receiveAmount", value);
-              recalculate(value);
+              const cappedValue = capAmount(value);
+              form.setFieldValue("receiveAmount", cappedValue);
+              recalculate(cappedValue);
             }}
             currency={
               getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
@@ -124,23 +128,7 @@ export default function BTATransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <div className="w-full">
-            <ProofOfFundPrompt
-              show={needsProofOfFund}
-              thresholdUsd={4000}
-              onUploadClick={() => setProofModalOpen(true)}
-            />
-          </div>
         </div>
-
-        <ProofOfFundModal
-          opened={proofModalOpen}
-          onClose={() => setProofModalOpen(false)}
-          onAttach={(files: File[]) => {
-            setProofOfFundAttached(files.length > 0);
-            setProofModalOpen(false);
-          }}
-        />
 
         <div className="flex justify-center -my-4 relative z-10">
           <button

@@ -181,6 +181,8 @@ export default function TransactionDetailPage() {
         onClose={() => setUpdatesSheetOpen(false)}
         viewStatus={viewStatus}
         transactionTypeLabel={payload.transactionTypeLabel}
+        transactionStage={apiData?.currentStep}
+        transactionStatus={apiData?.status}
         transactionId={payload.id}
         date={formatShortDate(payload.date)}
         time={formatShortTime(payload.date)}

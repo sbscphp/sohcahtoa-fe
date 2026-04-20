@@ -798,6 +798,8 @@ export interface TransactionDetailComment {
   action: string;
   message: string;
   createdAt: string;
+  /** Some API responses use `addedBy` instead of `performedByName`. */
+  addedBy?: string | null;
   performedBy?: string | null;
   performedByName?: string | null;
   previousValue?:
