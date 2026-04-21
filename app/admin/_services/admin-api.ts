@@ -29,8 +29,8 @@ export interface CreateAdminUserPayload {
   altPhoneNumber: string | null;
   position: string | null;
   branch: string;
-  departmentId: string;
-  roleId: string;
+  department: string;
+  role: string;
 }
 
 export type UpdateAdminUserPayload = CreateAdminUserPayload;

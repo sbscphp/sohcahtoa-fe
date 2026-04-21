@@ -22,6 +22,7 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { useManagementLookups } from "../../hooks/useManagementLookups";
+import { useMemo } from "react";
 
 interface EditUserModalProps {
   opened: boolean;
@@ -34,8 +35,8 @@ interface EditUserModalProps {
     altPhoneNumber?: string;
     position?: string;
     branch: string;
-    departmentId: string;
-    roleId: string;
+    departmentName?: string;
+    roleName?: string;
   };
 }
 
@@ -52,6 +53,14 @@ export function EditUserModal({
     useManagementLookups("department");
   const { options: branchOptions, isLoading: branchesLoading } =
     useManagementLookups("branch", "name");
+  const departments = useMemo(
+    () => departmentOptions.map((option) => option.label),
+    [departmentOptions]
+  );
+  const roles = useMemo(
+    () => roleOptions.map((option) => option.label),
+    [roleOptions]
+  );
 
   const form = useForm({
     initialValues: {
@@ -60,9 +69,9 @@ export function EditUserModal({
       phoneNumber: user.phoneNumber ?? "",
       altPhoneNumber: user.altPhoneNumber ?? "",
       branch: user.branch ?? "",
-      departmentId: user.departmentId ?? "",
+      departmentName: user.departmentName ?? "",
       position: user.position ?? "",
-      roleId: user.roleId ?? "",
+      roleName: user.roleName ?? "",
     },
     validate: {
       fullName: (value) =>
@@ -74,10 +83,12 @@ export function EditUserModal({
       phoneNumber: (value) =>
         value.trim().length ? null : "Phone Number 1 is required",
       branch: (value) => (value ? null : "Branch is required"),
-      departmentId: (value) => (value ? null : "Department is required"),
-      roleId: (value) => (value ? null : "Admin Role is required"),
+      departmentName: (value) => (value ? null : "Department is required"),
+      roleName: (value) => (value ? null : "Admin Role is required"),
     },
   });
+
+  console.log(form.values);
 
   const updateUserMutation = usePatchData(
     (payload: UpdateAdminUserPayload) => adminApi.management.users.update(userId!, payload),
@@ -125,8 +136,8 @@ export function EditUserModal({
       altPhoneNumber: values.altPhoneNumber.trim() || null,
       position: values.position.trim() || null,
       branch: values.branch,
-      departmentId: values.departmentId,
-      roleId: values.roleId,
+      department: values.departmentName,
+      role: values.roleName,
     };
     updateUserMutation.mutate(payload);
   };
@@ -205,14 +216,10 @@ export function EditUserModal({
                 label="Department"
                 placeholder="Select an Option"
                 required
-                data={departmentOptions}
+                data={departments}
                 disabled={departmentsLoading}
                 searchable
-                value={form.values.departmentId}
-                onChange={(value) =>
-                  form.setFieldValue("departmentId", value ?? "")
-                }
-                error={form.errors.departmentId}
+                {...form.getInputProps("departmentName")}
               />
               <Text size="xs" c="dimmed">
                 A corresponding department within a branch
@@ -235,12 +242,10 @@ export function EditUserModal({
             label="Admin Role"
             placeholder="Search or select option"
             required
-            data={roleOptions}
+            data={roles}
             disabled={rolesLoading}
             searchable
-            value={form.values.roleId}
-            onChange={(value) => form.setFieldValue("roleId", value ?? "")}
-            error={form.errors.roleId}
+            {...form.getInputProps("roleName")}
           />
         </Stack>
 
