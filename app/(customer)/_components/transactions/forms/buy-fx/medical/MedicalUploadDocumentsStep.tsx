@@ -47,8 +47,15 @@ export type MedicalUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchem
 
 type MedicalUploadDocumentsFormValues = z.input<typeof uploadDocumentsSchema>;
 
+/** Resuming / cross-flow state may pass `null` on optional keys (e.g. PTA shape → medical step). */
+export type MedicalUploadDocumentsInitialValues = {
+  [K in keyof MedicalUploadDocumentsFormValues]?:
+    | MedicalUploadDocumentsFormValues[K]
+    | null;
+};
+
 interface MedicalUploadDocumentsStepProps {
-  initialValues?: Partial<MedicalUploadDocumentsFormValues>;
+  initialValues?: MedicalUploadDocumentsInitialValues;
   onSubmit: (data: MedicalUploadDocumentsFormData) => void;
   onBack?: () => void;
 }
