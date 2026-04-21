@@ -30,10 +30,11 @@ export default function ViewAdminUserDetails() {
   const router = useRouter();
   const { user, isLoading } = useAdminUserDetails(userId);
   const status: UserStatus = user?.status ?? "PENDING";
+  const [actionStatus, setActionStatus] = useState<UserStatus>(status || "ACTIVE");
   const [editOpen, setEditOpen] = useState(false);
-  const isCurrentlyActive = status === "ACTIVE";
-  const actionVerb = status === "ACTIVE" ? "Deactivate" : status === "PENDING" ? "Activate" : "Reactivate";
-  const pastTenseVerb = status === "ACTIVE" ? "Deactivated" : status === "PENDING" ? "Activated" : "Reactivated";
+  const isCurrentlyActive = actionStatus === "ACTIVE";
+  const actionVerb = actionStatus === "ACTIVE" ? "Deactivate" : actionStatus === "PENDING" ? "Activate" : "Reactivate";
+  const pastTenseVerb = actionStatus === "ACTIVE" ? "Deactivated" : actionStatus === "PENDING" ? "Activated" : "Reactivated";
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
@@ -77,6 +78,7 @@ export default function ViewAdminUserDetails() {
   );
 
   const handleToggleClick = () => {
+    setActionStatus(actionStatus === "ACTIVE" ? "DEACTIVATED" : "ACTIVE");
     setIsConfirmOpen(true);
   };
 
@@ -113,6 +115,8 @@ export default function ViewAdminUserDetails() {
     position: user?.position ?? "",
     branch: user?.branch ?? "",
     departmentId: user?.departmentId ?? "",
+    departmentName: user?.departmentName ?? "",
+    roleName: user?.roleName ?? "",
     roleId: user?.roleId ?? "",
   };
 
@@ -159,7 +163,7 @@ export default function ViewAdminUserDetails() {
                   <Divider />
 
                   <Menu.Item color="red" onClick={handleToggleClick}>
-                    {actionVerb}
+                    {user?.status === "ACTIVE" ? "Deactivate" : user?.status === "PENDING" ? "Activate" : "Reactivate"}
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>

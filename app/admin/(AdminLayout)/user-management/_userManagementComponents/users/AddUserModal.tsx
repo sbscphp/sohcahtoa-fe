@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { useManagementLookups } from "../../hooks/useManagementLookups";
 import { CreateAdminRoleModal } from "./CreateAdminRoleModal";
+import { useMemo } from "react";
 
 interface AddUserModalProps {
   opened: boolean;
@@ -36,9 +37,9 @@ const initialValues = {
   phoneNumber: "",
   altPhoneNumber: "",
   branch: "",
-  departmentId: "",
+  departmentName: "",
   position: "",
-  roleId: "",
+  roleName: "",
 };
 
 export function AddUserModal({ opened, onClose }: AddUserModalProps) {
@@ -48,6 +49,8 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
   const { options: roleOptions, isLoading: rolesLoading } = useManagementLookups("role");
   const { options: departmentOptions, isLoading: departmentsLoading } = useManagementLookups("department");
   const { options: branchOptions, isLoading: branchesLoading } = useManagementLookups("branch", "name");
+  const departments = useMemo(() => departmentOptions.map((option) => option.label), [departmentOptions]);
+  const roles = useMemo(() => roleOptions.map((option) => option.label), [roleOptions]);
 
   const form = useForm({
     initialValues,
@@ -71,8 +74,8 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
           : "Phone number must be in +234 format",
 
       branch: (value) => (value ? null : "Branch is required"),
-      departmentId: (value) => (value ? null : "Department is required"),
-      roleId: (value) => (value ? null : "Admin Role is required"),
+      departmentName: (value) => (value ? null : "Department is required"),
+      roleName: (value) => (value ? null : "Admin Role is required"),
     },
   });
    const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -127,8 +130,8 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
       altPhoneNumber: values.altPhoneNumber.trim() || null,
       position: values.position.trim() || null,
       branch: values.branch,
-      departmentId: values.departmentId,
-      roleId: values.roleId,
+      department: values.departmentName,
+      role: values.roleName,
     };
     createUserMutation.mutate(payload);
   };
@@ -179,7 +182,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
             <Group grow>
               <Select label="Branch" placeholder="Select" required data={branchOptions} disabled={branchesLoading} searchable {...form.getInputProps("branch")} />
               <Stack gap={4}>
-                <Select label="Department" placeholder="Select" required data={departmentOptions} disabled={departmentsLoading} searchable {...form.getInputProps("departmentId")} />
+                <Select label="Department" placeholder="Select" required data={departments} disabled={departmentsLoading} searchable {...form.getInputProps("departmentName")} />
                 <Text size="xs" c="dimmed">A corresponding department within a branch</Text>
               </Stack>
             </Group>
@@ -189,7 +192,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
               <Text size="xs" c="dimmed">Position user hold in the company</Text>
             </Stack>
 
-            <Select label="Admin Role" placeholder="Search" required data={roleOptions} disabled={rolesLoading} searchable {...form.getInputProps("roleId")} />
+            <Select label="Admin Role" placeholder="Search" required data={roles} disabled={rolesLoading} searchable {...form.getInputProps("roleName")} />
           </Stack>
 
           <Divider my="lg" />
