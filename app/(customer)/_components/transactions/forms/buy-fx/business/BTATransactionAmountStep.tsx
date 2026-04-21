@@ -12,6 +12,15 @@ import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transa
 
 const MAX_PTA_BTA_AMOUNT = 4000;
 
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_PTA_BTA_AMOUNT;
+}
+
 const transactionAmountSchema = z
   .object({
     receiveAmount: z.string().min(1, "Amount is required"),
@@ -21,12 +30,11 @@ const transactionAmountSchema = z
     exchangeRate: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    const parsedAmount = Number.parseFloat(data.receiveAmount.replaceAll(",", ""));
-    if (Number.isFinite(parsedAmount) && parsedAmount > MAX_PTA_BTA_AMOUNT) {
+    if (receiveAmountOverMax(data.receiveAmount)) {
       ctx.addIssue({
         code: "custom",
         path: ["receiveAmount"],
-        message: `Maximum amount is ${MAX_PTA_BTA_AMOUNT.toLocaleString()}`,
+        message: receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT),
       });
     }
   });
@@ -65,16 +73,10 @@ export default function BTATransactionAmountStep({
     defaultLabel: exchangeRate,
   });
 
-  const capAmount = (value: string): string => {
-    const parsedAmount = Number.parseFloat(value.replaceAll(",", ""));
-    if (!Number.isFinite(parsedAmount)) return value;
-    if (parsedAmount <= MAX_PTA_BTA_AMOUNT) return value;
-    return String(MAX_PTA_BTA_AMOUNT);
-  };
-
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
-    !form.values.sendAmount?.trim();
+    !form.values.sendAmount?.trim() ||
+    receiveAmountOverMax(form.values.receiveAmount);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values);
@@ -85,15 +87,19 @@ export default function BTATransactionAmountStep({
     const currentSend = form.values.sendAmount;
     const currentReceiveCurrency = form.values.receiveCurrency;
     const currentSendCurrency = form.values.sendCurrency;
-    const cappedReceiveAmount = capAmount(currentSend);
 
     form.setValues({
-      receiveAmount: cappedReceiveAmount,
+      receiveAmount: currentSend,
       receiveCurrency: currentSendCurrency,
       sendAmount: currentReceive,
       sendCurrency: currentReceiveCurrency,
     });
-    recalculate(cappedReceiveAmount, currentSendCurrency);
+    if (receiveAmountOverMax(currentSend)) {
+      form.setFieldError("receiveAmount", receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT));
+    } else {
+      form.clearFieldError("receiveAmount");
+    }
+    recalculate(currentSend, currentSendCurrency);
   };
 
   return (
@@ -113,9 +119,13 @@ export default function BTATransactionAmountStep({
             label="You Get Exactly"
             value={form.values.receiveAmount}
             onChange={(value) => {
-              const cappedValue = capAmount(value);
-              form.setFieldValue("receiveAmount", cappedValue);
-              recalculate(cappedValue);
+              form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError("receiveAmount", receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT));
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
+              recalculate(value);
             }}
             currency={
               getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]

@@ -80,10 +80,12 @@ export default function AgentTransactionCreationPage() {
 
   const steps = useMemo(
     () => {
-      const base = getStepsForTransactionType(flowType).map((value) => ({
-        label: STEP_LABELS[value],
-        value,
-      }));
+      const base = getStepsForTransactionType(flowType)
+        .filter((value) => value !== "pickup-point")
+        .map((value) => ({
+          label: STEP_LABELS[value],
+          value,
+        }));
       return [{ label: "Select Customer", value: "select-customer" as AgentTransactionStep }, ...base];
     },
     [flowType]
