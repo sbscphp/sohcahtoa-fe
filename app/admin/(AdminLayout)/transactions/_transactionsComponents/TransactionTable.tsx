@@ -21,7 +21,7 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
-const pageSize = 5;
+const pageSize = 10;
 
 const typeByTab = {
   "buy-fx": "buyfx",
@@ -36,8 +36,9 @@ const statusOptions = [
   { value: "DRAFT", label: "Draft" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
-  { value: "REQUEST_INFORMATION", label: "Request Information" },
+  // { value: "REQUEST_INFO", label: "Request Information" },
 ];
+
 
 export default function TransactionsTable() {
   const [page, setPage] = useState(1);
@@ -47,16 +48,12 @@ export default function TransactionsTable() {
   const [debouncedSearch] = useDebouncedValue(search, 350);
   const router = useRouter();
 
-  const exportParams = useMemo(
-    () => ({
-      page,
-      limit: pageSize,
-      search: debouncedSearch || undefined,
-      status: statusFilter !== "All" ? statusFilter : undefined,
-      type: typeByTab[activeTab],
-    }),
-    [activeTab, debouncedSearch, page, statusFilter]
-  );
+
+  const exportParams = useMemo(() => ({
+  search: debouncedSearch.trim() || undefined,
+  status: statusFilter !== "All" ? statusFilter : undefined,
+  type: typeByTab[activeTab],
+}), [activeTab, debouncedSearch, statusFilter]);
 
   const { transactions, isLoading, isFetching, totalPages } = useTransactions({
     page,

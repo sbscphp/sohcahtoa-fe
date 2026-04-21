@@ -36,7 +36,7 @@ const uploadDocumentsSchema = z.object({
   returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Return Ticket file is required",
   }),
-  returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
+  returnTicketDocumentNumber: z.string().max(50, "Return Ticket Number is too long").optional().nullable(),
 });
 
 export type UploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
@@ -158,7 +158,7 @@ export default function PTAUploadDocumentsStep({
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <TransactionFileUploadInput
           label="Upload International Passport"
           required
@@ -202,14 +202,14 @@ export default function PTAUploadDocumentsStep({
             onChange={(file) => form.setFieldValue("returnTicketFile", file)}
             error={form.errors.returnTicketFile as string}
           />
-          <TextInput
+          {/* <TextInput
             label="Return Ticket Number"
             required
             size="md"
             placeholder="Enter Ticket Number"
             maxLength={50}
             {...form.getInputProps("returnTicketDocumentNumber")}
-          />
+          /> */}
 
         </div>
       </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -9,18 +8,36 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
-import ProofOfFundPrompt from "../../ProofOfFundPrompt";
-import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-});
+const MAX_PTA_BTA_AMOUNT = 4000;
+
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_PTA_BTA_AMOUNT;
+}
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (receiveAmountOverMax(data.receiveAmount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT),
+      });
+    }
+  });
 
 export type TransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -37,8 +54,6 @@ export default function PTATransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: PTATransactionAmountStepProps) {
-  const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [proofOfFundAttached, setProofOfFundAttached] = useState(false);
   const form = useForm<TransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -58,41 +73,10 @@ export default function PTATransactionAmountStep({
     defaultLabel: exchangeRate,
   });
 
-  const needsProofOfFund = isAmountOverRequiredAmount(
-    form.values.receiveAmount,
-    form.values.receiveCurrency,
-    form.values.sendAmount,
-    form.values.sendCurrency,
-    4000
-  );
-
-  const clearProofAttachmentIfNotRequired = ({
-    receiveAmount,
-    receiveCurrency,
-    sendAmount,
-    sendCurrency,
-  }: Pick<
-    TransactionAmountFormData,
-    "receiveAmount" | "receiveCurrency" | "sendAmount" | "sendCurrency"
-  >) => {
-    if (
-      proofOfFundAttached &&
-      !isAmountOverRequiredAmount(
-        receiveAmount,
-        receiveCurrency,
-        sendAmount,
-        sendCurrency,
-        4000
-      )
-    ) {
-      setProofOfFundAttached(false);
-    }
-  };
-
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
-    (needsProofOfFund && !proofOfFundAttached);
+    receiveAmountOverMax(form.values.receiveAmount);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values);
@@ -110,8 +94,13 @@ export default function PTATransactionAmountStep({
       sendAmount: currentReceive,
       sendCurrency: currentReceiveCurrency,
     };
-    clearProofAttachmentIfNotRequired(swappedValues);
     form.setValues(swappedValues);
+    if (receiveAmountOverMax(currentSend)) {
+      form.setFieldError("receiveAmount", receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT));
+    } else {
+      form.clearFieldError("receiveAmount");
+    }
+    recalculate(currentSend, currentSendCurrency);
   };
 
   return (
@@ -131,13 +120,12 @@ export default function PTATransactionAmountStep({
             label="You Get Exactly"
             value={form.values.receiveAmount}
             onChange={(value) => {
-              clearProofAttachmentIfNotRequired({
-                receiveAmount: value,
-                receiveCurrency: form.values.receiveCurrency,
-                sendAmount: form.values.sendAmount,
-                sendCurrency: form.values.sendCurrency,
-              });
               form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError("receiveAmount", receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT));
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
               recalculate(value);
             }}
             currency={
@@ -145,35 +133,13 @@ export default function PTATransactionAmountStep({
             }
             currencies={CURRENCIES}
             onCurrencyChange={(c) => {
-              clearProofAttachmentIfNotRequired({
-                receiveAmount: form.values.receiveAmount,
-                receiveCurrency: c.code,
-                sendAmount: form.values.sendAmount,
-                sendCurrency: form.values.sendCurrency,
-              });
               form.setFieldValue("receiveCurrency", c.code);
               recalculate(undefined, c.code);
             }}
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <div className="w-full">
-            <ProofOfFundPrompt
-              show={needsProofOfFund}
-              thresholdUsd={4000}
-              onUploadClick={() => setProofModalOpen(true)}
-            />
-          </div>
         </div>
-
-        <ProofOfFundModal
-          opened={proofModalOpen}
-          onClose={() => setProofModalOpen(false)}
-          onAttach={(files: File[]) => {
-            setProofOfFundAttached(files.length > 0);
-            setProofModalOpen(false);
-          }}
-        />
 
         <div className="flex justify-center -my-4 relative z-10">
           <button

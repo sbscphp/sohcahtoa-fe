@@ -7,6 +7,8 @@ interface RejectedStatusProps {
   date?: string;
   time?: string;
   adminMessage?: string;
+  /** When overview shows a shared header + timeline, only show the summary message card. */
+  variant?: "full" | "messageOnly";
 }
 
 /** Rejected status block: pink background, admin message, no action button. */
@@ -14,8 +16,17 @@ export default function RejectedStatus({
   transactionId = "8833",
   date = "16 Nov 2025",
   time = "11:00 am",
-  adminMessage = "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all"
+  adminMessage = "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all",
+  variant = "full",
 }: RejectedStatusProps) {
+  if (variant === "messageOnly") {
+    return (
+      <div className="w-full rounded-lg border border-rose-100 bg-pink-50 p-4">
+        <p className="text-sm text-[#4D4B4B] leading-relaxed">{adminMessage}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center py-5">
       <div className="w-full max-w-[568px] flex flex-col items-center gap-4 p-3 bg-pink-100 rounded-lg">

@@ -29,8 +29,8 @@ export interface CreateAdminUserPayload {
   altPhoneNumber: string | null;
   position: string | null;
   branch: string;
-  departmentId: string;
-  roleId: string;
+  department: string;
+  role: string;
 }
 
 export type UpdateAdminUserPayload = CreateAdminUserPayload;
@@ -2032,13 +2032,25 @@ export const adminApi = {
 
   // ==================== Workflow ====================
   workflow: {
-    getStats: () =>
-      apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
+  getStats: () =>
+    apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
 
-    listActions: (params?: AdminWorkflowActionsListParams) =>
-      apiClient.get<ApiResponse<AdminWorkflowActionListItem[]>>(
-        "/api/admin/workflow/actions",
-        { params }
-      ),
+  listActions: (params?: AdminWorkflowActionsListParams) =>
+    apiClient.get<ApiResponse<AdminWorkflowActionListItem[]>>(
+      "/api/admin/workflow/actions",
+      { params }
+    ),
+      exportActions: async (params?: AdminWorkflowActionsListParams) => {
+    const response = await apiClient.get<Blob | string>(
+      "/api/admin/workflow/actions/export",
+      { params }
+    );
+
+    if (response instanceof Blob) {
+      return response;
+    }
+
+    return new Blob([response], { type: "text/csv;charset=utf-8;" });
   },
+},
 };

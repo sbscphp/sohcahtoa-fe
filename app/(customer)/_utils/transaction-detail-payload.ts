@@ -130,7 +130,11 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     documentsForSheet: mapRequiredDocsToDocumentItems(docs, api.comments ?? []),
   };
 
-  if (viewStatus === "awaiting_disbursement" || viewStatus === "transaction_settled") {
+  if (
+    viewStatus === "awaiting_disbursement" ||
+    viewStatus === "disbursement_in_progress" ||
+    viewStatus === "transaction_settled"
+  ) {
     payload.paymentDetails = {
       transactionId: api.referenceNumber ?? api.transactionId,
       transactionDate: formatShortDate(api.updatedAt),
