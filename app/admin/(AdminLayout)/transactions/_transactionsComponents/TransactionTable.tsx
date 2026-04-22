@@ -102,9 +102,9 @@ export default function TransactionsTable() {
     { label: "Date and ID", key: "date" },
     { label: "Transaction Type", key: "type" },
     { label: "Transaction Stage", key: "stage" },
-    { label: "Workflow Stage", key: "workflow" },
+    // { label: "Workflow Stage", key: "workflow" },
     { label: "Transaction Value", key: "amount" },
-    { label: "Status", key: "status" },
+    { label: "Workflow Stage", key: "status" },
     { label: "Action", key: "action" },
   ];
 
@@ -133,9 +133,9 @@ export default function TransactionsTable() {
       {item.stage}
     </Text>,
 
-    <Text key="workflow" size="sm">
-      {item.workflow}
-    </Text>,
+    // <Text key="workflow" size="sm">
+    //   {item.workflow}
+    // </Text>,
 
     <Text key="amount" size="sm">
       {formatCurrency(item.amount, item.currency)}
