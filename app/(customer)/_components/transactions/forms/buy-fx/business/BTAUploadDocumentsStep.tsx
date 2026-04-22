@@ -1,6 +1,5 @@
 "use client";
 
-import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
 import { Alert, Button, TextInput } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
@@ -25,12 +24,13 @@ import {
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 
+/** TCC document number + TIN certificate file optional — not collected when inputs are hidden. */
 const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
   ninNumber: kycNinOptionalSchema,
   tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
   formAId: formAIdSchema,
-  tccDocumentNumber: z.string().min(1, "TCC document number is required").max(50, "Document number is too long"),
+  tccDocumentNumber: z.string().max(50, "Document number is too long"),
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "TCC (Tax Clearance Certificate) file is required",
   }),
@@ -53,9 +53,7 @@ const uploadDocumentsSchema = z.object({
   letterOfInvitationFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter of Invitation from Partner is required",
   }),
-  tinCertificateFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Tax Identification Number (TIN) certificate file is required",
-  }),
+  tinCertificateFile: z.custom<FileWithPath | null>().optional(),
 }).superRefine(validatePassportDates);
 
 export type BTAUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
@@ -79,7 +77,7 @@ export default function BTAUploadDocumentsStep({
   const ninLocked = shouldLockKycPrefill(kyc.hasNinFromProfile, initialValues?.ninNumber);
 
   const form = useForm<BTAUploadDocumentsFormValues>({
-    mode: "uncontrolled",
+    mode: "controlled",
     initialValues: {
       bvn: initialValues?.bvn || kyc.defaultBvn || "",
       ninNumber: initialValues?.ninNumber ?? kyc.defaultNin ?? "",

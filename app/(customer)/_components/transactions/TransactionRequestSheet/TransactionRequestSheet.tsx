@@ -14,6 +14,10 @@ interface TransactionRequestSheetProps {
   viewStatus: DetailViewStatus;
   /** Transaction type label (e.g. "BTA", "Personal Travel Allowance (PTA)") – used in resubmit success modal title */
   transactionTypeLabel?: string;
+  /** API `currentStep` — passed to overview for title + timeline context. */
+  transactionStage?: string;
+  /** API `status` — passed to overview for title + timeline context. */
+  transactionStatus?: string;
   transactionId?: string;
   date?: string;
   time?: string;
@@ -36,6 +40,8 @@ export default function TransactionRequestSheet({
   onClose,
   viewStatus,
   transactionTypeLabel,
+  transactionStage,
+  transactionStatus,
   transactionId,
   date,
   time,
@@ -109,6 +115,8 @@ export default function TransactionRequestSheet({
           <Tabs.Panel value="overview">
             <OverviewDetail
               viewStatus={viewStatus}
+              transactionStage={transactionStage}
+              transactionStatus={transactionStatus}
               transactionId={transactionId}
               date={date}
               time={time}

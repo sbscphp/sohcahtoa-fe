@@ -5,3 +5,4 @@ export type { TransactionDocumentItem } from "./DocumentDetail";
 export { default as ApprovedStatus } from "./ApprovedStatus";
 export { default as RejectedStatus } from "./RejectedStatus";
 export { default as ResubmitSuccessModal } from "./ResubmitSuccessModal";
+export { default as TransactionCommentsTimeline } from "./TransactionCommentsTimeline";
