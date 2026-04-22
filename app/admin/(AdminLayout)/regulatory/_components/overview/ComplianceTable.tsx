@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
@@ -79,9 +79,6 @@ export default function ComplianceTable() {
     keyword: debouncedSearch.trim() || undefined,
     status: mappedStatus || undefined,
   });
-  useEffect(() => {
-    console.log("Searching for:", debouncedSearch);
-  }, [debouncedSearch]);
 
   const safeTotalPages = Math.max(1, totalPages);
 
