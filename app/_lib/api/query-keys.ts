@@ -198,7 +198,12 @@ export const adminKeys = {
     all: ["admin", "rate"] as const,
     stats: () => [...adminKeys.rate.all, "stats"] as const,
     detail: (id: string) => [...adminKeys.rate.all, "detail", id] as const,
-    list: (params?: RateListParams) => [...adminKeys.rate.all, "list", params] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+    }) => [...adminKeys.rate.all, "list", params] as const,
   },
 
   outlet: {
