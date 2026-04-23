@@ -139,7 +139,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   }
 
   // Branch Transaction Detail: /admin/outlet/branch/:id/transactions
-  if (/^\/admin\/outlet\/branch\/[^/]+\/transactions$/.test(pathname)) {
+  if (/^\/admin\/outlet\/branch\/[^/]+\/transactions\/[^/]+$/.test(pathname)) {
     const branchId = pathname.split('/')[4];
     return [
       { label: 'Outlet', url: adminRoutes.adminOutlet() },
