@@ -15,6 +15,7 @@ import { customerKeys } from "@/app/_lib/api/query-keys";
 import type { TransactionRate } from "@/app/_lib/api/types";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { Loader2 } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 
 export interface CurrencyRateRow {
   id: string;
@@ -135,7 +136,14 @@ export default function RateCalculatorPage() {
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            // onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >

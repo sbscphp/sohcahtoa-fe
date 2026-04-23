@@ -5,7 +5,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Group, TextInput, Select, Button, Text } from "@mantine/core";
-import { ListFilter, Plus, Search, Upload } from "lucide-react";
+import { ListFilter, Search, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 
@@ -211,7 +211,7 @@ export default function WorkflowManagementTable() {
           <Button variant="outline" color="#E36C2F" radius="xl" rightSection={<Upload size={16} />}>
             Export
           </Button>
-          <Button
+          {/* <Button
             variant="filled"
             color="#DD4F05"
             radius="xl"
@@ -219,7 +219,7 @@ export default function WorkflowManagementTable() {
             onClick={() => router.push(adminRoutes.adminWorkflowCreate())}
           >
             Add New +
-          </Button>
+          </Button> */}
         </Group>
       </Group>
 

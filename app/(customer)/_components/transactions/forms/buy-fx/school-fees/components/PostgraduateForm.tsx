@@ -92,6 +92,7 @@ export default function PostgraduateForm({
           placeholder="Select"
           label="Passport Expiry Date"
           required
+          minDate={new Date()}
           size="md"
           value={passportExpiryDate && passportExpiryDate.trim() ? new Date(passportExpiryDate) : null}
           onChange={(value: string | null) => {

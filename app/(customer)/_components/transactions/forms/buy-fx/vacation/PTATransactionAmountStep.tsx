@@ -9,6 +9,7 @@ import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { notifications } from "@mantine/notifications";
 
 const MAX_PTA_BTA_AMOUNT = 4000;
 
@@ -144,7 +145,14 @@ export default function PTATransactionAmountStep({
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            // onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >

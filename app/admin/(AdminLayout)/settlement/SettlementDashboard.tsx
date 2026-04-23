@@ -6,7 +6,7 @@ import { formatCurrency } from "@/app/admin/_lib/formatters";
 import { StatCard } from "./_components/SettlementDashboardShared";
 import { DiscrepancyReportsSection } from "./_components/DiscrepancyReportsSection";
 import { PendingReconciliationSection } from "./_components/PendingReconciliationSection";
-import { EscrowAccountsSection } from "./_components/EscrowAccountsSection";
+// import { EscrowAccountsSection } from "./_components/EscrowAccountsSection";
 import { RecentFundingTransactionsSection } from "./_components/RecentFundingTransactionsSection";
 import { useSettlementStats } from "./hooks/useSettlementStats";
 
@@ -22,7 +22,7 @@ export default function SettlementDashboard() {
             <>
               <Skeleton height={88} radius="md" />
               <Skeleton height={88} radius="md" />
-              <Skeleton height={88} radius="md" />
+              {/* <Skeleton height={88} radius="md" /> */}
             </>
           ) : (
             <>
@@ -67,11 +67,11 @@ export default function SettlementDashboard() {
           <PendingReconciliationSection />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, lg: 4 }}>
+        {/* <Grid.Col span={{ base: 12, lg: 4 }}>
           <EscrowAccountsSection />
-        </Grid.Col>
+        </Grid.Col> */}
 
-        <Grid.Col span={{ base: 12, lg: 8 }}>
+        <Grid.Col span={{ base: 12 }}>
           <RecentFundingTransactionsSection />
         </Grid.Col>
       </Grid>

@@ -29,6 +29,30 @@ export function toTransactionDocuments(uploaded: UploadedDocumentLike[]): Transa
   }));
 }
 
+/** Maps international bank-details step into API `beneficiaryDetails`. */
+export function beneficiaryDetailsFromBankForm(
+  bank: Record<string, unknown> | null | undefined
+): Record<string, unknown> | undefined {
+  if (!bank) return undefined;
+  const displayName = (bank.beneficiaryName ?? bank.accountName) as string | undefined;
+  return {
+    name: displayName,
+    beneficiaryName: bank.beneficiaryName ?? bank.accountName,
+    beneficiaryAddress: bank.beneficiaryAddress,
+    beneficiaryCountryRegion: bank.beneficiaryCountryRegion,
+    bankName: bank.bankName,
+    bankAddress: bank.bankAddress,
+    accountNumber: bank.accountNumber,
+    accountName: bank.accountName ?? bank.beneficiaryName,
+    swiftCode: bank.swiftCode,
+    iban: bank.iban,
+    routingNumber: bank.routingNumber,
+    ifscNumber: bank.ifscNumber,
+    purposeCode: bank.purposeCode,
+    bsbCode: bank.bsbCode,
+  };
+}
+
 function getAmount(data: Record<string, unknown> | null): number {
   if (!data) return 0;
   const raw = data.receiveAmount ?? data.sendAmount;
@@ -144,15 +168,7 @@ function buildSchoolFeesPayload(
     destinationCountry: "United Kingdom",
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
     admissionType: (upload?.admissionType as "UNDERGRADUATE" | "POSTGRADUATE" | "OTHER") ?? undefined,
-    beneficiaryDetails: bank
-      ? {
-          name: bank.accountName,
-          accountNumber: bank.accountNumber,
-          accountName: bank.accountName,
-          bankName: bank.bankName,
-          iban: bank.iban,
-        }
-      : undefined,
+    beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };
 }
@@ -174,15 +190,7 @@ function buildMedicalPayload(
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
-    beneficiaryDetails: bank
-      ? {
-          name: bank.accountName,
-          accountNumber: bank.accountNumber,
-          accountName: bank.accountName,
-          bankName: bank.bankName,
-          iban: bank.iban,
-        }
-      : undefined,
+    beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };
 }
@@ -203,15 +211,7 @@ function buildProfessionalBodyPayload(
     destinationCountry: "United Kingdom",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
-    beneficiaryDetails: bank
-      ? {
-          name: bank.accountName,
-          accountNumber: bank.accountNumber,
-          accountName: bank.accountName,
-          bankName: bank.bankName,
-          iban: bank.iban,
-        }
-      : undefined,
+    beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };
 }

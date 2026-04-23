@@ -1,6 +1,7 @@
 "use client";
 
 import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import { passportNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
 import { ChevronDown } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, Button, Select, TextInput } from "@mantine/core";
@@ -28,11 +29,7 @@ const undergraduateSchema = z.object({
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
-  passportDocumentNumber: z
-    .string()
-    .min(1, "International Passport Number is required")
-    .max(20, "International Passport Number must be at most 20 characters")
-    .regex(/^[A-Za-z0-9]+$/, "International Passport Number must contain only letters and numbers"),
+  passportDocumentNumber: passportNumberSchema,
 });
 
 const postgraduateSchema = z.object({
@@ -54,6 +51,11 @@ const postgraduateSchema = z.object({
   firstDegreeCertificateFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "First Degree Certificate is required",
   }),
+}).superRefine((data, ctx) => {
+  validatePassportDates(
+    { passportIssueDate: data.passportIssueDate, passportExpiryDate: data.passportExpiryDate },
+    ctx
+  );
 });
 
 const otherSchema = z.object({
@@ -205,7 +207,11 @@ export default function SchoolFeesUploadDocumentsStep({
           onEvidenceOfAdmissionChange={(file) => form.setFieldValue("evidenceOfAdmissionFile", file)}
           onSchoolInvoiceChange={(file) => form.setFieldValue("schoolInvoiceFile", file)}
           onPassportChange={(file) => form.setFieldValue("passportFile", file)}
-          onPassportNumberChange={(value) => form.setFieldValue("passportDocumentNumber", value)}
+          onPassportNumberChange={(value) => {
+            const normalized = value.replaceAll(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 9);
+            form.setFieldValue("passportDocumentNumber", normalized);
+            form.validateField("passportDocumentNumber");
+          }}
           evidenceOfAdmissionError={form.errors.evidenceOfAdmissionFile as string}
           schoolInvoiceError={form.errors.schoolInvoiceFile as string}
           passportError={form.errors.passportFile as string}

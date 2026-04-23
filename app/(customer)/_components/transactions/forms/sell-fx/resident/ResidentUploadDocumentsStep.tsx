@@ -8,10 +8,11 @@ import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
 
 const uploadDocumentsSchema = z.object({
   tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
+  passportDocumentNumber: passportNumberSchema,
   internationalPassportFile: z
     .custom<FileWithPath | null>()
     .refine((file) => file !== null, {
