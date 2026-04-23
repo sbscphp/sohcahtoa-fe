@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Group, Text, TextInput, Button, Tabs, Select } from "@mantine/core";
-import { Search, Upload, Plus, ListFilter } from "lucide-react";
+import { Group, Text, TextInput, Button, Tabs } from "@mantine/core";
+import { Search, Upload, Plus } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-// import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -16,7 +15,6 @@ import { useGetExportData } from "@/app/_lib/api/hooks";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
-import { RoleFilter } from "../../user-management/_userManagementComponents/roles/RolesTable";
 
 const headers = [
   { label: "Date and time", key: "dateTime" },
@@ -24,17 +22,15 @@ const headers = [
   { label: "We buy at", key: "buyAt" },
   { label: "We sell at", key: "sellAt" },
   { label: "Last updated", key: "lastUpdated" },
-  // { label: "Status", key: "status" },
   { label: "Action", key: "action" },
 ];
 
 const PAGE_SIZE = 5;
-const FILTER_OPTIONS = ["Filter By", "Active", "Deactivated"] as const;
+type RateStatusValue = "active" | "scheduled";
+type RateTab = RateStatusValue;
 
-function mapTabToStatus(tab: string): "" | "active" | "schedule" {
-  if (tab === "active") return "active";
-  if (tab === "schedule") return "schedule";
-  return "";
+function getStatusLabel(status: RateStatusValue) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 function renderDateTimeCell(value: string) {
@@ -52,20 +48,23 @@ function renderDateTimeCell(value: string) {
 
 export default function RateTableSection() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"active" | "schedule">("active");
+  const [activeTab, setActiveTab] = useState<RateTab>("active");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
-  const [filter, setFilter] = useState<RoleFilter>("Filter By");
+  const status = activeTab;
+  const statusLabel = getStatusLabel(status);
+  const emptyTitle = `No ${statusLabel} Rates Available`;
+  const emptyMessage = `You currently don't have any ${status.toLowerCase()} rates available yet. Check back later.`;
 
   const queryParams = useMemo(
     () => ({
       page,
       limit: PAGE_SIZE,
       search: debouncedSearch.trim() || undefined,
-      status: mapTabToStatus(activeTab),
+      status,
     }),
-    [activeTab, debouncedSearch, page],
+    [debouncedSearch, page, status],
   );
 
   const { rates, isLoading, totalPages } = useRates(queryParams);
@@ -73,7 +72,7 @@ export default function RateTableSection() {
     () =>
       adminApi.rate.export({
         search: debouncedSearch.trim() || undefined,
-        status: mapTabToStatus(activeTab),
+        status,
       }),
     {
       onSuccess: (csvBlob) => {
@@ -114,7 +113,6 @@ export default function RateTableSection() {
       {item.sellAt}
     </Text>,
     <div key="lastUpdated">{renderDateTimeCell(item.lastUpdated)}</div>,
-    // <StatusBadge key="status" status={item.status} />,
     <RowActionIcon
       key="action"
       onClick={() => {
@@ -144,17 +142,6 @@ export default function RateTableSection() {
         </div>
 
         <Group gap="sm" className="flex-wrap">
-          <Select
-            value={filter}
-            onChange={(value) => {
-              setFilter((value as RoleFilter) ?? "Filter By");
-              setPage(1);
-            }}
-            data={[...FILTER_OPTIONS]}
-            radius="xl"
-            w={120}
-            rightSection={<ListFilter size={16} />}
-          />
           <Button
             variant="outline"
             radius="xl"
@@ -182,13 +169,15 @@ export default function RateTableSection() {
         color="orange"
         value={activeTab}
         onChange={(value) => {
-          setActiveTab((value as "active" | "schedule") || "active");
+          setActiveTab((value as RateTab) || "active");
           setPage(1);
         }}
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
           <AdminTabButton value="active">Active</AdminTabButton>
-          <AdminTabButton value="schedule">Schedule</AdminTabButton>
+          {/* <AdminTabButton value="deactivated">Deactivated</AdminTabButton>
+          <AdminTabButton value="expired">Expired</AdminTabButton> */}
+          <AdminTabButton value="scheduled">Scheduled</AdminTabButton>
         </Tabs.List>
 
         <Tabs.Panel value="active">
@@ -197,8 +186,8 @@ export default function RateTableSection() {
             data={rates}
             loading={isLoading}
             renderItems={renderRow}
-            emptyTitle="No Active Rates Available"
-            emptyMessage="You currently don't have any active rates available yet. Check back later."
+            emptyTitle={emptyTitle}
+            emptyMessage={emptyMessage}
             pagination={{
               page,
               totalPages,
@@ -209,14 +198,50 @@ export default function RateTableSection() {
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="schedule">
+        <Tabs.Panel value="deactivated">
           <DynamicTableSection
             headers={headers}
             data={rates}
             loading={isLoading}
             renderItems={renderRow}
-            emptyTitle="No Scheduled Rates Available"
-            emptyMessage="You currently don't have any scheduled rates available yet. Check back later."
+            emptyTitle={emptyTitle}
+            emptyMessage={emptyMessage}
+            pagination={{
+              page,
+              totalPages,
+              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+              onPageChange: setPage,
+            }}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="expired">
+          <DynamicTableSection
+            headers={headers}
+            data={rates}
+            loading={isLoading}
+            renderItems={renderRow}
+            emptyTitle={emptyTitle}
+            emptyMessage={emptyMessage}
+            pagination={{
+              page,
+              totalPages,
+              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+              onPageChange: setPage,
+            }}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="scheduled">
+          <DynamicTableSection
+            headers={headers}
+            data={rates}
+            loading={isLoading}
+            renderItems={renderRow}
+            emptyTitle={emptyTitle}
+            emptyMessage={emptyMessage}
             pagination={{
               page,
               totalPages,
