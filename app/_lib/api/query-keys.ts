@@ -201,7 +201,7 @@ export const adminKeys = {
       page?: number;
       limit?: number;
       search?: string;
-      status?: "" | "active" | "schedule";
+      status?: "" | "active" | "deactivated" | "expired" | "scheduled";
     }) => [...adminKeys.rate.all, "list", params] as const,
   },
 
