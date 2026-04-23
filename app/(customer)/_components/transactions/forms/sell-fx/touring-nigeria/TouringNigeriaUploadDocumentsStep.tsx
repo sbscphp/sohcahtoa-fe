@@ -8,11 +8,12 @@ import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { passportNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 
 const uploadDocumentsSchema = z.object({
-  passportDocumentNumber: z.string().min(1, "International Passport Number is required").max(9, "International Passport Number must be at most 9 characters"),
+  passportDocumentNumber: passportNumberSchema,
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
@@ -31,6 +32,11 @@ const uploadDocumentsSchema = z.object({
   receiptForInitialNairaPurchaseFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Receipt for Initial Naira Purchase is required",
   }),
+}).superRefine((data, ctx) => {
+  validatePassportDates(
+    { passportIssueDate: data.passportIssueDate, passportExpiryDate: data.passportExpiryDate },
+    ctx
+  );
 });
 
 export type TouringNigeriaUploadDocumentsFormData = z.infer<
@@ -136,6 +142,7 @@ export default function TouringNigeriaUploadDocumentsStep({
           label="Passport Expiry Date"
           required
           size="md"
+          minDate={new Date()}
           value={form.values.passportExpiryDate && form.values.passportExpiryDate.trim() ? new Date(form.values.passportExpiryDate) : null}
           onChange={(value: string | null) => {
             if (value === null) {

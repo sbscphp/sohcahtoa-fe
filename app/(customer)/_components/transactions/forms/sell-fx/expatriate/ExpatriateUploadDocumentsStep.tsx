@@ -186,6 +186,7 @@ export default function ExpatriateUploadDocumentsStep({
           label="Passport Expiry Date"
           required
           size="md"
+          minDate={new Date()}
           value={form.values.passportExpiryDate?.trim() ? new Date(form.values.passportExpiryDate) : null}
           onChange={(value) => {
             form.setFieldValue("passportExpiryDate", formatDateToIso(value));

@@ -63,8 +63,8 @@ export default function UndergraduateForm({
         label="International Passport Number"
         required
         size="md"
-        placeholder="Enter passport number (letters and numbers only)"
-        maxLength={20}
+        placeholder="Up to 9 letters and numbers (e.g. A12345678)"
+        maxLength={9}
         autoComplete="off"
         value={passportDocumentNumber}
         onChange={(e) => onPassportNumberChange(e.target.value)}

@@ -143,7 +143,7 @@ export default function BTAUploadDocumentsStep({
         />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
-          label="NIN (for API validation)"
+          label="NIN"
           size="md"
           placeholder="NIN"
           autoComplete="off"
@@ -234,6 +234,7 @@ export default function BTAUploadDocumentsStep({
               onChange={(value) => {
                 form.setFieldValue("passportExpiryDate", formatDateToIso(value));
               }}
+              minDate={new Date()}
               error={form.errors.passportExpiryDate as string}
               rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
             />
@@ -259,7 +260,7 @@ export default function BTAUploadDocumentsStep({
             label="Visa document number"
             required
             size="md"
-            placeholder="Document number for API"
+            placeholder="Enter Visa Number"
             maxLength={50}
             {...form.getInputProps("visaDocumentNumber")}
           />

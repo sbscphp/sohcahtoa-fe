@@ -186,6 +186,7 @@ export default function TouristUploadDocumentsStep({
           label="Passport Expiry Date"
           required
           size="md"
+          minDate={new Date()}
           value={
             form.values.passportExpiryDate?.trim()
               ? new Date(form.values.passportExpiryDate)
