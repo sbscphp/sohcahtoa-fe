@@ -13,6 +13,7 @@ import { isAmountOverRequiredAmount } from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "../../../../modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { notifications } from "@mantine/notifications";
 
 const transactionAmountSchema = z.object({
   receiveAmount: z.string().min(1, "Amount is required"),
@@ -113,7 +114,14 @@ export default function TouristTransactionAmountStep({
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            // onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >
