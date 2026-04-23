@@ -32,12 +32,12 @@ export default function ViewUserActionModal({
       onClose={onClose}
       title={
         <Group justify="space-between" align="flex-start">
-          <div>
+          <span>
             <Text fw={600}>View User Actions</Text>
             <Text size="xs" c="dimmed">
               View specific action taken / committed by a user
             </Text>
-          </div>
+          </span>
           <Badge
             variant="light"
             color="#C01048"
@@ -84,7 +84,7 @@ export default function ViewUserActionModal({
       />
       <Divider />
 
-      <Row label="Affected System" value={action?.affectedSystem || "--"} />
+      {/* <Row label="Affected System" value={action?.affectedSystem || "--"} /> */}
 
       <Group justify="flex-end" mt="lg">
         <Button variant="outline" radius="xl" onClick={onClose}>

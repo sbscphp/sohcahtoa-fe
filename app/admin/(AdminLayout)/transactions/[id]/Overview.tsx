@@ -20,6 +20,7 @@ interface OverviewProps {
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
+  onActionSuccess?: () => void;
 }
 
 const loadingBasicDetails = [

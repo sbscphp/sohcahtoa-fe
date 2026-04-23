@@ -899,12 +899,12 @@ export type RateListParams = Record<
   page?: number;
   limit?: number;
   search?: string;
-  status?: "" | "active" | "schedule";
+  status?: "" | "active" | "deactivated" | "expired" | "scheduled";
 };
 
 export type RateExportParams = {
   search?: string;
-  status?: "" | "active" | "schedule";
+  status?: "" | "active" | "deactivated" | "expired" | "scheduled";
 };
 
 export interface CreateRatePayload {

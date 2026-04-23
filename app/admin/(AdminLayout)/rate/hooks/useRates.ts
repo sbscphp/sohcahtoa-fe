@@ -79,7 +79,7 @@ function normalizeStatus(value: unknown): string {
   const raw = asString(value).trim().toLowerCase();
   if (raw === "schedule" || raw === "scheduled") return "Scheduled";
   if (raw === "active") return "Active";
-  if (raw === "inactive") return "Inactive";
+  if (raw === "inactive" || raw === "deactivated") return "Deactivated";
   return raw ? `${raw.charAt(0).toUpperCase()}${raw.slice(1)}` : "--";
 }
 
@@ -101,7 +101,7 @@ function parseStatusFromValidityWindow(validFromRaw: unknown, validUntilRaw: unk
 function parseStatus(raw: Record<string, unknown>): string {
   const isActive = raw.isActive ?? raw.is_active;
   if (typeof isActive === "boolean") {
-    return isActive ? "Active" : "Inactive";
+    return isActive ? "Active" : "Deactivated";
   }
 
   const fromWindow = parseStatusFromValidityWindow(
