@@ -20,7 +20,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import {
   adminApi,
   type AgentSingleTransactionData,
-  type AgentTransactionDocumentItem,
+  type AgentTransactionRequiredDocument,
 } from "@/app/admin/_services/admin-api";
 import { getCurrencyFlagUrl } from "@/app/admin/_lib/currency";
 import { notifications } from "@mantine/notifications";
@@ -92,12 +92,12 @@ export default function AgentTransactionDetailsPage() {
   const currencyFlagUrl = transaction?.currency
     ? getCurrencyFlagUrl(transaction.currency)
     : null;
-  const docsList = (transaction?.meta?.documentsList ??
-    []) as AgentTransactionDocumentItem[];
-  const docsCount =
-    transaction?.meta?.documents?.count ??
-    (docsList.length > 0 ? docsList.length : PLACEHOLDER);
-  const receiptUrl = transaction?.receipt ?? null;
+
+  const requiredDocs = (transaction?.requiredDocuments ??
+    []) as AgentTransactionRequiredDocument[];
+  const docsCount = requiredDocs.length > 0 ? requiredDocs.length : PLACEHOLDER;
+
+  const settlementReceipt = transaction?.settlement?.receipt ?? null;
 
   const handleDownloadReceipt = async () => {
     if (!agentId || !transactionId || isDownloadingReceipt) return;
@@ -166,7 +166,6 @@ export default function AgentTransactionDetailsPage() {
       </div>
     );
   }
-  console.log(transaction);
 
   return (
     <div className="space-y-6">
@@ -230,26 +229,10 @@ export default function AgentTransactionDetailsPage() {
               Agent Details
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem
-                label="Agent ID"
-                value={transaction.agent?.id ?? PLACEHOLDER}
-              />
-              <DetailItem
-                label="Agent Name"
-                value={
-                  transaction.agent?.name ??
-                  transaction.agent?.fullName ??
-                  PLACEHOLDER
-                }
-              />
-              <DetailItem
-                label="Email Address"
-                value={transaction.agent?.email ?? PLACEHOLDER}
-              />
-              <DetailItem
-                label="Phone Number"
-                value={transaction.agent?.phoneNumber ?? PLACEHOLDER}
-              />
+              <DetailItem label="Agent ID" value={agentId} />
+              <DetailItem label="Agent Name" value={PLACEHOLDER} />
+              <DetailItem label="Email Address" value={PLACEHOLDER} />
+              <DetailItem label="Phone Number" value={PLACEHOLDER} />
             </div>
           </section>
 
@@ -260,27 +243,42 @@ export default function AgentTransactionDetailsPage() {
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
               <DetailItem
-                label="Transaction Reference Number"
+                label="Transaction ID"
                 value={transaction.referenceNumber ?? transaction.transactionId}
               />
               <DetailItem
-                label="Amount"
-                value={formatAmount(
-                  "NGN",
-                  transaction.amounts?.nairaEquivalent,
-                )}
+                label="Amount (NGN)"
+                value={formatAmount("NGN", transaction.nairaEquivalent)}
               />
               <DetailItem
                 label="Equivalent Amount"
-                value={formatAmount(
-                  transaction.currency,
-                  transaction.amounts?.foreignAmount,
-                )}
+                value={formatAmount(transaction.currency, transaction.foreignAmount)}
               />
-              <DetailItem label="Date initiated" value={created.date} />
               <DetailItem
-                label="Pickup Address"
-                value={transaction.meta?.destinationCountry ?? PLACEHOLDER}
+                label="Exchange Rate"
+                value={
+                  transaction.exchangeRate
+                    ? `1 ${currencyCode} = NGN ${transaction.exchangeRate}`
+                    : PLACEHOLDER
+                }
+              />
+              <DetailItem label="Date Initiated" value={created.date} />
+              <DetailItem label="Time Initiated" value={created.time} />
+              <DetailItem
+                label="Purpose"
+                value={transaction.purpose ?? PLACEHOLDER}
+              />
+              <DetailItem
+                label="Destination Country"
+                value={transaction.destinationCountry ?? PLACEHOLDER}
+              />
+              <DetailItem
+                label="Form A ID"
+                value={transaction.formAId ?? PLACEHOLDER}
+              />
+              <DetailItem
+                label="Disbursement Method"
+                value={transaction.disbursementMethod ?? PLACEHOLDER}
               />
             </div>
           </section>
@@ -293,26 +291,34 @@ export default function AgentTransactionDetailsPage() {
             <div className="grid gap-6 md:grid-cols-4">
               <DetailItem
                 label="BVN"
-                value={transaction.customer?.bvn ?? PLACEHOLDER}
+                value={transaction.personalInfo?.bvn ?? PLACEHOLDER}
+              />
+              <DetailItem
+                label="NIN"
+                value={transaction.personalInfo?.nin ?? PLACEHOLDER}
+              />
+              <DetailItem
+                label="Tax Clearance Number"
+                value={transaction.taxClearanceNumber ?? PLACEHOLDER}
               />
               <DetailItem label="Documents Count" value={String(docsCount)} />
-              {docsList.length > 0 ? (
-                docsList.map((doc, index) => (
+              {requiredDocs.length > 0 ? (
+                requiredDocs.map((doc, index) => (
                   <DetailItem
-                    key={`${doc.id ?? doc.fileName ?? "doc"}-${index}`}
-                    label={doc.name ?? doc.type ?? `Document ${index + 1}`}
+                    key={`${doc.uploaded?.id ?? doc.type ?? "doc"}-${index}`}
+                    label={doc.type ?? `Document ${index + 1}`}
                     value={
-                      doc.fileUrl ? (
+                      doc.uploaded?.fileUrl ? (
                         <a
-                          href={doc.fileUrl}
+                          href={doc.uploaded.fileUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[#DD4F05] underline"
                         >
-                          {doc.fileName ?? doc.fileUrl}
+                          {doc.uploaded.fileName ?? doc.uploaded.fileUrl}
                         </a>
                       ) : (
-                        (doc.fileName ?? PLACEHOLDER)
+                        (doc.uploaded?.fileName ?? PLACEHOLDER)
                       )
                     }
                   />
@@ -337,12 +343,9 @@ export default function AgentTransactionDetailsPage() {
               <DetailItem label="Transaction Time" value={created.time} />
               <DetailItem
                 label="Transaction Receipt"
-                value={receiptUrl ?? PLACEHOLDER}
+                value={settlementReceipt ?? PLACEHOLDER}
               />
-              <DetailItem
-                label="Paid to"
-                value={transaction.customer?.name ?? PLACEHOLDER}
-              />
+              <DetailItem label="Paid to" value={PLACEHOLDER} />
               <DetailItem label="Bank Name" value={PLACEHOLDER} />
             </div>
           </section>
@@ -353,24 +356,58 @@ export default function AgentTransactionDetailsPage() {
               Transaction Settlement
             </Text>
             <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem label="Settlement ID" value={PLACEHOLDER} />
-              <DetailItem label="Settlement Date" value={PLACEHOLDER} />
-              <DetailItem label="Settlement Time" value={PLACEHOLDER} />
-              <DetailItem label="Settlement Receipt" value={PLACEHOLDER} />
+              <DetailItem
+                label="Settlement ID"
+                value={transaction.settlement?.id ?? PLACEHOLDER}
+              />
+              <DetailItem
+                label="Settlement Date"
+                value={
+                  transaction.settlement?.settledAt
+                    ? formatDateTime(transaction.settlement.settledAt).date
+                    : PLACEHOLDER
+                }
+              />
+              <DetailItem
+                label="Settlement Time"
+                value={
+                  transaction.settlement?.settledAt
+                    ? formatDateTime(transaction.settlement.settledAt).time
+                    : PLACEHOLDER
+                }
+              />
+              <DetailItem
+                label="Settlement Receipt"
+                value={transaction.settlement?.receipt ?? PLACEHOLDER}
+              />
               <DetailItem
                 label="Settlement Structure (Cash)"
-                value={PLACEHOLDER}
+                value={
+                  transaction.cashPickup?.amount
+                    ? formatAmount("NGN", transaction.cashPickup.amount)
+                    : PLACEHOLDER
+                }
               />
               <DetailItem
                 label="Settlement Structure (Prepaid Card)"
-                value={PLACEHOLDER}
+                value={
+                  transaction.prepaidCard?.amount
+                    ? formatAmount("NGN", transaction.prepaidCard.amount)
+                    : PLACEHOLDER
+                }
               />
               <DetailItem label="75% Paid Into" value={PLACEHOLDER} />
               <div className="space-y-1">
                 <Text size="xs" className="text-body-text-50!" mb={4}>
                   Settlement Status
                 </Text>
-                <StatusBadge status={transaction.stage ?? PLACEHOLDER} />
+                <StatusBadge
+                  status={
+                    transaction.settlement?.status ??
+                    transaction.currentStep ??
+                    PLACEHOLDER
+                  }
+                />
               </div>
             </div>
           </section>
