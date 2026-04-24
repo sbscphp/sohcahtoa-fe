@@ -21,12 +21,15 @@ export const internationalBankDetailsSchema = z
     bankName: z.string().trim().min(1, "Bank name is required"),
     bankAddress: z.string().trim().min(1, "Bank address is required"),
     accountNumber: z.string().trim().min(1, "Account number is required"),
+    paymentReference: z.string().trim().min(1, "Payment reference / ID is required"),
     swiftCode: swiftOptional,
     iban: z.string(),
     routingNumber: z.string(),
     ifscNumber: z.string(),
     purposeCode: z.string(),
     bsbCode: z.string(),
+    /** Free text when country/region is "Other" (e.g. local codes, intermediary bank). */
+    otherInformation: z.string().trim().max(2000),
   })
   .superRefine((data, ctx) => {
     const need = (path: keyof typeof data, message: string, raw: string) => {
@@ -131,11 +134,13 @@ export function internationalBankDetailsInitialValues(
     bankName: (initial?.bankName ?? "").trim(),
     bankAddress: (initial?.bankAddress ?? "").trim(),
     accountNumber: (initial?.accountNumber ?? "").trim(),
+    paymentReference: (initial?.paymentReference ?? "").trim(),
     swiftCode: (initial?.swiftCode ?? "").trim().toUpperCase(),
     iban: (initial?.iban ?? "").trim().toUpperCase(),
     routingNumber: (initial?.routingNumber ?? "").trim(),
     ifscNumber: (initial?.ifscNumber ?? "").trim().toUpperCase(),
     purposeCode: (initial?.purposeCode ?? "").trim(),
     bsbCode: (initial?.bsbCode ?? "").trim(),
+    otherInformation: (initial?.otherInformation ?? "").trim(),
   };
 }

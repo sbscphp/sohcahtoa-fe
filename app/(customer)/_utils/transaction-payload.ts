@@ -35,7 +35,11 @@ export function beneficiaryDetailsFromBankForm(
 ): Record<string, unknown> | undefined {
   if (!bank) return undefined;
   const displayName = (bank.beneficiaryName ?? bank.accountName) as string | undefined;
-  return {
+  const region = bank.beneficiaryCountryRegion;
+  const otherInformation =
+    typeof bank.otherInformation === "string" ? bank.otherInformation.trim() : "";
+
+  const details: Record<string, unknown> = {
     name: displayName,
     beneficiaryName: bank.beneficiaryName ?? bank.accountName,
     beneficiaryAddress: bank.beneficiaryAddress,
@@ -45,12 +49,19 @@ export function beneficiaryDetailsFromBankForm(
     accountNumber: bank.accountNumber,
     accountName: bank.accountName ?? bank.beneficiaryName,
     swiftCode: bank.swiftCode,
+    paymentReference: bank.paymentReference,
     iban: bank.iban,
     routingNumber: bank.routingNumber,
     ifscNumber: bank.ifscNumber,
     purposeCode: bank.purposeCode,
     bsbCode: bank.bsbCode,
   };
+
+  if (region === "OTHER") {
+    details.otherInformation = otherInformation;
+  }
+
+  return details;
 }
 
 function getAmount(data: Record<string, unknown> | null): number {

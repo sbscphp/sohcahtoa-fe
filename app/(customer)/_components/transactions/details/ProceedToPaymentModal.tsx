@@ -8,39 +8,18 @@ import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
-import { getInstructionsText, getStringField } from "@/app/(customer)/_utils/transaction-payment";
+import {
+  formatPaymentExpiryCountdown,
+  getInstructionsText,
+  getStringField,
+  parseExpiryToSeconds,
+} from "@/app/(customer)/_utils/transaction-payment";
 
 interface ProceedToPaymentModalProps {
   opened: boolean;
   onClose: () => void;
   transactionId: string;
   amountNgn: number;
-}
-
-function parseExpiryToSeconds(expiry: string | null): number {
-  if (!expiry) return 30 * 60;
-
-  const mmSsMatch = expiry.match(/^(\d{1,2}):(\d{2})$/);
-  if (mmSsMatch) {
-    const minutes = Number(mmSsMatch[1]);
-    const seconds = Number(mmSsMatch[2]);
-    return Math.max(minutes * 60 + seconds, 0);
-  }
-
-  const timestamp = new Date(expiry).getTime();
-  if (!Number.isNaN(timestamp)) {
-    const remaining = Math.floor((timestamp - Date.now()) / 1000);
-    return Math.max(remaining, 0);
-  }
-
-  return 30 * 60;
-}
-
-function formatCountdown(totalSeconds: number): string {
-  const safe = Math.max(totalSeconds, 0);
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function CountdownText({ initialSeconds, running }: { initialSeconds: number; running: boolean }) {
@@ -55,7 +34,7 @@ function CountdownText({ initialSeconds, running }: { initialSeconds: number; ru
     return () => window.clearInterval(timer);
   }, [running, remaining]);
 
-  return <>{formatCountdown(remaining)}</>;
+  return <>{formatPaymentExpiryCountdown(remaining)}</>;
 }
 
 export default function ProceedToPaymentModal({
