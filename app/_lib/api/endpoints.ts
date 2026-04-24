@@ -138,6 +138,8 @@ export const API_ENDPOINTS = {
       deactivate: (userId: string) => `/api/admin/customers/${userId}/deactivate`,
       toggleStatus: (userId: string) => `/api/admin/customers/${userId}/status`,
       transactions: (userId: string) => `/api/admin/customers/${userId}/transactions`,
+      transactionsExport: (userId: string) =>
+        `/api/admin/customers/${userId}/transactions/export`,
       flags: {
         list: (userId: string) => `/api/admin/customers/${userId}/flags`,
         create: (userId: string) => `/api/admin/customers/${userId}/flags`,

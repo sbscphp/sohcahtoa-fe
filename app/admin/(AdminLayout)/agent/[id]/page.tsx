@@ -23,7 +23,7 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import AgentTransactionsTable from "../_agentComponents/AgentTransactionsTable";
 import { useManagementLookups } from "../../user-management/hooks/useManagementLookups";
 
-type AgentStatus = "Active" | "Deactivated";
+type AgentStatus = "Active" | "Deactivated" | "Pending";
 
 interface AgentDetails {
   id: string;
@@ -60,7 +60,7 @@ export default function AgentDetailsPage() {
     null,
   );
   const currentStatus: AgentStatus =
-    statusOverride ?? (agentData?.isActive ? "Active" : "Deactivated");
+    statusOverride ?? ((agentData?.status as AgentStatus) ?? "Pending");
   const [loading, setLoading] = useState(false);
 
   const [editModalOpened, setEditModalOpened] = useState(false);
@@ -303,7 +303,7 @@ export default function AgentDetailsPage() {
                   <Text size="xl" fw={600}>
                     {agent.name}
                   </Text>
-                  <StatusBadge status={currentStatus} />
+                  <StatusBadge status={agent.status} />
                 </>
               )}
             </div>

@@ -45,6 +45,7 @@ export interface UseUsersParams {
   page?: number;
   limit?: number;
   search?: string;
+  status?: string;
 }
 
 export function useUsers(params: UseUsersParams = {}) {
@@ -54,8 +55,6 @@ export function useUsers(params: UseUsersParams = {}) {
       adminApi.management.users.list(params) as unknown as Promise<UsersListResponse>,
     true
   );
-
-  console.log(query.data);
 
   const entries = query.data?.data ?? [];
   const pagination = query.data?.metadata?.pagination;
