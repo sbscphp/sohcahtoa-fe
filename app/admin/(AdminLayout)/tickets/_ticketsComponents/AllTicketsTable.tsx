@@ -93,35 +93,27 @@ export default function AllTicketsTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All");
-  const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("All");
   const [debouncedSearch] = useDebouncedValue(search, 350);
-  const [debouncedCategory] = useDebouncedValue(category, 350);
 
   const queryParams = useMemo(() => {
     const trimmedSearch = debouncedSearch.trim();
-    const trimmedCategory = debouncedCategory.trim();
 
     return {
       page,
       limit: PAGE_SIZE,
       search: trimmedSearch || undefined,
-      status: status === "All" ? undefined : status,
-      category: trimmedCategory || undefined,
       priority: priority === "All" ? undefined : priority,
     };
-  }, [debouncedCategory, debouncedSearch, page, priority, status]);
+  }, [debouncedSearch, page, priority]);
 
   const { tickets, isLoading, totalPages } = useTickets(queryParams);
   const exportParams = useMemo(
     () => ({
       search: debouncedSearch.trim() || undefined,
-      status: status === "All" ? undefined : status,
-      category: debouncedCategory.trim() || undefined,
       priority: priority === "All" ? undefined : priority,
     }),
-    [debouncedCategory, debouncedSearch, priority, status]
+    [debouncedSearch, priority]
   );
   const exportTicketsMutation = useGetExportData(
     () => adminApi.tickets.export(exportParams),
@@ -165,9 +157,9 @@ export default function AllTicketsTable() {
       <Text fw={500} size="sm">
         {item.customerName}
       </Text>
-      {/* <Text size="xs" c="dimmed">
+      <Text size="xs" c="dimmed">
         {item.customerEmail}
-      </Text> */}
+      </Text>
     </div>,
     <div key="date">
       <Text size="sm">{date}</Text>

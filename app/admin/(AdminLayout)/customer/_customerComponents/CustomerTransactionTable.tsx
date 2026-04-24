@@ -9,11 +9,13 @@ import { Search, Upload, ListFilter } from "lucide-react";
 import { Tabs } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
-import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
+import { useFetchDataSeperateLoading, useGetExportData } from "@/app/_lib/api/hooks";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { useDebouncedValue } from "@mantine/hooks";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { notifications } from "@mantine/notifications";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 /* --------------------------------------------
  Types
@@ -82,7 +84,10 @@ const PAGE_SIZE = 5;
 const STATUS_OPTIONS = [
   { value: "Filter By", label: "Filter By" },
   { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
-  { value: "SETTLED", label: "Settled" },
+  { value: "COMPLIANCE_REVIEW", label: "Compliance Review" },
+  { value: "PENDING", label: "Pending" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
 ];
 
@@ -178,6 +183,39 @@ export default function CustomerTransactionsTable({
     () => extractTransactions(query.data?.data).map(mapTransaction),
     [query.data?.data]
   );
+  const exportTransactionsMutation = useGetExportData(
+    () =>
+      adminApi.customers.exportTransactions(customerId, {
+        status: statusParam,
+        type: activeTab,
+        search: debouncedSearch || undefined,
+      }),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `customer-transactions-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Customer Transactions Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export customer transactions at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const totalPages = query.data?.metadata?.pagination?.totalPages ?? 1;
 
@@ -261,6 +299,9 @@ export default function CustomerTransactionsTable({
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportTransactionsMutation.mutate()}
+              loading={exportTransactionsMutation.isPending}
+              disabled={exportTransactionsMutation.isPending || !customerId}
             >
               Export
             </Button>

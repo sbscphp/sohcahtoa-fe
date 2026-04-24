@@ -90,6 +90,7 @@ export interface AgentDetailsResponseData {
   email: string;
   phoneNumber: string;
   isActive: boolean;
+  status: string;
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;
@@ -129,62 +130,93 @@ export interface UpdateAgentStatusPayload {
   isActive: boolean;
 }
 
-export interface AgentTransactionAmountData {
-  nairaEquivalent?: number | string | null;
-  foreignAmount?: number | string | null;
-  pickupAmount?: number | string | null;
-  value?: number | string | null;
+export interface AgentTransactionPersonalInfo {
+  bvn?: string | null;
+  nin?: string | null;
+  admissionType?: string | null;
 }
 
-export interface AgentTransactionEntityData {
+export interface AgentTransactionUploadedDocument {
   id?: string | null;
-  name?: string | null;
-  fullName?: string | null;
-  email?: string | null;
-  phoneNumber?: string | null;
-}
-
-export interface AgentTransactionDocumentItem {
-  id?: string | null;
-  name?: string | null;
   fileName?: string | null;
   fileUrl?: string | null;
-  type?: string | null;
   status?: string | null;
+  rejectionNotes?: string | null;
+  uploadedAt?: string | null;
+  verifiedAt?: string | null;
 }
 
-export interface AgentTransactionCustomerData {
-  name?: string | null;
-  bvn?: string | null;
-  tin?: string | null;
+export interface AgentTransactionRequiredDocument {
+  type?: string | null;
+  uploaded?: AgentTransactionUploadedDocument | null;
 }
 
-export interface AgentTransactionDocumentsMeta {
-  count?: number | string | null;
+export interface AgentTransactionStep {
+  id?: string | null;
+  transactionId?: string | null;
+  step?: string | null;
+  status?: string | null;
+  data?: Record<string, unknown> | null;
+  completedAt?: string | null;
+  createdAt?: string | null;
 }
 
-export interface AgentSingleTransactionMetaData {
-  documents?: AgentTransactionDocumentsMeta | null;
-  documentsList?: AgentTransactionDocumentItem[] | null;
-  destinationCountry?: string | null;
+export interface AgentTransactionComment {
+  id?: string | null;
+  action?: string | null;
+  message?: string | null;
+  addedBy?: string | null;
+  createdAt?: string | null;
+}
+
+export interface AgentTransactionCashPickup {
+  id?: string | null;
+  amount?: number | string | null;
+  status?: string | null;
+  paidAt?: string | null;
+}
+
+export interface AgentTransactionPrepaidCard {
+  id?: string | null;
+  amount?: number | string | null;
+  status?: string | null;
+  issuedAt?: string | null;
+}
+
+export interface AgentTransactionSettlement {
+  id?: string | null;
+  status?: string | null;
+  settledAt?: string | null;
+  receipt?: string | null;
 }
 
 export interface AgentSingleTransactionData {
   transactionId: string;
   referenceNumber?: string | null;
   type?: string | null;
+  mode?: string | null;
   status?: string | null;
-  stage?: string | null;
+  currentStep?: string | null;
+  purpose?: string | null;
+  destinationCountry?: string | null;
   currency?: string | null;
-  pickup?: string | null | Record<string, unknown>;
-  receipt?: string | null;
-  settlement?: string | null | Record<string, unknown>;
+  foreignAmount?: number | string | null;
+  nairaEquivalent?: number | string | null;
+  exchangeRate?: number | string | null;
+  disbursementMethod?: string | null;
+  formAId?: string | null;
+  taxClearanceNumber?: string | null;
+  personalInfo?: AgentTransactionPersonalInfo | null;
+  beneficiaryDetails?: Record<string, unknown> | null;
+  rejection?: unknown;
+  requiredDocuments?: AgentTransactionRequiredDocument[] | null;
+  cashPickup?: AgentTransactionCashPickup | null;
+  prepaidCard?: AgentTransactionPrepaidCard | null;
+  settlement?: AgentTransactionSettlement | null;
+  steps?: AgentTransactionStep[] | null;
+  comments?: AgentTransactionComment[] | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  amounts?: AgentTransactionAmountData | null;
-  agent?: AgentTransactionEntityData | null;
-  customer?: AgentTransactionCustomerData | null;
-  meta?: AgentSingleTransactionMetaData | null;
 }
 
 export interface UpdateAdminUserStatusPayload {
@@ -1246,6 +1278,26 @@ export const adminApi = {
         API_ENDPOINTS.admin.customers.transactions(userId),
         { params }
       ),
+
+    exportTransactions: async (
+      userId: string,
+      params?: {
+        status?: string;
+        type?: string;
+        search?: string;
+      }
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.customers.transactionsExport(userId),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
 
     flags: {
       list: (userId: string) =>
