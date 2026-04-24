@@ -32,6 +32,7 @@ const typeByTab = {
 const statusOptions = [
   { value: "All", label: "Filter By" },
   { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
+  { value: "COMPLIANCE_REVIEW", label: "Compliance Review" },
   { value: "PENDING", label: "Pending" },
   { value: "DRAFT", label: "Draft" },
   { value: "APPROVED", label: "Approved" },

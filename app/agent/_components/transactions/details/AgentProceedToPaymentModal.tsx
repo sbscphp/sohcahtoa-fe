@@ -10,7 +10,12 @@ import { agentKeys } from "@/app/_lib/api/query-keys";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
-import { getInstructionsText, getStringField } from "@/app/(customer)/_utils/transaction-payment";
+import {
+  formatPaymentExpiryCountdown,
+  getInstructionsText,
+  getStringField,
+  parseExpiryToSeconds,
+} from "@/app/(customer)/_utils/transaction-payment";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 
@@ -28,22 +33,6 @@ interface AgentProceedToPaymentModalProps {
   onSubmitted?: () => void;
 }
 
-function parseExpiryToSeconds(expiry: string | null): number {
-  if (!expiry) return 30 * 60;
-  const mmSsMatch = /^(\d{1,2}):(\d{2})$/.exec(expiry);
-  if (mmSsMatch) return Math.max(Number(mmSsMatch[1]) * 60 + Number(mmSsMatch[2]), 0);
-  const timestamp = new Date(expiry).getTime();
-  if (!Number.isNaN(timestamp)) return Math.max(Math.floor((timestamp - Date.now()) / 1000), 0);
-  return 30 * 60;
-}
-
-function formatCountdown(totalSeconds: number): string {
-  const safe = Math.max(totalSeconds, 0);
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
 function CountdownText({ initialSeconds, running }: Readonly<{ initialSeconds: number; running: boolean }>) {
   const [remaining, setRemaining] = useState(initialSeconds);
   useEffect(() => {
@@ -53,7 +42,7 @@ function CountdownText({ initialSeconds, running }: Readonly<{ initialSeconds: n
     }, 1000);
     return () => globalThis.clearInterval(timer);
   }, [running, remaining]);
-  return <>{formatCountdown(remaining)}</>;
+  return <>{formatPaymentExpiryCountdown(remaining)}</>;
 }
 
 export default function AgentProceedToPaymentModal({

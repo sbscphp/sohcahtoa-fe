@@ -73,7 +73,7 @@ function parseTicket(raw: Record<string, unknown>): TicketListItem {
       asString(assignee?.name) ||
       "--",
     assignedRole:
-      asString(raw.assignedRole) || asString(assignee?.roleName) || asString(raw.department) || "",
+      asString(raw.assignedAdminRole) || asString(assignee?.roleName) || asString(raw.department) || "",
     status: asString(raw.status) || "--",
     priority: asString(raw.priority) || "--",
     category: asString(raw.caseType) || asString(raw.category) || "--",

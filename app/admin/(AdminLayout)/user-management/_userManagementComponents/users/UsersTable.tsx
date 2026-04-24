@@ -18,13 +18,20 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
 const PAGE_SIZE = 10;
 
+const FILTER_OPTIONS = [
+  { value: "", label: "Filter By" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "PENDING", label: "Pending" },
+  { value: "DEACTIVATED", label: "Deactivated" },
+];
+
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
 export default function UsersTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 400);
-  const [filter, setFilter] = useState("Filter By");
+  const [filter, setFilter] = useState<string>("");
   const [addUserOpen, setAddUserOpen] = useState(false);
   const router = useRouter();
 
@@ -32,6 +39,7 @@ export default function UsersTable() {
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
+    status: filter !== "" ? filter : undefined,
   });
 
   const exportUsersMutation = useGetExportData(
@@ -130,7 +138,7 @@ export default function UsersTable() {
           <Select
             value={filter}
             onChange={(value) => setFilter(value!)}
-            data={["Filter By", "Buy FX", "Sell FX", "Receive FX"]}
+            data={FILTER_OPTIONS}
             radius="xl"
             w={120}
             rightSection={<ListFilter size={16} />}
