@@ -21,22 +21,60 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 
-const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+const capitalize = (str: string) =>
+  str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+/**
+ * Maps the current user status to the verb for the next action.
+ *   ACTIVE      → "Deactivate"
+ *   PENDING     → "Activate"
+ *   DEACTIVATED → "Reactivate"
+ */
+type PendingAction = "Activate" | "Deactivate" | "Reactivate";
+
+function getActionVerb(status: UserStatus): PendingAction {
+  if (status === "ACTIVE") return "Deactivate";
+  if (status === "PENDING") return "Activate";
+  return "Reactivate";
+}
+
+function getPastTense(action: PendingAction): string {
+  if (action === "Activate") return "Activated";
+  if (action === "Deactivate") return "Deactivated";
+  return "Reactivated";
+}
+
+/** The payload value isActive should be true when we are activating/reactivating */
+function isActivePayload(action: PendingAction): boolean {
+  return action === "Activate" || action === "Reactivate";
+}
 
 export default function ViewAdminUserDetails() {
   const queryClient = useQueryClient();
   const params = useParams<{ id: string }>();
   const userId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
+
   const { user, isLoading } = useAdminUserDetails(userId);
-  const status: UserStatus = user?.status ?? "PENDING";
-  const [actionStatus, setActionStatus] = useState<UserStatus>(status || "ACTIVE");
+
+  // The real status always comes from the server; default only while loading.
+  const currentStatus: UserStatus = user?.status ?? "PENDING";
+
   const [editOpen, setEditOpen] = useState(false);
-  const isCurrentlyActive = actionStatus === "ACTIVE";
-  const actionVerb = actionStatus === "ACTIVE" ? "Deactivate" : actionStatus === "PENDING" ? "Activate" : "Reactivate";
-  const pastTenseVerb = actionStatus === "ACTIVE" ? "Deactivated" : actionStatus === "PENDING" ? "Activated" : "Reactivated";
+
+  /**
+   * pendingAction is set only when the confirmation modal is open.
+   * It is the action the user intends to take (derived from currentStatus at
+   * click time). We keep it until the success modal closes so the success
+   * message is always consistent.
+   */
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+
+  // Derived labels — only meaningful while a pendingAction exists.
+  const actionVerb = pendingAction ?? getActionVerb(currentStatus);
+  const pastTenseVerb = pendingAction ? getPastTense(pendingAction) : "";
 
   const toggleStatusMutation = usePatchData(
     (payload: UpdateAdminUserStatusPayload) =>
@@ -78,16 +116,30 @@ export default function ViewAdminUserDetails() {
   );
 
   const handleToggleClick = () => {
-    setActionStatus(actionStatus === "ACTIVE" ? "DEACTIVATED" : "ACTIVE");
+    // Snapshot the action from the *current* server status at click time.
+    setPendingAction(getActionVerb(currentStatus));
     setIsConfirmOpen(true);
   };
 
+  const handleConfirmClose = () => {
+    // User cancelled — discard the pending action and close.
+    setIsConfirmOpen(false);
+    setPendingAction(null);
+  };
+
   const handleConfirm = () => {
-    if (!userId || toggleStatusMutation.isPending) return;
+    if (!userId || !pendingAction || toggleStatusMutation.isPending) return;
     toggleStatusMutation.mutate({
-      isActive: !isCurrentlyActive,
+      isActive: isActivePayload(pendingAction),
       reason: "",
     });
+  };
+
+  const handleSuccessClose = () => {
+    setIsSuccessOpen(false);
+    // Only clear the pending action now so the success modal message stays
+    // correct while it is still visible.
+    setPendingAction(null);
   };
 
   const formatDateTime = (iso?: string | null) => {
@@ -106,7 +158,6 @@ export default function ViewAdminUserDetails() {
     return `${date} | ${time}`;
   };
 
-  // Single source of truth for user details shown in edit modal
   const userDetails = {
     fullName: user?.fullName ?? "",
     email: user?.email ?? "",
@@ -124,10 +175,13 @@ export default function ViewAdminUserDetails() {
     router.push("/admin/user-management");
   };
 
+  // The menu label always reflects what action would happen next, derived
+  // directly from the real server status — never from transient local state.
+  const menuActionLabel = getActionVerb(currentStatus);
+
   return (
     <>
       <div className="space-y-6">
-        {/* Main Card */}
         <Card radius="lg" p="lg">
           <Stack gap="xl">
             {/* Header */}
@@ -140,16 +194,14 @@ export default function ViewAdminUserDetails() {
                     {user?.fullName ?? "—"}
                   </Text>
                 )}
-
                 <Group gap="sm">
                   <Text size="xs" c="dimmed">
                     Date Created: {formatDateTime(user?.createdAt)}
                   </Text>
-                  <StatusBadge status={capitalize(status)} />
+                  <StatusBadge status={capitalize(currentStatus)} />
                 </Group>
               </Stack>
 
-              {/* Take Action */}
               <Menu position="bottom-end" radius="md" shadow="sm">
                 <Menu.Target>
                   <Button color="orange" radius="xl">
@@ -159,22 +211,18 @@ export default function ViewAdminUserDetails() {
 
                 <Menu.Dropdown>
                   <Menu.Item onClick={() => setEditOpen(true)}>Edit</Menu.Item>
-
                   <Divider />
-
                   <Menu.Item color="red" onClick={handleToggleClick}>
-                    {user?.status === "ACTIVE" ? "Deactivate" : user?.status === "PENDING" ? "Activate" : "Reactivate"}
+                    {menuActionLabel}
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
             </Group>
 
-            {/* Section Title */}
             <Text fw={600} c="orange" size="sm">
               User Details
             </Text>
 
-            {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-y-6 gap-x-10">
               <DetailItem label="User ID" value={user?.id ?? "—"} loading={isLoading} />
               <DetailItem
@@ -209,7 +257,6 @@ export default function ViewAdminUserDetails() {
         <UserActivitiesTable userId={userId} />
       </div>
 
-      {/* ✅ Edit User Modal */}
       {editOpen && (
         <EditUserModal
           opened={editOpen}
@@ -219,15 +266,14 @@ export default function ViewAdminUserDetails() {
         />
       )}
 
-      {/* Deactivate / Reactivate confirmation modal */}
       <ConfirmationModal
         opened={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        title={`${actionVerb} User ?`}
-        message={`Are you sure, ${actionVerb.toLowerCase()} this admin user? Kindly note that system access would be ${
-          isCurrentlyActive
-            ? "temporarily suspended, until the admin user is reactivated"
-            : "restored therefore this admin user would now be able to access the system according to their role and related permissions"
+        onClose={handleConfirmClose}
+        title={`${actionVerb} User?`}
+        message={`Are you sure you want to ${actionVerb.toLowerCase()} this admin user? ${
+          actionVerb === "Deactivate"
+            ? "System access will be temporarily suspended until the admin user is reactivated."
+            : "System access will be restored and this admin user will be able to access the system according to their role and related permissions."
         }`}
         primaryButtonText={`Yes, ${actionVerb} User`}
         secondaryButtonText="No, Close"
@@ -235,13 +281,12 @@ export default function ViewAdminUserDetails() {
         loading={toggleStatusMutation.isPending}
       />
 
-      {/* Success modal */}
       <SuccessModal
         opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
+        onClose={handleSuccessClose}
         title={`User ${pastTenseVerb}`}
         message={`Admin user has been successfully ${pastTenseVerb.toLowerCase()}.`}
-        primaryButtonText="Manage User"
+        primaryButtonText="Manage Users"
         onPrimaryClick={handleViewAllCustomers}
         secondaryButtonText="No, Close"
       />

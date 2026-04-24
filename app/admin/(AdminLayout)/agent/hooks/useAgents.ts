@@ -4,8 +4,6 @@ import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
 
-type AgentStatus = "Active" | "Deactivated";
-
 interface AgentApiItem {
   id?: string | number;
   agentId?: string | number;
@@ -47,7 +45,7 @@ export interface AgentRowItem {
   email: string;
   totalTransactions: number;
   transactionVolume: number;
-  status: AgentStatus;
+  status: string;
 }
 
 function parseNumber(value: unknown): number {
@@ -57,15 +55,6 @@ function parseNumber(value: unknown): number {
     if (Number.isFinite(numeric)) return numeric;
   }
   return 0;
-}
-
-function toStatus(value: AgentApiItem): AgentStatus {
-  if (typeof value.isActive === "boolean") {
-    return value.isActive ? "Active" : "Deactivated";
-  }
-
-  const normalized = (value.status ?? "").toLowerCase();
-  return normalized === "active" ? "Active" : "Deactivated";
 }
 
 function mapAgent(item: AgentApiItem): AgentRowItem {
@@ -80,7 +69,7 @@ function mapAgent(item: AgentApiItem): AgentRowItem {
     transactionVolume: parseNumber(
       item.transactionVolume ?? item.totalTransactionsVolume ?? item.totalVolume
     ),
-    status: toStatus(item),
+    status: item.status ?? "",
   };
 }
 

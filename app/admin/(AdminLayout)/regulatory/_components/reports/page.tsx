@@ -23,7 +23,7 @@ export default function CBNReportsPage() {
       <div className="w-full rounded-xl bg-white p-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="border-[1.5px] border-gray-100 rounded-2xl shadow-xs shadow-[#1018280D] p-4">
-            <h3 className="text-base text-[#6C6969] mb-4">Daily FX sales and alloctions</h3>
+            <h3 className="text-base text-[#6C6969] mb-4">Daily FX sales and allocations</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <StatCard
             title="Successful Reports"
