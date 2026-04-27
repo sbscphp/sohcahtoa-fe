@@ -45,17 +45,27 @@ export function useKycProfilePrefillEffect<T extends FormWithKycFields>(
   }, [kyc.defaultNin, initialValues?.ninNumber]);
 }
 
+function normalizeForCompare(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
 /**
- * True when we should lock a field: profile supplies a value and the step
- * did not already have a value from saved draft (`initialValues`).
+ * True when we should lock a KYC field:
+ * - profile has a value, and
+ * - initial value is empty OR matches the profile value.
+ *
+ * This keeps profile-prefilled fields locked even after step-back navigation
+ * (where initialValues now includes the prefilled value).
  */
 export function shouldLockKycPrefill(
   hasFromProfile: boolean,
-  initialField: string | undefined | null
+  initialField: string | undefined | null,
+  profileField: string | undefined | null
 ): boolean {
   if (!hasFromProfile) return false;
-  const hasInitial = initialField != null && String(initialField).trim().length > 0;
-  return !hasInitial;
+  const normalizedInitial = normalizeForCompare(initialField);
+  if (!normalizedInitial) return true;
+  return normalizedInitial === normalizeForCompare(profileField);
 }
 
 /**

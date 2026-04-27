@@ -15,70 +15,99 @@ import OtherForm from './components/OtherForm';
 import PostgraduateForm from './components/PostgraduateForm';
 import UndergraduateForm from './components/UndergraduateForm';
 
-/** Undergraduate: school invoice file required; invoice number not collected in UI (optional). */
-const undergraduateSchema = z.object({
-  admissionType: z.string().min(1, "Admission type is required"),
-  formAId: formAIdSchema,
-  schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "School Invoice is required",
-  }),
-  schoolInvoiceNumber: z.string().max(50, "School Invoice Number is too long").optional(),
-  evidenceOfAdmissionFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Evidence of Admission is required",
-  }),
-  passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "International Passport file is required",
-  }),
-  passportDocumentNumber: passportNumberSchema,
-});
+const uploadDocumentsSchema = z
+  .object({
+    admissionType: z.string().min(1, "Admission type is required"),
+    formAId: formAIdSchema,
+    evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
+    schoolInvoiceFile: z.custom<FileWithPath | null>().optional(),
+    schoolInvoiceNumber: z.string().max(50, "School Invoice Number is too long").optional(),
+    passportFile: z.custom<FileWithPath | null>().optional(),
+    passportDocumentNumber: z.string().optional(),
+    passportIssueDate: z.string().optional(),
+    passportExpiryDate: z.string().optional(),
+    statementOfResultFile: z.custom<FileWithPath | null>().optional(),
+    statementOfResultsNumber: z.string().max(50, "Statement of Results Number is too long").optional(),
+    firstDegreeCertificateFile: z.custom<FileWithPath | null>().optional(),
+    transactionFile: z.custom<FileWithPath | null>().optional(),
+    transactionDescription: z.string().max(1000, "Transaction Description is too long").optional(),
+  })
+  .superRefine((data, ctx) => {
+    const requireFile = (
+      path:
+        | "evidenceOfAdmissionFile"
+        | "schoolInvoiceFile"
+        | "passportFile"
+        | "statementOfResultFile"
+        | "firstDegreeCertificateFile"
+        | "transactionFile",
+      message: string
+    ) => {
+      const value = data[path] as FileWithPath | null | undefined;
+      if (!value) {
+        ctx.addIssue({ code: "custom", path: [path], message });
+      }
+    };
 
-const postgraduateSchema = z.object({
-  admissionType: z.string().min(1, "Admission type is required"),
-  formAId: formAIdSchema,
-  schoolInvoiceFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "School Invoice is required",
-  }),
-  schoolInvoiceNumber: z.string().min(1, "School Invoice Number is required").max(50, "School Invoice Number is too long"),
-  passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "International Passport file is required",
-  }),
-  passportIssueDate: z.string().min(1, "Passport Issued Date is required"),
-  passportExpiryDate: z.string().min(1, "Passport Expiry Date is required"),
-  statementOfResultFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Statement of Result is required",
-  }),
-  statementOfResultsNumber: z.string().min(1, "Statement of Results Number is required").max(50, "Statement of Results Number is too long"),
-  firstDegreeCertificateFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "First Degree Certificate is required",
-  }),
-}).superRefine((data, ctx) => {
-  validatePassportDates(
-    { passportIssueDate: data.passportIssueDate, passportExpiryDate: data.passportExpiryDate },
-    ctx
-  );
-});
+    const requireText = (
+      path:
+        | "passportDocumentNumber"
+        | "schoolInvoiceNumber"
+        | "statementOfResultsNumber"
+        | "transactionDescription"
+        | "passportIssueDate"
+        | "passportExpiryDate",
+      message: string
+    ) => {
+      const value = (data[path] ?? "").toString().trim();
+      if (!value) {
+        ctx.addIssue({ code: "custom", path: [path], message });
+      }
+    };
 
-const otherSchema = z.object({
-  admissionType: z.string().min(1, "Admission type is required"),
-  formAId: formAIdSchema,
-  transactionFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Transaction Document is required",
-  }),
-  transactionDescription: z.string().min(1, "Transaction Description is required").max(1000, "Transaction Description is too long"),
-});
+    if (data.admissionType === "Undergraduate") {
+      requireFile("evidenceOfAdmissionFile", "Evidence of Admission is required");
+      requireFile("schoolInvoiceFile", "School Invoice is required");
+      requireFile("passportFile", "International Passport file is required");
 
-const uploadDocumentsSchema = z.union([undergraduateSchema, postgraduateSchema, otherSchema]).refine(
-  (data) => {
+      const passportResult = passportNumberSchema.safeParse(
+        (data.passportDocumentNumber ?? "").toString().trim()
+      );
+      if (!passportResult.success) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["passportDocumentNumber"],
+          message: passportResult.error.issues[0]?.message ?? "International Passport Number is required",
+        });
+      }
+      return;
+    }
+
     if (data.admissionType === "Postgraduate") {
-      return postgraduateSchema.safeParse(data).success;
+      requireFile("schoolInvoiceFile", "School Invoice is required");
+      requireText("schoolInvoiceNumber", "School Invoice Number is required");
+      requireFile("passportFile", "International Passport file is required");
+      requireText("passportIssueDate", "Passport Issued Date is required");
+      requireText("passportExpiryDate", "Passport Expiry Date is required");
+      requireFile("statementOfResultFile", "Statement of Result is required");
+      requireText("statementOfResultsNumber", "Statement of Results Number is required");
+      requireFile("firstDegreeCertificateFile", "First Degree Certificate is required");
+
+      validatePassportDates(
+        {
+          passportIssueDate: (data.passportIssueDate ?? "").toString(),
+          passportExpiryDate: (data.passportExpiryDate ?? "").toString(),
+        },
+        ctx
+      );
+      return;
     }
+
     if (data.admissionType === "Other") {
-      return otherSchema.safeParse(data).success;
+      requireFile("transactionFile", "Transaction Document is required");
+      requireText("transactionDescription", "Transaction Description is required");
     }
-    return undergraduateSchema.safeParse(data).success;
-  },
-  { message: "Please fill all required fields for the selected admission type" }
-);
+  });
 
 export type SchoolFeesUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -99,7 +128,7 @@ type SchoolFeesUploadDocumentsFormValues = {
   transactionDescription?: string;
 };
 
-const ADMISSION_TYPES = ["Undergraduate", "Postgraduate"];
+const ADMISSION_TYPES = ["Undergraduate", "Postgraduate", "Other"];
 
 interface SchoolFeesUploadDocumentsStepProps {
   initialValues?: Partial<SchoolFeesUploadDocumentsFormValues>;

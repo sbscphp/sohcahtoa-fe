@@ -20,7 +20,11 @@ export const internationalBankDetailsSchema = z
     beneficiaryAddress: z.string().trim().min(1, "Beneficiary address is required"),
     bankName: z.string().trim().min(1, "Bank name is required"),
     bankAddress: z.string().trim().min(1, "Bank address is required"),
-    accountNumber: z.string().trim().min(1, "Account number is required"),
+    accountNumber: z
+      .string()
+      .trim()
+      .min(1, "Account number is required")
+      .regex(/^\d+$/, "Account number must contain digits only"),
     paymentReference: z.string().trim().min(1, "Payment reference / ID is required"),
     swiftCode: swiftOptional,
     iban: z.string(),

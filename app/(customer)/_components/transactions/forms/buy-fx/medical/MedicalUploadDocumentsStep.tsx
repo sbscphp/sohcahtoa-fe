@@ -67,8 +67,16 @@ export default function MedicalUploadDocumentsStep({
   onBack,
 }: MedicalUploadDocumentsStepProps) {
   const kyc = useCustomerProfileBvnNin();
-  const bvnLocked = shouldLockKycPrefill(kyc.hasBvnFromProfile, initialValues?.bvn);
-  const ninLocked = shouldLockKycPrefill(kyc.hasNinFromProfile, initialValues?.ninNumber);
+  const bvnLocked = shouldLockKycPrefill(
+    kyc.hasBvnFromProfile,
+    initialValues?.bvn,
+    kyc.defaultBvn
+  );
+  const ninLocked = shouldLockKycPrefill(
+    kyc.hasNinFromProfile,
+    initialValues?.ninNumber,
+    kyc.defaultNin
+  );
 
   const form = useForm<MedicalUploadDocumentsFormValues>({
     mode: "uncontrolled",

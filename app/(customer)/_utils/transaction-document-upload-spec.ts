@@ -204,3 +204,38 @@ export function getSellOver10kDocumentUploadSpec(
   if (spec.files.length === 0) return null;
   return spec;
 }
+
+/**
+ * Additional proof-of-funds documents for BUY transactions when amount >= threshold.
+ * Unlike sell flow, this does not include source-of-funds declaration/signature.
+ */
+export function getBuyOverThresholdProofOfFundsUploadSpec(
+  amountStepData: AmountStepData | null,
+  thresholdUsd = 10_000
+): DocumentUploadSpec | null {
+  if (!amountStepData || typeof amountStepData !== "object") return null;
+
+  const receiveAmount = getStringField(amountStepData, "receiveAmount");
+  const receiveCurrency = getStringField(amountStepData, "receiveCurrency");
+  const sendAmount = getStringField(amountStepData, "sendAmount");
+  const sendCurrency = getStringField(amountStepData, "sendCurrency");
+  if (
+    !isAmountOverRequiredAmount(
+      receiveAmount,
+      receiveCurrency,
+      sendAmount,
+      sendCurrency,
+      thresholdUsd
+    )
+  ) {
+    return null;
+  }
+
+  const proofFilesRaw = amountStepData.proofOfFundsFiles;
+  if (!hasFileArray(proofFilesRaw) || proofFilesRaw.length === 0) return null;
+
+  return {
+    files: [...proofFilesRaw],
+    documentTypes: proofFilesRaw.map(() => "PROOF_OF_FUNDS"),
+  };
+}

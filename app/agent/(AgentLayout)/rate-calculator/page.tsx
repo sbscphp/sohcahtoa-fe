@@ -55,7 +55,7 @@ function toRateRows(rates: TransactionRate[]): CurrencyRateRow[] {
 }
 
 export default function RateCalculatorPage() {
-  const [receiveAmount, setReceiveAmount] = useState("1000");
+  const [receiveAmount, setReceiveAmount] = useState("");
   const [receiveCurrency, setReceiveCurrency] = useState("USD");
   const [sendCurrency, setSendCurrency] = useState("NGN");
   const [sendAmount, setSendAmount] = useState("");
@@ -70,17 +70,6 @@ export default function RateCalculatorPage() {
     setSendAmount,
     defaultLabel: "USD1 - NGN1500",
   });
-
-  const handleSwap = () => {
-    const nextReceiveAmount = sendAmount;
-    const nextReceiveCurrency = sendCurrency;
-    const nextSendCurrency = receiveCurrency;
-
-    setReceiveAmount(nextReceiveAmount);
-    setReceiveCurrency(nextReceiveCurrency);
-    setSendCurrency(nextSendCurrency);
-    recalculate(nextReceiveAmount, nextReceiveCurrency, nextSendCurrency);
-  };
 
   const { data: ratesResponse } = useFetchData<TransactionRatesListResponse>(
     [...agentKeys.rates.list()],
@@ -115,7 +104,7 @@ export default function RateCalculatorPage() {
         <div>
           <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
             <CurrencyAmountInput
-              label="From"
+              label="Amount"
               value={receiveAmount}
               onChange={(v) => {
                 setReceiveAmount(v);
@@ -157,7 +146,7 @@ export default function RateCalculatorPage() {
           <div className="flex flex-col w-full">
             <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
               <CurrencyAmountInput
-                label="To"
+                label="Converted to"
                 value={sendAmount}
                 onChange={(v) => setSendAmount(v)}
                 currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
@@ -167,7 +156,7 @@ export default function RateCalculatorPage() {
                   setSendCurrency(code);
                   recalculate(undefined, undefined, code);
                 }}
-                placeholder="0"
+                showDropdown={false}
                 disabled
               />
             </div>
