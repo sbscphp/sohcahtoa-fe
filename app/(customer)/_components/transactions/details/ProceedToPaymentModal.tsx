@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Button, Modal } from "@mantine/core";
+import { Button, Loader, Modal } from "@mantine/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { CircleAlert, Copy, X } from "lucide-react";
+import { successGif } from "@/app/assets/asset";
+import type { TransactionDepositStatusData } from "@/app/_lib/api/types";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
@@ -37,13 +40,31 @@ function CountdownText({ initialSeconds, running }: { initialSeconds: number; ru
   return <>{formatPaymentExpiryCountdown(remaining)}</>;
 }
 
+function isDepositVerified(data: TransactionDepositStatusData | undefined): boolean {
+  if (!data) return false;
+  if (data.depositConfirmed) return true;
+  return data.hasDeposit === true && data.depositStatus === "VERIFIED";
+}
+
+const DEPOSIT_POLL_INTERVAL_MS = 3000;
+const DEPOSIT_POLL_MAX_MS = 3 * 60 * 1000;
+
 export default function ProceedToPaymentModal({
   opened,
   onClose,
   transactionId,
   amountNgn,
 }: ProceedToPaymentModalProps) {
+  const queryClient = useQueryClient();
   const flagUrl = getCurrencyFlagUrl("NGN");
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [confirmTimedOut, setConfirmTimedOut] = useState(false);
+  const pollStartedAtRef = useRef<number | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const virtualAccountQuery = useFetchSingleData(
     [...customerKeys.transactions.virtualAccount(transactionId)],
@@ -57,10 +78,11 @@ export default function ProceedToPaymentModal({
     opened && !!transactionId
   );
 
+  /** Paused while confirming: manual poll is the only deposit-status traffic (avoids parallel React Query refetches). */
   const depositStatusQuery = useFetchSingleData(
     [...customerKeys.transactions.depositStatus(transactionId)],
     () => customerApi.transactions.getDepositStatus(transactionId),
-    opened && !!transactionId
+    opened && !!transactionId && !confirmingPayment
   );
 
   const accountData = virtualAccountQuery.data?.data;
@@ -97,10 +119,94 @@ export default function ProceedToPaymentModal({
     }
   };
 
+  const handleCloseAll = useCallback(() => {
+    setConfirmingPayment(false);
+    setConfirmTimedOut(false);
+    pollStartedAtRef.current = null;
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!opened) {
+      pollStartedAtRef.current = null;
+      const id = globalThis.setTimeout(() => {
+        setConfirmingPayment(false);
+        setConfirmTimedOut(false);
+      }, 0);
+      return () => globalThis.clearTimeout(id);
+    }
+  }, [opened]);
+
+  useEffect(() => {
+    if (!confirmingPayment || !transactionId || !opened) return;
+
+    let cancelled = false;
+    let nextTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const clearScheduled = () => {
+      if (nextTimeoutId !== null) {
+        clearTimeout(nextTimeoutId);
+        nextTimeoutId = null;
+      }
+    };
+
+    const invalidateAndFinish = async () => {
+      await queryClient.invalidateQueries({
+        queryKey: [...customerKeys.transactions.detail(transactionId)],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [...customerKeys.transactions.depositStatus(transactionId)],
+      });
+      if (cancelled) return;
+      setConfirmingPayment(false);
+      setConfirmTimedOut(false);
+      pollStartedAtRef.current = null;
+      onCloseRef.current();
+    };
+
+    /** One request at a time; next poll is scheduled only after this tick completes (no setInterval overlap). */
+    const tick = async () => {
+      if (cancelled) return;
+
+      const started = pollStartedAtRef.current ?? Date.now();
+      pollStartedAtRef.current = started;
+
+      if (Date.now() - started > DEPOSIT_POLL_MAX_MS) {
+        setConfirmTimedOut(true);
+        return;
+      }
+
+      try {
+        const res = await customerApi.transactions.getDepositStatus(transactionId);
+        if (cancelled) return;
+        if (isDepositVerified(res?.data)) {
+          await invalidateAndFinish();
+          return;
+        }
+      } catch {
+        // continue until timeout or success
+      }
+
+      if (cancelled) return;
+      nextTimeoutId = setTimeout(() => {
+        nextTimeoutId = null;
+        void tick();
+      }, DEPOSIT_POLL_INTERVAL_MS);
+    };
+
+    void tick();
+
+    return () => {
+      cancelled = true;
+      clearScheduled();
+    };
+  }, [confirmingPayment, transactionId, opened, queryClient]);
+
   return (
+    <>
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={confirmingPayment ? () => {} : handleCloseAll}
       centered
       withCloseButton={false}
       size="lg"
@@ -119,8 +225,9 @@ export default function ProceedToPaymentModal({
             </div>
             <button
               type="button"
-              onClick={onClose}
-              className="text-[#8F8B8B] hover:text-[#4D4B4B] transition-colors"
+              onClick={handleCloseAll}
+              disabled={confirmingPayment}
+              className="text-[#8F8B8B] hover:text-[#4D4B4B] transition-colors disabled:opacity-40"
               aria-label="Close"
             >
               <X className="h-6 w-6" />
@@ -172,7 +279,7 @@ export default function ProceedToPaymentModal({
               <CountdownText
                 key={`${opened}-${rawExpiry}`}
                 initialSeconds={initialCountdownSeconds}
-                running={opened}
+                running={opened && !confirmingPayment}
               />
             </span>
           </div>
@@ -190,21 +297,88 @@ export default function ProceedToPaymentModal({
             variant="outline"
             radius="xl"
             fullWidth
-            className="border-[#CCCACA] text-[#4D4B4B] bg-white hover:bg-[#F9F9F9] text-base sm:text-base"
-            onClick={onClose}
+            className="border-[#CCCACA] text-[#4D4B4B] bg-white hover:bg-[#F9F9F9] text-base sm:text-base h-12!"
+            onClick={handleCloseAll}
+            disabled={confirmingPayment}
           >
             Cancel
           </Button>
           <Button
             radius="xl"
             fullWidth
-            className="bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] text-base sm:text-base"
-            disabled={!hasVirtualAccount && !accountUnavailable}
+            className="bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] text-base sm:text-base h-12!"
+            disabled={(!hasVirtualAccount && !accountUnavailable) || confirmingPayment}
+            onClick={() => {
+              setConfirmTimedOut(false);
+              pollStartedAtRef.current = null;
+              setConfirmingPayment(true);
+            }}
           >
             I have sent the money
           </Button>
         </div>
       </div>
     </Modal>
+
+    <Modal
+      opened={confirmingPayment}
+      onClose={() => {
+        setConfirmingPayment(false);
+        setConfirmTimedOut(false);
+        pollStartedAtRef.current = null;
+      }}
+      title=""
+      centered
+      withCloseButton={false}
+      radius="lg"
+      size="sm"
+      zIndex={400}
+      closeOnClickOutside={false}
+      classNames={{ body: "pt-2" }}
+    >
+      <div className="text-center space-y-5">
+        <div className="flex justify-center">
+          <div className="w-30 h-30 rounded-full flex items-center justify-center relative">
+            <Image src={successGif} alt="" fill unoptimized />
+          </div>
+        </div>
+        <h2 className="text-body-heading-300 text-xl font-semibold">
+          {confirmTimedOut ? "Still confirming" : "Confirming payment"}
+        </h2>
+        {confirmTimedOut ? (
+          <p className="text-body-text-100 text-base">
+            We have not detected your payment yet. You can leave this open a bit longer, refresh this page later, or
+            contact support if the debit already left your account.
+          </p>
+        ) : (
+          <p className="text-body-text-100 text-base">
+            Hang tight while we verify your transfer. This usually takes a short moment.
+          </p>
+        )}
+        {!confirmTimedOut && (
+          <div className="flex justify-center py-1">
+            <Loader color="#DD4F05" type="dots" />
+          </div>
+        )}
+        <Button
+          onClick={() => {
+            setConfirmingPayment(false);
+            setConfirmTimedOut(false);
+            pollStartedAtRef.current = null;
+          }}
+          variant={confirmTimedOut ? "filled" : "outline"}
+          fullWidth
+          radius="xl"
+          className={
+            confirmTimedOut
+              ? "h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6"
+              : "h-[52px] min-h-[52px] py-3.5 px-6 bg-white border border-[#CCCACA] text-[#4D4B4B] font-medium text-base leading-6 hover:bg-gray-50"
+          }
+        >
+          {confirmTimedOut ? "Back to payment details" : "Cancel and close"}
+        </Button>
+      </div>
+    </Modal>
+    </>
   );
 }
