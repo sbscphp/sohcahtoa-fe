@@ -825,6 +825,32 @@ export interface AdminWorkflowActionListItem {
   title: string;
 }
 
+export interface WorkflowManagementStatsData {
+  totalWorkflows: number;
+  activeWorkflows: number;
+  deactivatedWorkflows: number;
+}
+
+export type AdminWorkflowManagementListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "" | "Active" | "Deactivated" | "Draft";
+};
+
+export interface AdminWorkflowManagementListItem {
+  id: string;
+  displayId: string;
+  workflowName: string;
+  workflowType: string;
+  workflowAction: string;
+  status: string;
+  dateCreated: string;
+}
+
 export interface AdminTransactionDetailsPayload {
   transactionValueFx?: number | string | null;
   transactionValueNgn?: number | string | null;
@@ -2084,25 +2110,37 @@ export const adminApi = {
 
   // ==================== Workflow ====================
   workflow: {
-  getStats: () =>
-    apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
+    getStats: () =>
+      apiClient.get<ApiResponse<WorkflowStatsData>>("/api/admin/workflow/stats"),
 
-  listActions: (params?: AdminWorkflowActionsListParams) =>
-    apiClient.get<ApiResponse<AdminWorkflowActionListItem[]>>(
-      "/api/admin/workflow/actions",
-      { params }
-    ),
-      exportActions: async (params?: AdminWorkflowActionsListParams) => {
-    const response = await apiClient.get<Blob | string>(
-      "/api/admin/workflow/actions/export",
-      { params }
-    );
+    listActions: (params?: AdminWorkflowActionsListParams) =>
+      apiClient.get<ApiResponse<AdminWorkflowActionListItem[]>>(
+        "/api/admin/workflow/actions",
+        { params }
+      ),
 
-    if (response instanceof Blob) {
-      return response;
-    }
+    exportActions: async (params?: AdminWorkflowActionsListParams) => {
+      const response = await apiClient.get<Blob | string>(
+        "/api/admin/workflow/actions/export",
+        { params }
+      );
 
-    return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getManagementStats: () =>
+      apiClient.get<ApiResponse<WorkflowManagementStatsData>>(
+        "/api/admin/workflow/management/stats"
+      ),
+
+    listManagement: (params?: AdminWorkflowManagementListParams) =>
+      apiClient.get<ApiResponse<AdminWorkflowManagementListItem[]>>(
+        "/api/admin/workflow/management/list",
+        { params }
+      ),
   },
-},
 };
