@@ -8,7 +8,10 @@ import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload"
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
-import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  getBuyOverThresholdProofOfFundsUploadSpec,
+  getDocumentUploadSpec,
+} from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   buildTransactionPayload,
   toTransactionDocuments,
@@ -202,16 +205,32 @@ export default function TransactionCreationPage() {
     }
 
     try {
-      const spec = getDocumentUploadSpec(
+      const baseSpec = getDocumentUploadSpec(
         transactionType,
         bag.uploadDocumentsData,
         bag.bankDetailsData
       );
-      const uploaded = spec
+      const overThresholdProofSpec = getBuyOverThresholdProofOfFundsUploadSpec(
+        bag.transactionAmountData
+      );
+      const combinedSpec =
+        baseSpec || overThresholdProofSpec
+          ? {
+              files: [
+                ...(baseSpec?.files ?? []),
+                ...(overThresholdProofSpec?.files ?? []),
+              ],
+              documentTypes: [
+                ...(baseSpec?.documentTypes ?? []),
+                ...(overThresholdProofSpec?.documentTypes ?? []),
+              ],
+            }
+          : null;
+      const uploaded = combinedSpec
         ? await uploadDocuments.mutateAsync({
-            file: spec.files,
+            file: combinedSpec.files,
             userId: userProfile.id,
-            documentType: spec.documentTypes,
+            documentType: combinedSpec.documentTypes,
           })
         : [];
       const documents = toTransactionDocuments(uploaded);

@@ -21,6 +21,7 @@ const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
   sendCurrency: z.string().min(1, "Currency is required"),
   exchangeRate: z.string().optional(),
+  proofOfFundsFiles: z.custom<File[]>().optional(),
 });
 
 export type MedicalTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
@@ -39,6 +40,9 @@ export default function MedicalTransactionAmountStep({
   exchangeRate = "USD1 - NGN1500",
 }: MedicalTransactionAmountStepProps) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(
+    initialValues?.proofOfFundsFiles ?? []
+  );
   const form = useForm<MedicalTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -47,6 +51,7 @@ export default function MedicalTransactionAmountStep({
       sendAmount: initialValues?.sendAmount || "",
       sendCurrency: initialValues?.sendCurrency || "NGN",
       exchangeRate: initialValues?.exchangeRate || exchangeRate,
+      proofOfFundsFiles: initialValues?.proofOfFundsFiles ?? [],
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
@@ -59,7 +64,10 @@ export default function MedicalTransactionAmountStep({
   });
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values);
+    onSubmit({
+      ...values,
+      proofOfFundsFiles,
+    });
   });
 
   const handleSwap = () => {
@@ -117,7 +125,7 @@ export default function MedicalTransactionAmountStep({
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
-            console.log("Proof of fund attached", files);
+            setProofOfFundsFiles(files);
             setProofModalOpen(false);
           }}
         />

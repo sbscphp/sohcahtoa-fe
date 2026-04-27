@@ -55,7 +55,7 @@ function toRateRows(rates: TransactionRate[]): CurrencyRateRow[] {
 }
 
 export default function RateCalculatorPage() {
-  const [receiveAmount, setReceiveAmount] = useState("1000");
+  const [receiveAmount, setReceiveAmount] = useState("");
   const [receiveCurrency, setReceiveCurrency] = useState("USD");
   const [sendCurrency, setSendCurrency] = useState("NGN");
   const [sendAmount, setSendAmount] = useState("");
@@ -116,7 +116,7 @@ export default function RateCalculatorPage() {
      <div>
      <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
           <CurrencyAmountInput
-            label="From"
+            label="Amount"
             value={receiveAmount}
             onChange={(v) => {
               setReceiveAmount(v);
@@ -158,7 +158,7 @@ export default function RateCalculatorPage() {
         <div className="flex flex-col w-full">
           <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
             <CurrencyAmountInput
-              label="To"
+              label="Converted to"
               value={sendAmount}
               onChange={(v) => setSendAmount(v)}
               currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
@@ -170,6 +170,7 @@ export default function RateCalculatorPage() {
               }}
               placeholder="0"
               disabled
+              showDropdown={false}
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full min-h-[56px] bg-black rounded-b-3xl">

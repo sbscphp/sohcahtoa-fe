@@ -21,6 +21,7 @@ const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
   sendCurrency: z.string().min(1, "Currency is required"),
   exchangeRate: z.string().optional(),
+  proofOfFundsFiles: z.custom<File[]>().optional(),
 });
 
 export type SchoolFeesTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
@@ -39,7 +40,9 @@ export default function SchoolFeesTransactionAmountStep({
   exchangeRate = "USD1 - NGN1500",
 }: SchoolFeesTransactionAmountStepProps) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [proofOfFundAttached, setProofOfFundAttached] = useState(false);
+  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(
+    initialValues?.proofOfFundsFiles ?? []
+  );
   const form = useForm<SchoolFeesTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -48,6 +51,7 @@ export default function SchoolFeesTransactionAmountStep({
       sendAmount: initialValues?.sendAmount || "",
       sendCurrency: initialValues?.sendCurrency || "NGN",
       exchangeRate: initialValues?.exchangeRate || exchangeRate,
+      proofOfFundsFiles: initialValues?.proofOfFundsFiles ?? [],
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
@@ -70,10 +74,13 @@ export default function SchoolFeesTransactionAmountStep({
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
-    (needsProofOfFund && !proofOfFundAttached);
+    (needsProofOfFund && proofOfFundsFiles.length === 0);
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values);
+    onSubmit({
+      ...values,
+      proofOfFundsFiles,
+    });
   });
 
   const handleSwap = () => {
@@ -127,7 +134,7 @@ export default function SchoolFeesTransactionAmountStep({
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
-            setProofOfFundAttached(files.length > 0);
+            setProofOfFundsFiles(files);
             setProofModalOpen(false);
           }}
         />

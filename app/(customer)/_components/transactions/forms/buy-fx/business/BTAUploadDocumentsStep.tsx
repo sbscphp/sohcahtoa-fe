@@ -73,14 +73,22 @@ export default function BTAUploadDocumentsStep({
   onBack,
 }: Readonly<BTAUploadDocumentsStepProps>) {
   const kyc = useCustomerProfileBvnNin();
-  const bvnLocked = shouldLockKycPrefill(kyc.hasBvnFromProfile, initialValues?.bvn);
-  const ninLocked = shouldLockKycPrefill(kyc.hasNinFromProfile, initialValues?.ninNumber);
+  const bvnLocked = shouldLockKycPrefill(
+    kyc.hasBvnFromProfile,
+    initialValues?.bvn,
+    kyc.defaultBvn
+  );
+  const ninLocked = shouldLockKycPrefill(
+    kyc.hasNinFromProfile,
+    initialValues?.ninNumber,
+    kyc.defaultNin
+  );
 
   const form = useForm<BTAUploadDocumentsFormValues>({
     mode: "controlled",
     initialValues: {
       bvn: initialValues?.bvn || kyc.defaultBvn || "",
-      ninNumber: initialValues?.ninNumber ?? kyc.defaultNin ?? "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       tinNumber: initialValues?.tinNumber || "",
       formAId: initialValues?.formAId || "",
       tccDocumentNumber: initialValues?.tccDocumentNumber || "",

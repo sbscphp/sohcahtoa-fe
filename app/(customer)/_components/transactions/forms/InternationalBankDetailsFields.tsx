@@ -122,7 +122,12 @@ export default function InternationalBankDetailsFields({
           required
           size="md"
           placeholder="Enter"
+          inputMode="numeric"
           {...form.getInputProps("accountNumber")}
+          onChange={(e) => {
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "");
+            form.setFieldValue("accountNumber", raw);
+          }}
         />
       </div>
 
