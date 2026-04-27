@@ -704,13 +704,7 @@ export interface TransactionDetail extends Transaction {
     dateInitiated: string;
     pickupAddress?: string;
   };
-  paymentDetails?: {
-    transactionId: string;
-    transactionDate: string;
-    transactionTime: string;
-    transactionReceipt: { filename: string };
-    paidTo: string;
-  };
+  paymentDetails?: Record<string, unknown>;
   settlement?: {
     settlementId: string;
     settlementDate: string;
@@ -793,6 +787,23 @@ export interface TransactionDetailCashPickup {
   updatedAt: string;
 }
 
+export interface TransactionDetailPaymentEntry {
+  id: string;
+  sessionId?: string | null;
+  amount: string;
+  settledAmount?: string | null;
+  feeAmount?: string | null;
+  currency: string;
+  sourceAccountNumber?: string | null;
+  sourceAccountName?: string | null;
+  sourceBankName?: string | null;
+  tranRemarks?: string | null;
+  tranDateTime: string;
+  status: string;
+  verifiedAt?: string | null;
+  createdAt?: string | null;
+}
+
 export interface TransactionDetailComment {
   id: string;
   action: string;
@@ -847,6 +858,8 @@ export interface TransactionDetailData {
   requiredDocuments: TransactionDetailRequiredDoc[];
   cashPickup: TransactionDetailCashPickup | null;
   prepaidCard: Record<string, unknown> | null;
+  settlement?: Record<string, unknown> | null;
+  paymentDetails?: TransactionDetailPaymentEntry[] | null;
   steps: TransactionDetailStep[];
   comments?: TransactionDetailComment[];
   createdAt: string;

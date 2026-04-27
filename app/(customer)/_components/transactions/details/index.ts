@@ -6,7 +6,7 @@ export type { TransactionDetailsData } from "./TransactionDetailsSection";
 export { default as RequiredDocumentsSection } from "./RequiredDocumentsSection";
 export type { RequiredDocumentsData } from "./RequiredDocumentsSection";
 export { default as PaymentDetailsSection } from "./PaymentDetailsSection";
-export type { PaymentDetailsData } from "./PaymentDetailsSection";
+export type { PaymentDetailsData, PaymentInflowLine } from "./PaymentDetailsSection";
 export { default as ProceedToPaymentModal } from "./ProceedToPaymentModal";
 export { default as TransactionSettlementSection } from "./TransactionSettlementSection";
 export type { TransactionSettlementData } from "./TransactionSettlementSection";

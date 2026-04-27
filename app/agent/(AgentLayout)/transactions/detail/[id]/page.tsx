@@ -1,13 +1,13 @@
 "use client";
 
 import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
+import type { RequiredDocumentsData } from "@/app/(customer)/_components/transactions/details";
 import {
-  PaymentDetailsSection,
   RequiredDocumentsSection,
   TransactionDetailsSection,
   TransactionSettlementSection,
-  type RequiredDocumentsData,
 } from "@/app/(customer)/_components/transactions/details";
+import PaymentDetailsSection from "@/app/agent/_components/transactions/details/PaymentDetailsSection";
 import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
 import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
 import TransactionRequestSheet, { type TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
@@ -328,12 +328,14 @@ export default function AgentTransactionDetailPage() {
             fileUrl={documentViewer?.url ?? null}
             filename={documentViewer?.filename}
           />
-          {showPaymentDetails && payload.paymentDetails && (
-            <PaymentDetailsSection
-              data={payload.paymentDetails}
-              onDownloadReceipt={() => {}}
-            />
-          )}
+          {showPaymentDetails &&
+            payload.paymentDetails &&
+            payload.paymentDetails.inflows.length > 0 && (
+              <PaymentDetailsSection
+                key={`${payload.id}-pd-${payload.paymentDetails.inflows.map((r) => r.id).join(",")}`}
+                data={payload.paymentDetails}
+              />
+            )}
           {showSettlement && payload.settlement && (
             <TransactionSettlementSection
               data={payload.settlement}

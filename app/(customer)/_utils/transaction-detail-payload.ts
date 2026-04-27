@@ -1,9 +1,11 @@
 import type {
   TransactionDetailComment,
   TransactionDetailData,
+  TransactionDetailPaymentEntry,
   TransactionDetailRequiredDoc,
   TransactionDetailStep,
 } from "@/app/_lib/api/types";
+import type { PaymentDetailsData } from "@/app/(customer)/_components/transactions/details/PaymentDetailsSection";
 import type { RequiredDocumentsData, TransactionDetailsData } from "@/app/(customer)/_components/transactions/details";
 import type { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import type { TransactionDetailPayload } from "@/app/(customer)/(CustomerLayout)/transactions/detail/[id]/page";
@@ -56,6 +58,25 @@ function buildDocStatusOverrideMap(comments: TransactionDetailComment[] = []): M
   const finalMap = new Map<string, string>();
   byDocType.forEach((value, key) => finalMap.set(key, value.status));
   return finalMap;
+}
+
+function mapPaymentDetailsFromApi(entries: TransactionDetailPaymentEntry[]): PaymentDetailsData {
+  return {
+    inflows: entries.map((entry) => ({
+      id: entry.id,
+      amount: entry.amount,
+      currency: entry.currency,
+      settledAmount: entry.settledAmount ?? undefined,
+      feeAmount: entry.feeAmount ?? undefined,
+      sourceAccountNumber: entry.sourceAccountNumber ?? undefined,
+      sourceAccountName: entry.sourceAccountName ?? undefined,
+      sourceBankName: entry.sourceBankName ?? undefined,
+      tranRemarks: entry.tranRemarks ?? undefined,
+      tranDateTime: entry.tranDateTime,
+      status: entry.status,
+      verifiedAt: entry.verifiedAt ?? undefined,
+    })),
+  };
 }
 
 function mapRequiredDocsToDocumentItems(
@@ -130,18 +151,11 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     documentsForSheet: mapRequiredDocsToDocumentItems(docs, api.comments ?? []),
   };
 
-  if (
-    viewStatus === "awaiting_disbursement" ||
-    viewStatus === "disbursement_in_progress" ||
-    viewStatus === "transaction_settled"
-  ) {
-    payload.paymentDetails = {
-      transactionId: api.referenceNumber ?? api.transactionId,
-      transactionDate: formatShortDate(api.updatedAt),
-      transactionTime: formatShortTime(api.updatedAt),
-      transactionReceipt: { filename: "payment-receipt.pdf" },
-      paidTo: "SohCahToa BSC\nAccess Bank\n0069000592",
-    };
+  const apiPaymentRows = Array.isArray(api.paymentDetails) ? api.paymentDetails : [];
+  const hasApiPaymentRows = apiPaymentRows.length > 0;
+
+  if (hasApiPaymentRows) {
+    payload.paymentDetails = mapPaymentDetailsFromApi(apiPaymentRows);
   }
 
   if (viewStatus === "transaction_settled") {
