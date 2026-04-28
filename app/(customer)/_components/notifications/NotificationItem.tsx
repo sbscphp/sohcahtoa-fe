@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ChevronRight, Clock, Loader2 } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export type NotificationItemProps = {
@@ -12,6 +12,7 @@ export type NotificationItemProps = {
   href?: string;
   onClick?: () => void;
   isMarkingAsRead?: boolean;
+  expanded?: boolean;
 };
 
 export default function NotificationItem({
@@ -23,14 +24,32 @@ export default function NotificationItem({
   href,
   onClick,
   isMarkingAsRead = false,
+  expanded = false,
 }: NotificationItemProps) {
+  let trailingIcon = <ChevronRight className="size-4 shrink-0 text-[#B2AFAF]" />;
+  if (isMarkingAsRead) {
+    trailingIcon = <Loader2 className="size-4 shrink-0 animate-spin text-[#B2AFAF]" />;
+  } else if (!href) {
+    trailingIcon = (
+      <ChevronDown
+        className={`size-4 shrink-0 text-[#B2AFAF] transition-transform ${
+          expanded ? "rotate-180" : ""
+        }`}
+      />
+    );
+  }
+
   const content = (
     <>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <h3 className="text-base font-medium leading-6 text-[#4D4B4B]">
           {title}
         </h3>
-        <p className="text-sm font-normal leading-5 text-[#8F8B8B] text-wrap line-clamp-1 truncate hover:line-clamp-2">
+        <p
+          className={`text-sm font-normal leading-5 text-[#8F8B8B] ${
+            expanded ? "text-wrap" : "line-clamp-1 truncate text-wrap md:hover:line-clamp-2"
+          }`}
+        >
           {context}
         </p>
         <div className="flex flex-row items-center gap-2">
@@ -54,25 +73,21 @@ export default function NotificationItem({
             Unread
           </span>
         ) : (
-          <span className="text-xs font-medium leading-4 text-[#6C6969]">
+          <span className="rounded-2xl bg-success-50 px-2 py-0.5 text-xs font-medium leading-4 tracking-[0.04px] text-success-700">
             Read
           </span>
         )}
-        {isMarkingAsRead ? (
-          <Loader2 className="size-4 shrink-0 animate-spin text-[#B2AFAF]" />
-        ) : (
-          <ChevronRight className="size-4 shrink-0 text-[#B2AFAF]" />
-        )}
+        {trailingIcon}
       </div>
     </>
   );
 
   const baseClass =
-    "flex w-full flex-row items-center justify-between gap-3 rounded-xl border-[1.5px] border-[#F2F4F7] bg-white p-3 text-left transition-colors hover:border-gray-200 hover:bg-gray-50/50";
+    "flex w-full flex-row items-center justify-between gap-3 rounded-xl border-[1.5px] border-[#F2F4F7] bg-white p-3 text-left transition-colors md:hover:border-gray-200 md:hover:bg-gray-50/50";
 
   if (href) {
     return (
-      <Link href={href} className={baseClass}>
+      <Link href={href} onClick={onClick} className={baseClass}>
         {content}
       </Link>
     );

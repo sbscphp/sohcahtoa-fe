@@ -17,6 +17,7 @@ import { authTokensAtom } from "@/app/_lib/atoms/auth-atom";
 import { apiClient } from "@/app/_lib/api/client";
 import { clearTemporaryAuthData } from "@/app/(customer)/_utils/auth-flow";
 import { getStoredReturnPath, setAuthUserType } from "@/app/_lib/api/auth-logout";
+import { maskEmail } from "@/app/agent/_utils/mask-email";
 
 const emailSchema = z.email();
 
@@ -43,6 +44,7 @@ export default function AgentLoginPage() {
     validate: zod4Resolver(loginSchema),
     validateInputOnChange: true,
   });
+  const maskedEmail = maskEmail(form.values.email);
 
   const handleLogin = form.onSubmit(async (values) => {
     loginMutation.mutate(values, {
@@ -219,7 +221,7 @@ export default function AgentLoginPage() {
         opened={otpModalOpened}
         onClose={() => setOtpModalOpened(false)}
         title="Account Authorisation Access"
-        description="A six (6) digit OTP has been sent to your email linked to this account. e*****sohcahtoa.com. Enter code to log in"
+        description={`A six (6) digit OTP has been sent to your email linked to this account. ${maskedEmail}. Enter code to log in`}
         length={6}
         loading={verifyLoginMutation.isPending}
         onSubmit={handleOtpSubmit}

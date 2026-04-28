@@ -6,6 +6,9 @@ import { Button, Select, TextInput } from "@mantine/core";
 import { OtpModal } from "@/app/admin/_components/OtpModal";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import { useDisclosure } from "@mantine/hooks";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { maskEmail } from "@/app/agent/_utils/mask-email";
 
 const SECURITY_QUESTIONS = [
   "What is your favorite food?",
@@ -26,6 +29,10 @@ export default function SetSecurityQuestionPage() {
     successModalOpen,
     { open: openSuccessModal, close: closeSuccessModal },
   ] = useDisclosure(false);
+  const { data: profileResponse } = useFetchData(
+    ["agent", "auth", "profile"],
+    () => agentApi.auth.profile()
+  );
 
   const handleContinue = () => {
     if (question && answer.trim()) {
@@ -52,6 +59,7 @@ export default function SetSecurityQuestionPage() {
   };
 
   const isValid = question && answer.trim().length > 0;
+  const maskedEmail = maskEmail(profileResponse?.data?.email);
 
   const inputClassNames = {
     label: "text-sm font-medium leading-5 text-[#6C6969]",
@@ -122,7 +130,7 @@ export default function SetSecurityQuestionPage() {
         opened={otpModalOpen}
         onClose={closeOtpModal}
         title="OTP Verification"
-        description="A six (6) digit OTP has been sent to your email linked to this account. e*****sohcahtoa.com. Enter code to continue"
+        description={`A six (6) digit OTP has been sent to your email linked to this account. ${maskedEmail}. Enter code to continue`}
         length={6}
         onSubmit={handleOtpSubmit}
         onResend={() => Promise.resolve(true)}

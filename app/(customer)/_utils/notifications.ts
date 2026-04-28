@@ -36,12 +36,17 @@ export function formatNotificationTime(dateString: string): string {
 export function transformNotificationToItem(
   notification: Notification
 ): NotificationItemProps {
+  const context = notification.message ?? notification.body ?? "";
+  const status = (notification.read ?? notification.isRead ?? false) ? "read" : "unread";
+  const href = notification.actionUrl ?? notification.data?.actionUrl ?? undefined;
+
   return {
     title: notification.title,
-    context: notification.message,
+    context,
     date: formatNotificationDate(notification.createdAt),
     time: formatNotificationTime(notification.createdAt),
-    status: notification.read ? "read" : "unread",
+    status,
+    href: href || undefined,
   };
 }
 

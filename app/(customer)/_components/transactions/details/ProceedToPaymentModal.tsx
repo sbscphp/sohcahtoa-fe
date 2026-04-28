@@ -17,6 +17,7 @@ import {
   getStringField,
   parseExpiryToSeconds,
 } from "@/app/(customer)/_utils/transaction-payment";
+import { notifications } from "@mantine/notifications";
 
 interface ProceedToPaymentModalProps {
   opened: boolean;
@@ -114,6 +115,12 @@ export default function ProceedToPaymentModal({
     if (!value || value === "—") return;
     try {
       await navigator.clipboard.writeText(value);
+      notifications.show({
+        title: "Copied to clipboard",
+        message: "The account number has been copied to your clipboard.",
+        color: "green",
+        withCloseButton: true,
+      });
     } catch {
       // no-op
     }
@@ -173,7 +180,6 @@ export default function ProceedToPaymentModal({
 
       if (Date.now() - started > DEPOSIT_POLL_MAX_MS) {
         setConfirmTimedOut(true);
-        return;
       }
 
       try {
@@ -205,7 +211,7 @@ export default function ProceedToPaymentModal({
   return (
     <>
     <Modal
-      opened={opened}
+      opened={opened && !confirmingPayment}
       onClose={confirmingPayment ? () => {} : handleCloseAll}
       centered
       withCloseButton={false}
@@ -257,7 +263,7 @@ export default function ProceedToPaymentModal({
               <button
                 type="button"
                 onClick={() => handleCopy(accountNumber)}
-                className="inline-flex items-center gap-2 text-[#131212] text-base sm:text-base"
+                className="inline-flex items-center gap-2 text-[#131212] text-base sm:text-base cursor-pointer"
               >
                 {accountNumber}
                 <Copy className="w-4 h-4 text-[#8F8B8B]" />
@@ -322,11 +328,7 @@ export default function ProceedToPaymentModal({
 
     <Modal
       opened={confirmingPayment}
-      onClose={() => {
-        setConfirmingPayment(false);
-        setConfirmTimedOut(false);
-        pollStartedAtRef.current = null;
-      }}
+      onClose={() => {}}
       title=""
       centered
       withCloseButton={false}
@@ -334,6 +336,7 @@ export default function ProceedToPaymentModal({
       size="sm"
       zIndex={400}
       closeOnClickOutside={false}
+      closeOnEscape={false}
       classNames={{ body: "pt-2" }}
     >
       <div className="text-center space-y-5">
@@ -352,31 +355,19 @@ export default function ProceedToPaymentModal({
           </p>
         ) : (
           <p className="text-body-text-100 text-base">
-            Hang tight while we verify your transfer. This usually takes a short moment.
+            Please wait while we confirm your transaction. This should take between 3-5 minutes.
           </p>
         )}
+        <div className="flex justify-center py-1">
+          <Loader color="#DD4F05" type="dots" />
+        </div>
         {!confirmTimedOut && (
           <div className="flex justify-center py-1">
-            <Loader color="#DD4F05" type="dots" />
+            <p className="text-body-text-100 text-sm">
+              Please keep this window open while we continue checking your transfer.
+            </p>
           </div>
         )}
-        <Button
-          onClick={() => {
-            setConfirmingPayment(false);
-            setConfirmTimedOut(false);
-            pollStartedAtRef.current = null;
-          }}
-          variant={confirmTimedOut ? "filled" : "outline"}
-          fullWidth
-          radius="xl"
-          className={
-            confirmTimedOut
-              ? "h-[52px] min-h-[52px] py-3.5 px-6 bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] font-medium text-base leading-6"
-              : "h-[52px] min-h-[52px] py-3.5 px-6 bg-white border border-[#CCCACA] text-[#4D4B4B] font-medium text-base leading-6 hover:bg-gray-50"
-          }
-        >
-          {confirmTimedOut ? "Back to payment details" : "Cancel and close"}
-        </Button>
       </div>
     </Modal>
     </>

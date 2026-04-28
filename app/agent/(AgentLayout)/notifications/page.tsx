@@ -12,7 +12,6 @@ import {
 } from "@/app/(customer)/_utils/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
-  Notification,
   NotificationsListResponse,
   UnreadCountResponse,
 } from "@/app/_lib/api/types";
@@ -82,10 +81,10 @@ export default function AgentNotificationsPage() {
     return notifications.map((n) => ({
       id: n.id,
       title: n.title,
-      context: n.message,
+      context: n.message ?? n.body ?? "",
       date: formatNotificationDate(n.createdAt),
       time: formatNotificationTime(n.createdAt),
-      status: n.read ? ("read" as const) : ("unread" as const),
+      status: (n.read ?? n.isRead ?? false) ? ("read" as const) : ("unread" as const),
       type: n.type,
       createdAt: n.createdAt,
     }));
