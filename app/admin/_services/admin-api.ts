@@ -851,6 +851,35 @@ export interface AdminWorkflowManagementListItem {
   dateCreated: string;
 }
 
+export interface WorkflowTemplateStageAssignee {
+  adminId: string;
+  order: number;
+}
+
+export interface WorkflowTemplateStage {
+  id: string;
+  name: string;
+  type: string;
+  escalationMinutes: number;
+  order: number;
+  assignees: WorkflowTemplateStageAssignee[];
+}
+
+export interface WorkflowTemplateDetailsData {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  processType: string;
+  action: string;
+  status: string;
+  escalationMinutes: number;
+  hasPtaRequest: boolean;
+  departmentId: string | null;
+  branchId: string | null;
+  stages: WorkflowTemplateStage[];
+}
+
 export interface AdminTransactionDetailsPayload {
   transactionValueFx?: number | string | null;
   transactionValueNgn?: number | string | null;
@@ -2141,6 +2170,11 @@ export const adminApi = {
       apiClient.get<ApiResponse<AdminWorkflowManagementListItem[]>>(
         "/api/admin/workflow/management/list",
         { params }
+      ),
+
+    getTemplateById: (id: string) =>
+      apiClient.get<ApiResponse<WorkflowTemplateDetailsData>>(
+        `/api/admin/workflow/templates/${id}`
       ),
   },
 };
