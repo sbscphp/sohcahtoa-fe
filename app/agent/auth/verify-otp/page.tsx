@@ -8,6 +8,7 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { notifications } from "@mantine/notifications";
+import { maskEmail } from "@/app/agent/_utils/mask-email";
 
 export default function VerifyOtpPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function VerifyOtpPage() {
   const canSubmit = otp.length === 6 && !loading;
 
   const email = useMemo(() => searchParams.get("email") || "", [searchParams]);
+  const maskedEmail = useMemo(() => maskEmail(email), [email]);
 
   const verifyLoginMutation = useCreateData(agentApi.auth.verifyLogin);
 
@@ -89,7 +91,7 @@ export default function VerifyOtpPage() {
             Account Authorisation Access
           </Title>
           <Text className="text-body-text-100 text-base">
-            A six (6) digit OTP has been sent to your email linked to this account. e*****sohcahtoa.com. Enter code to log in
+            {`A six (6) digit OTP has been sent to your email linked to this account. ${maskedEmail}. Enter code to log in`}
           </Text>
         </div>
 

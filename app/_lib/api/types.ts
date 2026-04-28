@@ -1214,9 +1214,16 @@ export interface ErrorResponse {
 export interface Notification {
   id: string;
   title: string;
-  message: string;
-  type: string;
-  read: boolean;
+  message?: string;
+  body?: string;
+  type?: string;
+  read?: boolean;
+  isRead?: boolean;
+  actionUrl?: string | null;
+  data?: {
+    actionUrl?: string;
+    [key: string]: unknown;
+  };
   createdAt: string;
 }
 

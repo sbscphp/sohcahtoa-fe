@@ -10,7 +10,8 @@ export type DetailViewStatus =
   | "transaction_settled"
   | "approved"
   | "rejected"
-  | "deposit_confirmed";
+  | "deposit_confirmed"
+  | "compliance_review";
 
 /**
  * Derives which detail view to show from stage/status.
@@ -40,14 +41,20 @@ export function getDetailViewStatus(
   if (stageLower.includes("settlement") || statusLower === "completed") {
     return "transaction_settled";
   }
-  if (stageLower.includes("disbursement") || stageLower.includes("awaiting")) {
+  if (stageLower.includes("disbursement") || statusLower.includes("awaiting")) {
     return "awaiting_disbursement";
   }
   if (
     stageLower.includes("deposit_confirmation") ||
-    stageLower.includes("deposit_confirmed")
+    statusLower.includes("deposit_confirmed")
   ) {
     return "deposit_confirmed";
+  }
+  if (stageLower.includes("deposit_info") || statusLower.includes("awaiting_deposit")) {
+    return "disbursement_in_progress";
+  }
+  if (stageLower.includes("document_upload") || statusLower.includes("compliance_review")) {
+    return "compliance_review";
   }
   return "under_review";
 }
@@ -60,6 +67,7 @@ const DETAIL_VIEW_STATUS_LABELS: Record<DetailViewStatus, string> = {
   approved: "Request Approved",
   rejected: "Request Rejected",
   deposit_confirmed: "Deposit Confirmed",
+  compliance_review: "Compliance Review",
 };
 
 export function getDetailViewStatusLabel(viewStatus: DetailViewStatus): string {
