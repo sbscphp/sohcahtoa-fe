@@ -120,6 +120,16 @@ export default function AgentTransactionCreationPage() {
     | null
   >(null);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
+  const selectedCustomerKycPrefill = useMemo(
+    () => ({
+      bvn: selectedCustomer?.bvn ?? "",
+      ninNumber: selectedCustomer?.nin ?? "",
+    }),
+    [selectedCustomer?.bvn, selectedCustomer?.nin]
+  );
+  const lockSelectedCustomerKyc = Boolean(
+    selectedCustomer?.bvn?.trim() || selectedCustomer?.nin?.trim()
+  );
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
@@ -268,10 +278,11 @@ export default function AgentTransactionCreationPage() {
               initialValues={
                 uploadDocumentsData
                   ? (uploadDocumentsData as Partial<TouristUploadDocumentsFormData>)
-                  : undefined
+                  : (selectedCustomerKycPrefill as Partial<TouristUploadDocumentsFormData>)
               }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
             />
           );
         case "amount":
@@ -295,10 +306,11 @@ export default function AgentTransactionCreationPage() {
               initialValues={
                 uploadDocumentsData
                   ? (uploadDocumentsData as Partial<ProfessionalBodyUploadDocumentsFormData>)
-                  : undefined
+                  : (selectedCustomerKycPrefill as Partial<ProfessionalBodyUploadDocumentsFormData>)
               }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
             />
           );
         case "amount":
@@ -327,9 +339,14 @@ export default function AgentTransactionCreationPage() {
         case "upload-documents":
           return (
             <MedicalUploadDocumentsStep
-              initialValues={uploadDocumentsData || undefined}
+              initialValues={
+                uploadDocumentsData
+                  ? (uploadDocumentsData as Partial<MedicalUploadDocumentsFormData>)
+                  : (selectedCustomerKycPrefill as Partial<MedicalUploadDocumentsFormData>)
+              }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
             />
           );
         case "amount":
@@ -393,9 +410,14 @@ export default function AgentTransactionCreationPage() {
         case "upload-documents":
           return (
             <BTAUploadDocumentsStep
-              initialValues={uploadDocumentsData || undefined}
+              initialValues={
+                uploadDocumentsData
+                  ? (uploadDocumentsData as Partial<BTAUploadDocumentsFormData>)
+                  : (selectedCustomerKycPrefill as Partial<BTAUploadDocumentsFormData>)
+              }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
             />
           );
         case "amount":
@@ -415,9 +437,14 @@ export default function AgentTransactionCreationPage() {
       case "upload-documents":
         return (
           <PTAUploadDocumentsStep
-            initialValues={uploadDocumentsData || undefined}
+            initialValues={
+              uploadDocumentsData
+                ? (uploadDocumentsData as Partial<UploadDocumentsFormData>)
+                : (selectedCustomerKycPrefill as Partial<UploadDocumentsFormData>)
+            }
             onSubmit={handleUploadDocumentsSubmit}
             onBack={handleBack}
+            lockKycPrefill={lockSelectedCustomerKyc}
           />
         );
       case "amount":

@@ -43,6 +43,10 @@ export function CashInventoryTable() {
     setModalOpened(true);
   }, []);
 
+  const handleExport = useCallback(() => {
+    console.log("export");
+  }, []);
+
   const goToTransaction = useCallback(
     (id: string) => {
       router.push(`/agent/transactions/detail/${id}`);
@@ -73,6 +77,7 @@ export function CashInventoryTable() {
           filterOptions={FILTER_TABS}
           activeFilter={movementType}
           onFilterChange={handleMovementTypeChange}
+          onExportClick={handleExport}
           toolbarBelowFilters={
             <div className="flex flex-col gap-3 pt-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
               <TextInput

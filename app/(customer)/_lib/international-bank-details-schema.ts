@@ -24,6 +24,7 @@ export const internationalBankDetailsSchema = z
       .string()
       .trim()
       .min(1, "Account number is required")
+      .max(18, "Account number must not exceed 18 digits")
       .regex(/^\d+$/, "Account number must contain digits only"),
     paymentReference: z.string().trim().min(1, "Payment reference / ID is required"),
     swiftCode: swiftOptional,

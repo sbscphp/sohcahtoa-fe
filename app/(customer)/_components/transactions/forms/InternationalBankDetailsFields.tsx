@@ -122,10 +122,13 @@ export default function InternationalBankDetailsFields({
           required
           size="md"
           placeholder="Enter"
+          maxLength={18}
           inputMode="numeric"
+          pattern="[0-9]*"
           {...form.getInputProps("accountNumber")}
           onChange={(e) => {
-            const raw = e.currentTarget.value.replaceAll(/\D/g, "");
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 18);
+            e.currentTarget.value = raw;
             form.setFieldValue("accountNumber", raw);
           }}
         />

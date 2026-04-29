@@ -53,12 +53,14 @@ interface ExpatriateUploadDocumentsStepProps {
   initialValues?: Partial<ExpatriateUploadDocumentsFormValues>;
   onSubmit: (data: ExpatriateUploadDocumentsFormData) => void;
   onBack?: () => void;
+  lockKycPrefill?: boolean;
 }
 
 export default function ExpatriateUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
+  lockKycPrefill = false,
 }: Readonly<ExpatriateUploadDocumentsStepProps>) {
   const kyc = useCustomerProfileBvnNin();
   const bvnLocked = shouldLockKycPrefill(
@@ -71,6 +73,8 @@ export default function ExpatriateUploadDocumentsStep({
     initialValues?.ninNumber,
     kyc.defaultNin
   );
+  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
+  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
 
   const form = useForm<ExpatriateUploadDocumentsFormValues>({
     mode: "uncontrolled",
@@ -127,18 +131,32 @@ export default function ExpatriateUploadDocumentsStep({
           required
           size="md"
           placeholder="BVN"
+          maxLength={11}
+          inputMode="numeric"
           autoComplete="off"
           {...form.getInputProps("bvn")}
-          disabled={bvnLocked}
+          onChange={(e) => {
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("bvn", raw);
+          }}
+          disabled={bvnLocked || forceBvnLock}
         />
         <TextInput
           label="NIN"
           required
           size="md"
           placeholder="NIN"
+          maxLength={11}
+          inputMode="numeric"
           autoComplete="off"
           {...form.getInputProps("ninNumber")}
-          disabled={ninLocked}
+          onChange={(e) => {
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("ninNumber", raw);
+          }}
+          disabled={ninLocked || forceNinLock}
         />
         <TextInput
           label="International Passport Number"

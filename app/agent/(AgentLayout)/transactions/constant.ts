@@ -47,4 +47,6 @@ export interface CustomerInterface {
     lastTransactionType: string;
     registeredAt: string;
     kycStatus: string;
+    nin?: string | null;
+    bvn?: string | null;
 }
