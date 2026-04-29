@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Textarea, Radio, Group } from "@mantine/core";
 import { useForm } from "@mantine/form";
@@ -80,7 +80,7 @@ function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
       id: a.id,
       name: a.name,
       email: "--",
-      roles: [],
+      roles: a.roleName ? [a.roleName] : [],
     }));
 
     const firstUser = mappedUsers[0];
@@ -182,6 +182,9 @@ export default function EditWorkflowPage() {
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
+  // Incremented on every open so AssignToModal remounts fresh each time, regardless
+  // of whether the active line changed.
+  const [assignModalSession, setAssignModalSession] = useState(0);
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
   const [isSaveSuccessOpen, setIsSaveSuccessOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -221,6 +224,25 @@ export default function EditWorkflowPage() {
 
   const branchLabelOptions = useMemo(() => branchOptions, [branchOptions]);
   const departmentLabelOptions = useMemo(() => departmentOptions, [departmentOptions]);
+
+  // Snapshot the active line's current selections at the moment the modal opens.
+  // Keyed on assignModalSession so they only recompute on open, not on every render.
+  const assignModalInitialUserIds = useMemo(
+    () =>
+      form.values.workflowLines
+        .find((l) => l.id === activeLineId)
+        ?.selectedUsers.map((u) => u.id) ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [assignModalSession]
+  );
+  const assignModalInitialRoleIds = useMemo(
+    () =>
+      form.values.workflowLines
+        .find((l) => l.id === activeLineId)
+        ?.selectedRoles.map((r) => r.id) ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [assignModalSession]
+  );
 
   const validateStepTwo = () => {
     if (!form.values.workflowLines.length) {
@@ -277,31 +299,31 @@ export default function EditWorkflowPage() {
     form.setFieldValue("workflowLines", updatedLines);
   };
 
-  const handleAssignUsers = (users: AssignableUser[]) => {
-    if (!activeLineId) return;
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === activeLineId
-        ? {
-            ...line,
-            selectedUsers: [...line.selectedUsers, ...users.filter(u => !line.selectedUsers.find(su => su.id === u.id))],
-          }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  // Use a ref so the callback always reads the latest activeLineId without
+  // needing to be recreated when it changes.
+  const activeLineIdRef = useRef(activeLineId);
+  activeLineIdRef.current = activeLineId;
 
-  const handleAssignRoles = (roles: AssignableRole[]) => {
-    if (!activeLineId) return;
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === activeLineId
-        ? {
-            ...line,
-            selectedRoles: [...line.selectedRoles, ...roles.filter(r => !line.selectedRoles.find(sr => sr.id === r.id))],
-          }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  const handleAssignConfirm = useCallback(
+    (users: AssignableUser[], roles: AssignableRole[]) => {
+      const lineId = activeLineIdRef.current;
+      if (!lineId) return;
+      // Single atomic write — avoids the stale-closure double-write bug where
+      // two sequential setFieldValue calls each read the old form state.
+      form.setFieldValue(
+        "workflowLines",
+        form.values.workflowLines.map((line) =>
+          line.id === lineId
+            ? { ...line, selectedUsers: users, selectedRoles: roles }
+            : line
+        )
+      );
+    },
+    // form.values.workflowLines is a stable dep here since we only need the latest
+    // snapshot at call time — the ref covers activeLineId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values.workflowLines]
+  );
 
   const handleUpdateWorkflowType = (lineId: string, type: string) => {
     const updatedLines = form.values.workflowLines.map((line) =>
@@ -662,6 +684,7 @@ export default function EditWorkflowPage() {
                   }}
                   onOpenAssignModal={(lineId) => {
                     setActiveLineId(lineId);
+                    setAssignModalSession((s) => s + 1);
                     setIsAssignModalOpen(true);
                   }}
                   onToggleExpanded={handleToggleExpanded}
@@ -720,12 +743,14 @@ export default function EditWorkflowPage() {
       />
 
       <AssignToModal
+        key={assignModalSession}
         opened={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
-        onSelectUsers={handleAssignUsers}
-        onSelectRoles={handleAssignRoles}
+        onConfirm={handleAssignConfirm}
         users={assignableUsers}
         roles={assignableRoles}
+        initialSelectedUserIds={assignModalInitialUserIds}
+        initialSelectedRoleIds={assignModalInitialRoleIds}
       />
 
       <ConfirmationModal

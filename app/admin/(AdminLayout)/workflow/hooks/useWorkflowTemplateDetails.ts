@@ -30,6 +30,7 @@ export interface WorkflowTemplateDetailsViewModel {
 export interface WorkflowTemplateEditAssignee {
   id: string;
   name: string;
+  roleName: string;
 }
 
 export interface WorkflowTemplateEditStage {
@@ -151,6 +152,7 @@ function mapStageForEdit(stage: WorkflowTemplateStage): WorkflowTemplateEditStag
       .map((assignee) => ({
         id: asString(assignee.adminId),
         name: asString(assignee.adminName, `Admin ${asString(assignee.adminId).slice(0, 8).toUpperCase()}`),
+        roleName: asString(assignee.roleName),
       }))
       .filter((a) => Boolean(a.id)),
   };

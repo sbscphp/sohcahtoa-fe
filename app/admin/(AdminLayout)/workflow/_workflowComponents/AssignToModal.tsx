@@ -19,10 +19,13 @@ export interface AssignableRole {
 interface AssignToModalProps {
   opened: boolean;
   onClose: () => void;
-  onSelectUsers: (users: AssignableUser[]) => void;
-  onSelectRoles: (roles: AssignableRole[]) => void;
+  /** Called once with the full desired selection when the user confirms */
+  onConfirm: (users: AssignableUser[], roles: AssignableRole[]) => void;
   users: AssignableUser[];
   roles: AssignableRole[];
+  /** Pre-selected IDs — should be stable on mount (driven by parent key remount) */
+  initialSelectedUserIds: string[];
+  initialSelectedRoleIds: string[];
 }
 
 function getInitials(name: string): string {
@@ -47,14 +50,23 @@ const ROLE_PILL_COLORS: Record<string, string> = {
 export default function AssignToModal({
   opened,
   onClose,
-  onSelectUsers,
-  onSelectRoles,
+  onConfirm,
   users,
   roles,
+  initialSelectedUserIds,
+  initialSelectedRoleIds,
 }: AssignToModalProps) {
   const [activeTab, setActiveTab] = useState<string | null>("admin-users");
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set());
+
+  // Initialized once from props on mount — parent uses a session key to remount
+  // this component fresh on every open, so these initializers always reflect the
+  // latest selections for the active line.
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
+    () => new Set(initialSelectedUserIds)
+  );
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(
+    () => new Set(initialSelectedRoleIds)
+  );
 
   const toggleUser = (id: string) => {
     setSelectedUserIds((prev) => {
@@ -74,33 +86,19 @@ export default function AssignToModal({
     });
   };
 
-  const handleSelect = () => {
-    if (activeTab === "admin-users") {
-      const selectedUsers = users.filter((u) => selectedUserIds.has(u.id));
-      onSelectUsers(selectedUsers);
-    } else {
-      const selectedRoles = roles.filter((r) => selectedRoleIds.has(r.id));
-      onSelectRoles(selectedRoles);
-    }
-    handleClose();
-  };
-
-  const handleClose = () => {
-    setSelectedUserIds(new Set());
-    setSelectedRoleIds(new Set());
+  const handleConfirm = () => {
+    const selectedUsers = users.filter((u) => selectedUserIds.has(u.id));
+    const selectedRoles = roles.filter((r) => selectedRoleIds.has(r.id));
+    onConfirm(selectedUsers, selectedRoles);
     onClose();
   };
 
-  const count = activeTab === "admin-users" ? selectedUserIds.size : selectedRoleIds.size;
-  const buttonLabel =
-    activeTab === "admin-users"
-      ? `Select Admin (${String(count).padStart(2, "0")})`
-      : `Select Role (${String(count).padStart(2, "0")})`;
+  const totalCount = selectedUserIds.size + selectedRoleIds.size;
 
   return (
     <Modal
       opened={opened}
-      onClose={handleClose}
+      onClose={onClose}
       title={
         <div>
           <Text fw={700} size="lg" className="text-gray-900">
@@ -230,11 +228,16 @@ export default function AssignToModal({
       </Tabs>
 
       <Group justify="flex-end" gap="sm" mt="lg">
-        <Button variant="outline" color="gray" radius="xl" onClick={handleClose}>
+        <Button variant="outline" color="gray" radius="xl" onClick={onClose}>
           No, Close
         </Button>
-        <Button color="#DD4F05" radius="xl" onClick={handleSelect} disabled={count === 0}>
-          {buttonLabel}
+        <Button
+          color="#DD4F05"
+          radius="xl"
+          onClick={handleConfirm}
+          disabled={totalCount === 0}
+        >
+          {`Confirm Selection (${String(totalCount).padStart(2, "0")})`}
         </Button>
       </Group>
     </Modal>
