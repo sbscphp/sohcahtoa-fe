@@ -13,9 +13,9 @@ import SectionBlock from "@/app/(customer)/_components/transactions/details/Sect
 import TransactionRequestSheet, { type TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
 import { getCurrencyByCode, getCurrencyFlagUrl, getCurrencySymbol } from "@/app/(customer)/_lib/currency";
 import {
-  getDetailViewStatus,
-  getDetailViewStatusLabel,
-  type DetailViewStatus,
+  getTransactionStatusLabel,
+  normalizeTransactionStatus,
+  TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
@@ -67,14 +67,6 @@ export default function AgentTransactionDetailPage() {
   const [recordDisbursementOpen, setRecordDisbursementOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
   const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
-  const viewStatus: DetailViewStatus = useMemo(
-    () =>
-      payload
-        ? getDetailViewStatus(payload.stage, payload.status)
-        : "under_review",
-    [payload]
-  );
-
   if (!payload) {
     if (apiLoading && id) {
       return (
@@ -96,9 +88,18 @@ export default function AgentTransactionDetailPage() {
   }
 
   const title = payload.transactionTypeLabel;
-  const statusLabel = getDetailViewStatusLabel(viewStatus);
-  const showPaymentDetails = viewStatus !== "under_review";
-  const showSettlement = viewStatus === "transaction_settled";
+  const statusLabel = getTransactionStatusLabel(payload.status);
+  const statusKey = normalizeTransactionStatus(payload.status);
+  const showPaymentDetails =
+    statusKey !== "" &&
+    statusKey in TRANSACTION_STATUS_LABELS &&
+    statusKey !== "DRAFT" &&
+    statusKey !== "AWAITING_VERIFICATION" &&
+    statusKey !== "VERIFICATION_IN_PROGRESS" &&
+    statusKey !== "VERIFICATION_COMPLETED" &&
+    statusKey !== "ADMIN_APPROVAL_PENDING" &&
+    statusKey !== "PENDING_RECORD_VALIDATION";
+  const showSettlement = statusKey === "COMPLETED";
   const amountNgn = apiData?.nairaEquivalent
     ? Number(apiData.nairaEquivalent)
     : 0;
@@ -106,7 +107,6 @@ export default function AgentTransactionDetailPage() {
     ? Number(apiData.foreignAmount)
     : 0;
   const isReceivedPaymentStep =
-    (apiData?.currentStep ?? "").toUpperCase() === "DISBURSEMENT" &&
     (apiData?.status ?? "").toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
 
   const currency = getCurrencyByCode(payload.currencyCode);
@@ -114,11 +114,14 @@ export default function AgentTransactionDetailPage() {
   let adminMessage: string | undefined = latestComment?.message;
   if (
     !adminMessage &&
-    (viewStatus === "approved" || viewStatus === "disbursement_in_progress")
+    (statusKey === "APPROVED" ||
+      statusKey === "AWAITING_DEPOSIT" ||
+      statusKey === "DEPOSIT_PENDING" ||
+      statusKey === "DISBURSEMENT_IN_PROGRESS")
   ) {
     adminMessage =
       "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request.";
-  } else if (!adminMessage && viewStatus === "rejected") {
+  } else if (!adminMessage && statusKey === "REJECTED") {
     adminMessage =
       "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request.";
   }
@@ -182,9 +185,7 @@ export default function AgentTransactionDetailPage() {
         <TransactionRequestSheet
           opened={updatesSheetOpen}
           onClose={() => setUpdatesSheetOpen(false)}
-          viewStatus={viewStatus}
           transactionTypeLabel={payload.transactionTypeLabel}
-          transactionStage={apiData?.currentStep}
           transactionStatus={apiData?.status}
           transactionId={payload.id}
           date={formatShortDate(payload.date)}

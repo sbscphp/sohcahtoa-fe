@@ -58,11 +58,13 @@ export default function DocumentDetail({
   const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "pdf", "doc", "docx"]);
 
   const canResubmit = (status: string) => {
+    console.log("status", status);
     const normalized = normalizeStatus(status);
-    return normalized === "resubmit_document" || normalized === "request_more_info" || normalized === "rejected";
+    return normalized === "requires_manual_review" || normalized === "resubmit_document" || normalized === "request_more_info" || normalized === "rejected";
   };
 
   const resubmitDocs = documents.filter((d) => canResubmit(d.status));
+  const docTypeLabel = resubmitDocs.length > 1 ? "Documents" : "Document";
   const hasResubmit = resubmitDocs.length > 0;
 
   const handleResubmit = async () => {
@@ -221,6 +223,7 @@ export default function DocumentDetail({
         opened={successModalOpen}
         onClose={handleCloseSuccess}
         transactionTypeLabel={transactionTypeLabel}
+        docTypeLabel={docTypeLabel}
         onViewTransaction={handleViewTransaction}
       />
     </div>

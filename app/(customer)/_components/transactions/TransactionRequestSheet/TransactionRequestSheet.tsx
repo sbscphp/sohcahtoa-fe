@@ -3,7 +3,6 @@
 import { Drawer, Tabs } from "@mantine/core";
 import OverviewDetail from "./OverviewDetail";
 import DocumentDetail, { type TransactionDocumentItem } from "./DocumentDetail";
-import type { DetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
 import type { FileWithPath } from "@mantine/dropzone";
 import type { ReactNode } from "react";
@@ -11,11 +10,8 @@ import type { ReactNode } from "react";
 interface TransactionRequestSheetProps {
   opened: boolean;
   onClose: () => void;
-  viewStatus: DetailViewStatus;
   /** Transaction type label (e.g. "BTA", "Personal Travel Allowance (PTA)") – used in resubmit success modal title */
   transactionTypeLabel?: string;
-  /** API `currentStep` — passed to overview for title + timeline context. */
-  transactionStage?: string;
   /** API `status` — passed to overview for title + timeline context. */
   transactionStatus?: string;
   transactionId?: string;
@@ -38,9 +34,7 @@ interface TransactionRequestSheetProps {
 export default function TransactionRequestSheet({
   opened,
   onClose,
-  viewStatus,
   transactionTypeLabel,
-  transactionStage,
   transactionStatus,
   transactionId,
   date,
@@ -114,8 +108,6 @@ export default function TransactionRequestSheet({
 
           <Tabs.Panel value="overview">
             <OverviewDetail
-              viewStatus={viewStatus}
-              transactionStage={transactionStage}
               transactionStatus={transactionStatus}
               transactionId={transactionId}
               date={date}

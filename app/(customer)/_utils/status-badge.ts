@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 /**
  * Status badge colors by status key (normalized lowercase).
- * Success/50 bg, Success/700 text per design.
+ * Align keys with `normalizeStatus(getTransactionStatusLabel(...))` (lowercase + underscores).
  */
 const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   open: { bg: "#ECFDF3", textColor: "#027A48" },
@@ -15,7 +15,20 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   in_progress: { bg: "#EFF6FF", textColor: "#1D4ED8" },
   rejected: { bg: "#FEF2F2", textColor: "#B91C1C" },
   failed: { bg: "#FEF2F2", textColor: "#B91C1C" },
-  // Detail page display statuses
+  // API transaction statuses (see TRANSACTION_STATUS_LABELS)
+  draft: { bg: "#F3F4F6", textColor: "#4D4B4B" },
+  awaiting_verification: { bg: "#FEF3C7", textColor: "#B45309" },
+  verification_in_progress: { bg: "#EFF6FF", textColor: "#1D4ED8" },
+  verification_completed: { bg: "#ECFDF3", textColor: "#027A48" },
+  awaiting_deposit: { bg: "#FEF3C7", textColor: "#B45309" },
+  deposit_pending: { bg: "#FEF3C7", textColor: "#B45309" },
+  deposit_confirmed: { bg: "#ECFDF3", textColor: "#027A48" },
+  compliance_review: { bg: "#F4E8FF", textColor: "#7C3AED" },
+  admin_approval_pending: { bg: "#FEF3C7", textColor: "#B45309" },
+  disbursement_in_progress: { bg: "#EFF6FF", textColor: "#1D4ED8" },
+  pending_record_validation: { bg: "#FEF3C7", textColor: "#B45309" },
+  cancelled: { bg: "#F3F4F6", textColor: "#6B7280" },
+
   under_review: { bg: "#D1FADF", textColor: "#027A48" },
   awaiting_disbursement: { bg: "#1D4ED8", textColor: "#FFFFFF" },
   transaction_settled: { bg: "#D1FADF", textColor: "#027A48" },
@@ -42,20 +55,20 @@ export function getStatusColor(status: string): { bg: string; textColor: string 
 }
 
 /**
- * Returns style object for a status badge pill (div). Pass to a wrapper div.
- * Design: flex center, padding 2px 8px, height 20px, rounded 16px,
- * IBM Plex Sans 500 12px, letter-spacing 0.04px. Width fits content.
+ * Style object for a status pill. At most two lines, then ellipsis (…).
  */
 export function getStatusBadge(status: string): CSSProperties {
   const { bg, textColor } = getStatusColor(status);
   return {
-    display: "inline-flex",
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    boxSizing: "border-box",
     width: "fit-content",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: "2px 8px",
-    height: 20,
+    maxWidth: "100%",
+    padding: "4px 8px",
     background: bg,
     borderRadius: 16,
     fontFamily: "'IBM Plex Sans', sans-serif",
@@ -65,7 +78,6 @@ export function getStatusBadge(status: string): CSSProperties {
     textAlign: "center",
     letterSpacing: "0.04px",
     color: textColor,
-    flex: "none",
-    flexGrow: 0,
+    wordBreak: "break-word",
   };
 }

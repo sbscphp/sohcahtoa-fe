@@ -99,9 +99,16 @@ export default function TransactionsPage() {
   const tableRows: Transaction[] = tableRowsRaw;
 
   const totalTransactions = apiResponse?.pagination?.total ?? 0;
-  const completed = tableRows.filter((t) => t.status === "Completed" || t.status === "Approved").length;
-  const rejected = tableRows.filter((t) => t.status === "Rejected").length;
-  const pending = tableRows.filter((t) => t.status === "Pending" || t.status === "Request More Info").length;
+  const completed = tableRows.filter(
+    (t) => t.status === "COMPLETED" || t.status === "APPROVED"
+  ).length;
+  const rejected = tableRows.filter((t) => t.status === "REJECTED").length;
+  const pending = tableRows.filter(
+    (t) =>
+      t.status !== "COMPLETED" &&
+      t.status !== "APPROVED" &&
+      t.status !== "REJECTED"
+  ).length;
 
   const handleRowClick = (transaction: Transaction) => {
     router.push(`/transactions/detail/${transaction.id}`);

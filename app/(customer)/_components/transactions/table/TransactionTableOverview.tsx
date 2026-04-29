@@ -11,6 +11,7 @@ import {
 } from "../../common";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { IconArrowRight } from "@/components/icons/IconArrowRight";
+import { getTransactionStatusLabel } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import type {
   TableFilterGroup,
@@ -23,6 +24,7 @@ export interface Transaction {
   date: string;
   type: string;
   stage: string;
+  /** Normalized API status (uppercase snake_case). */
   status: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
 }
@@ -106,9 +108,10 @@ export default function  TransactionTableOverview({
     {
       key: "status",
       label: "Status",
-      render: (transaction) => (
-        <div style={getStatusBadge(transaction.status)}>{transaction.status}</div>
-      ),
+      render: (transaction) => {
+        const label = getTransactionStatusLabel(transaction.status);
+          return <div style={getStatusBadge(label)} className="min-w-0 flex-1 truncate">{label}</div>;
+        },
     },
     {
       key: "action",

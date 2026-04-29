@@ -1,3 +1,4 @@
+import { normalizeTransactionStatus } from "@/app/(customer)/_lib/transaction-details";
 import { TransactionListItem } from "@/app/_lib/api/types";
 import { Transaction } from "./types";
 export const TAB_TO_GROUP = {
@@ -12,22 +13,14 @@ export const TAB_TO_GROUP = {
     REMITTANCE: "Receive FX",
   };
   
-export function mapApiStatusToDisplay(apiStatus: string) {
-    const s = apiStatus?.toUpperCase() ?? "";
-    if (s === "COMPLETED" || s === "APPROVED") return "Completed";
-    if (s === "REJECTED") return "Rejected";
-    if (s === "REQUEST_MORE_INFO") return "Request More Info";
-    return "Pending";
-  }
-  
-  export function mapListItemToTransaction(item: TransactionListItem): Transaction {
+export function mapListItemToTransaction(item: TransactionListItem): Transaction {
     return {
       id: item.transaction_id ?? "",
       referenceNumber: item.referenceNumber,
       date: item.transaction_date,
       type: item.transaction_type,
       stage: item.transaction_stage,
-      status: mapApiStatusToDisplay(item.transaction_status ?? ""),
+      status: normalizeTransactionStatus(item.transaction_status ?? ""),
       transaction_type: GROUP_TO_LABEL[item.group],
     };
   }

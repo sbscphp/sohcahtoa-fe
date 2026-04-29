@@ -1,104 +1,41 @@
 /**
- * Transaction type / display name come from the API.
- * Do not derive or map transaction type labels on the frontend.
+ * Transaction type.
  */
 
-export type DetailViewStatus =
-  | "under_review"
-  | "awaiting_disbursement"
-  | "disbursement_in_progress"
-  | "transaction_settled"
-  | "approved"
-  | "rejected"
-  | "deposit_confirmed"
-  | "compliance_review";
+export const TRANSACTION_STATUS_LABELS = {
+  DRAFT: "Draft",
+  AWAITING_VERIFICATION: "Awaiting verification",
+  VERIFICATION_IN_PROGRESS: "Verification in progress",
+  VERIFICATION_COMPLETED: "Verification completed",
+  AWAITING_DEPOSIT: "Awaiting deposit",
+  DEPOSIT_PENDING: "Deposit pending",
+  DEPOSIT_CONFIRMED: "Deposit confirmed",
+  COMPLIANCE_REVIEW: "Compliance review",
+  ADMIN_APPROVAL_PENDING: "Admin approval pending",
+  APPROVED: "Approved",
+  DISBURSEMENT_IN_PROGRESS: "Disbursement in progress",
+  PENDING_RECORD_VALIDATION: "Pending record validation",
+  COMPLETED: "Completed",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+} as const;
 
-/**
- * Derives which detail view to show from stage/status.
- * - Under Review: only Transaction Details + Required Documents; show "View Updates".
- * - Awaiting Disbursement: above + Payment Details; show "View Updates".
- * - Transaction Settled: all four sections; show "Download Receipt".
- */
-export function getDetailViewStatus(
-  stage: string,
-  status: string
-): DetailViewStatus {
-  const stageLower = stage.trim().toLowerCase();
-  const statusLower = status.trim().toLowerCase();
-  
-  // Check for explicit admin actions first
-  if (statusLower === "rejected" || statusLower.includes("reject")) {
-    return "rejected";
-  }
-  /** Agent records outbound disbursement; show same overview card as approved + Record Disbursement. */
-  if (statusLower === "disbursement_in_progress") {
-    return "disbursement_in_progress";
-  }
-  if (statusLower === "approved" && !stageLower.includes("settlement")) {
-    return "approved";
-  }
+export type TransactionStatus = keyof typeof TRANSACTION_STATUS_LABELS;
 
-  if (stageLower.includes("settlement") || statusLower === "completed") {
-    return "transaction_settled";
-  }
-  if (stageLower.includes("disbursement") || statusLower.includes("awaiting")) {
-    return "awaiting_disbursement";
-  }
-  if (
-    stageLower.includes("deposit_confirmation") ||
-    statusLower.includes("deposit_confirmed")
-  ) {
-    return "deposit_confirmed";
-  }
-  if (stageLower.includes("deposit_info") || statusLower.includes("awaiting_deposit")) {
-    return "disbursement_in_progress";
-  }
-  if (stageLower.includes("document_upload") || statusLower.includes("compliance_review")) {
-    return "compliance_review";
-  }
-  return "under_review";
+export function normalizeTransactionStatus(raw: string | null | undefined): string {
+  return (raw ?? "").trim().toUpperCase();
 }
 
-const DETAIL_VIEW_STATUS_LABELS: Record<DetailViewStatus, string> = {
-  under_review: "Under Review",
-  awaiting_disbursement: "Awaiting Disbursement",
-  disbursement_in_progress: "Disbursement in progress",
-  transaction_settled: "Transaction Settled",
-  approved: "Request Approved",
-  rejected: "Request Rejected",
-  deposit_confirmed: "Deposit Confirmed",
-  compliance_review: "Compliance Review",
-};
-
-export function getDetailViewStatusLabel(viewStatus: DetailViewStatus): string {
-  return DETAIL_VIEW_STATUS_LABELS[viewStatus];
-}
-
-/**
- * Title for the transaction sheet overview (above the comment timeline).
- * Prefer API `status` / `currentStep` when they carry clearer meaning than `viewStatus` alone.
- */
-export function getTransactionOverviewTimelineTitle(
-  viewStatus: DetailViewStatus,
-  options?: { stage?: string | null; status?: string | null }
-): string {
-  const statusU = (options?.status ?? "").trim().toUpperCase();
-  const stageU = (options?.stage ?? "").trim().toUpperCase();
-
-  if (statusU === "DISBURSEMENT_IN_PROGRESS") {
-    return "Disbursement in progress";
+/** Label for badges, timeline titles, etc. Title-cases unknown API values. */
+export function getTransactionStatusLabel(status: string | null | undefined): string {
+  const key = normalizeTransactionStatus(status) as TransactionStatus;
+  if (key && key in TRANSACTION_STATUS_LABELS) {
+    return TRANSACTION_STATUS_LABELS[key];
   }
-  if (
-    statusU.includes("DEPOSIT") &&
-    (statusU.includes("CONFIRM") || statusU.includes("CONFIRMED"))
-  ) {
-    return getDetailViewStatusLabel("deposit_confirmed");
-  }
-  if (
-    stageU.includes("DEPOSIT") &&
-    (stageU.includes("CONFIRM") || stageU.includes("CONFIRMATION"))
-  ) {
-    return getDetailViewStatusLabel("deposit_confirmed");
-  }
-  return getDetailViewStatusLabel(viewStatus);
+  const s = (status ?? "").trim();
+  if (!s) return s;
+  return s
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

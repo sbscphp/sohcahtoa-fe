@@ -9,9 +9,9 @@ import { ChevronLeft } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDetailViewStatus,
-  getDetailViewStatusLabel,
-  type DetailViewStatus,
+  getTransactionStatusLabel,
+  normalizeTransactionStatus,
+  TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
@@ -74,14 +74,6 @@ export default function TransactionDetailPage() {
   const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
   const [proceedToPaymentOpen, setProceedToPaymentOpen] = useState(false);
   const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
-  const viewStatus: DetailViewStatus = useMemo(
-    () =>
-      payload
-        ? getDetailViewStatus(payload.stage, payload.status)
-        : "under_review",
-    [payload]
-  );
-
   if (!payload) {
     if (apiLoading && id) {
       return (
@@ -98,17 +90,27 @@ export default function TransactionDetailPage() {
   }
 
   const title = payload.transactionTypeLabel;
-  const statusLabel = getDetailViewStatusLabel(viewStatus);
-  const showPaymentDetails = viewStatus !== "under_review";
-  const showSettlement = viewStatus === "transaction_settled";
+  const statusLabel = getTransactionStatusLabel(payload.status);
+  const statusKey = normalizeTransactionStatus(payload.status);
+  const showPaymentDetails =
+    statusKey !== "" &&
+    statusKey in TRANSACTION_STATUS_LABELS &&
+    statusKey !== "DRAFT" &&
+    statusKey !== "AWAITING_VERIFICATION" &&
+    statusKey !== "VERIFICATION_IN_PROGRESS" &&
+    statusKey !== "VERIFICATION_COMPLETED" &&
+    statusKey !== "ADMIN_APPROVAL_PENDING" &&
+    statusKey !== "PENDING_RECORD_VALIDATION";
+  const showSettlement = statusKey === "COMPLETED";
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
-  const paymentAmountNgn = apiData?.nairaEquivalent != null ? Number(apiData.nairaEquivalent) : 5000;
+  const paymentAmountNgn =
+    apiData?.nairaEquivalent == null ? 5000 : Number(apiData.nairaEquivalent);
   const cashPickup = apiData?.cashPickup ?? null;
   const beneficiaryDetails = apiData?.beneficiaryDetails;
 
   return (
-    <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
+    <div className="flex flex-col gap-4">
       <Link
         href="/transactions"
         className="inline-flex items-center gap-1 text-body-text-100 text-sm font-medium hover:text-heading-200 transition-colors w-fit"
@@ -179,19 +181,19 @@ export default function TransactionDetailPage() {
       <TransactionRequestSheet
         opened={updatesSheetOpen}
         onClose={() => setUpdatesSheetOpen(false)}
-        viewStatus={viewStatus}
         transactionTypeLabel={payload.transactionTypeLabel}
-        transactionStage={apiData?.currentStep}
         transactionStatus={apiData?.status}
         transactionId={payload.id}
         date={formatShortDate(payload.date)}
         time={formatShortTime(payload.date)}
         adminMessage={
-          viewStatus === "approved"
+          statusKey === "APPROVED" ||
+          statusKey === "AWAITING_DEPOSIT" ||
+          statusKey === "DEPOSIT_PENDING"
             ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point"
-            : viewStatus === "rejected"
-            ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all"
-            : undefined
+            : statusKey === "REJECTED"
+              ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all"
+              : undefined
         }
         comments={apiData?.comments ?? []}
         onResubmitDocuments={async (documents: Array<{ documentType: string; file: FileWithPath }>) => {
