@@ -13,6 +13,9 @@ import ApprovedStatus from "./ApprovedStatus";
 import RejectedStatus from "./RejectedStatus";
 import TransactionCommentsTimeline from "./TransactionCommentsTimeline";
 
+const MANUAL_REVIEW_BLOCKS_ACTIONS =
+  "A document requires manual review. Use the Documentation tab to finish that step before payment or other actions.";
+
 interface OverviewDetailProps {
   transactionId?: string;
   date?: string;
@@ -23,6 +26,8 @@ interface OverviewDetailProps {
   comments?: TransactionDetailComment[];
   /** API `status` — drives overview variant and titles. */
   transactionStatus?: string;
+  /** Hides payment / agent buttons when any doc is in manual review (parent clears handlers too). */
+  suppressTransactionActions?: boolean;
 }
 
 type HeaderTone = "success" | "danger" | "muted";
@@ -72,6 +77,7 @@ export default function OverviewDetail({
   approvedActions,
   comments = [],
   transactionStatus,
+  suppressTransactionActions = false,
 }: Readonly<OverviewDetailProps>) {
   const s = normalizeTransactionStatus(transactionStatus);
   const timelineTitle = getTransactionStatusLabel(transactionStatus);
@@ -102,14 +108,14 @@ export default function OverviewDetail({
             description="Your document is currently undergoing approval. You will receive a mail notification once your documents is approved."
             className="gap-2 [&_h3]:text-xl [&_h3]:leading-7 [&_h3]:text-[#4D4B4B] [&_p]:text-base [&_p]:leading-6 [&_p]:text-[#8F8B8B] [&_p]:text-center"
           />
-          {adminMessage ? (
+          </div>
+          {/* {adminMessage ? (
             <div className="w-full mt-2 flex flex-row justify-center items-center gap-2 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
               <p className="w-full text-xs leading-4 text-[#4D4B4B]">{adminMessage}</p>
             </div>
-          ) : null}
+          ) : null} */}
           {comments.length > 0 ? <div className="w-full mt-4">{timeline}</div> : null}
         </div>
-      </div>
     );
   }
 
@@ -124,7 +130,7 @@ export default function OverviewDetail({
           tone="danger"
         />
         {timeline}
-        {adminMessage ? <RejectedStatus variant="messageOnly" adminMessage={adminMessage} /> : null}
+        {/* {adminMessage ? <RejectedStatus variant="messageOnly" adminMessage={adminMessage} /> : null} */}
       </div>
     );
   }
@@ -205,7 +211,13 @@ export default function OverviewDetail({
           <div className="w-full max-h-[min(58vh,30rem)] overflow-y-auto overscroll-contain">
             {timeline}
           </div>
-          <div className="w-full shrink-0 space-y-3">{approvedActions}</div>
+          {suppressTransactionActions ? (
+            <p className="text-sm text-center text-[#8F8B8B] leading-6 px-1">
+              {MANUAL_REVIEW_BLOCKS_ACTIONS}
+            </p>
+          ) : (
+            <div className="w-full shrink-0 space-y-3">{approvedActions}</div>
+          )}
         </div>
       );
     }
@@ -224,7 +236,11 @@ export default function OverviewDetail({
         <div className="w-full max-h-[min(58vh,30rem)] overflow-y-auto overscroll-contain">
           {timeline}
         </div>
-        {onProceedToPayment ? (
+        {suppressTransactionActions ? (
+          <p className="text-sm text-center text-[#8F8B8B] leading-6 px-1">
+            {MANUAL_REVIEW_BLOCKS_ACTIONS}
+          </p>
+        ) : onProceedToPayment ? (
           <div className="shrink-0">
             <ApprovedStatus variant="actionsOnly" onProceedToPayment={onProceedToPayment} />
           </div>

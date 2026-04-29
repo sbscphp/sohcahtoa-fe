@@ -117,7 +117,7 @@ export default function TransactionTableOverview({
       label: "Status",
       render: (transaction) => {
         const label = getTransactionStatusLabel(transaction.status);
-        return <div style={getStatusBadge(label)} className="min-w-0 flex-1 truncate">{label}</div>;
+        return <div style={getStatusBadge(label)} className="min-w-0 flex-1 truncate capitalize">{label}</div>;
       },
     },
     {

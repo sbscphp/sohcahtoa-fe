@@ -2,7 +2,10 @@
 
 import { Drawer, Tabs } from "@mantine/core";
 import OverviewDetail from "./OverviewDetail";
-import DocumentDetail, { type TransactionDocumentItem } from "./DocumentDetail";
+import DocumentDetail, {
+  documentsIncludeRequiresManualReview,
+  type TransactionDocumentItem,
+} from "./DocumentDetail";
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
 import type { FileWithPath } from "@mantine/dropzone";
 import type { ReactNode } from "react";
@@ -10,9 +13,7 @@ import type { ReactNode } from "react";
 interface TransactionRequestSheetProps {
   opened: boolean;
   onClose: () => void;
-  /** Transaction type label (e.g. "BTA", "Personal Travel Allowance (PTA)") – used in resubmit success modal title */
   transactionTypeLabel?: string;
-  /** API `status` — passed to overview for title + timeline context. */
   transactionStatus?: string;
   transactionId?: string;
   date?: string;
@@ -48,6 +49,8 @@ export default function TransactionRequestSheet({
   onViewTransaction,
   onOpenDocument,
 }: Readonly<TransactionRequestSheetProps>) {
+  const suppressTransactionActions = documentsIncludeRequiresManualReview(documents);
+
   return (
     <Drawer
       opened={opened}
@@ -113,8 +116,13 @@ export default function TransactionRequestSheet({
               date={date}
               time={time}
               adminMessage={adminMessage}
-              onProceedToPayment={onProceedToPayment}
-              approvedActions={approvedActions}
+              onProceedToPayment={
+                suppressTransactionActions ? undefined : onProceedToPayment
+              }
+              approvedActions={
+                suppressTransactionActions ? undefined : approvedActions
+              }
+              suppressTransactionActions={suppressTransactionActions}
               comments={comments}
             />
           </Tabs.Panel>

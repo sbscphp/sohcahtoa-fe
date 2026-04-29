@@ -8,6 +8,16 @@ import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput"
 import { getStatusBadge, normalizeStatus } from "@/app/(customer)/_utils/status-badge";
 import ResubmitSuccessModal from "./ResubmitSuccessModal";
 
+export function isRequiresManualReviewStatus(status: string): boolean {
+  return normalizeStatus(status) === "requires_manual_review";
+}
+
+export function documentsIncludeRequiresManualReview(
+  documents: TransactionDocumentItem[] | undefined
+): boolean {
+  return (documents ?? []).some((d) => isRequiresManualReviewStatus(d.status));
+}
+
 export interface TransactionDocumentItem {
   id: string;
   name: string;
@@ -58,9 +68,13 @@ export default function DocumentDetail({
   const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "pdf", "doc", "docx"]);
 
   const canResubmit = (status: string) => {
-    console.log("status", status);
     const normalized = normalizeStatus(status);
-    return normalized === "requires_manual_review" || normalized === "resubmit_document" || normalized === "request_more_info" || normalized === "rejected";
+    return (
+      normalized === "requires_manual_review" ||
+      normalized === "resubmit_document" ||
+      normalized === "request_more_info" ||
+      normalized === "rejected"
+    );
   };
 
   const resubmitDocs = documents.filter((d) => canResubmit(d.status));
