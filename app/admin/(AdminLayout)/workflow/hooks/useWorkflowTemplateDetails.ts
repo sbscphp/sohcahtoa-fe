@@ -27,13 +27,18 @@ export interface WorkflowTemplateDetailsViewModel {
   editTemplate: WorkflowTemplateEditData;
 }
 
+export interface WorkflowTemplateEditAssignee {
+  id: string;
+  name: string;
+}
+
 export interface WorkflowTemplateEditStage {
   id: string;
   name: string;
   type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
   order: number;
   escalationMinutes: number;
-  assigneeIds: string[];
+  assignees: WorkflowTemplateEditAssignee[];
 }
 
 export interface WorkflowTemplateEditData {
@@ -99,13 +104,20 @@ function mapStatus(value: unknown): "Active" | "Deactivated" | "Draft" {
   return "Active";
 }
 
-function mapAssigneeToUser(adminId: string, stageType: string): ViewUser {
-  const shortId = adminId.slice(0, 8).toUpperCase();
+function mapAssigneeToUser(
+  adminId: string,
+  stageType: string,
+  adminName?: string,
+  roleName?: string
+): ViewUser {
+  const displayName = adminName || `Admin ${adminId.slice(0, 8).toUpperCase()}`;
+  const roleLabel = roleName ? toTitleCase(roleName) : toTitleCase(stageType) || "User";
+
   return {
     id: adminId,
-    name: `Admin ${shortId}`,
+    name: displayName,
     email: "--",
-    roles: [toTitleCase(stageType) || "User"],
+    roles: [roleLabel],
   };
 }
 
@@ -116,7 +128,7 @@ function mapStageToViewLine(stage: WorkflowTemplateStage): ViewWorkflowLine {
     escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
     escalateToName: "--",
     users: (stage.assignees ?? []).map((assignee) =>
-      mapAssigneeToUser(assignee.adminId, stage.type)
+      mapAssigneeToUser(assignee.adminId, stage.type, assignee.adminName, assignee.roleName)
     ),
   };
 }
@@ -135,9 +147,12 @@ function mapStageForEdit(stage: WorkflowTemplateStage): WorkflowTemplateEditStag
         : "REVIEW",
     order: Number.isFinite(stage.order) ? stage.order : 0,
     escalationMinutes: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
-    assigneeIds: (stage.assignees ?? [])
-      .map((assignee) => asString(assignee.adminId))
-      .filter(Boolean),
+    assignees: (stage.assignees ?? [])
+      .map((assignee) => ({
+        id: asString(assignee.adminId),
+        name: asString(assignee.adminName, `Admin ${asString(assignee.adminId).slice(0, 8).toUpperCase()}`),
+      }))
+      .filter((a) => Boolean(a.id)),
   };
 }
 
@@ -162,8 +177,20 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
     status: mapStatus(data.status),
     workflowAction: asString(data.action, "--"),
     description: asString(data.description, "--"),
-    branch: data.branchId ? asString(data.branchId, "--") : "--",
-    department: data.departmentId ? asString(data.departmentId, "--") : "--",
+    branch: asString(
+      // Prefer human-readable branch name when available
+      (data as WorkflowTemplateDetailsData).branchName ??
+        (sourceWithDate.branchName as string | undefined) ??
+        data.branchId,
+      "--"
+    ),
+    department: asString(
+      // Prefer human-readable department name when available
+      (data as WorkflowTemplateDetailsData).departmentName ??
+        (sourceWithDate.departmentName as string | undefined) ??
+        data.departmentId,
+      "--"
+    ),
     workflowType: toTitleCase(asString(data.processType, "--")),
     personnelProcesses: stages.map(mapStageToViewLine),
     editTemplate: {

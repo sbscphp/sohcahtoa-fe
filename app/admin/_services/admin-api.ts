@@ -854,6 +854,8 @@ export interface AdminWorkflowManagementListItem {
 export interface WorkflowTemplateStageAssignee {
   adminId: string;
   order: number;
+  adminName?: string;
+  roleName?: string;
 }
 
 export interface WorkflowTemplateStage {
@@ -877,6 +879,9 @@ export interface WorkflowTemplateDetailsData {
   hasPtaRequest: boolean;
   departmentId: string | null;
   branchId: string | null;
+  createdAt?: string;
+  branchName?: string | null;
+  departmentName?: string | null;
   stages: WorkflowTemplateStage[];
 }
 

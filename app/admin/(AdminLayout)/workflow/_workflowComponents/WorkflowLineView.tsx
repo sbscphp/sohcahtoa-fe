@@ -113,9 +113,9 @@ export default function WorkflowLineView({
                     <Text size="sm" fw={600} className="text-gray-900 truncate">
                       {user.name}
                     </Text>
-                    <Text size="xs" c="dimmed" className="truncate">
+                    {/* <Text size="xs" c="dimmed" className="truncate">
                       {user.email}
-                    </Text>
+                    </Text> */}
                     <div className="flex flex-wrap gap-1 mt-1">
                       {user.roles.map((role) => (
                         <span

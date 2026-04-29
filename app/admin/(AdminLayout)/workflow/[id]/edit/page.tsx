@@ -60,10 +60,7 @@ function toStageType(value: string): WorkflowTemplateUpdatePayload["stages"][num
   return "REVIEW";
 }
 
-function toFormLines(
-  stages: WorkflowTemplateEditStage[],
-  availableUsers: AssignableUser[]
-): WorkflowLine[] {
+function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
   if (!stages.length) {
     return [
       {
@@ -79,19 +76,20 @@ function toFormLines(
   }
 
   return stages.map((stage, index) => {
-    const mappedUsers = stage.assigneeIds
-      .map((assigneeId) => availableUsers.find((user) => user.id === assigneeId))
-      .filter((user): user is AssignableUser => Boolean(user));
+    const mappedUsers: AssignableUser[] = stage.assignees.map((a) => ({
+      id: a.id,
+      name: a.name,
+      email: "--",
+      roles: [],
+    }));
 
-    const fallbackEscalateUser = mappedUsers[0];
+    const firstUser = mappedUsers[0];
 
     return {
       id: stage.id || `line-${index + 1}`,
       workflowType: toLineWorkflowType(stage.type),
       escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
-      escalateToUser: fallbackEscalateUser
-        ? { id: fallbackEscalateUser.id, name: fallbackEscalateUser.name }
-        : undefined,
+      escalateToUser: firstUser ? { id: firstUser.id, name: firstUser.name } : undefined,
       selectedUsers: mappedUsers,
       selectedRoles: [],
       expanded: false,
@@ -158,11 +156,12 @@ export default function EditWorkflowPage() {
   });
 
   useEffect(() => {
-    if (!template?.editTemplate || hasInitializedForm || optionsLoading) return;
+    if (!template?.editTemplate || hasInitializedForm) return;
 
     const processType = template.editTemplate.processType === "FLEXIBLE" ? "flexible" : "rigid";
-    const prefilledLines = toFormLines(template.editTemplate.stages, assignableUsers);
+    const prefilledLines = toFormLines(template.editTemplate.stages);
 
+    setHasInitializedForm(true);
     form.setValues({
       workflowName: template.editTemplate.name,
       workflowDescription: template.editTemplate.description,
@@ -175,16 +174,8 @@ export default function EditWorkflowPage() {
       hasPtaRequest: template.editTemplate.hasPtaRequest,
       workflowLines: prefilledLines,
     });
-    setTimeout(() => {
-      setHasInitializedForm(true);
-    }, 0);
-  }, [
-    assignableUsers,
-    form,
-    hasInitializedForm,
-    optionsLoading,
-    template?.editTemplate,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template?.editTemplate]);
 
   // Modals
   const [isWorkflowActionModalOpen, setIsWorkflowActionModalOpen] = useState(false);
