@@ -13,7 +13,7 @@ import { filterMovementRowsByQuery } from "../_lib/filter-movement-rows";
 
 const PAGE_SIZE = 10;
 
-const DEFAULT_MOVEMENT: AgentPaymentMovementType = "cash_received_from_customer";
+const DEFAULT_MOVEMENT: AgentPaymentMovementType = "cash_disbursed";
 
 /**
  * Table state (`useTable`) + payment movements query. Keeps paging/search aligned with other agent tables.

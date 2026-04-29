@@ -69,6 +69,16 @@ export default function AgentSellTransactionCreationPage() {
   const [confirmationOpened, setConfirmationOpened] = useState(false);
   const [addCustomerOpened, setAddCustomerOpened] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
+  const selectedCustomerKycPrefill = useMemo(
+    () => ({
+      bvn: selectedCustomer?.bvn ?? "",
+      ninNumber: selectedCustomer?.nin ?? "",
+    }),
+    [selectedCustomer?.bvn, selectedCustomer?.nin]
+  );
+  const lockSelectedCustomerKyc = Boolean(
+    selectedCustomer?.bvn?.trim() || selectedCustomer?.nin?.trim()
+  );
 
   const [uploadDocumentsData, setUploadDocumentsData] = useState<
     | ResidentUploadDocumentsFormData
@@ -195,10 +205,11 @@ export default function AgentSellTransactionCreationPage() {
               initialValues={
                 uploadDocumentsData
                   ? (uploadDocumentsData as ExpatriateUploadDocumentsFormData)
-                  : undefined
+                  : (selectedCustomerKycPrefill as Partial<ExpatriateUploadDocumentsFormData>)
               }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
             />
           );
         case "amount":

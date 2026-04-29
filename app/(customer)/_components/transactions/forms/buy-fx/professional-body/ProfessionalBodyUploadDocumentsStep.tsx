@@ -40,12 +40,14 @@ interface ProfessionalBodyUploadDocumentsStepProps {
   initialValues?: Partial<ProfessionalBodyUploadDocumentsFormValues>;
   onSubmit: (data: ProfessionalBodyUploadDocumentsFormData) => void;
   onBack?: () => void;
+  lockKycPrefill?: boolean;
 }
 
 export default function ProfessionalBodyUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
+  lockKycPrefill = false,
 }: ProfessionalBodyUploadDocumentsStepProps) {
   const kyc = useCustomerProfileBvnNin();
   const bvnLocked = shouldLockKycPrefill(
@@ -58,6 +60,8 @@ export default function ProfessionalBodyUploadDocumentsStep({
     initialValues?.ninNumber,
     kyc.defaultNin
   );
+  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
+  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
 
   const form = useForm<ProfessionalBodyUploadDocumentsFormValues>({
     mode: "uncontrolled",
@@ -112,9 +116,16 @@ export default function ProfessionalBodyUploadDocumentsStep({
         required
         size="md"
         placeholder="BVN"
+        maxLength={11}
+        inputMode="numeric"
         autoComplete="off"
         {...form.getInputProps("bvn")}
-        disabled={bvnLocked}
+        onChange={(e) => {
+          const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+          e.currentTarget.value = raw;
+          form.setFieldValue("bvn", raw);
+        }}
+        disabled={bvnLocked || forceBvnLock}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -123,9 +134,16 @@ export default function ProfessionalBodyUploadDocumentsStep({
           required
           size="md"
           placeholder="NIN"
+          maxLength={11}
+          inputMode="numeric"
           autoComplete="off"
           {...form.getInputProps("ninNumber")}
-          disabled={ninLocked}
+          onChange={(e) => {
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("ninNumber", raw);
+          }}
+          disabled={ninLocked || forceNinLock}
         />
         <TextInput
           label="Form A ID"

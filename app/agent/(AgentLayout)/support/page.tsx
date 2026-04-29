@@ -1,14 +1,13 @@
 "use client";
 
-import { SimpleGrid, Text, Stack } from "@mantine/core";
+import { SimpleGrid, Text } from "@mantine/core";
 import { SupportCard } from "./_components/SupportCard";
 import { FAQAccordion } from "./_components/FAQAccordion";
 import { MessageCircle, History, FileText } from "lucide-react";
-import { useRouter } from "next/navigation";
+
+const TERMS_URL = "https://www.sohcahtoapayoutbdc.com/terms-of-use-agent";
 
 export default function SupportPage() {
-  const router = useRouter();
-
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -42,10 +41,9 @@ export default function SupportPage() {
           title="Terms of Service"
           description="Want to know more about our services? Read the terms."
           ctaText="Read Terms"
-          onClick={() => {
-            // Handle terms navigation
-            console.log("Navigate to terms");
-          }}
+          href={TERMS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
         />
       </SimpleGrid>
 

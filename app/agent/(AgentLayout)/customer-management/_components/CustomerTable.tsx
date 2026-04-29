@@ -177,14 +177,14 @@ export default function CustomerTable({
             </Button>
 
             {/* View All */}
-            <Button
+            {/* <Button
               variant="filled"
               color="orange"
               radius="xl"
               rightSection={<ArrowUpRight size={16} />}
             >
               View All
-            </Button>
+            </Button> */}
           </Group>
         </Group>
       </div>

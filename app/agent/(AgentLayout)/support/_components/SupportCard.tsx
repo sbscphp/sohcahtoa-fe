@@ -11,6 +11,8 @@ interface SupportCardProps {
   ctaText: string;
   onClick?: () => void;
   href?: string;
+  target?: "_self" | "_blank" | "_parent" | "_top";
+  rel?: string;
 }
 
 export function SupportCard({
@@ -20,6 +22,8 @@ export function SupportCard({
   ctaText,
   onClick,
   href,
+  target,
+  rel,
 }: SupportCardProps) {
   return (
     <Card radius="md" padding="lg" withBorder className="h-full">
@@ -37,6 +41,8 @@ export function SupportCard({
           <Button
             component="a"
             href={href}
+            target={target}
+            rel={rel}
             variant="light"
             color="orange"
             radius="xl"
