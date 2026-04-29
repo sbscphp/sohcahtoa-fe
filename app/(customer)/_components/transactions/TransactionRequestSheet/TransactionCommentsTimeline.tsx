@@ -89,7 +89,7 @@ export default function TransactionCommentsTimeline({
                       </div>
                     </div>
                   </div>
-                  <div className="shrink-0 text-right">
+                  {/* <div className="shrink-0 text-right">
                     <span
                       className="inline-flex items-center justify-center"
                       style={getStatusBadge(badgeLabel)}
@@ -97,7 +97,7 @@ export default function TransactionCommentsTimeline({
                       {badgeLabel}
                     </span>
                     <span className="block text-[10px] text-[#8F8B8B] mt-1">Action taken</span>
-                  </div>
+                  </div> */}
                 </div>
                 <div className="bg-white border border-[#E1E0E0] rounded-lg p-3">
                   <p className="text-xs text-[#4D4B4B] leading-relaxed whitespace-pre-wrap wrap-break-word">

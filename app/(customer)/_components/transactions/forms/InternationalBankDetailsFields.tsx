@@ -64,7 +64,7 @@ export default function InternationalBankDetailsFields({
 
   const swiftPaymentRow = (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <TextInput {...swiftProps} description="Optional" />
+      <TextInput {...swiftProps} />
       <TextInput
         label="Payment reference / ID"
         required

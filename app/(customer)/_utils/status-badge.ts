@@ -30,7 +30,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   cancelled: { bg: "#F3F4F6", textColor: "#6B7280" },
 
   under_review: { bg: "#D1FADF", textColor: "#027A48" },
-  awaiting_disbursement: { bg: "#1D4ED8", textColor: "#FFFFFF" },
+  awaiting_disbursement: { bg: "#EFF6FF", textColor: "#1D4ED8" },
   transaction_settled: { bg: "#D1FADF", textColor: "#027A48" },
   settled: { bg: "#D1FADF", textColor: "#027A48" },
   resubmit_document: { bg: "#F4E8FF", textColor: "#7C3AED" },
