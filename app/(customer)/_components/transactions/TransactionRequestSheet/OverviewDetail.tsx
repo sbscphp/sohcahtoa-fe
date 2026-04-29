@@ -3,8 +3,9 @@
 import { EmptyState } from "@/app/(customer)/_components/common";
 import { underReview } from "@/app/assets/asset";
 import {
-  getTransactionOverviewTimelineTitle,
-  type DetailViewStatus,
+  getTransactionStatusLabel,
+  normalizeTransactionStatus,
+  TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
 import type { ReactNode } from "react";
@@ -13,7 +14,6 @@ import RejectedStatus from "./RejectedStatus";
 import TransactionCommentsTimeline from "./TransactionCommentsTimeline";
 
 interface OverviewDetailProps {
-  viewStatus: DetailViewStatus;
   transactionId?: string;
   date?: string;
   time?: string;
@@ -21,9 +21,7 @@ interface OverviewDetailProps {
   onProceedToPayment?: () => void;
   approvedActions?: ReactNode;
   comments?: TransactionDetailComment[];
-  /** API `currentStep` (e.g. DISBURSEMENT) — used with status for overview title. */
-  transactionStage?: string;
-  /** API `status` (e.g. DISBURSEMENT_IN_PROGRESS) — used for overview title. */
+  /** API `status` — drives overview variant and titles. */
   transactionStatus?: string;
 }
 
@@ -66,7 +64,6 @@ function OverviewMetaHeader({
 }
 
 export default function OverviewDetail({
-  viewStatus,
   transactionId,
   date,
   time,
@@ -74,13 +71,10 @@ export default function OverviewDetail({
   onProceedToPayment,
   approvedActions,
   comments = [],
-  transactionStage,
   transactionStatus,
 }: Readonly<OverviewDetailProps>) {
-  const timelineTitle = getTransactionOverviewTimelineTitle(viewStatus, {
-    stage: transactionStage,
-    status: transactionStatus,
-  });
+  const s = normalizeTransactionStatus(transactionStatus);
+  const timelineTitle = getTransactionStatusLabel(transactionStatus);
 
   const timeline = (
     <TransactionCommentsTimeline
@@ -89,7 +83,16 @@ export default function OverviewDetail({
     />
   );
 
-  if (viewStatus === "under_review") {
+  if (
+    !(transactionStatus ?? "").trim() ||
+    !(s in TRANSACTION_STATUS_LABELS) ||
+    s === "DRAFT" ||
+    s === "AWAITING_VERIFICATION" ||
+    s === "VERIFICATION_IN_PROGRESS" ||
+    s === "VERIFICATION_COMPLETED" ||
+    s === "ADMIN_APPROVAL_PENDING" ||
+    s === "PENDING_RECORD_VALIDATION"
+  ) {
     return (
       <div className="flex flex-col items-center px-4 pt-6 pb-8">
         <div className="w-full max-w-[335px] flex flex-col items-center gap-2">
@@ -110,7 +113,7 @@ export default function OverviewDetail({
     );
   }
 
-  if (viewStatus === "rejected") {
+  if (s === "REJECTED") {
     return (
       <div className="px-4 pb-8 space-y-4">
         <OverviewMetaHeader
@@ -126,11 +129,50 @@ export default function OverviewDetail({
     );
   }
 
-  const showApprovedStyleHeader =
-    viewStatus === "approved" || viewStatus === "disbursement_in_progress";
+  if (s === "CANCELLED") {
+    return (
+      <div className="px-4 pb-8 space-y-4">
+        <OverviewMetaHeader
+          title={timelineTitle}
+          transactionId={transactionId}
+          date={date}
+          time={time}
+          tone="danger"
+        />
+        {timeline}
+        <p className="text-sm text-center text-[#8F8B8B] leading-6">
+          This transaction was cancelled. No further action is required.
+        </p>
+      </div>
+    );
+  }
 
-  if (showApprovedStyleHeader) {
-    if (viewStatus === "disbursement_in_progress" && !approvedActions) {
+  if (s === "COMPLIANCE_REVIEW") {
+    return (
+      <div className="px-4 pb-8 space-y-4">
+        <OverviewMetaHeader
+          title={timelineTitle}
+          transactionId={transactionId}
+          date={date}
+          time={time}
+          tone="muted"
+        />
+        {timeline}
+        <p className="text-sm text-center text-[#8F8B8B] leading-6">
+          Your transaction is being reviewed for compliance. You will be notified of any updates.
+        </p>
+      </div>
+    );
+  }
+
+  const approvedStyle =
+    s === "APPROVED" ||
+    s === "AWAITING_DEPOSIT" ||
+    s === "DEPOSIT_PENDING" ||
+    s === "DISBURSEMENT_IN_PROGRESS";
+
+  if (approvedStyle) {
+    if (s === "DISBURSEMENT_IN_PROGRESS" && !approvedActions) {
       return (
         <div className="px-4 pb-8 space-y-4">
           <OverviewMetaHeader
@@ -191,25 +233,7 @@ export default function OverviewDetail({
     );
   }
 
-  if (viewStatus === "awaiting_disbursement") {
-    return (
-      <div className="px-4 pb-8 space-y-4">
-        <OverviewMetaHeader
-          title={timelineTitle}
-          transactionId={transactionId}
-          date={date}
-          time={time}
-          tone="muted"
-        />
-        {timeline}
-        <p className="text-sm text-center text-[#8F8B8B] leading-6">
-          Your request has been approved. Funds are being prepared for disbursement.
-        </p>
-      </div>
-    );
-  }
-
-  if (viewStatus === "transaction_settled") {
+  if (s === "COMPLETED") {
     return (
       <div className="px-4 pb-8 space-y-4">
         <OverviewMetaHeader
@@ -227,7 +251,7 @@ export default function OverviewDetail({
     );
   }
 
-  if (viewStatus === "deposit_confirmed") {
+  if (s === "DEPOSIT_CONFIRMED") {
     return (
       <div className="px-4 pb-8 space-y-4">
         <OverviewMetaHeader

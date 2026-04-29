@@ -10,6 +10,7 @@ interface ResubmitSuccessModalProps {
   onClose: () => void;
   /** Transaction type label from API (e.g. "BTA", "Personal Travel Allowance (PTA)") – used in title and message */
   transactionTypeLabel: string;
+  docTypeLabel: string;
   onViewTransaction: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function ResubmitSuccessModal({
   opened,
   onClose,
   transactionTypeLabel,
+  docTypeLabel,
   onViewTransaction
 }: ResubmitSuccessModalProps) {
   const shortLabel =
@@ -48,7 +50,7 @@ export default function ResubmitSuccessModal({
         </div>
 
         <h2 className="text-[#131212] text-xl font-semibold leading-7">
-          {shortLabel} Resubmitted Successfully
+          {shortLabel} {docTypeLabel} Resubmitted Successfully
         </h2>
 
         <p className="text-[#6C6969] text-base leading-6">

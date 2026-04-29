@@ -10,7 +10,7 @@ import type { RequiredDocumentsData, TransactionDetailsData } from "@/app/(custo
 import type { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import type { TransactionDetailPayload } from "@/app/(customer)/(CustomerLayout)/transactions/detail/[id]/page";
 import { getTransactionTypeLabel } from "@/app/(customer)/_lib/mock-transactions";
-import { getDetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
+import { normalizeTransactionStatus } from "@/app/(customer)/_lib/transaction-details";
 import { formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import { getDocumentLabelForApiType } from "@/app/(customer)/_utils/transaction-validation";
 
@@ -107,8 +107,6 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
   const stepData = getStepData(api);
   const docs = api.requiredDocuments ?? [];
   const pickup = api.cashPickup;
-  const viewStatus = getDetailViewStatus(api.currentStep, api.status);
-
   const requiredDocuments: RequiredDocumentsData = {
     bvn: stepData?.bvn ?? api.personalInfo?.bvn ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
@@ -158,7 +156,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     payload.paymentDetails = mapPaymentDetailsFromApi(apiPaymentRows);
   }
 
-  if (viewStatus === "transaction_settled") {
+  if (normalizeTransactionStatus(api.status) === "COMPLETED") {
     payload.settlement = {
       settlementId: pickup?.pickupCode ?? "—",
       settlementDate: pickup?.pickedUpAt ? formatShortDate(pickup.pickedUpAt) : formatShortDate(api.updatedAt),
