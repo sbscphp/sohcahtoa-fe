@@ -219,6 +219,7 @@ export default function ProceedToPaymentModal({
       radius={24}
       classNames={{ body: "p-0" }}
       styles={{ content: { width: "min(640px, calc(100vw - 24px))" } }}
+      closeOnClickOutside={false}
     >
       <div className="flex flex-col">
         <div className="border-b border-[#F2F4F7] px-4 sm:px-6 py-4 sm:py-5">
@@ -358,15 +359,28 @@ export default function ProceedToPaymentModal({
             Please wait while we confirm your transaction. This should take between 3-5 minutes.
           </p>
         )}
-        <div className="flex justify-center py-1">
-          <Loader color="#DD4F05" type="dots" />
-        </div>
-        {!confirmTimedOut && (
-          <div className="flex justify-center py-1">
-            <p className="text-body-text-100 text-sm">
-              Please keep this window open while we continue checking your transfer.
-            </p>
-          </div>
+        {confirmTimedOut ? (
+          <Button
+            type="button"
+            variant="filled"
+            radius="xl"
+            fullWidth
+            className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium h-12!"
+            onClick={handleCloseAll}
+          >
+            Close
+          </Button>
+        ) : (
+          <>
+            <div className="flex justify-center py-1">
+              <Loader color="#DD4F05" type="dots" />
+            </div>
+            <div className="flex justify-center py-1">
+              <p className="text-body-text-100 text-sm">
+                Please keep this window open while we continue checking your transfer.
+              </p>
+            </div>
+          </>
         )}
       </div>
     </Modal>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Button } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { ChevronLeft } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
 import { useQueryClient } from "@tanstack/react-query";
@@ -104,8 +105,15 @@ export default function TransactionDetailPage() {
   const showSettlement = statusKey === "COMPLETED";
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
+  const nairaRaw = apiData?.nairaEquivalent;
   const paymentAmountNgn =
-    apiData?.nairaEquivalent == null ? 5000 : Number(apiData.nairaEquivalent);
+    nairaRaw == null || nairaRaw === ""
+      ? null
+      : Number(nairaRaw);
+  const hasValidPaymentAmount =
+    paymentAmountNgn != null &&
+    Number.isFinite(paymentAmountNgn) &&
+    paymentAmountNgn > 0;
   const cashPickup = apiData?.cashPickup ?? null;
   const beneficiaryDetails = apiData?.beneficiaryDetails;
 
@@ -137,7 +145,7 @@ export default function TransactionDetailPage() {
             >
               {formatHeaderDateTime(payload.date)}
             </span>
-            <div style={getStatusBadge(statusLabel)}>{statusLabel}</div>
+            <div style={getStatusBadge(statusLabel)} className="capitalize">{statusLabel}</div>
           </div>
           <div className="flex flex-row items-center gap-1 rounded-full border border-[#F2F4F7] py-2 px-2 w-fit">
             {flagUrl && (
@@ -208,6 +216,15 @@ export default function TransactionDetailPage() {
           });
         }}
         onProceedToPayment={() => {
+          if (!hasValidPaymentAmount) {
+            notifications.show({
+              title: "Cannot proceed to payment",
+              message:
+                "The Naira amount for this transaction is missing or zero. Refresh the page or contact support if you need help.",
+              color: "red",
+            });
+            return;
+          }
           setUpdatesSheetOpen(false);
           setProceedToPaymentOpen(true);
         }}
@@ -223,10 +240,10 @@ export default function TransactionDetailPage() {
         onViewTransaction={() => setUpdatesSheetOpen(false)}
       />
       <ProceedToPaymentModal
-        opened={proceedToPaymentOpen}
+        opened={proceedToPaymentOpen && hasValidPaymentAmount}
         onClose={() => setProceedToPaymentOpen(false)}
         transactionId={payload.id}
-        amountNgn={paymentAmountNgn}
+        amountNgn={paymentAmountNgn ?? 0}
       />
 
       {/* Sections */}

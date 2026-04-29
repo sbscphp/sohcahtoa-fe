@@ -146,7 +146,7 @@ export default function AgentTransactionDetailPage() {
               <span className="text-base font-normal leading-6 text-[#6C6969]">
                 {formatHeaderDateTime(payload.date)}
               </span>
-              <div style={getStatusBadge(statusLabel)}>{statusLabel}</div>
+              <div style={getStatusBadge(statusLabel)} className="capitalize">{statusLabel}</div>
             </div>
             <div className="flex flex-row items-center gap-1 rounded-full border border-[#F2F4F7] py-2 px-2 w-fit">
               {flagUrl && (

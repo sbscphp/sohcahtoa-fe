@@ -74,7 +74,7 @@ export default function LabelText({
           aria-label={doc.url && doc.onView ? "View document" : "Download document"}
           title={doc.filename}
         >
-          <span className={`${valueClass} min-w-0 flex-1 truncate`}>{doc.filename}</span>
+          <span className={`${valueClass} min-w-0 truncate`}>{doc.filename}</span>
           {doc.url && doc.onView ? (
             <FileText className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
           ) : (
