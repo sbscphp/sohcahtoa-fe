@@ -123,13 +123,13 @@ export default function WorkflowDetailPage() {
                 >
                   {effectiveStatus === "Active" ? "Deactivate" : "Reactivate"}
                 </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
+                {/* <Menu.Divider /> */}
+                {/* <Menu.Item
                   onClick={() => setDeleteConfirmOpen(true)}
                   className="text-red-500!"
                 >
                   Delete
-                </Menu.Item>
+                </Menu.Item> */}
               </Menu.Dropdown>
             </Menu>
           </div>

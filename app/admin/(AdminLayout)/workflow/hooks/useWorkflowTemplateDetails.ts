@@ -24,6 +24,31 @@ export interface WorkflowTemplateDetailsViewModel {
   department: string;
   workflowType: string;
   personnelProcesses: ViewWorkflowLine[];
+  editTemplate: WorkflowTemplateEditData;
+}
+
+export interface WorkflowTemplateEditStage {
+  id: string;
+  name: string;
+  type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
+  order: number;
+  escalationMinutes: number;
+  assigneeIds: string[];
+}
+
+export interface WorkflowTemplateEditData {
+  id: string;
+  name: string;
+  description: string;
+  type: "REVIEW" | "APPROVAL";
+  processType: "RIGID_LINEAR" | "FLEXIBLE";
+  action: string;
+  status: "ACTIVE" | "DEACTIVATED" | "DRAFT";
+  escalationMinutes: number;
+  hasPtaRequest: boolean;
+  branchId: string;
+  departmentId: string;
+  stages: WorkflowTemplateEditStage[];
 }
 
 function asString(value: unknown, fallback = ""): string {
@@ -96,11 +121,38 @@ function mapStageToViewLine(stage: WorkflowTemplateStage): ViewWorkflowLine {
   };
 }
 
+function mapStageForEdit(stage: WorkflowTemplateStage): WorkflowTemplateEditStage {
+  const normalizedType = asString(stage.type, "REVIEW").toUpperCase();
+
+  return {
+    id: asString(stage.id),
+    name: asString(stage.name, ""),
+    type:
+      normalizedType === "APPROVAL" ||
+      normalizedType === "DOCUMENTATION" ||
+      normalizedType === "VERIFICATION"
+        ? normalizedType
+        : "REVIEW",
+    order: Number.isFinite(stage.order) ? stage.order : 0,
+    escalationMinutes: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
+    assigneeIds: (stage.assignees ?? [])
+      .map((assignee) => asString(assignee.adminId))
+      .filter(Boolean),
+  };
+}
+
 function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTemplateDetailsViewModel | null {
   if (!data) return null;
 
-  const createdAtCandidate = "";
+  const sourceWithDate = data as unknown as Record<string, unknown>;
+  const createdAtCandidate =
+    asString(sourceWithDate.createdAt) ||
+    asString(sourceWithDate.updatedAt) ||
+    asString(sourceWithDate.dateCreated);
   const stages = [...(data.stages ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const normalizedType = asString(data.type, "REVIEW").toUpperCase();
+  const normalizedProcessType = asString(data.processType, "RIGID_LINEAR").toUpperCase();
+  const normalizedStatus = asString(data.status, "ACTIVE").toUpperCase();
 
   return {
     id: asString(data.id),
@@ -114,6 +166,25 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
     department: data.departmentId ? asString(data.departmentId, "--") : "--",
     workflowType: toTitleCase(asString(data.processType, "--")),
     personnelProcesses: stages.map(mapStageToViewLine),
+    editTemplate: {
+      id: asString(data.id),
+      name: asString(data.name),
+      description: asString(data.description),
+      type: normalizedType === "APPROVAL" ? "APPROVAL" : "REVIEW",
+      processType: normalizedProcessType === "FLEXIBLE" ? "FLEXIBLE" : "RIGID_LINEAR",
+      action: asString(data.action),
+      status:
+        normalizedStatus === "DEACTIVATED"
+          ? "DEACTIVATED"
+          : normalizedStatus === "DRAFT"
+            ? "DRAFT"
+            : "ACTIVE",
+      escalationMinutes: Number.isFinite(data.escalationMinutes) ? data.escalationMinutes : 0,
+      hasPtaRequest: Boolean(data.hasPtaRequest),
+      branchId: asString(data.branchId),
+      departmentId: asString(data.departmentId),
+      stages: stages.map(mapStageForEdit),
+    },
   };
 }
 

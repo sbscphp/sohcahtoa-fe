@@ -880,6 +880,32 @@ export interface WorkflowTemplateDetailsData {
   stages: WorkflowTemplateStage[];
 }
 
+export interface WorkflowTemplateUpdateStageAssigneePayload {
+  adminId: string;
+  order: number;
+}
+
+export interface WorkflowTemplateUpdateStagePayload {
+  name: string;
+  type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
+  order: number;
+  escalationMinutes: number;
+  assignees: WorkflowTemplateUpdateStageAssigneePayload[];
+}
+
+export interface WorkflowTemplateUpdatePayload {
+  name: string;
+  description: string;
+  type: "REVIEW" | "APPROVAL";
+  processType: "RIGID_LINEAR" | "FLEXIBLE";
+  action: string;
+  branchId: string;
+  departmentId: string;
+  escalationMinutes: number;
+  hasPtaRequest: boolean;
+  stages: WorkflowTemplateUpdateStagePayload[];
+}
+
 export interface AdminTransactionDetailsPayload {
   transactionValueFx?: number | string | null;
   transactionValueNgn?: number | string | null;
@@ -2175,6 +2201,12 @@ export const adminApi = {
     getTemplateById: (id: string) =>
       apiClient.get<ApiResponse<WorkflowTemplateDetailsData>>(
         `/api/admin/workflow/templates/${id}`
+      ),
+
+    updateTemplate: (id: string, data: WorkflowTemplateUpdatePayload) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        `/api/admin/workflow/templates/${id}`,
+        data
       ),
   },
 };

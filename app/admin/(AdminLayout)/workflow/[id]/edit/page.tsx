@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Textarea, Radio, Group } from "@mantine/core";
 import { useForm } from "@mantine/form";
@@ -9,127 +9,139 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { notifications } from "@mantine/notifications";
+import { usePatchData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  adminApi,
+  type WorkflowTemplateUpdatePayload,
+} from "@/app/admin/_services/admin-api";
 import WorkflowActionModal from "../../_workflowComponents/WorkflowActionModal";
 import EscalationProtocolModal from "../../_workflowComponents/EscalationProtocolModal";
 import AssignToModal, { AssignableUser, AssignableRole } from "../../_workflowComponents/AssignToModal";
 import WorkflowLineItem, { WorkflowLine } from "../../_workflowComponents/WorkflowLineItem";
+import {
+  useWorkflowTemplateDetails,
+  type WorkflowTemplateEditStage,
+} from "../../hooks/useWorkflowTemplateDetails";
+import { useWorkflowEditOptions } from "../../hooks/useWorkflowEditOptions";
 
-// Mock Data
-const BRANCHES = [
-  { value: "lagos-1", label: "Lagos State Branch (2)" },
-  { value: "abuja-1", label: "Abuja Branch" },
-  { value: "kano-1", label: "Kano Branch" },
-];
+type WorkflowMode = "rigid" | "flexible";
+type WorkflowTemplateType = "REVIEW" | "APPROVAL";
 
-const DEPARTMENTS = [
-  { value: "finance", label: "Finance & Accounting" },
-  { value: "it", label: "IT Support" },
-  { value: "hr", label: "Human Resources" },
-  { value: "audit", label: "Audit and Internal Control" },
-];
+interface EditWorkflowFormValues {
+  workflowName: string;
+  workflowDescription: string;
+  workflowAction: string;
+  branchApplicable: string;
+  departmentApplicable: string;
+  workflowType: WorkflowMode;
+  workflowTemplateType: WorkflowTemplateType;
+  templateEscalationMinutes: number;
+  hasPtaRequest: boolean;
+  workflowLines: WorkflowLine[];
+}
 
-const MOCK_USERS: AssignableUser[] = [
-  {
-    id: "u1",
-    name: "Adekunle, Ibrahim",
-    email: "kibrahim@sohcahtoa.com",
-    roles: ["Internal Control", "Head of Audit"],
-  },
-  {
-    id: "u2",
-    name: "Benson, Clara",
-    email: "cbenson@sohcahtoa.com",
-    roles: ["Finance", "Chief Financial Officer"],
-  },
-  {
-    id: "u3",
-    name: "Chukwu, David",
-    email: "dchukwu@sohcahtoa.com",
-    roles: ["IT Support", "IT Manager"],
-  },
-  {
-    id: "u4",
-    name: "Khan, Malik",
-    email: "mkhan@sohcahtoa.com",
-    roles: ["Internal Control"],
-  },
-  {
-    id: "u5",
-    name: "Jide Jadsola",
-    email: "jjadsola@sohcahtoa.com",
-    roles: ["Head of Audit"],
-  },
-  {
-    id: "u6",
-    name: "Kunle Alao",
-    email: "kalao@sohcahtoa.com",
-    roles: ["Finance"],
-  },
-];
+function toLineWorkflowType(value: string): string {
+  const normalized = value.trim().toUpperCase();
+  if (!normalized) return "";
+  if (normalized === "APPROVAL") return "Approval";
+  if (normalized === "DOCUMENTATION") return "Documentation";
+  if (normalized === "VERIFICATION") return "Verification";
+  return "Review";
+}
 
-const MOCK_ROLES: AssignableRole[] = [
-  { id: "r1", name: "Audit and Internal Control", userCount: 12 },
-  { id: "r2", name: "Human Resources", userCount: 8 },
-  { id: "r3", name: "Development Team", userCount: 15 },
-  { id: "r4", name: "Marketing Department", userCount: 10 },
-];
+function toStageType(value: string): WorkflowTemplateUpdatePayload["stages"][number]["type"] {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "APPROVAL") return "APPROVAL";
+  if (normalized === "DOCUMENTATION") return "DOCUMENTATION";
+  if (normalized === "VERIFICATION") return "VERIFICATION";
+  return "REVIEW";
+}
+
+function toFormLines(
+  stages: WorkflowTemplateEditStage[],
+  availableUsers: AssignableUser[]
+): WorkflowLine[] {
+  if (!stages.length) {
+    return [
+      {
+        id: `line-${Date.now()}`,
+        workflowType: "",
+        escalationPeriod: 0,
+        escalateToUser: undefined,
+        selectedUsers: [],
+        selectedRoles: [],
+        expanded: false,
+      },
+    ];
+  }
+
+  return stages.map((stage, index) => {
+    const mappedUsers = stage.assigneeIds
+      .map((assigneeId) => availableUsers.find((user) => user.id === assigneeId))
+      .filter((user): user is AssignableUser => Boolean(user));
+
+    const fallbackEscalateUser = mappedUsers[0];
+
+    return {
+      id: stage.id || `line-${index + 1}`,
+      workflowType: toLineWorkflowType(stage.type),
+      escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
+      escalateToUser: fallbackEscalateUser
+        ? { id: fallbackEscalateUser.id, name: fallbackEscalateUser.name }
+        : undefined,
+      selectedUsers: mappedUsers,
+      selectedRoles: [],
+      expanded: false,
+    };
+  });
+}
 
 export default function EditWorkflowPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params?.id ?? "";
   const [step, setStep] = useState<1 | 2>(1);
+  const [hasInitializedForm, setHasInitializedForm] = useState(false);
+  const {
+    template,
+    isLoading: templateLoading,
+    isError: templateError,
+  } = useWorkflowTemplateDetails(id);
+  const {
+    branchOptions,
+    departmentOptions,
+    users: assignableUsers,
+    roles: assignableRoles,
+    escalationUsers,
+    isLoading: optionsLoading,
+  } = useWorkflowEditOptions();
 
-  // Form pre-populated with existing workflow data
-  const form = useForm({
+  const form = useForm<EditWorkflowFormValues>({
     initialValues: {
-      workflowName: "Internal Control and Transaction (PTA) Approval",
-      workflowDescription: "A workflow targeted at approving client PTA request",
-      workflowAction: "PTA Settlement",
-      branchApplicable: "lagos-1",
-      departmentApplicable: "audit",
-      workflowType: "rigid" as "rigid" | "flexible",
+      workflowName: "",
+      workflowDescription: "",
+      workflowAction: "",
+      branchApplicable: "",
+      departmentApplicable: "",
+      workflowType: "rigid",
+      workflowTemplateType: "APPROVAL",
+      templateEscalationMinutes: 0,
+      hasPtaRequest: false,
       workflowLines: [
         {
           id: "line-1",
-          workflowType: "Review",
-          escalationPeriod: 20,
-          escalateToUser: { id: "u5", name: "Jide Jadsola" },
-          selectedUsers: [
-            { id: "u1", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-            { id: "u2", name: "Benson, Clara", email: "cbenson@sohcahtoa.com", roles: ["Finance", "Chief Financial Officer"] },
-            { id: "u3", name: "Chukwu, David", email: "dchukwu@sohcahtoa.com", roles: ["IT Support", "IT Manager"] },
-          ],
+          workflowType: "",
+          escalationPeriod: 0,
+          escalateToUser: undefined,
+          selectedUsers: [],
           selectedRoles: [],
           expanded: false,
         },
-        {
-          id: "line-2",
-          workflowType: "Review",
-          escalationPeriod: 20,
-          escalateToUser: { id: "u5", name: "Jide Jadsola" },
-          selectedUsers: [
-            { id: "u1", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-            { id: "u2", name: "Benson, Clara", email: "cbenson@sohcahtoa.com", roles: ["Finance", "Chief Financial Officer"] },
-            { id: "u3", name: "Chukwu, David", email: "dchukwu@sohcahtoa.com", roles: ["IT Support", "IT Manager"] },
-          ],
-          selectedRoles: [],
-          expanded: false,
-        },
-        {
-          id: "line-3",
-          workflowType: "Approval",
-          escalationPeriod: 20,
-          escalateToUser: { id: "u6", name: "Kunle Alao" },
-          selectedUsers: [
-            { id: "u1", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-            { id: "u2", name: "Benson, Clara", email: "cbenson@sohcahtoa.com", roles: ["Finance", "Chief Financial Officer"] },
-            { id: "u3", name: "Chukwu, David", email: "dchukwu@sohcahtoa.com", roles: ["IT Support", "IT Manager"] },
-          ],
-          selectedRoles: [],
-          expanded: false,
-        },
-      ] as WorkflowLine[],
+      ],
     },
     validate: {
       workflowName: (value) => (value.trim() ? null : "Workflow name is required"),
@@ -145,6 +157,35 @@ export default function EditWorkflowPage() {
     },
   });
 
+  useEffect(() => {
+    if (!template?.editTemplate || hasInitializedForm || optionsLoading) return;
+
+    const processType = template.editTemplate.processType === "FLEXIBLE" ? "flexible" : "rigid";
+    const prefilledLines = toFormLines(template.editTemplate.stages, assignableUsers);
+
+    form.setValues({
+      workflowName: template.editTemplate.name,
+      workflowDescription: template.editTemplate.description,
+      workflowAction: template.editTemplate.action,
+      branchApplicable: template.editTemplate.branchId,
+      departmentApplicable: template.editTemplate.departmentId,
+      workflowType: processType,
+      workflowTemplateType: template.editTemplate.type,
+      templateEscalationMinutes: template.editTemplate.escalationMinutes,
+      hasPtaRequest: template.editTemplate.hasPtaRequest,
+      workflowLines: prefilledLines,
+    });
+    setTimeout(() => {
+      setHasInitializedForm(true);
+    }, 0);
+  }, [
+    assignableUsers,
+    form,
+    hasInitializedForm,
+    optionsLoading,
+    template?.editTemplate,
+  ]);
+
   // Modals
   const [isWorkflowActionModalOpen, setIsWorkflowActionModalOpen] = useState(false);
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
@@ -153,6 +194,63 @@ export default function EditWorkflowPage() {
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
   const [isSaveSuccessOpen, setIsSaveSuccessOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const updateWorkflowMutation = usePatchData<
+    ApiResponse<unknown>,
+    WorkflowTemplateUpdatePayload
+  >((payload) => adminApi.workflow.updateTemplate(id, payload), {
+    onSuccess: async () => {
+      notifications.show({
+        title: "Workflow Updated",
+        message: "Workflow template has been updated successfully.",
+        color: "green",
+      });
+      setIsSaving(false);
+      setIsSaveConfirmOpen(false);
+      setIsSaveSuccessOpen(true);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "workflow", "template", id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workflow", "management"] }),
+      ]);
+    },
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+      notifications.show({
+        title: "Update Workflow Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to update workflow template at the moment.",
+        color: "red",
+      });
+      setIsSaving(false);
+      setIsSaveConfirmOpen(false);
+    },
+  });
+
+  const branchLabelOptions = useMemo(() => branchOptions, [branchOptions]);
+  const departmentLabelOptions = useMemo(() => departmentOptions, [departmentOptions]);
+
+  const validateStepTwo = () => {
+    if (!form.values.workflowLines.length) {
+      return "At least one workflow line is required.";
+    }
+
+    for (const [index, line] of form.values.workflowLines.entries()) {
+      const lineNumber = index + 1;
+      if (!line.workflowType.trim()) {
+        return `Workflow type is required for line ${lineNumber}.`;
+      }
+      if (!Number.isFinite(line.escalationPeriod) || line.escalationPeriod <= 0) {
+        return `Escalation protocol is required for line ${lineNumber}.`;
+      }
+      if (!line.selectedUsers.length && !line.selectedRoles.length) {
+        return `Please assign at least one user or role for line ${lineNumber}.`;
+      }
+    }
+
+    return null;
+  };
 
   const handleBack = () => {
     if (step === 1) {
@@ -163,6 +261,10 @@ export default function EditWorkflowPage() {
   };
 
   const handleNext = () => {
+    const basicValidation = form.validate();
+    if (basicValidation.hasErrors) {
+      return;
+    }
     setStep(2);
   };
 
@@ -283,16 +385,75 @@ export default function EditWorkflowPage() {
   };
 
   const handleSaveChanges = async () => {
+    const lineValidationError = validateStepTwo();
+    if (lineValidationError) {
+      notifications.show({
+        title: "Validation Error",
+        message: lineValidationError,
+        color: "red",
+      });
+      return;
+    }
+
+    const payload: WorkflowTemplateUpdatePayload = {
+      name: form.values.workflowName.trim(),
+      description: form.values.workflowDescription.trim(),
+      type: form.values.workflowTemplateType,
+      processType: form.values.workflowType === "flexible" ? "FLEXIBLE" : "RIGID_LINEAR",
+      action: form.values.workflowAction.trim(),
+      branchId: form.values.branchApplicable,
+      departmentId: form.values.departmentApplicable,
+      escalationMinutes: form.values.templateEscalationMinutes,
+      hasPtaRequest: form.values.hasPtaRequest,
+      stages: form.values.workflowLines.map((line, index) => ({
+        name: line.workflowType.trim() || `Stage ${index + 1}`,
+        type: toStageType(line.workflowType),
+        order: index + 1,
+        escalationMinutes: line.escalationPeriod,
+        assignees: line.selectedUsers.map((user, assigneeIndex) => ({
+          adminId: user.id,
+          order: assigneeIndex + 1,
+        })),
+      })),
+    };
+
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setIsSaveConfirmOpen(false);
-    setIsSaveSuccessOpen(true);
+    updateWorkflowMutation.mutate(payload);
   };
 
   const handleManageWorkflow = () => {
     router.push(adminRoutes.adminWorkflow());
   };
+
+  if (templateLoading || optionsLoading) {
+    return (
+      <div className="max-w-4xl mx-auto rounded-2xl bg-white p-8 shadow-sm">
+        <Text size="lg" fw={600}>
+          Loading workflow template...
+        </Text>
+      </div>
+    );
+  }
+
+  if (templateError || !template) {
+    return (
+      <div className="max-w-4xl mx-auto rounded-2xl bg-white p-8 shadow-sm space-y-3">
+        <Text size="lg" fw={600}>
+          Unable to load workflow for editing
+        </Text>
+        <Text size="sm" c="dimmed">
+          Please refresh or return to workflow management.
+        </Text>
+        <CustomButton
+          buttonType="primary"
+          size="md"
+          onClick={() => router.push(adminRoutes.adminWorkflow())}
+        >
+          Back to Workflows
+        </CustomButton>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -396,7 +557,7 @@ export default function EditWorkflowPage() {
               <Select
                 label="Branch Applicable"
                 placeholder="Select an Option"
-                data={BRANCHES}
+                data={branchLabelOptions}
                 {...form.getInputProps("branchApplicable")}
                 required
                 searchable
@@ -410,7 +571,7 @@ export default function EditWorkflowPage() {
                 <Select
                   label="Department Applicable"
                   placeholder="Select an Option"
-                  data={DEPARTMENTS}
+                  data={departmentLabelOptions}
                   {...form.getInputProps("departmentApplicable")}
                   required
                   searchable
@@ -564,7 +725,7 @@ export default function EditWorkflowPage() {
         opened={isEscalationModalOpen}
         onClose={() => setIsEscalationModalOpen(false)}
         onSave={handleEscalationSave}
-        users={MOCK_USERS.map((u) => ({ id: u.id, name: u.name }))}
+        users={escalationUsers}
       />
 
       <AssignToModal
@@ -572,8 +733,8 @@ export default function EditWorkflowPage() {
         onClose={() => setIsAssignModalOpen(false)}
         onSelectUsers={handleAssignUsers}
         onSelectRoles={handleAssignRoles}
-        users={MOCK_USERS}
-        roles={MOCK_ROLES}
+        users={assignableUsers}
+        roles={assignableRoles}
       />
 
       <ConfirmationModal
@@ -584,7 +745,7 @@ export default function EditWorkflowPage() {
         primaryButtonText="Yes, Save and Update Changes"
         secondaryButtonText="No, Close"
         onPrimary={handleSaveChanges}
-        loading={isSaving}
+        loading={isSaving || updateWorkflowMutation.isPending}
       />
 
       <SuccessModal
