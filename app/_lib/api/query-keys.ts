@@ -413,6 +413,17 @@ export const adminKeys = {
       detail: (transactionId: string) =>
         [...adminKeys.regulatory.trms.all(), "detail", transactionId] as const,
     },
+    cbnFn: {
+      all: () => [...adminKeys.regulatory.all, "cbn-fn"] as const,
+      stats: () => [...adminKeys.regulatory.cbnFn.all(), "stats"] as const,
+      list: (params?: {
+        search?: string;
+        status?: string;
+        page?: number;
+        limit?: number;
+      }) => [...adminKeys.regulatory.cbnFn.all(), "list", params] as const,
+      detail: (id: string) => [...adminKeys.regulatory.cbnFn.all(), "detail", id] as const,
+    },
   },
 
   management: {

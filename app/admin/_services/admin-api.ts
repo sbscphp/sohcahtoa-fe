@@ -790,6 +790,48 @@ export interface AdminTrmsDashboardData {
   rejectedReports: number;
 }
 
+export interface AdminCbnFnStatsData {
+  dailyFxSalesAllocations: number;
+  fnWindowDailyReports: number;
+  activeComplianceReports: number;
+}
+
+export type AdminCbnFnReportListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  search?: string;
+  status?: "" | "Pending" | "Submitted" | "Completed" | "Failed";
+  page?: number;
+  limit?: number;
+};
+
+export interface AdminCbnFnReportListItem {
+  id: string;
+  reportName: string;
+  reportType: string;
+  status: string;
+  channel: string;
+  reference: string;
+  createdAt: string;
+  fileType: string;
+}
+
+export interface AdminCbnFnReportDetailsData {
+  reportName: string;
+  type: string;
+  fileType: string;
+  channel: string;
+  status: string;
+  reference: string;
+  lastAction: string;
+  submissionTime: string;
+  cbnCode: string | null;
+  errorCode: string | null;
+  fileSize: number | string | null;
+  fileUrl: string;
+}
+
 export interface AdminTransactionStatsData {
   underReview: number;
   rejected: number;
@@ -2164,6 +2206,21 @@ export const adminApi = {
       stats: () =>
         apiClient.get<ApiResponse<AdminTrmsDashboardData>>(
           API_ENDPOINTS.admin.regulatory.trms.stats
+        ),
+    },
+    cbnFn: {
+      list: (params?: AdminCbnFnReportListParams) =>
+        apiClient.get<ApiResponse<AdminCbnFnReportListItem[]>>(
+          API_ENDPOINTS.admin.regulatory.cbnFn.reports,
+          { params }
+        ),
+      getById: (id: string) =>
+        apiClient.get<ApiResponse<AdminCbnFnReportDetailsData>>(
+          API_ENDPOINTS.admin.regulatory.cbnFn.reportById(id)
+        ),
+      stats: () =>
+        apiClient.get<ApiResponse<AdminCbnFnStatsData>>(
+          API_ENDPOINTS.admin.regulatory.cbnFn.stats
         ),
     },
   },
