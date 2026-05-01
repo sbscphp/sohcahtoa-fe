@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Text, Avatar, ScrollArea, ActionIcon } from "@mantine/core";
-import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export interface ViewUser {
   id: string;
@@ -22,7 +22,6 @@ export interface ViewWorkflowLine {
 interface WorkflowLineViewProps {
   line: ViewWorkflowLine;
   index: number;
-  totalLines: number;
 }
 
 function getInitials(name: string): string {
@@ -47,7 +46,6 @@ const ROLE_PILL_COLORS: Record<string, string> = {
 export default function WorkflowLineView({
   line,
   index,
-  totalLines,
 }: WorkflowLineViewProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -77,16 +75,6 @@ export default function WorkflowLineView({
 
         {/* Actions */}
         <div className="flex items-center gap-1">
-          {index > 0 && (
-            <ActionIcon size="sm" variant="subtle" color="orange" className="cursor-default">
-              <ArrowUp size={16} />
-            </ActionIcon>
-          )}
-          {index < totalLines - 1 && (
-            <ActionIcon size="sm" variant="subtle" color="orange" className="cursor-default">
-              <ArrowDown size={16} />
-            </ActionIcon>
-          )}
           <ActionIcon
             size="sm"
             variant="subtle"
@@ -103,7 +91,7 @@ export default function WorkflowLineView({
         <div className="mt-4 rounded-lg border border-orange-200 p-3">
           <div className="flex items-center gap-2 mb-3">
             <Text size="sm" fw={500} className="text-gray-900">
-              Admin users ({String(line.users.length).padStart(2, "0")}) +
+              Admin users ({String(line.users.length).padStart(2, "0")}) 
             </Text>
           </div>
 
@@ -125,9 +113,9 @@ export default function WorkflowLineView({
                     <Text size="sm" fw={600} className="text-gray-900 truncate">
                       {user.name}
                     </Text>
-                    <Text size="xs" c="dimmed" className="truncate">
+                    {/* <Text size="xs" c="dimmed" className="truncate">
                       {user.email}
-                    </Text>
+                    </Text> */}
                     <div className="flex flex-wrap gap-1 mt-1">
                       {user.roles.map((role) => (
                         <span

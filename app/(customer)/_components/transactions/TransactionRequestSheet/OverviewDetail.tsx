@@ -1,16 +1,15 @@
 "use client";
 
 import { EmptyState } from "@/app/(customer)/_components/common";
-import { underReview } from "@/app/assets/asset";
 import {
   getTransactionStatusLabel,
   normalizeTransactionStatus,
   TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
+import { underReview } from "@/app/assets/asset";
 import type { ReactNode } from "react";
 import ApprovedStatus from "./ApprovedStatus";
-import RejectedStatus from "./RejectedStatus";
 import TransactionCommentsTimeline from "./TransactionCommentsTimeline";
 
 const MANUAL_REVIEW_BLOCKS_ACTIONS =
@@ -165,7 +164,7 @@ export default function OverviewDetail({
         />
         {timeline}
         <p className="text-sm text-center text-[#8F8B8B] leading-6">
-          Your transaction is being reviewed for compliance. You will be notified of any updates.
+          Your transaction is being reviewed for compliance. Check the documentation tab for updates.
         </p>
       </div>
     );
@@ -175,12 +174,13 @@ export default function OverviewDetail({
     s === "APPROVED" ||
     s === "AWAITING_DEPOSIT" ||
     s === "DEPOSIT_PENDING" ||
-    s === "DISBURSEMENT_IN_PROGRESS";
+    s === "DISBURSEMENT_IN_PROGRESS" ||
+    s === "AWAITING_DISBURSEMENT";
 
   if (approvedStyle) {
-    if (s === "DISBURSEMENT_IN_PROGRESS" && !approvedActions) {
+    if ((s === "DISBURSEMENT_IN_PROGRESS" || s === "AWAITING_DISBURSEMENT") && !approvedActions) {
       return (
-        <div className="px-4 pb-8 space-y-4">
+        <div className="px-4 py-6 space-y-4">
           <OverviewMetaHeader
             title={timelineTitle}
             transactionId={transactionId}
@@ -251,7 +251,7 @@ export default function OverviewDetail({
 
   if (s === "COMPLETED") {
     return (
-      <div className="px-4 pb-8 space-y-4">
+      <div className="px-4 py-6 space-y-4">
         <OverviewMetaHeader
           title={timelineTitle}
           transactionId={transactionId}
@@ -269,7 +269,7 @@ export default function OverviewDetail({
 
   if (s === "DEPOSIT_CONFIRMED") {
     return (
-      <div className="px-4 pb-8 space-y-4">
+      <div className="px-4 py-6 space-y-4">
         <OverviewMetaHeader
           title={timelineTitle}
           transactionId={transactionId}

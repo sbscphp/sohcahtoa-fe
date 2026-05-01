@@ -54,11 +54,11 @@ function FxOverviewPanelContent({
     <div className="flex flex-col gap-5">
       <div className="flex flex-col justify-center gap-2.5">
         <div className="flex items-center gap-1"></div>
-        <div className="flex items-center gap-2">
-          <span className="flex w-6 h-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-base font-medium leading-[120%] text-gray-900">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="flex h-8 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-base font-medium leading-[120%] text-gray-900">
             {symbol}
           </span>
-          <span className="text-3xl font-bold leading-[120%] text-gray-900">
+          <span className="min-w-0 break-all text-2xl font-bold leading-[120%] text-gray-900 sm:text-3xl">
             {displayValue}
             <span className="text-sm font-semibold leading-[120%] text-gray-900">
               .{value.split(".")[1]}
@@ -129,27 +129,27 @@ export function CashOverview() {
         variant="pills"
       >
         <div className="flex flex-col gap-5">
-          <div className="flex flex-wrap items-center gap-5 justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-5">
             {/* <FilterTabs items={FX_TABS} value={activeTab} /> */}
-            <div className="">
-              <h3 className="text-body-heading-300 text-xl font-medium">
+            <div className="min-w-0 shrink-0">
+              <h3 className="text-body-heading-300 text-lg font-medium sm:text-xl">
                 Cash Overview
               </h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
               <CurrencySelectorWithSearch
                 selectedCurrency={currency}
                 onCurrencyChange={setCurrency}
               />
               <Select
                 size="xs"
-                w={SELECT_WIDTH}
+                w={{ base: "100%", sm: SELECT_WIDTH }}
+                className="custom-select min-w-0"
                 data={["Today", "Last 7 Days", "Last 30 Days", "Last 90 Days"]}
                 defaultValue="Today"
                 rightSection={<ListFilter className="size-4" />}
                 rightSectionPointerEvents="none"
                 radius="2xl"
-                className="custom-select"
               />
             </div>
           </div>

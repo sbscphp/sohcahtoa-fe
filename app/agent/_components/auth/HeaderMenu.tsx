@@ -14,7 +14,7 @@ export default function AgentHeaderMenu() {
   const avatarUrl = userProfile?.profile?.avatar || undefined;
 
   return (
-    <Menu shadow="md" width={200}>
+    <Menu shadow="md" width={200} >
       <Menu.Target>
         <Button
           rightSection={<ChevronDown size={14} />}
@@ -22,14 +22,15 @@ export default function AgentHeaderMenu() {
           radius="xl"
           className="hover:bg-gray-50"
           size="lg"
+          p={0}
         >
-          <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl">
+          <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl" p={0}>
             {initials}
           </Avatar>
         </Button>
       </Menu.Target>
 
-      <Menu.Dropdown>
+      <Menu.Dropdown p={0}>
         <Menu.Item
           leftSection={<Settings size={14} />}
           onClick={() => {

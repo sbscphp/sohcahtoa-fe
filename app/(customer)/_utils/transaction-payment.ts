@@ -3,12 +3,31 @@ const ONE_HOUR_SECONDS = 3600;
 const ONE_DAY_SECONDS = 86400;
 
 /**
- * Parses API expiry: ISO timestamp, `HH:MM:SS`, or `minutes:seconds` (minutes may exceed 59).
+ * Parses API expiry to **seconds remaining until** that moment (vs `Date.now()`), or a **duration** in seconds.
+ *
+ * Order of interpretation:
+ * 1. **ISO / absolute end time** — string contains `T` or looks like `YYYY-MM-DD…` → `expiresAt - now`.
+ * 2. **`HH:MM:SS`** duration (exactly three numeric segments).
+ * 3. **`MM:SS`** or **`M:SS`** duration (two segments; minutes may exceed 59).
+ * 4. Any other string `Date` can parse as an absolute time.
+ * 5. Fallback: default window length.
  */
 export function parseExpiryToSeconds(expiry: string | null): number {
   if (!expiry) return DEFAULT_EXPIRY_SECONDS;
-
   const trimmed = expiry.trim();
+
+  // Absolute end time (virtual-account `expiresAt`, etc.) — must run before `:` duration patterns.
+  if (
+    trimmed.includes("T") ||
+    /^[-+]?\d{4}-\d{2}-\d{2}/.test(trimmed) ||
+    /^[-+]?\d{4}\/\d{1,2}\/\d{1,2}/.test(trimmed)
+  ) {
+    const timestamp = new Date(trimmed).getTime();
+    if (!Number.isNaN(timestamp)) {
+      const remainingSec = Math.floor((timestamp - Date.now()) / 1000);
+      return Math.max(remainingSec, 0);
+    }
+  }
 
   const hmsMatch = /^(\d+):(\d{2}):(\d{2})$/.exec(trimmed);
   if (hmsMatch) {
@@ -60,6 +79,37 @@ export function formatPaymentExpiryCountdown(totalSeconds: number): string {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }
   return `${minutes}m`;
+}
+
+export const SOON_THRESHOLD_SECONDS = 60;
+
+/** Seconds until `expiresAt` (or fallback duration string). Clamped ≥ 0. */
+export function getVirtualAccountRemainingSeconds(
+  accountData: unknown,
+  fallbackExpiry: string | null | undefined
+): number {
+  const iso = getStringField(accountData, ["expiresAt", "expiryDate", "expiry"]);
+  if (iso) return Math.max(0, parseExpiryToSeconds(iso));
+  if (fallbackExpiry?.trim()) return Math.max(0, parseExpiryToSeconds(fallbackExpiry));
+  return 0;
+}
+
+/**
+ * Window is closed: server says so, or `expiresAt` is in the past vs wall clock.
+ * Do not treat `isExpired === false` as proof the window is still open.
+ */
+export function isVirtualAccountWindowExpired(accountData: unknown): boolean {
+  if (!accountData || typeof accountData !== "object") return false;
+  const d = accountData as Record<string, unknown>;
+  if (d.isExpired === true) return true;
+  const iso = getStringField(accountData, ["expiresAt", "expiryDate", "expiry"]);
+  if (!iso) return false;
+  return parseExpiryToSeconds(iso) === 0;
+}
+
+/** True when still active but ≤ {@link SOON_THRESHOLD_SECONDS}s left (requires ticking parent or same deps as countdown). */
+export function isVirtualAccountExpiringSoon(remainingSeconds: number, expired: boolean): boolean {
+  return !expired && remainingSeconds > 0 && remainingSeconds <= SOON_THRESHOLD_SECONDS;
 }
 
 export function getStringField(source: unknown, keys: string[]): string | null {

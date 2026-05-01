@@ -13,10 +13,10 @@ interface SectionBlockProps {
 export default function SectionBlock({ title, children }: SectionBlockProps) {
   return (
     <div className="flex flex-col gap-4 w-full">
-      <div className="flex items-center px-8">
+      <div className="flex items-center md:px-8 px-4">
         <h3 className={sectionTitleClass}>{title}</h3>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 px-8 *:min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 md:px-8 px-4 *:min-w-0">
         {children}
       </div>
     </div>

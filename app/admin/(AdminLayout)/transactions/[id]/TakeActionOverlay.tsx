@@ -112,6 +112,11 @@ export default function TakeActionOverlay({
   const [requestMoreInfoOpen, setRequestMoreInfoOpen] = useState(false);
   const [requestMoreInfoSuccessOpen, setRequestMoreInfoSuccessOpen] =
     useState(false);
+  const [transactionTakeActionOpen, setTransactionTakeActionOpen] =
+    useState(false);
+  const [transactionRejectOpen, setTransactionRejectOpen] = useState(false);
+  const [transactionRejectSuccessOpen, setTransactionRejectSuccessOpen] =
+    useState(false);
 
   // Ref attached to the open Popover dropdown so we can exclude it from outside-click detection
   const popoverDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -241,6 +246,22 @@ export default function TakeActionOverlay({
     }
   );
 
+  const transactionRejectMutation = useCreateData(
+    (variables: { transactionId: string; reason: string }) =>
+      adminApi.transactions.reject(variables.transactionId, {
+        reason: variables.reason,
+      }),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionDetail();
+        setTransactionRejectOpen(false);
+        setTransactionRejectSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to reject this transaction."),
+    }
+  );
+
   const openCompleteApprovalFlow = () => {
     if (!selectedDocumentId) return;
     setTakeActionPopoverKey(null);
@@ -314,6 +335,7 @@ export default function TakeActionOverlay({
   };
 
   const openRequestMoreInfo = () => {
+    setTransactionTakeActionOpen(false);
     setRequestMoreInfoOpen(true);
   };
 
@@ -329,6 +351,23 @@ export default function TakeActionOverlay({
     });
   };
 
+  const openTransactionRejectFlow = () => {
+    setTransactionTakeActionOpen(false);
+    setTransactionRejectOpen(true);
+  };
+
+  const closeTransactionRejectFlow = () => {
+    setTransactionRejectOpen(false);
+  };
+
+  const submitTransactionReject = (comment: string) => {
+    if (!transactionId) return;
+    transactionRejectMutation.mutate({
+      transactionId,
+      reason: comment,
+    });
+  };
+
   const navigateToTransactionsList = () => {
     router.push(adminRoutes.adminTransactions());
     setApprovalSuccessOpen(false);
@@ -336,6 +375,7 @@ export default function TakeActionOverlay({
     setRejectSuccessOpen(false);
     setTransactionCompleteReviewSuccessOpen(false);
     setRequestMoreInfoSuccessOpen(false);
+    setTransactionRejectSuccessOpen(false);
   };
 
   return (
@@ -702,16 +742,105 @@ export default function TakeActionOverlay({
                 >
                   Complete Review
                 </Button>
-                <Button
-                  variant="outline"
-                  radius="xl"
-                  size="lg"
-                  color="dark"
-                  className="font-medium! text-sm!"
-                  onClick={openRequestMoreInfo}
+                <Popover
+                  width={360}
+                  position="top-end"
+                  shadow="md"
+                  withinPortal
+                  zIndex={3200}
+                  closeOnClickOutside={true}
+                  closeOnEscape={true}
+                  opened={transactionTakeActionOpen}
+                  onClose={() => setTransactionTakeActionOpen(false)}
                 >
-                  Request More Info
-                </Button>
+                  <Popover.Target>
+                    <Button
+                      variant="outline"
+                      radius="xl"
+                      size="lg"
+                      color="dark"
+                      className="font-medium! text-sm!"
+                      rightSection={<ChevronDown size={16} />}
+                      onClick={() =>
+                        setTransactionTakeActionOpen((opened) => !opened)
+                      }
+                    >
+                      Take Action
+                    </Button>
+                  </Popover.Target>
+
+                  <Popover.Dropdown
+                    p={0}
+                    className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
+                  >
+                    <div className="px-5 py-4 border-b border-[#EAECF0]">
+                      <Text fw={700} className="text-body-heading-300">
+                        Take Action
+                      </Text>
+                      <Text size="sm" className="text-body-text-200! mt-0.5">
+                        Take action with ease
+                      </Text>
+                    </div>
+
+                    <div className="divide-y divide-[#EAECF0]">
+                      <button
+                        type="button"
+                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                        onClick={openRequestMoreInfo}
+                      >
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                          style={{
+                            borderRadius: "40% 60% 70% 30% / 60% 40% 60% 40%",
+                          }}
+                        >
+                          <Info
+                            className="h-5 w-5 text-[#DD4F05]"
+                            strokeWidth={2.5}
+                          />
+                        </span>
+                        <span className="min-w-0 pt-0.5">
+                          <Text fw={600} className="text-body-heading-300">
+                            Request Info
+                          </Text>
+                          <Text
+                            size="sm"
+                            className="text-body-text-200! mt-1 leading-relaxed"
+                          >
+                            Place action under review and request more
+                            information from Requestor.
+                          </Text>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                        onClick={openTransactionRejectFlow}
+                      >
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
+                          style={{
+                            borderRadius: "50% 50% 40% 60% / 40% 60% 40% 60%",
+                          }}
+                        >
+                          <X className="h-5 w-5 text-[#F04438]" strokeWidth={2.5} />
+                        </span>
+                        <span className="min-w-0 pt-0.5">
+                          <Text fw={600} className="text-body-heading-300">
+                            Reject Action
+                          </Text>
+                          <Text
+                            size="sm"
+                            className="text-body-text-200! mt-1 leading-relaxed"
+                          >
+                            Reject and provide feedback to the requestor.
+                          </Text>
+                        </span>
+                      </button>
+                    </div>
+                  </Popover.Dropdown>
+                </Popover>
               </Group>
             </div>
           )}
@@ -787,6 +916,17 @@ export default function TakeActionOverlay({
         isLoading={transactionRequestMoreInfoMutation.isPending}
       />
 
+      <ApprovalActionConfirmModal
+        opened={transactionRejectOpen}
+        onClose={closeTransactionRejectFlow}
+        title="Reject Request/Application?"
+        message="You are about to reject this application. Once confirmed, the request will be declined and no further processing will take place."
+        primaryButtonText="Yes, Reject Request/Application"
+        secondaryButtonText="No, Close"
+        onConfirm={submitTransactionReject}
+        isLoading={transactionRejectMutation.isPending}
+      />
+
       <SuccessModal
         opened={approvalSuccessOpen}
         onClose={() => setApprovalSuccessOpen(false)}
@@ -848,6 +988,21 @@ export default function TakeActionOverlay({
         secondaryButtonText="Close"
         onSecondaryClick={() => {
           setRequestMoreInfoSuccessOpen(false);
+          onClose();
+        }}
+        zIndex={4100}
+      />
+
+      <SuccessModal
+        opened={transactionRejectSuccessOpen}
+        onClose={() => setTransactionRejectSuccessOpen(false)}
+        title="Action Approval Rejected"
+        message="The application has been successfully rejected and marked as closed"
+        primaryButtonText="View More Action Approval"
+        onPrimaryClick={navigateToTransactionsList}
+        secondaryButtonText="Close"
+        onSecondaryClick={() => {
+          setTransactionRejectSuccessOpen(false);
           onClose();
         }}
         zIndex={4100}

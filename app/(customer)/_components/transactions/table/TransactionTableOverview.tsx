@@ -155,15 +155,24 @@ export default function  TransactionTableOverview({
       filterSheetTitle="Filter By"
       onExportClick={onExportClick}
       actionButton={
-        <Link href="/transactions/options">
+        <Link
+          href="/transactions/options"
+          className="block w-full min-w-0 sm:inline-block sm:w-auto"
+        >
           <Button
             variant="filled"
             size="sm"
             radius="xl"
-            rightSection={<HugeiconsIcon icon={Plus} className="w-3.5 h-3.5 hover:text-primary-300!" />}
-            className="bg-primary-400 hover:bg-primary-500"
+            className="w-full min-w-0 justify-center bg-primary-400 hover:bg-primary-500 sm:w-auto"
+            rightSection={
+              <HugeiconsIcon
+                icon={Plus}
+                className="h-3.5 w-3.5 shrink-0 hover:text-primary-300!"
+              />
+            }
           >
-            New Transaction
+            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">New Transaction</span>
           </Button>
         </Link>
       }

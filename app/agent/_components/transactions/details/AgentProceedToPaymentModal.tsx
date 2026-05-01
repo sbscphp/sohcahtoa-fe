@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Button, Modal, Textarea } from "@mantine/core";
-import { CircleAlert, Copy, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { CircleAlert, X } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
@@ -11,12 +12,15 @@ import { agentApi } from "@/app/agent/_services/agent-api";
 import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import {
-  formatPaymentExpiryCountdown,
   getInstructionsText,
   getStringField,
-  parseExpiryToSeconds,
+  getVirtualAccountRemainingSeconds,
 } from "@/app/(customer)/_utils/transaction-payment";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
+import { AgentDepositConfirmingModal } from "@/app/agent/_components/transactions/details/AgentDepositConfirmingModal";
+import { AgentVirtualAccountBankPaymentSection } from "@/app/agent/_components/transactions/details/AgentVirtualAccountBankPaymentSection";
+import { useAgentDepositConfirmationPoll } from "@/app/agent/_components/transactions/details/useAgentDepositConfirmationPoll";
+import { getVirtualAccountBankStepUiState } from "@/app/agent/_utils/virtualAccountBankStepUi";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 
 type PaymentMethod = "cash" | "bank_transfer";
@@ -33,16 +37,9 @@ interface AgentProceedToPaymentModalProps {
   onSubmitted?: () => void;
 }
 
-function CountdownText({ initialSeconds, running }: Readonly<{ initialSeconds: number; running: boolean }>) {
-  const [remaining, setRemaining] = useState(initialSeconds);
-  useEffect(() => {
-    if (!running || remaining <= 0) return;
-    const timer = globalThis.setInterval(() => {
-      setRemaining((prev) => Math.max(prev - 1, 0));
-    }, 1000);
-    return () => globalThis.clearInterval(timer);
-  }, [running, remaining]);
-  return <>{formatPaymentExpiryCountdown(remaining)}</>;
+/** `useFetchSingleData` is typed for `unknown[]`; query-key factories return readonly tuples. */
+function asQueryKey(key: readonly unknown[]): unknown[] {
+  return key as unknown[];
 }
 
 export default function AgentProceedToPaymentModal({
@@ -54,12 +51,20 @@ export default function AgentProceedToPaymentModal({
   initialMethod,
   onSubmitted,
 }: Readonly<AgentProceedToPaymentModalProps>) {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<ModalStep>("cash");
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("cash");
   const [notes, setNotes] = useState("");
   const [receiptFile, setReceiptFile] = useState<FileWithPath | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [generatingVa, setGeneratingVa] = useState(false);
+  const [vaError, setVaError] = useState<string | null>(null);
+  const [liveRemainingSec, setLiveRemainingSec] = useState(0);
+  const [confirmingBankPayment, setConfirmingBankPayment] = useState(false);
+  const bankPollStartedAtRef = useRef<number | null>(null);
+
+  const bankQueriesEnabled = opened && step === "bank" && !!transactionId;
 
   useEffect(() => {
     if (!opened) {
@@ -67,6 +72,11 @@ export default function AgentProceedToPaymentModal({
       setNotes("");
       setReceiptFile(null);
       setErrorMessage(null);
+      setGeneratingVa(false);
+      setVaError(null);
+      setLiveRemainingSec(0);
+      setConfirmingBankPayment(false);
+      bankPollStartedAtRef.current = null;
       return;
     }
     const method = initialMethod ?? "cash";
@@ -78,37 +88,98 @@ export default function AgentProceedToPaymentModal({
     setErrorMessage(null);
   }, [opened, initialMethod]);
 
-  useEffect(() => {
-    if (!opened || step !== "bank") return;
-    agentApi.transactions.createVirtualAccount(transactionId).catch(() => null);
-  }, [opened, step, transactionId]);
-
   const virtualAccountQuery = useFetchSingleData(
-    agentKeys.transactions.virtualAccount(transactionId) as unknown as unknown[],
+    asQueryKey(agentKeys.transactions.virtualAccount(transactionId)),
     () => agentApi.transactions.getVirtualAccount(transactionId),
-    opened && step === "bank" && !!transactionId
+    bankQueriesEnabled
   );
   const instructionsQuery = useFetchSingleData(
-    agentKeys.transactions.depositInstructions(transactionId) as unknown as unknown[],
+    asQueryKey(agentKeys.transactions.depositInstructions(transactionId)),
     () => agentApi.transactions.getDepositInstructions(transactionId),
-    opened && step === "bank" && !!transactionId
+    bankQueriesEnabled
   );
   const depositStatusQuery = useFetchSingleData(
-    agentKeys.transactions.depositStatus(transactionId) as unknown as unknown[],
+    asQueryKey(agentKeys.transactions.depositStatus(transactionId)),
     () => agentApi.transactions.getDepositStatus(transactionId),
-    opened && step === "bank" && !!transactionId
+    bankQueriesEnabled && !confirmingBankPayment
   );
 
   const accountData = virtualAccountQuery.data?.data;
-  const accountNumber = getStringField(accountData, ["accountNumber", "number", "account_no"]) ?? "—";
-  const bankName = getStringField(accountData, ["bankName", "bank"]) ?? "—";
-  const accountName = getStringField(accountData, ["accountName", "name"]) ?? "—";
-  const expiryFromStatus = getStringField(depositStatusQuery.data?.data, ["expiresAt", "expiryDate", "expiry"]);
-  const expiryFromAccount = getStringField(accountData, ["expiresAt", "expiryDate", "expiry"]);
-  const initialCountdownSeconds = useMemo(
-    () => parseExpiryToSeconds(expiryFromStatus ?? expiryFromAccount ?? "30:00"),
-    [expiryFromAccount, expiryFromStatus]
+  const expiryFromAccount = getStringField(accountData, [
+    "expiresAt",
+    "expiryDate",
+    "expiry",
+  ]);
+  const expiryFromStatus = getStringField(depositStatusQuery.data?.data, [
+    "expiresAt",
+    "expiryDate",
+    "expiry",
+  ]);
+  const fallbackExpiryForCountdown = expiryFromAccount ? null : (expiryFromStatus ?? "30:00");
+  const remainingSnapshot = useMemo(
+    () => getVirtualAccountRemainingSeconds(accountData, fallbackExpiryForCountdown),
+    [accountData, fallbackExpiryForCountdown]
   );
+
+  const bankUi = useMemo(
+    () =>
+      getVirtualAccountBankStepUiState({
+        isBankTransfer: selectedMethod === "bank_transfer",
+        va: {
+          isPending: virtualAccountQuery.isPending,
+          isError: virtualAccountQuery.isError,
+          error: virtualAccountQuery.error,
+          accountData,
+        },
+        liveRemainingSec,
+      }),
+    [
+      selectedMethod,
+      virtualAccountQuery.isPending,
+      virtualAccountQuery.isError,
+      virtualAccountQuery.error,
+      accountData,
+      liveRemainingSec,
+    ]
+  );
+
+  const handleBankDepositVerified = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: [...agentKeys.transactions.detail(transactionId)],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: [...agentKeys.transactions.depositStatus(transactionId)],
+    });
+    setConfirmingBankPayment(false);
+    onSubmitted?.();
+    onClose();
+  }, [queryClient, transactionId, onClose, onSubmitted]);
+
+  const { confirmTimedOut: bankConfirmTimedOut, setConfirmTimedOut: setBankConfirmTimedOut } =
+    useAgentDepositConfirmationPoll({
+      transactionId,
+      opened: opened && selectedMethod === "bank_transfer" && step === "bank",
+      confirmingPayment: confirmingBankPayment,
+      pollStartedAtRef: bankPollStartedAtRef,
+      fetchDepositStatus: (id) => agentApi.transactions.getDepositStatus(id),
+      onVerified: handleBankDepositVerified,
+    });
+
+  useEffect(() => {
+    if (!opened) setBankConfirmTimedOut(false);
+  }, [opened, setBankConfirmTimedOut]);
+
+  const bankLoadErrorMessage = useMemo(() => {
+    if (!bankUi.fatalLoadError) return null;
+    return getAgentApiErrorMessage(
+      virtualAccountQuery.error,
+      "Could not load virtual account."
+    );
+  }, [bankUi.fatalLoadError, virtualAccountQuery.error]);
+
+  const accountNumber = getStringField(accountData, ["accountNumber"]) ?? "—";
+  const bankName = getStringField(accountData, ["bankName"]) ?? "—";
+  const accountName = getStringField(accountData, ["accountName"]) ?? "—";
   const instructionsText =
     getInstructionsText(instructionsQuery.data?.data) ??
     "Once approved, 75% of your funds will be sent to customer bank account or prepaid card, while the remaining 25% will be available for cash pickup.";
@@ -122,6 +193,34 @@ export default function AgentProceedToPaymentModal({
   );
 
   const flagUrl = getCurrencyFlagUrl("NGN");
+
+  useEffect(() => {
+    if (!opened || step !== "bank" || selectedMethod !== "bank_transfer") return;
+    setLiveRemainingSec(remainingSnapshot);
+  }, [opened, step, selectedMethod, remainingSnapshot]);
+
+  const handleGenerateAccount = useCallback(async () => {
+    setVaError(null);
+    try {
+      setGeneratingVa(true);
+      await agentApi.transactions.createVirtualAccount(transactionId);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...agentKeys.transactions.virtualAccount(transactionId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...agentKeys.transactions.depositInstructions(transactionId)],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...agentKeys.transactions.depositStatus(transactionId)],
+        }),
+      ]);
+    } catch (e) {
+      setVaError(getAgentApiErrorMessage(e, "Could not generate a new account."));
+    } finally {
+      setGeneratingVa(false);
+    }
+  }, [queryClient, transactionId]);
 
   const submitReceipt = async () => {
     if (!receiptFile) {
@@ -144,117 +243,138 @@ export default function AgentProceedToPaymentModal({
       onSubmitted?.();
       setStep("success");
     } catch (error) {
-      setErrorMessage(
-        getAgentApiErrorMessage(error, "Could not submit payment receipt.")
-      );
+      setErrorMessage(getAgentApiErrorMessage(error, "Could not submit payment receipt."));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const dismissAgentPaymentFlow = useCallback(() => {
+    setConfirmingBankPayment(false);
+    setBankConfirmTimedOut(false);
+    bankPollStartedAtRef.current = null;
+    onClose();
+  }, [onClose, setBankConfirmTimedOut]);
+
   const commonHeader = (title: string, subtitle: string) => (
-    <div className="border-b border-[#E1E0E0] px-6 py-5">
+    <div className="border-b border-[#E1E0E0] px-4 py-4 sm:px-6 sm:py-5">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-[#323131] text-[30px] sm:text-[20px] font-bold leading-tight">{title}</h3>
-          <p className="text-[#6C6969] text-lg mt-1">{subtitle}</p>
+        <div className="min-w-0 flex-1 pr-1">
+          <h3 className="text-[#323131] text-xl font-bold leading-tight sm:text-2xl">{title}</h3>
+          <p className="text-[#6C6969] mt-1 text-sm leading-snug sm:text-base">{subtitle}</p>
         </div>
         <button
           type="button"
-          onClick={onClose}
-          className="text-[#8F8B8B] hover:text-[#4D4B4B]"
+          onClick={dismissAgentPaymentFlow}
+          className="shrink-0 text-[#8F8B8B] hover:text-[#4D4B4B]"
           aria-label="Close"
         >
-          <X className="w-7 h-7" />
+          <X className="h-6 w-6 sm:h-7 sm:w-7" />
         </button>
       </div>
     </div>
   );
 
+  const showInstructionsCallout = selectedMethod === "cash" || bankUi.activeVa;
+
   const cashOrBankBody = (
-    <div className="px-6 py-4 max-h-[55vh] overflow-y-auto space-y-5">
-      <div className="bg-[#F1F1F1] rounded-lg py-6 flex flex-col items-center gap-3">
-        <div className="flex items-center gap-2 text-[#6C6969] text-sm font-medium">
+    <div className="max-h-[55vh] space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6">
+      <div className="flex w-full max-w-full flex-col items-center gap-2 rounded-lg bg-[#F1F1F1] px-3 py-5 sm:gap-3 sm:py-6">
+        <div className="flex items-center gap-2 text-sm font-medium text-[#6C6969]">
           <span>{selectedMethod === "cash" ? "Collect" : "Send"}</span>
-          {flagUrl && <Image src={flagUrl} alt="NGN" width={24} height={24} />}
+          {flagUrl && <Image src={flagUrl} alt="NGN" width={24} height={24} className="shrink-0" />}
           <span>NGN</span>
         </div>
-        <div className="text-[#4D4B4B] text-5xl sm:text-4xl font-medium">{formattedAmount}</div>
+        <div className="w-full max-w-full px-1 text-center text-2xl font-medium leading-tight text-[#4D4B4B] tabular-nums break-all sm:text-3xl md:text-4xl">
+          {formattedAmount}
+        </div>
       </div>
-      {selectedMethod === "bank_transfer" && (
-        <>
-          <div className="divide-y divide-[#CCCACA] border-b border-[#CCCACA]">
-            <div className="flex items-center justify-between py-3">
-              <span className="text-[#8F8B8B]">Account Number</span>
-              <button
-                type="button"
-                onClick={() => navigator.clipboard.writeText(accountNumber).catch(() => null)}
-                className="inline-flex items-center gap-2 text-[#131212]"
-              >
-                {accountNumber}
-                <Copy className="w-4 h-4 text-[#8F8B8B]" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-[#8F8B8B]">Bank Name</span>
-              <span className="text-[#131212]">{bankName}</span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-[#8F8B8B]">Account Name</span>
-              <span className="text-[#131212]">{accountName}</span>
-            </div>
-          </div>
-          <div className="text-center text-[#8F8B8B]">
-            Account expires in{" "}
-            <span className="text-[#323131] text-2xl font-bold">
-              <CountdownText
-                key={`${opened}-${expiryFromStatus ?? expiryFromAccount ?? "30:00"}`}
-                initialSeconds={initialCountdownSeconds}
-                running={opened}
-              />
-            </span>
-          </div>
-        </>
-      )}
-      <div className="rounded-lg border border-[#B2AFAF] p-3 flex gap-2">
-        <CircleAlert className="w-5 h-5 text-[#DD4F05] mt-0.5 shrink-0" />
-        <p className="text-[#6C6969] text-base">{instructionsText}</p>
-      </div>
+
+      {selectedMethod === "bank_transfer" ? (
+        <AgentVirtualAccountBankPaymentSection
+          ui={bankUi}
+          accountNumber={accountNumber}
+          bankName={bankName}
+          accountName={accountName}
+          expiryFromAccount={expiryFromAccount}
+          fallbackExpiryForCountdown={fallbackExpiryForCountdown}
+          countdownActive={
+            opened && step === "bank" && bankUi.activeVa && !confirmingBankPayment
+          }
+          vaError={vaError}
+          loadErrorMessage={bankLoadErrorMessage}
+          onRemainingSecChange={setLiveRemainingSec}
+          onSoonBannerGenerate={() => {
+            void handleGenerateAccount();
+          }}
+          soonBannerGenerateLoading={generatingVa}
+        />
+      ) : null}
+
+      {showInstructionsCallout ? (
+        <div className="flex gap-2 rounded-lg border border-[#B2AFAF] p-3">
+          <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#DD4F05]" />
+          <p className="min-w-0 text-sm leading-snug text-[#6C6969] sm:text-base">{instructionsText}</p>
+        </div>
+      ) : null}
     </div>
   );
 
+  const showBankFooterPrimary = selectedMethod === "cash" || !bankUi.fatalLoadError;
+
+  let footerPrimaryLabel = "I have sent the money";
+  if (selectedMethod === "cash") {
+    footerPrimaryLabel = "I have collected the money";
+  } else if (bankUi.renewalUx) {
+    footerPrimaryLabel = "Generate account";
+  }
+
   const cashOrBankFooter = (
-    <div className="px-6 py-5 border-t border-[#F2F4F7] flex flex-col sm:flex-row gap-4">
+    <div className="flex flex-col gap-4 border-t border-[#F2F4F7] px-4 py-4 sm:flex-row sm:px-6 sm:py-5">
       <Button
         variant="outline"
         radius="xl"
         fullWidth
         className="border-[#CCCACA] text-[#4D4B4B] h-12!"
-        onClick={onClose}
+        onClick={dismissAgentPaymentFlow}
       >
         Cancel
       </Button>
-      <Button
-        radius="xl"
-        fullWidth
-        className="bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] h-12!"
-        onClick={() => {
-          if (selectedMethod === "cash") {
-            setStep("receipt");
-            return;
+      {showBankFooterPrimary ? (
+        <Button
+          radius="xl"
+          fullWidth
+          className="bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] h-12!"
+          loading={selectedMethod === "bank_transfer" && bankUi.renewalUx && generatingVa}
+          disabled={
+            selectedMethod === "bank_transfer" &&
+            (confirmingBankPayment ||
+              (bankUi.renewalUx ? generatingVa : !bankUi.activeVa))
           }
-          onClose();
-        }}
-      >
-        {selectedMethod === "cash" ? "I have collected the money" : "I have sent the money"}
-      </Button>
+          onClick={() => {
+            if (selectedMethod === "cash") {
+              setStep("receipt");
+              return;
+            }
+            if (bankUi.renewalUx) {
+              void handleGenerateAccount();
+              return;
+            }
+            setBankConfirmTimedOut(false);
+            bankPollStartedAtRef.current = null;
+            setConfirmingBankPayment(true);
+          }}
+        >
+          {footerPrimaryLabel}
+        </Button>
+      ) : null}
     </div>
   );
 
   const receiptModal = (
-    <div>
+    <div className="min-w-0 max-w-full overflow-x-hidden">
       {commonHeader("Transaction Receipt", "Please upload evidence of cash payment")}
-      <div className="px-6 py-5 space-y-5">
+      <div className="space-y-5 px-4 py-5 sm:px-6">
         <p className="text-sm text-[#6C6969]">
           Reference: <span className="font-medium text-[#323131]">{referenceNumber}</span>
         </p>
@@ -280,13 +400,13 @@ export default function AgentProceedToPaymentModal({
         </div>
         {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
       </div>
-      <div className="px-6 pb-6 pt-2 flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-4 px-4 pb-6 pt-2 sm:flex-row sm:px-6">
         <Button
           variant="outline"
           radius="xl"
           fullWidth
           className="border-[#E88A58] text-[#DD4F05] h-12!"
-          onClick={onClose}
+          onClick={dismissAgentPaymentFlow}
         >
           Cancel
         </Button>
@@ -304,38 +424,46 @@ export default function AgentProceedToPaymentModal({
   );
 
   const handlePaymentSuccessClose = () => {
-    onClose();
+    dismissAgentPaymentFlow();
   };
 
-  const content = (() => {
-    if (step === "receipt") return receiptModal;
-    return (
-      <div>
-        {commonHeader(
-          step === "cash" ? "Collect Cash" : "Pay To",
-          step === "cash"
-            ? "Collect cash equivalent from customer and confirm once payment is made"
-            : "Pay to the account below and confirm once payment is made"
-        )}
-        {cashOrBankBody}
-        {cashOrBankFooter}
-      </div>
-    );
-  })();
+  const mainCashOrBankModal = (
+    <div className="min-w-0 max-w-full overflow-x-hidden">
+      {commonHeader(
+        step === "cash" ? "Collect Cash" : "Pay To",
+        step === "cash"
+          ? "Collect cash equivalent from customer and confirm once payment is made"
+          : "Pay to the account below and confirm once payment is made"
+      )}
+      {cashOrBankBody}
+      {cashOrBankFooter}
+    </div>
+  );
+
+  const mainAgentModalOpened =
+    opened &&
+    step !== "success" &&
+    !(selectedMethod === "bank_transfer" && confirmingBankPayment);
 
   return (
     <>
       <Modal
-        opened={opened && step !== "success"}
-        onClose={onClose}
+        opened={mainAgentModalOpened}
+        onClose={dismissAgentPaymentFlow}
         centered
         withCloseButton={false}
         size="lg"
         radius={24}
         classNames={{ body: "p-0" }}
-        styles={{ content: { width: "min(780px, calc(100vw - 24px))" } }}
+        styles={{
+          content: {
+            width: "min(780px, calc(100vw - 16px))",
+            maxWidth: "100%",
+            boxSizing: "border-box",
+          },
+        }}
       >
-        {content}
+        {step === "receipt" ? receiptModal : mainCashOrBankModal}
       </Modal>
       <SuccessModal
         opened={opened && step === "success"}
@@ -347,7 +475,11 @@ export default function AgentProceedToPaymentModal({
         secondaryButtonText="No, Close"
         onSecondaryClick={handlePaymentSuccessClose}
       />
+      <AgentDepositConfirmingModal
+        opened={opened && selectedMethod === "bank_transfer" && confirmingBankPayment}
+        confirmTimedOut={bankConfirmTimedOut}
+        onClose={dismissAgentPaymentFlow}
+      />
     </>
   );
 }
-

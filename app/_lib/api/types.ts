@@ -1123,6 +1123,10 @@ export interface TransactionVirtualAccountData {
   bankName?: string;
   accountName?: string;
   expiresAt?: string;
+  createdAt?: string;
+  isExpired?: boolean;
+  message?: string;
+  deposits?: unknown[];
   amount?: string | number | null;
   [key: string]: unknown;
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stack, Text, TextInput, Select, Textarea, Radio, Group } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Check } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -13,70 +14,19 @@ import WorkflowActionModal from "../_workflowComponents/WorkflowActionModal";
 import EscalationProtocolModal from "../_workflowComponents/EscalationProtocolModal";
 import AssignToModal, { AssignableUser, AssignableRole } from "../_workflowComponents/AssignToModal";
 import WorkflowLineItem, { WorkflowLine } from "../_workflowComponents/WorkflowLineItem";
-
-// Mock Data
-const BRANCHES = [
-  { value: "lagos-1", label: "Lagos State Branch (2)" },
-  { value: "abuja-1", label: "Abuja Branch" },
-  { value: "kano-1", label: "Kano Branch" },
-];
-
-const DEPARTMENTS = [
-  { value: "finance", label: "Finance & Accounting" },
-  { value: "it", label: "IT Support" },
-  { value: "hr", label: "Human Resources" },
-  { value: "audit", label: "Audit and Internal Control" },
-];
-
-const MOCK_USERS: AssignableUser[] = [
-  {
-    id: "u1",
-    name: "Adekunle, Ibrahim",
-    email: "kibrahim@sohcahtoa.com",
-    roles: ["Internal Control", "Head of Audit"],
-  },
-  {
-    id: "u2",
-    name: "Benson, Clara",
-    email: "cbenson@sohcahtoa.com",
-    roles: ["Finance", "Chief Financial Officer"],
-  },
-  {
-    id: "u3",
-    name: "Chukwu, David",
-    email: "dchukwu@sohcahtoa.com",
-    roles: ["IT Support", "IT Manager"],
-  },
-  {
-    id: "u4",
-    name: "Khan, Malik",
-    email: "mkhan@sohcahtoa.com",
-    roles: ["Internal Control"],
-  },
-  {
-    id: "u5",
-    name: "Jide Jadsola",
-    email: "jjadsola@sohcahtoa.com",
-    roles: ["Head of Audit"],
-  },
-  {
-    id: "u6",
-    name: "Kunle Alao",
-    email: "kalao@sohcahtoa.com",
-    roles: ["Finance"],
-  },
-];
-
-const MOCK_ROLES: AssignableRole[] = [
-  { id: "r1", name: "Audit and Internal Control", userCount: 12 },
-  { id: "r2", name: "Human Resources", userCount: 8 },
-  { id: "r3", name: "Development Team", userCount: 15 },
-  { id: "r4", name: "Marketing Department", userCount: 10 },
-];
+import { useWorkflowEditOptions } from "../hooks/useWorkflowEditOptions";
 
 export default function CreateWorkflowPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
+  const {
+    branchOptions,
+    departmentOptions,
+    users: assignableUsers,
+    roles: assignableRoles,
+    escalationUsers,
+    isLoading: optionsLoading,
+  } = useWorkflowEditOptions();
 
   // Form Management with Mantine useForm
   const form = useForm({
@@ -118,6 +68,7 @@ export default function CreateWorkflowPage() {
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
+  const [assignModalSession, setAssignModalSession] = useState(0);
   const [isDraftConfirmOpen, setIsDraftConfirmOpen] = useState(false);
   const [isPublishConfirmOpen, setIsPublishConfirmOpen] = useState(false);
   const [isDraftSuccessOpen, setIsDraftSuccessOpen] = useState(false);
@@ -129,6 +80,10 @@ export default function CreateWorkflowPage() {
   };
 
   const handleNext = () => {
+    const basicValidation = form.validate();
+    if (basicValidation.hasErrors) {
+      return;
+    }
     setStep(2);
   };
 
@@ -154,31 +109,23 @@ export default function CreateWorkflowPage() {
     form.setFieldValue("workflowLines", updatedLines);
   };
 
-  const handleAssignUsers = (users: AssignableUser[]) => {
-    if (!activeLineId) return;
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === activeLineId
-        ? {
-            ...line,
-            selectedUsers: [...line.selectedUsers, ...users.filter(u => !line.selectedUsers.find(su => su.id === u.id))],
-          }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  const activeLineIdRef = useRef(activeLineId);
+  activeLineIdRef.current = activeLineId;
 
-  const handleAssignRoles = (roles: AssignableRole[]) => {
-    if (!activeLineId) return;
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === activeLineId
-        ? {
-            ...line,
-            selectedRoles: [...line.selectedRoles, ...roles.filter(r => !line.selectedRoles.find(sr => sr.id === r.id))],
-          }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  const handleAssignConfirm = useCallback(
+    (users: AssignableUser[], roles: AssignableRole[]) => {
+      const lineId = activeLineIdRef.current;
+      if (!lineId) return;
+      form.setFieldValue(
+        "workflowLines",
+        form.values.workflowLines.map((line) =>
+          line.id === lineId ? { ...line, selectedUsers: users, selectedRoles: roles } : line
+        )
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values.workflowLines]
+  );
 
   const handleUpdateWorkflowType = (id: string, type: string) => {
     const updatedLines = form.values.workflowLines.map((line) =>
@@ -253,6 +200,15 @@ export default function CreateWorkflowPage() {
   };
 
   const handleSaveAsDraft = async () => {
+    const lineValidationError = validateStepTwo();
+    if (lineValidationError) {
+      notifications.show({
+        title: "Validation Error",
+        message: lineValidationError,
+        color: "red",
+      });
+      return;
+    }
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
     setIsSaving(false);
@@ -261,6 +217,15 @@ export default function CreateWorkflowPage() {
   };
 
   const handlePublish = async () => {
+    const lineValidationError = validateStepTwo();
+    if (lineValidationError) {
+      notifications.show({
+        title: "Validation Error",
+        message: lineValidationError,
+        color: "red",
+      });
+      return;
+    }
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
     setIsSaving(false);
@@ -271,6 +236,58 @@ export default function CreateWorkflowPage() {
   const handleManageWorkflow = () => {
     router.push(adminRoutes.adminWorkflow());
   };
+
+  const branchLabelOptions = useMemo(() => branchOptions, [branchOptions]);
+  const departmentLabelOptions = useMemo(() => departmentOptions, [departmentOptions]);
+
+  const assignModalInitialUserIds = useMemo(
+    () =>
+      form.values.workflowLines
+        .find((l) => l.id === activeLineId)
+        ?.selectedUsers.map((u) => u.id) ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [assignModalSession]
+  );
+
+  const assignModalInitialRoleIds = useMemo(
+    () =>
+      form.values.workflowLines
+        .find((l) => l.id === activeLineId)
+        ?.selectedRoles.map((r) => r.id) ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [assignModalSession]
+  );
+
+  const validateStepTwo = () => {
+    if (!form.values.workflowLines.length) {
+      return "At least one workflow line is required.";
+    }
+
+    for (const [index, line] of form.values.workflowLines.entries()) {
+      const lineNumber = index + 1;
+      if (!line.workflowType.trim()) {
+        return `Workflow type is required for line ${lineNumber}.`;
+      }
+      if (!Number.isFinite(line.escalationPeriod) || line.escalationPeriod <= 0) {
+        return `Escalation protocol is required for line ${lineNumber}.`;
+      }
+      if (!line.selectedUsers.length && !line.selectedRoles.length) {
+        return `Please assign at least one user or role for line ${lineNumber}.`;
+      }
+    }
+
+    return null;
+  };
+
+  if (optionsLoading) {
+    return (
+      <div className="max-w-4xl mx-auto rounded-2xl bg-white p-8 shadow-sm">
+        <Text size="lg" fw={600}>
+          Loading workflow options...
+        </Text>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -374,7 +391,7 @@ export default function CreateWorkflowPage() {
               <Select
                 label="Branch Applicable"
                 placeholder="Select an Option"
-                data={BRANCHES}
+                data={branchLabelOptions}
                 {...form.getInputProps("branchApplicable")}
                 required
                 searchable
@@ -388,7 +405,7 @@ export default function CreateWorkflowPage() {
                 <Select
                   label="Department Applicable"
                   placeholder="Select an Option"
-                  data={DEPARTMENTS}
+                  data={departmentLabelOptions}
                   {...form.getInputProps("departmentApplicable")}
                   required
                   searchable
@@ -488,6 +505,7 @@ export default function CreateWorkflowPage() {
                   }}
                   onOpenAssignModal={(id) => {
                     setActiveLineId(id);
+                    setAssignModalSession((s) => s + 1);
                     setIsAssignModalOpen(true);
                   }}
                   onToggleExpanded={handleToggleExpanded}
@@ -552,16 +570,18 @@ export default function CreateWorkflowPage() {
         opened={isEscalationModalOpen}
         onClose={() => setIsEscalationModalOpen(false)}
         onSave={handleEscalationSave}
-        users={MOCK_USERS.map((u) => ({ id: u.id, name: u.name }))}
+        users={escalationUsers}
       />
 
       <AssignToModal
+        key={assignModalSession}
         opened={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
-        onSelectUsers={handleAssignUsers}
-        onSelectRoles={handleAssignRoles}
-        users={MOCK_USERS}
-        roles={MOCK_ROLES}
+        onConfirm={handleAssignConfirm}
+        users={assignableUsers}
+        roles={assignableRoles}
+        initialSelectedUserIds={assignModalInitialUserIds}
+        initialSelectedRoleIds={assignModalInitialRoleIds}
       />
 
       <ConfirmationModal
@@ -580,7 +600,7 @@ export default function CreateWorkflowPage() {
         onClose={() => setIsPublishConfirmOpen(false)}
         title="Create New Workflow ?"
         message="Are you sure you to create a new workflow ? Kindly note that this new workflow creation would override existing data provided it has the same workflow action"
-        primaryButtonText="Yes, Save as Draft"
+        primaryButtonText="Yes, Create Workflow"
         secondaryButtonText="No, Close"
         onPrimary={handlePublish}
         loading={isSaving}

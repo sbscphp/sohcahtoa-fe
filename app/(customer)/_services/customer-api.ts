@@ -215,6 +215,12 @@ export const customerApi = {
         API_ENDPOINTS.transactions.virtualAccount(transactionId)
       ),
 
+    createVirtualAccount: (transactionId: string) =>
+      apiClient.post<TransactionVirtualAccountResponse>(
+        API_ENDPOINTS.transactions.virtualAccount(transactionId),
+        {}
+      ),
+
     getDepositInstructions: (transactionId: string) =>
       apiClient.get<TransactionDepositInstructionsResponse>(
         API_ENDPOINTS.transactions.depositInstructions(transactionId)

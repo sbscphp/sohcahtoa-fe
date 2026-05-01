@@ -18,6 +18,7 @@ export const TRANSACTION_STATUS_LABELS = {
   COMPLETED: "Completed",
   REJECTED: "Rejected",
   CANCELLED: "Cancelled",
+  AWAITING_DISBURSEMENT: "Awaiting disbursement",
 } as const;
 
 export type TransactionStatus = keyof typeof TRANSACTION_STATUS_LABELS;
