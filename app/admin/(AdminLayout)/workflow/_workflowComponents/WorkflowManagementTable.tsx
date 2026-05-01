@@ -4,116 +4,15 @@ import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { Group, TextInput, Select, Button, Text } from "@mantine/core";
-import { ListFilter, Search, Upload } from "lucide-react";
+import { Group, TextInput, Select, Text } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
+import { ListFilter, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
-
-type WorkflowStatus = "Active" | "Deactivated";
-type WorkflowType = "Rigid Linear" | "Flexible Workflow";
-
-export interface WorkflowRow {
-  id: string;
-  name: string;
-  workflowType: WorkflowType;
-  workflowAction: string;
-  status: WorkflowStatus;
-  dateCreated: string;
-  timeCreated: string;
-}
-
-export const WORKFLOW_DATA: WorkflowRow[] = [
-  {
-    id: "8933",
-    name: "Internal Control",
-    workflowType: "Rigid Linear",
-    workflowAction: "Transaction Management",
-    status: "Active",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8935",
-    name: "BTA Transaction",
-    workflowType: "Flexible Workflow",
-    workflowAction: "Transaction Management",
-    status: "Deactivated",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8936",
-    name: "PTA Transaction",
-    workflowType: "Rigid Linear",
-    workflowAction: "Transaction Management",
-    status: "Active",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8934",
-    name: "Escrow Settlement",
-    workflowType: "Flexible Workflow",
-    workflowAction: "Settlement Management",
-    status: "Deactivated",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8937",
-    name: "General Transaction",
-    workflowType: "Rigid Linear",
-    workflowAction: "Transaction Management",
-    status: "Active",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8933",
-    name: "Reporting system",
-    workflowType: "Flexible Workflow",
-    workflowAction: "Reporting",
-    status: "Deactivated",
-    dateCreated: "September 12, 2025",
-    timeCreated: "11:00 am",
-  },
-  {
-    id: "8938",
-    name: "User Onboarding",
-    workflowType: "Rigid Linear",
-    workflowAction: "User Management",
-    status: "Active",
-    dateCreated: "September 10, 2025",
-    timeCreated: "09:30 am",
-  },
-  {
-    id: "8939",
-    name: "KYC Verification",
-    workflowType: "Flexible Workflow",
-    workflowAction: "Compliance",
-    status: "Active",
-    dateCreated: "September 08, 2025",
-    timeCreated: "02:00 pm",
-  },
-  {
-    id: "8940",
-    name: "Outlet Approval",
-    workflowType: "Rigid Linear",
-    workflowAction: "Outlet Management",
-    status: "Active",
-    dateCreated: "September 05, 2025",
-    timeCreated: "10:00 am",
-  },
-  {
-    id: "8941",
-    name: "Refund Processing",
-    workflowType: "Flexible Workflow",
-    workflowAction: "Transaction Management",
-    status: "Active",
-    dateCreated: "September 01, 2025",
-    timeCreated: "11:30 am",
-  },
-];
+import {
+  useWorkflowManagementList,
+  type WorkflowManagementTableRow,
+} from "../hooks/useWorkflowManagementList";
 
 const workflowHeaders = [
   { label: "Workflow name", key: "name" },
@@ -130,34 +29,32 @@ export default function WorkflowManagementTable() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Filter By");
   const pageSize = 6;
+  const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const filteredData = useMemo(() => {
-    return WORKFLOW_DATA.filter((w) => {
-      const matchesSearch =
-        w.id.toLowerCase().includes(search.toLowerCase()) ||
-        w.name.toLowerCase().includes(search.toLowerCase()) ||
-        w.workflowType.toLowerCase().includes(search.toLowerCase()) ||
-        w.workflowAction.toLowerCase().includes(search.toLowerCase());
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: pageSize,
+      search: debouncedSearch.trim() || undefined,
+      status:
+        filter === "Filter By" || filter === "All"
+          ? ""
+          : (filter as "" | "Active" | "Deactivated" | "Draft"),
+    }),
+    [debouncedSearch, filter, page]
+  );
 
-      const matchesFilter = filter === "Filter By" || filter === "All" || w.status === filter;
+  const { rows, isLoading, isFetching, isError, totalPages } =
+    useWorkflowManagementList(queryParams);
+  const safeTotalPages = Math.max(1, totalPages);
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [page, filteredData]);
-
-  const renderRow = (item: WorkflowRow) => [
+  const renderRow = (item: WorkflowManagementTableRow) => [
     <div key="name">
       <Text fw={500} size="sm">
         {item.name}
       </Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id}
+        ID:{item.displayId}
       </Text>
     </div>,
     <Text key="workflowType" size="sm">
@@ -203,14 +100,14 @@ export default function WorkflowManagementTable() {
               setFilter(value!);
               setPage(1);
             }}
-            data={["Filter By", "All", "Active", "Deactivated"]}
+            data={["Filter By", "All", "Active", "Deactivated", "Draft"]}
             radius="xl"
             w={120}
             rightSection={<ListFilter size={16} />}
           />
-          <Button variant="outline" color="#E36C2F" radius="xl" rightSection={<Upload size={16} />}>
+          {/* <Button variant="outline" color="#E36C2F" radius="xl" rightSection={<Upload size={16} />}>
             Export
-          </Button>
+          </Button> */}
           {/* <Button
             variant="filled"
             color="#DD4F05"
@@ -225,19 +122,24 @@ export default function WorkflowManagementTable() {
 
       <DynamicTableSection
         headers={workflowHeaders}
-        data={paginatedData}
-        loading={false}
+        data={rows}
+        loading={isLoading || isFetching}
         renderItems={renderRow}
         emptyTitle="No Workflows Found"
         emptyMessage="There are currently no workflows to display."
         pagination={{
           page,
-          totalPages,
-          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          totalPages: safeTotalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
           onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
           onPageChange: setPage,
         }}
       />
+      {isError ? (
+        <Text c="red" size="sm" mt="sm">
+          Unable to load workflows right now. Please try again.
+        </Text>
+      ) : null}
     </div>
   );
 }

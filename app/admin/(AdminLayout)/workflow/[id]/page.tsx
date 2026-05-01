@@ -8,78 +8,15 @@ import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import WorkflowLineView, { ViewWorkflowLine } from "../_workflowComponents/WorkflowLineView";
-
-type WorkflowStatus = "Active" | "Deactivated";
-
-interface WorkflowDetail {
-  id: string;
-  name: string;
-  dateCreated: string;
-  timeCreated: string;
-  status: WorkflowStatus;
-  workflowAction: string;
-  description: string;
-  branch: string;
-  department: string;
-  workflowType: string;
-  personnelProcesses: ViewWorkflowLine[];
-}
-
-const MOCK_WORKFLOW: WorkflowDetail = {
-  id: "8933",
-  name: "Internal Control and Transaction (PTA) Approval",
-  dateCreated: "Nov 17 2025",
-  timeCreated: "11:00am",
-  status: "Active",
-  workflowAction: "PTA Settlement",
-  description: "A workflow targeted at approving...",
-  branch: "Lagos Branch",
-  department: "Audit and Internal Control",
-  workflowType: "Rigid Linear",
-  personnelProcesses: [
-    {
-      id: "pl-1",
-      workflowType: "Review",
-      escalationPeriod: 20,
-      escalateToName: "Kunle Alao",
-      users: [
-        { id: "u1", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-        { id: "u2", name: "Benson, Clara", email: "cbenson@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-        { id: "u3", name: "Chukwu, David", email: "dchukwu@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-      ],
-    },
-    {
-      id: "pl-2",
-      workflowType: "Review",
-      escalationPeriod: 20,
-      escalateToName: "Kunle Alao",
-      users: [
-        { id: "u1", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-        { id: "u2", name: "Benson, Clara", email: "cbenson@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-        { id: "u3", name: "Chukwu, David", email: "dchukwu@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-      ],
-    },
-    {
-      id: "pl-3",
-      workflowType: "Approval",
-      escalationPeriod: 20,
-      escalateToName: "Kunle Alao",
-      users: [
-        { id: "u1", name: "Adekunle, Ibrahim", email: "kibrahim@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-        { id: "u2", name: "Benson, Clara", email: "cbenson@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-        { id: "u3", name: "Chukwu, David", email: "dchukwu@sohcahtoa.com", roles: ["Internal Control", "Head of Audit"] },
-      ],
-    },
-  ],
-};
+import WorkflowLineView from "../_workflowComponents/WorkflowLineView";
+import { useWorkflowTemplateDetails } from "../hooks/useWorkflowTemplateDetails";
 
 export default function WorkflowDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id ?? "";
-
-  const [status, setStatus] = useState<WorkflowStatus>(MOCK_WORKFLOW.status);
+  const { template, isLoading, isError } = useWorkflowTemplateDetails(id);
+  const [status, setStatus] = useState<"Active" | "Deactivated" | "Draft">("Active");
   const [loading, setLoading] = useState(false);
 
   // Modal states
@@ -90,8 +27,8 @@ export default function WorkflowDetailPage() {
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
 
-  const isActive = status === "Active";
-  const workflow = MOCK_WORKFLOW;
+  const workflow = template;
+  const effectiveStatus = status === "Active" && workflow?.status ? workflow.status : status;
 
   const handleDelete = async () => {
     setLoading(true);
@@ -123,6 +60,32 @@ export default function WorkflowDetailPage() {
     router.push(adminRoutes.adminWorkflow());
   };
 
+  if (isLoading) {
+    return (
+      <div className="w-full mx-auto space-y-6 rounded-2xl bg-white p-8 shadow-sm">
+        <Text size="lg" fw={600} className="text-gray-900">
+          Loading workflow details...
+        </Text>
+      </div>
+    );
+  }
+
+  if (isError || !workflow) {
+    return (
+      <div className="w-full mx-auto space-y-6 rounded-2xl bg-white p-8 shadow-sm">
+        <Text size="lg" fw={600} className="text-gray-900">
+          Unable to load workflow details
+        </Text>
+        <Text size="sm" c="dimmed">
+          Please refresh the page or return to workflow management.
+        </Text>
+        <Button radius="xl" size="md" color="#DD4F05" onClick={handleManageWorkflow}>
+          Back to Workflows
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full mx-auto space-y-6">
       {/* Main Card */}
@@ -136,7 +99,7 @@ export default function WorkflowDetailPage() {
               </Text>
               <Group gap={8} className="flex-wrap text-sm text-gray-600">
                 <span>Date Created: {workflow.dateCreated} | {workflow.timeCreated}</span>
-                <StatusBadge status={status} />
+                <StatusBadge status={effectiveStatus} />
               </Group>
             </div>
 
@@ -153,18 +116,20 @@ export default function WorkflowDetailPage() {
                 <Menu.Divider />
                 <Menu.Item
                   onClick={() =>
-                    isActive ? setDeactivateConfirmOpen(true) : setReactivateConfirmOpen(true)
+                    effectiveStatus === "Active"
+                      ? setDeactivateConfirmOpen(true)
+                      : setReactivateConfirmOpen(true)
                   }
                 >
-                  {isActive ? "Deactivate" : "Reactivate"}
+                  {effectiveStatus === "Active" ? "Deactivate" : "Reactivate"}
                 </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
+                {/* <Menu.Divider /> */}
+                {/* <Menu.Item
                   onClick={() => setDeleteConfirmOpen(true)}
                   className="text-red-500!"
                 >
                   Delete
-                </Menu.Item>
+                </Menu.Item> */}
               </Menu.Dropdown>
             </Menu>
           </div>
@@ -182,7 +147,10 @@ export default function WorkflowDetailPage() {
               <DetailItem label="Branch" value={workflow.branch} />
               <DetailItem label="Department" value={workflow.department} />
               <DetailItem label="Workflow Type" value={workflow.workflowType} />
-              <DetailItem label="Personnel Processes" value={String(workflow.personnelProcesses.length)} />
+              <DetailItem
+                label="Personnel Processes"
+                value={String(workflow.personnelProcesses.length)}
+              />
             </div>
           </section>
 
@@ -199,7 +167,6 @@ export default function WorkflowDetailPage() {
                   key={line.id}
                   line={line}
                   index={index}
-                  totalLines={workflow.personnelProcesses.length}
                 />
               ))}
             </div>

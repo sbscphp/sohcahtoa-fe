@@ -264,6 +264,11 @@ export const API_ENDPOINTS = {
         details: (transactionId: string) =>
           `/api/admin/regulatory/trms/details/${transactionId}`,
       },
+      cbnFn: {
+        stats: "/api/admin/regulatory/cbn-fn/stats",
+        reports: "/api/admin/regulatory/cbn-fn/reports",
+        reportById: (id: string) => `/api/admin/regulatory/cbn-fn/reports/${id}`,
+      },
     },
     management: {
       lookups: "/api/admin/management/lookups",
