@@ -78,12 +78,12 @@ export default function PaginatedTable<T>({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto border-[1.5px] border-gray-100 rounded-xl">
+      <div className="min-w-0 overflow-x-auto rounded-xl border-[1.5px] border-gray-100">
         <Table
           verticalSpacing={0}
           horizontalSpacing={0}
           highlightOnHover={false}
-          className="w-full"
+          className="w-full min-w-[680px] table-auto"
           style={{ borderCollapse: "separate", borderSpacing: 0 }}
           withTableBorder={false}
           withColumnBorders={false}
@@ -93,7 +93,7 @@ export default function PaginatedTable<T>({
               {columns.map((column) => (
                 <Table.Th
                   key={column.key}
-                  className={`py-3! px-6! h-11! border-0! ${column.headerClassName || ""}`}
+                  className={`h-11! border-0! py-3! pl-3! pr-3! sm:pl-6! sm:pr-6! ${column.headerClassName || ""}`}
                   style={{
                     fontWeight: 600,
                     fontSize: "14px",
@@ -114,7 +114,7 @@ export default function PaginatedTable<T>({
                   {columns.map((column) => (
                     <Table.Td
                       key={`${column.key}-${rowIndex}`}
-                      className="py-4 px-6! h-18! border-0!"
+                      className="h-18! border-0! py-4 pl-3! pr-3! sm:pl-6! sm:pr-6!"
                       style={{ textAlign: column.align ?? "left" }}
                     >
                       <Skeleton height={20} radius="sm" />
@@ -143,7 +143,7 @@ export default function PaginatedTable<T>({
                   {columns.map((column) => (
                     <Table.Td
                       key={column.key}
-                      className={`py-4 px-6! h-18! border-0! ${column.className || ""}`}
+                      className={`h-18! border-0! py-4 pl-3! pr-3! sm:pl-6! sm:pr-6! ${column.className || ""}`}
                       style={{
                         fontWeight: 500,
                         fontSize: "14px",

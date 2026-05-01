@@ -131,7 +131,7 @@ export default function TransactionDetailPage() {
         className="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
       >
       {/* Header */}
-      <div className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-[#F2F4F7] px-8 pt-8 pb-6">
+      <div className="flex md:flex-row flex-col items-start justify-between gap-4 border-b border-[#F2F4F7] md:px-8 px-4 pt-8 pb-6">
         <div className="flex flex-col gap-3 flex-1 min-w-0">
           <h1
             className="font-medium text-2xl leading-8 text-[#131212] tracking-[-0.032px]"

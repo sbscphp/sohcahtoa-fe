@@ -164,7 +164,7 @@ export default function OverviewDetail({
         />
         {timeline}
         <p className="text-sm text-center text-[#8F8B8B] leading-6">
-          Your transaction is being reviewed for compliance. You will be notified of any updates.
+          Your transaction is being reviewed for compliance. Check the documentation tab for updates.
         </p>
       </div>
     );

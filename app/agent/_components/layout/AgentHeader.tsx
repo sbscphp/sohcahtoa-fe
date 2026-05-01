@@ -46,8 +46,8 @@ export default function AgentHeader({
   const unreadCount = unreadCountResponse?.data?.count || 0;
 
   return (
-    <header className="h-16 bg-white border-b border-gray-50 px-6 flex items-center justify-between w-full relative">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
+    <header className="relative flex h-16 w-full max-w-full items-center justify-between border-b border-gray-50 bg-white px-4 sm:px-6 box-border">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
         {isMobile && toggleMobile ? (
           <button
             onClick={toggleMobile}
@@ -68,22 +68,22 @@ export default function AgentHeader({
           </button>
         )}
         {breadcrumbs && transactionTitle ? (
-          <div className="flex items-center gap-2 ml-4 min-w-0 flex-1 overflow-hidden">
+          <div className="ml-1 flex min-w-0 flex-1 items-center gap-2 overflow-hidden sm:ml-3">
             <TransactionHeader
               title={transactionTitle}
               breadcrumbs={breadcrumbs}
             />
           </div>
         ) : title ? (
-          <div className="flex items-center gap-2 ml-4">
-            <h1 className="text-body-heading-300 text-lg font-semibold">
+          <div className="ml-1 flex items-center gap-2 sm:ml-3">
+            <h1 className="text-body-heading-300 text-base font-semibold sm:text-lg">
               {title}
             </h1>
           </div>
         ) : null}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 justify-end">
         {/* Notifications */}
         <Popover
           position="bottom-end"

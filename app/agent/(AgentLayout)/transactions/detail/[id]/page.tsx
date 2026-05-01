@@ -108,6 +108,7 @@ export default function AgentTransactionDetailPage() {
     : 0;
   const isReceivedPaymentStep =
     (apiData?.status ?? "").toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
+  const isAwaitingDisbursement = statusKey === "AWAITING_DISBURSEMENT";
 
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
@@ -126,6 +127,18 @@ export default function AgentTransactionDetailPage() {
       "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request.";
   }
 
+  const handleResubmitDocuments = async (documents: Array<{ documentType: string; file: FileWithPath }>) => {
+    for (const document of documents) {
+      const formData = new FormData();
+      formData.append("documentType", document.documentType);
+      formData.append("documents", document.file);
+      await agentApi.transactions.uploadDocuments(id, formData);
+    }
+    await queryClient.invalidateQueries({
+      queryKey: agentKeys.transactions.detail(id) as unknown as readonly unknown[],
+    });
+  }
+
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
       <Link
@@ -137,7 +150,7 @@ export default function AgentTransactionDetailPage() {
       </Link>
 
       <div className="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden">
-        <div className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-[#F2F4F7] px-8 pt-8 pb-6">
+        <div className="flex md:flex-row flex-col items-start justify-between gap-4 border-b border-[#F2F4F7] md:px-8 px-4 pt-8 pb-6">
           <div className="flex flex-col gap-3 flex-1 min-w-0">
             <h1 className="font-medium text-2xl leading-8 text-[#131212] tracking-[-0.032px]">
               {title}
@@ -157,7 +170,7 @@ export default function AgentTransactionDetailPage() {
               </span>
             </div>
           </div>
-          <div className="shrink-0">
+          <div className="shrink-0 w-full md:w-auto">
             {showSettlement ? (
               <Button
                 variant="outline"
@@ -192,17 +205,7 @@ export default function AgentTransactionDetailPage() {
           time={formatShortTime(payload.date)}
           adminMessage={adminMessage}
           comments={apiData?.comments ?? []}
-          onResubmitDocuments={async (documents: Array<{ documentType: string; file: FileWithPath }>) => {
-            for (const document of documents) {
-              const formData = new FormData();
-              formData.append("documentType", document.documentType);
-              formData.append("documents", document.file);
-              await agentApi.transactions.uploadDocuments(id, formData);
-            }
-            await queryClient.invalidateQueries({
-              queryKey: agentKeys.transactions.detail(id) as unknown as readonly unknown[],
-            });
-          }}
+          onResubmitDocuments={handleResubmitDocuments}
           approvedActions={
             isReceivedPaymentStep ? (
                 <Button
@@ -217,8 +220,7 @@ export default function AgentTransactionDetailPage() {
                 >
                   Record Disbursement
                 </Button>
-             
-            ) : (
+            ) : isAwaitingDisbursement ? undefined : (
               <div className="-mx-4 w-[calc(100%+2rem)] rounded-t-3xl border border-[#F2F4F7] bg-white px-4 py-6 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
                 <div className="space-y-2">
                   <h4 className="text-[#323131] text-lg font-bold leading-7">Select Payment Method</h4>

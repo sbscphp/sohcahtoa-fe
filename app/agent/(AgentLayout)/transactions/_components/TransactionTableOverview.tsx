@@ -1,8 +1,7 @@
 "use client";
 
-import { ActionIcon } from "@mantine/core";
+import { ActionIcon, Button } from "@mantine/core";
 import { Plus } from "@hugeicons/core-free-icons";
-import { Button } from "@mantine/core";
 import Link from "next/link";
 import {
   TableWrapper,
@@ -161,20 +160,24 @@ export default function TransactionTableOverview({
       filterSheetTitle="Filter By"
       onExportClick={onExportClick}
       actionButton={
-        <Link href="/agent/transactions/options">
+        <Link
+          href="/agent/transactions/options"
+          className="block w-full min-w-0 sm:inline-block sm:w-auto"
+        >
           <Button
             variant="filled"
             size="sm"
             radius="xl"
+            className="w-full min-w-0 justify-center bg-primary-400 hover:bg-primary-500 sm:w-auto"
             rightSection={
               <HugeiconsIcon
                 icon={Plus}
-                className="w-3.5 h-3.5 hover:text-primary-300!"
+                className="h-3.5 w-3.5 shrink-0 hover:text-primary-300!"
               />
             }
-            className="bg-primary-400 hover:bg-primary-500"
           >
-            New Transaction
+            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">New Transaction</span>
           </Button>
         </Link>
       }
