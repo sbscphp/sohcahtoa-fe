@@ -2,11 +2,13 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { useAtomValue } from "jotai";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { adminUserAtom, adminAccessTokenAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
 import { apiClient } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useTokenExpiry } from "@/app/admin/_hooks/useTokenExpiry";
+import { getRequiredModule, hasModuleAccess } from "@/app/admin/_lib/permissions";
+import { UnauthorizedView } from "@/app/admin/_components/UnauthorizedView";
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
@@ -22,12 +24,15 @@ const emptySubscribe = () => () => {};
  *   the stored session is available on the very first render — no async race.
  * - Wires the admin access token into the shared apiClient singleton.
  * - Redirects to /admin/login when no valid session exists.
+ * - Renders UnauthorizedView when the user lacks the required module permission
+ *   for the current route.
  *
  * Rendering is deferred until after client hydration to prevent a flash
  * caused by the server not having access to localStorage.
  */
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const adminUser = useAtomValue(adminUserAtom);
   const accessToken = useAtomValue(adminAccessTokenAtom);
 
@@ -52,6 +57,17 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
 
   if (!hydrated || !adminUser) {
     return null;
+  }
+
+  // Check module-level permission for the current route.
+  const requiredModule = getRequiredModule(pathname);
+  const canAccess =
+    requiredModule === undefined ||
+    requiredModule === null ||
+    hasModuleAccess(adminUser.userPermissions ?? [], requiredModule);
+
+  if (!canAccess) {
+    return <UnauthorizedView />;
   }
 
   return <>{children}</>;

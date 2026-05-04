@@ -54,6 +54,16 @@ export const STEP_LABELS: Record<TransactionStep, string> = {
   "bank-details": "Bank Details",
 };
 
+export type GetTransactionBreadcrumbsOptions = {
+  rootHref?: string;
+  chooseOptionsHref?: string;
+  /**
+   * Dynamic `[type]` segment in the URL (e.g. `vacation` for PTA).
+   * When omitted, `transactionType` is used in step links.
+   */
+  urlTypeSegment?: string;
+};
+
 /**
  * Get breadcrumbs for transaction creation flow
  * @param pathPrefix - e.g. "transactions" for buy, "transactions/sell" for sell
@@ -61,11 +71,16 @@ export const STEP_LABELS: Record<TransactionStep, string> = {
 export function getTransactionBreadcrumbs(
   transactionType: TransactionType,
   currentStep: TransactionStep,
-  pathPrefix: string = "transactions"
+  pathPrefix: string = "transactions",
+  options?: GetTransactionBreadcrumbsOptions
 ): BreadcrumbItem[] {
+  const rootHref = options?.rootHref ?? "/transactions";
+  const chooseOptionsHref = options?.chooseOptionsHref ?? "/transactions/options";
+  const urlSegment = options?.urlTypeSegment ?? transactionType;
+
   const base: BreadcrumbItem[] = [
-    { label: "Transactions", href: "/transactions" },
-    { label: "Choose an Option", href: "/transactions/options" },
+    { label: "Transactions", href: rootHref },
+    { label: "Choose an Option", href: chooseOptionsHref },
   ];
 
   const steps = getStepsForTransactionType(transactionType);
@@ -78,7 +93,7 @@ export function getTransactionBreadcrumbs(
       href:
         i === currentIndex
           ? undefined
-          : `/${pathPrefix}/${transactionType}/${step}`,
+          : `/${pathPrefix}/${urlSegment}/${step}`,
     });
   }
 
