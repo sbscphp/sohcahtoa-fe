@@ -3,20 +3,49 @@
 import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import AgentHeader from "./AgentHeader";
 import AgentSidebar from "./AgentSidebar";
 import { AuthProfileSync } from "@/app/(customer)/_components/auth/AuthProfileSync";
-
-// type BreadcrumbItem = {
-//   label: string;
-//   href?: string;
-// };
+import {
+  getTransactionBreadcrumbs,
+  getTransactionTypeLabel,
+  type TransactionStep,
+  type TransactionType,
+} from "@/app/(customer)/_utils/transaction-flow";
 
 const HEADER_HEIGHT = 64;
 
+/** Maps `[type]` URL segment from `/transactions/[type]` / sell routes to internal transaction types */
+const TYPE_MAP: Record<string, TransactionType> = {
+  vacation: "pta",
+  business: "business",
+  "school-fees": "school-fees",
+  medical: "medical",
+  "professional-body": "professional-body",
+  tourist: "tourist",
+  resident: "resident",
+  "touring-nigeria": "touring-nigeria",
+  expatriate: "expatriate",
+};
+
 function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const params = useParams();
+
+  const urlType =
+    typeof params?.type === "string" ? params.type : undefined;
+  const transactionType = urlType ? (TYPE_MAP[urlType] ?? "pta") : null;
+  const isSellFlow = pathname?.startsWith("/agent/transactions/sell/");
+  const isReceiveImtoFlow = pathname?.startsWith(
+    "/agent/transactions/receive/imto"
+  );
+  const isTransactionCreatePage = Boolean(
+    urlType &&
+      pathname?.startsWith("/agent/transactions/") &&
+      !pathname.includes("/agent/transactions/detail/") &&
+      !pathname.includes("/agent/transactions/new/")
+  );
   const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] =
     useDisclosure(false);
@@ -44,6 +73,13 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
 
   const getPageTitle = () => {
     if (pathname === "/agent/dashboard") return "Dashboard";
+    if (pathname?.startsWith("/agent/transactions/new")) return "New Transaction";
+    if (isReceiveImtoFlow) return "Receive Money: IMTO";
+    if (isTransactionCreatePage && transactionType) {
+      return isSellFlow
+        ? `Sell FX: ${getTransactionTypeLabel(transactionType)}`
+        : `Buy FX: ${getTransactionTypeLabel(transactionType)}`;
+    }
     if (pathname?.startsWith("/agent/transactions")) return "Transactions";
     if (pathname?.startsWith("/agent/fx-inventory")) return "FX Inventory";
     if (pathname?.startsWith("/agent/customer-management")) {
@@ -90,6 +126,38 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
   };
 
   const getBreadcrumbs = () => {
+    if (pathname?.startsWith("/agent/transactions/new")) {
+      return [
+        { label: "Transactions", href: "/agent/transactions" },
+        { label: "Choose an Option", href: undefined },
+      ];
+    }
+    if (isReceiveImtoFlow) {
+      return [
+        { label: "Transactions", href: "/agent/transactions" },
+        { label: "Choose an Option", href: "/agent/transactions/options" },
+      ];
+    }
+    if (isTransactionCreatePage && transactionType && urlType) {
+      const stepMatch = pathname?.match(
+        /\/(upload-documents|amount|pickup-point|bank-details)/
+      );
+      const currentStep: TransactionStep =
+        (stepMatch?.[1] as TransactionStep) || "upload-documents";
+      const pathPrefix = isSellFlow
+        ? "agent/transactions/sell"
+        : "agent/transactions";
+      return getTransactionBreadcrumbs(
+        transactionType,
+        currentStep,
+        pathPrefix,
+        {
+          rootHref: "/agent/transactions",
+          chooseOptionsHref: "/agent/transactions/options",
+          urlTypeSegment: urlType,
+        }
+      );
+    }
     if (
       pathname?.startsWith("/agent/transactions") &&
       pathname !== "/agent/transactions"

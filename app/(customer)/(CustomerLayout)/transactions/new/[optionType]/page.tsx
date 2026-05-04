@@ -15,13 +15,13 @@ import {
 const FX_OPTIONS_BUY = [
   {
     icon: User,
-    title: "I am going on a Vacation",
+    title: "I am going on a Vacation (PTA)",
     description: "Buy FX to cover your travel, accommodation",
     href: "/transactions/vacation",
   },
   {
     icon: Building2,
-    title: "I am travelling for business",
+    title: "I am travelling for business (BTA)",
     description: "Buy FX to cover for your business trip abroad",
     href: "/transactions/business",
   },
