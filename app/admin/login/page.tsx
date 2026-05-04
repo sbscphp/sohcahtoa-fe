@@ -5,6 +5,7 @@ import { PasswordInput, TextInput, Anchor } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { useRouter } from "next/navigation";
+import { useAtomValue } from "jotai";
 
 import { AuthLayout } from "@/app/admin/_components/auth/AuthLayout";
 import { OtpModal } from "@/app/admin/_components/OtpModal";
@@ -13,12 +14,15 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { loginSchema, LoginFormValues } from "./_schemas/login.schema";
 import { useLogin, useVerifyOtp } from "./hooks/useLogin";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import { getFirstAccessibleRoute } from "@/app/admin/_lib/permissions";
 
 export default function LoginPage() {
   const [otpModalOpened, setOtpModalOpened] = useState(false);
   const [successOpened, setSuccessOpened] = useState(false);
   const [loginValues, setLoginValues] = useState<LoginFormValues | null>(null);
   const router = useRouter();
+  const adminUser = useAtomValue(adminUserAtom);
 
   const loginMutation = useLogin();
 
@@ -143,14 +147,18 @@ export default function LoginPage() {
         opened={successOpened}
         onClose={() => {
           setSuccessOpened(false);
-          router.push("/admin/dashboard");
+          router.push(
+            getFirstAccessibleRoute(adminUser?.userPermissions ?? [])
+          );
         }}
         title="Login Successful"
         message="You have successfully logged in to your account."
         primaryButtonText="Go to Dashboard"
         onPrimaryClick={() => {
           setSuccessOpened(false);
-          router.push("/admin/dashboard");
+          router.push(
+            getFirstAccessibleRoute(adminUser?.userPermissions ?? [])
+          );
         }}
       />
     </AuthLayout>

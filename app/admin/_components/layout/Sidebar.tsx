@@ -20,6 +20,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAtomValue } from "jotai";
 import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import { hasModuleAccess } from "@/app/admin/_lib/permissions";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -27,22 +28,22 @@ type SidebarProps = {
 };
 
 const menuItems = [
-  { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard" },
-  { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions" },
-  { icon: Database, label: "Settlement", href: "/admin/settlement" },
-  { icon: UserStar, label: "Agent", href: "/admin/agent" },
-  { icon: Store, label: "Outlet", href: "/admin/outlet" },
-  { icon: Users, label: "Customer", href: "/admin/customer" },
-  { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow" },
-  { icon: Ticket, label: "Tickets", href: "/admin/tickets" },
-  { icon: Coins, label: "Rate Management", href: "/admin/rate" },
+  { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard", module: null },
+  { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions", module: "TRANSACTION" },
+  { icon: Database, label: "Settlement", href: "/admin/settlement", module: "SETTLEMENT" },
+  { icon: UserStar, label: "Agent", href: "/admin/agent", module: null },
+  { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
+  { icon: Users, label: "Customer", href: "/admin/customer", module: "CUSTOMER" },
+  { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow", module: "WORKFLOW" },
+  { icon: Ticket, label: "Tickets", href: "/admin/tickets", module: "INCIDENCE" },
+  { icon: Coins, label: "Rate Management", href: "/admin/rate", module: "RATE" },
 ];
 
 const menuItems2 = [
-  { icon: LayoutGrid, label: "User Management", href: "/admin/user-management" },
-  { icon: BanknoteIcon, label: "Regulatory & Compliance", href: "/admin/regulatory" },
-  { icon: Database, label: "Report and Analytics", href: "/admin/report" },
-  { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trail" },
+  { icon: LayoutGrid, label: "User Management", href: "/admin/user-management", module: "USER_MANAGEMENT" },
+  { icon: BanknoteIcon, label: "Regulatory & Compliance", href: "/admin/regulatory", module: "REGULATORY" },
+  { icon: Database, label: "Report and Analytics", href: "/admin/report", module: "REPORTS" },
+  { icon: UserStar, label: "Audit Trail", href: "/admin/audit-trail", module: "AUDIT_TRAIL" },
 ];
 
 export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
@@ -53,6 +54,14 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
 
   const displayName = adminUser?.fullName?.trim() || "Admin User";
   const displayEmail = adminUser?.email?.trim() || "No email available";
+  const userPermissions = adminUser?.userPermissions ?? [];
+
+  const visibleMenuItems = menuItems.filter(
+    (item) => !item.module || hasModuleAccess(userPermissions, item.module)
+  );
+  const visibleMenuItems2 = menuItems2.filter(
+    (item) => !item.module || hasModuleAccess(userPermissions, item.module)
+  );
 
   const handleLinkClick = () => {
     if (isMobile && closeMobile) {
@@ -101,7 +110,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
             </div>
           )}
 
-          {menuItems.map(({ icon: Icon, label, href }) => {
+          {visibleMenuItems.map(({ icon: Icon, label, href }) => {
             // Check if current path matches the href
             const isActive = pathname === href || pathname?.startsWith(href + '/');
 
@@ -137,7 +146,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
             </div>
           )}
 
-          {menuItems2.map(({ icon: Icon, label, href }) => {
+          {visibleMenuItems2.map(({ icon: Icon, label, href }) => {
             // Check if current path matches the href
             const isActive = pathname === href || pathname?.startsWith(href + '/');
 
