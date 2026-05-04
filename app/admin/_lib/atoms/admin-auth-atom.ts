@@ -2,6 +2,14 @@
 
 import { atom } from "jotai";
 
+export interface UserPermission {
+  id: string;
+  module: string;
+  featureKey: string;
+  action: string;
+  label: string;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -13,6 +21,7 @@ export interface AdminUser {
   roleId: string;
   departmentId: string;
   permissions: string[] | null;
+  userPermissions: UserPermission[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
