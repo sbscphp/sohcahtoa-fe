@@ -84,23 +84,29 @@ function mapRequiredDocsToDocumentItems(
   comments: TransactionDetailComment[] = []
 ): TransactionDocumentItem[] {
   const statusOverrides = buildDocStatusOverrideMap(comments);
-  return requiredDocuments.map((doc) => {
-    const uploaded = doc.uploaded;
+  return requiredDocuments
+    .filter((doc) => doc.uploaded != null)
+    .map((doc) => {
+      const uploaded = doc.uploaded!;
 
-    const lastUploadDate = uploaded?.uploadedAt ? formatShortDate(uploaded.uploadedAt) : undefined;
-    const lastUploadTime = uploaded?.uploadedAt ? formatShortTime(uploaded.uploadedAt) : undefined;
+      const lastUploadDate = uploaded.uploadedAt
+        ? formatShortDate(uploaded.uploadedAt)
+        : undefined;
+      const lastUploadTime = uploaded.uploadedAt
+        ? formatShortTime(uploaded.uploadedAt)
+        : undefined;
 
-    return {
-      id: doc.type,
-      name: getDocumentDisplayName(doc.type),
-      size: "—",
-      status: statusOverrides.get(doc.type) ?? formatStatusLabel(uploaded?.status),
-      lastUploadDate,
-      lastUploadTime,
-      fileName: uploaded?.fileName,
-      url: uploaded?.fileUrl,
-    };
-  });
+      return {
+        id: doc.type,
+        name: getDocumentDisplayName(doc.type),
+        size: "—",
+        status: statusOverrides.get(doc.type) ?? formatStatusLabel(uploaded.status),
+        lastUploadDate,
+        lastUploadTime,
+        fileName: uploaded.fileName,
+        url: uploaded.fileUrl,
+      };
+    });
 }
 
 export function buildDetailPayloadFromApi(api: TransactionDetailData): TransactionDetailPayload {

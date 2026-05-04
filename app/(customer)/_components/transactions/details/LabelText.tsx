@@ -10,8 +10,17 @@ const labelClass =
 const valueClass =
   "font-medium text-base leading-6 text-[#4D4B4B]";
 
+/** True when a detail string is missing or only placeholder punctuation (e.g. em dash). */
+export function isBlankDetailText(s: string | undefined | null): boolean {
+  if (s == null) return true;
+  const t = s.trim();
+  return t === "" || t === "—" || t === "-";
+}
+
 export interface LabelTextProps {
   label: string;
+  /** When true, renders nothing if the value would be empty or a placeholder dash */
+  hideWhenEmpty?: boolean;
   value?: React.ReactNode;
   /** Plain string value (ignored if value is provided) */
   text?: string;
@@ -26,8 +35,24 @@ export interface LabelTextProps {
   className?: string;
 }
 
+function shouldHideEmptyRow(props: LabelTextProps): boolean {
+  if (!props.hideWhenEmpty) return false;
+  const { value, text, amount, document: doc, statusBadge, multiline } = props;
+  if (value !== undefined && value !== null) {
+    if (typeof value === "string") return isBlankDetailText(value);
+    return false;
+  }
+  if (statusBadge !== undefined) return isBlankDetailText(statusBadge);
+  if (amount) return isBlankDetailText(amount.formatted);
+  if (doc) return isBlankDetailText(doc.filename);
+  if (multiline !== undefined) return isBlankDetailText(multiline);
+  if (text !== undefined) return isBlankDetailText(text);
+  return true;
+}
+
 export default function LabelText({
   label,
+  hideWhenEmpty,
   value,
   text,
   amount,
@@ -36,6 +61,20 @@ export default function LabelText({
   multiline,
   className = "",
 }: LabelTextProps) {
+  if (shouldHideEmptyRow({
+    label,
+    hideWhenEmpty,
+    value,
+    text,
+    amount,
+    document: doc,
+    statusBadge,
+    multiline,
+    className,
+  })) {
+    return null;
+  }
+
   const renderValue = () => {
     if (value !== undefined && value !== null) return value;
     if (statusBadge !== undefined) {

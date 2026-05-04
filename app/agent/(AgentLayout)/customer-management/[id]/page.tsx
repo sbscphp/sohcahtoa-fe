@@ -5,7 +5,7 @@ import { Card, Text, Group, Stack, Anchor, Badge, Divider } from "@mantine/core"
 import { useRouter, useParams } from "next/navigation";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
-import { ArrowUpRight, Edit } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
 import { agentApi } from "@/app/agent/_services/agent-api";
@@ -113,23 +113,25 @@ export default function ViewCustomerDetailsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <DetailItem
               label="Full Name"
-              value={customer?.fullName ?? "—"}
+              value={customer?.fullName}
               loading={isLoading}
+              hideWhenEmpty
             />
             <DetailItem
               label="Email Address"
-              value={customer?.email ?? "—"}
+              value={customer?.email}
               loading={isLoading}
+              hideWhenEmpty
             />
-            <DetailItem label="Phone Number" value="—" loading={isLoading} />
             <DetailItem
               label="Date Onboarded"
               value={
                 customer?.dateOnboarded
                   ? formatShortDate(customer.dateOnboarded)
-                  : "—"
+                  : undefined
               }
               loading={isLoading}
+              hideWhenEmpty
             />
             <DetailItem
               label="Transactions Completed"
@@ -162,26 +164,35 @@ export default function ViewCustomerDetailsPage() {
             />
             <DetailItem
               label="ID Type"
-              value={customer?.idDetails.idType ?? "—"}
+              value={customer?.idDetails.idType ?? undefined}
               loading={isLoading}
+              hideWhenEmpty
             />
             <DetailItem
               label="BVN"
-              value={customer?.idDetails.bvn ?? "—"}
+              value={customer?.idDetails.bvn ?? undefined}
               loading={isLoading}
+              hideWhenEmpty
             />
             <DetailItem
               label="TIN"
-              value={customer?.idDetails.tin ?? "—"}
+              value={customer?.idDetails.tin ?? undefined}
               loading={isLoading}
+              hideWhenEmpty
             />
             <DetailItem
               label="Form A ID"
-              value={customer?.idDetails.formAId ?? "—"}
+              value={customer?.idDetails.formAId ?? undefined}
               loading={isLoading}
+              hideWhenEmpty
             />
             {documents.map((doc) => {
               const file = customer?.files?.[doc.key];
+              const hasFile =
+                Boolean(file?.fileName?.trim()) || Boolean(file?.fileUrl?.trim());
+              if (!isLoading && !hasFile) {
+                return null;
+              }
 
               return (
                 <div key={doc.key} className="space-y-1">
@@ -190,7 +201,7 @@ export default function ViewCustomerDetailsPage() {
                   </Text>
                   <Group gap="xs">
                     <Text fw={500} size="sm">
-                      {isLoading ? "Loading..." : file?.fileName ?? "Not uploaded"}
+                      {isLoading ? "Loading..." : file?.fileName ?? ""}
                     </Text>
                     {file?.fileUrl ? (
                       <Anchor

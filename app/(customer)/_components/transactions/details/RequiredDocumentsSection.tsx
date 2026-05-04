@@ -1,7 +1,7 @@
 "use client";
 
 import { getDocumentLabelForApiType } from "@/app/(customer)/_utils/transaction-validation";
-import LabelText from "./LabelText";
+import LabelText, { isBlankDetailText } from "./LabelText";
 import SectionBlock from "./SectionBlock";
 
 export interface RequiredDocumentsData {
@@ -29,6 +29,22 @@ export default function RequiredDocumentsSection({
   onDownload,
   onViewDocument,
 }: RequiredDocumentsSectionProps) {
+  const hasNin = data.nin != null && !isBlankDetailText(data.nin);
+  const hasTin = data.tin != null && !isBlankDetailText(data.tin);
+  const hasAnyUploaded = data.uploadedFiles.some(
+    (f) => !isBlankDetailText(f.filename)
+  );
+  const hasSection =
+    !isBlankDetailText(data.bvn) ||
+    !isBlankDetailText(data.formAId) ||
+    hasNin ||
+    hasTin ||
+    hasAnyUploaded;
+
+  if (!hasSection) {
+    return null;
+  }
+
   const makeDoc = (d: { filename: string; url?: string } | undefined, key: string) =>
     d
       ? {
@@ -47,14 +63,15 @@ export default function RequiredDocumentsSection({
 
   return (
     <SectionBlock title="Required Documents">
-      <LabelText label="BVN" text={data.bvn} />
-      {data.nin != null && <LabelText label="NIN" text={data.nin} />}
-      {data.tin != null && <LabelText label="TIN" text={data.tin} />}
-      <LabelText label="Form A ID" text={data.formAId} />
+      <LabelText hideWhenEmpty label="BVN" text={data.bvn} />
+      {hasNin && <LabelText hideWhenEmpty label="NIN" text={data.nin} />}
+      {hasTin && <LabelText hideWhenEmpty label="TIN" text={data.tin} />}
+      <LabelText hideWhenEmpty label="Form A ID" text={data.formAId} />
       {data.uploadedFiles.map((file) => (
         <LabelText
           key={file.documentType}
           label={getDocumentLabelForApiType(file.documentType)}
+          hideWhenEmpty
           document={makeDoc(
             { filename: file.filename, url: file.url },
             file.documentType
