@@ -210,6 +210,7 @@ export default function AgentSellTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -232,10 +233,12 @@ export default function AgentSellTransactionCreationPage() {
             initialValues={
               uploadDocumentsData
                 ? (uploadDocumentsData as ResidentUploadDocumentsFormData)
-                : undefined
+                : (selectedCustomerKycPrefill as Partial<ResidentUploadDocumentsFormData>)
             }
             onSubmit={handleUploadDocumentsSubmit}
             onBack={handleBack}
+            lockKycPrefill={lockSelectedCustomerKyc}
+            omitLoggedInUserKyc
           />
         );
       case "amount":

@@ -17,9 +17,12 @@ type FormWithKycFields = {
 export function useKycProfilePrefillEffect<T extends FormWithKycFields>(
   form: UseFormReturnType<T>,
   initialValues: { bvn?: string | null; ninNumber?: string | null } | undefined,
-  kyc: { defaultBvn: string; defaultNin: string }
+  kyc: { defaultBvn: string; defaultNin: string },
+  /** When false (e.g. agent acting on behalf of a customer), do not fill from the logged-in user profile */
+  enabled = true
 ) {
   useEffect(() => {
+    if (!enabled) return;
     const hasDraftBvn =
       initialValues?.bvn != null && String(initialValues.bvn).trim() !== "";
     if (hasDraftBvn) return;
@@ -29,9 +32,10 @@ export function useKycProfilePrefillEffect<T extends FormWithKycFields>(
       "bvn",
       kyc.defaultBvn
     );
-  }, [kyc.defaultBvn, initialValues?.bvn]);
+  }, [kyc.defaultBvn, initialValues?.bvn, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     const hasDraftNin =
       initialValues?.ninNumber != null &&
       String(initialValues.ninNumber).trim() !== "";
@@ -42,7 +46,7 @@ export function useKycProfilePrefillEffect<T extends FormWithKycFields>(
       "ninNumber",
       kyc.defaultNin
     );
-  }, [kyc.defaultNin, initialValues?.ninNumber]);
+  }, [kyc.defaultNin, initialValues?.ninNumber, enabled]);
 }
 
 function normalizeForCompare(value: string | null | undefined): string {

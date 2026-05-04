@@ -54,6 +54,10 @@ interface ExpatriateUploadDocumentsStepProps {
   onSubmit: (data: ExpatriateUploadDocumentsFormData) => void;
   onBack?: () => void;
   lockKycPrefill?: boolean;
+  /**
+   * When true, BVN/NIN are not taken from the logged-in user’s profile (agent-on-behalf-of-customer).
+   */
+  omitLoggedInUserKyc?: boolean;
 }
 
 export default function ExpatriateUploadDocumentsStep({
@@ -61,26 +65,32 @@ export default function ExpatriateUploadDocumentsStep({
   onSubmit,
   onBack,
   lockKycPrefill = false,
+  omitLoggedInUserKyc = false,
 }: Readonly<ExpatriateUploadDocumentsStepProps>) {
   const kyc = useCustomerProfileBvnNin();
-  const bvnLocked = shouldLockKycPrefill(
-    kyc.hasBvnFromProfile,
-    initialValues?.bvn,
-    kyc.defaultBvn
-  );
-  const ninLocked = shouldLockKycPrefill(
-    kyc.hasNinFromProfile,
-    initialValues?.ninNumber,
-    kyc.defaultNin
-  );
+  const bvnLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
+      kyc.hasBvnFromProfile,
+      initialValues?.bvn,
+      kyc.defaultBvn
+    );
+  const ninLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
+      kyc.hasNinFromProfile,
+      initialValues?.ninNumber,
+      kyc.defaultNin
+    );
   const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
   const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
 
   const form = useForm<ExpatriateUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
-      bvn: initialValues?.bvn || kyc.defaultBvn || "",
-      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
+      bvn: initialValues?.bvn || (omitLoggedInUserKyc ? "" : kyc.defaultBvn) || "",
+      ninNumber:
+        initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       workPermitNumber: initialValues?.workPermitNumber || "",
       internationalPassportFile: initialValues?.internationalPassportFile ?? null,
@@ -93,7 +103,7 @@ export default function ExpatriateUploadDocumentsStep({
     validate: zod4Resolver(uploadDocumentsSchema),
   });
 
-  useKycProfilePrefillEffect(form, initialValues, kyc);
+  useKycProfilePrefillEffect(form, initialValues, kyc, !omitLoggedInUserKyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as ExpatriateUploadDocumentsFormData);

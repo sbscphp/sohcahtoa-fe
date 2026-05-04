@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@mantine/core";
 import { ChevronUp, Calendar, Clock } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
@@ -56,6 +56,17 @@ export default function DocumentDetail({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  /** Slots with no uploaded file (e.g. TIN with uploaded: null) should not appear in the list */
+  const displayDocuments = useMemo(
+    () =>
+      documents.filter(
+        (d) =>
+          Boolean(d.fileName?.trim()) ||
+          Boolean(d.url?.trim())
+      ),
+    [documents]
+  );
+
   const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
   const ALLOWED_MIME_TYPES = new Set([
     "image/jpeg",
@@ -77,7 +88,7 @@ export default function DocumentDetail({
     );
   };
 
-  const resubmitDocs = documents.filter((d) => canResubmit(d.status));
+  const resubmitDocs = displayDocuments.filter((d) => canResubmit(d.status));
   const docTypeLabel = resubmitDocs.length > 1 ? "Documents" : "Document";
   const hasResubmit = resubmitDocs.length > 0;
 
@@ -150,7 +161,7 @@ export default function DocumentDetail({
         className="flex items-center justify-between gap-2 w-full text-left bg-[#FFF6F1] p-2 rounded-lg my-2"
       >
         <span className="font-medium text-sm leading-5 text-primary-400">
-          {documents.length} Documents
+          {displayDocuments.length} Documents
         </span>
         <ChevronUp
           className={`w-4 h-4 text-gray-900 transition-transform ${sectionCollapsed ? "rotate-180" : ""}`}
@@ -159,7 +170,7 @@ export default function DocumentDetail({
 
       {!sectionCollapsed && (
         <div className="flex flex-col gap-6">
-          {documents.map((doc) => (
+          {displayDocuments.map((doc) => (
           <div key={doc.id} className="flex flex-col gap-2">
               <div className="flex flex-row items-start justify-between gap-2 border-b border-gray-100 pb-2">
                 <div>

@@ -1,6 +1,6 @@
 "use client";
 
-import LabelText from "./LabelText";
+import LabelText, { isBlankDetailText } from "./LabelText";
 import SectionBlock from "./SectionBlock";
 
 export interface TransactionDetailsData {
@@ -16,12 +16,22 @@ interface TransactionDetailsSectionProps {
 }
 
 export default function TransactionDetailsSection({ data }: TransactionDetailsSectionProps) {
+  const hasAny =
+    !isBlankDetailText(data.transactionId) ||
+    !isBlankDetailText(data.amount.formatted) ||
+    !isBlankDetailText(data.equivalentAmount.formatted) ||
+    !isBlankDetailText(data.dateInitiated);
+
+  if (!hasAny) {
+    return null;
+  }
+
   return (
     <SectionBlock title="Transaction Details">
-      <LabelText label="Transaction ID" text={data.transactionId} />
-      <LabelText label="Amount" amount={data.amount} />
-      <LabelText label="Equivalent Amount" amount={data.equivalentAmount} />
-      <LabelText label="Date initiated" text={data.dateInitiated} />
+      <LabelText hideWhenEmpty label="Transaction ID" text={data.transactionId} />
+      <LabelText hideWhenEmpty label="Amount" amount={data.amount} />
+      <LabelText hideWhenEmpty label="Equivalent Amount" amount={data.equivalentAmount} />
+      <LabelText hideWhenEmpty label="Date initiated" text={data.dateInitiated} />
       {/* <LabelText label="Pickup Address" text={data.pickupAddress} className="w-full basis-full" /> */}
     </SectionBlock>
   );

@@ -18,9 +18,9 @@ export function buildAgentDetailPayloadFromApi(api: TransactionDetailData): Agen
   return {
     ...basePayload,
     identification: {
-      bvn: personalInfo?.bvn ?? "—",
-      nin: personalInfo?.nin ?? "—",
-      admissionType: personalInfo?.admissionType ?? "—",
+      bvn: personalInfo?.bvn ?? "",
+      nin: personalInfo?.nin ?? "",
+      admissionType: personalInfo?.admissionType ?? "",
     },
   };
 }

@@ -241,6 +241,8 @@ function buildResidentFxPayload(
     amount: getAmount(amount),
     purpose: "Transaction",
     destinationCountry: "United States",
+    bvn: upload?.bvn ?? undefined,
+    nin: upload?.ninNumber ?? undefined,
     tinNumber: upload?.tinNumber ?? undefined,
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     documents,

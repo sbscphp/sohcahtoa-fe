@@ -8,7 +8,9 @@ import {
   TransactionSettlementSection,
 } from "@/app/(customer)/_components/transactions/details";
 import PaymentDetailsSection from "@/app/agent/_components/transactions/details/PaymentDetailsSection";
-import LabelText from "@/app/(customer)/_components/transactions/details/LabelText";
+import LabelText, {
+  isBlankDetailText,
+} from "@/app/(customer)/_components/transactions/details/LabelText";
 import SectionBlock from "@/app/(customer)/_components/transactions/details/SectionBlock";
 import TransactionRequestSheet, { type TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
 import { getCurrencyByCode, getCurrencyFlagUrl, getCurrencySymbol } from "@/app/(customer)/_lib/currency";
@@ -100,6 +102,10 @@ export default function AgentTransactionDetailPage() {
     statusKey !== "ADMIN_APPROVAL_PENDING" &&
     statusKey !== "PENDING_RECORD_VALIDATION";
   const showSettlement = statusKey === "COMPLETED";
+  const showIdentificationBlock =
+    !isBlankDetailText(payload.identification.bvn) ||
+    !isBlankDetailText(payload.identification.nin) ||
+    !isBlankDetailText(payload.identification.admissionType);
   const amountNgn = apiData?.nairaEquivalent
     ? Number(apiData.nairaEquivalent)
     : 0;
@@ -309,11 +315,25 @@ export default function AgentTransactionDetailPage() {
         />
 
         <div className="flex flex-col gap-4 pb-8">
-          <SectionBlock title="Identification Details">
-            <LabelText label="BVN" text={payload.identification.bvn} />
-            <LabelText label="NIN" text={payload.identification.nin} />
-            <LabelText label="Admission Type" text={payload.identification.admissionType} />
-          </SectionBlock>
+          {showIdentificationBlock && (
+            <SectionBlock title="Identification Details">
+              <LabelText
+                hideWhenEmpty
+                label="BVN"
+                text={payload.identification.bvn}
+              />
+              <LabelText
+                hideWhenEmpty
+                label="NIN"
+                text={payload.identification.nin}
+              />
+              <LabelText
+                hideWhenEmpty
+                label="Admission Type"
+                text={payload.identification.admissionType}
+              />
+            </SectionBlock>
+          )}
           <TransactionDetailsSection data={payload.transactionDetails} />
           <RequiredDocumentsSection
             data={payload.requiredDocuments}
