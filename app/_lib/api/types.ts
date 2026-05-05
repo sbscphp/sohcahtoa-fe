@@ -328,6 +328,9 @@ export type AgentDashboardRange =
   | "last_3_months"
   | "last_year";
 
+/** Query param for `/dashboard/transactions-by-type` — filters segments server-side by flow */
+export type AgentDashboardTransactionGroup = "buy" | "sell" | "receive";
+
 export interface AgentDashboardTransactionsByTypeSegment {
   transactionType: string;
   count: number;

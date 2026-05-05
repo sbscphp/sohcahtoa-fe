@@ -9,6 +9,7 @@ import type {
   AgentAuthProfileResponse,
   AgentCustomerDetailsResponse,
   AgentDashboardRange,
+  AgentDashboardTransactionGroup,
   AgentDashboardRecentTransactionsResponse,
   AgentDashboardTransactionsByTypeResponse,
   AgentCustomerListParams,
@@ -185,11 +186,17 @@ export const agentApi = {
           params: params as ApiRequestConfig["params"],
         }
       ),
-    transactionsByType: (range: AgentDashboardRange) =>
+    transactionsByType: (
+      range: AgentDashboardRange,
+      group?: AgentDashboardTransactionGroup
+    ) =>
       apiClient.get<AgentDashboardTransactionsByTypeResponse>(
         AGENT_API_ENDPOINTS.dashboard.transactionsByType,
         {
-          params: { range },
+          params: {
+            range,
+            ...(group ? { group } : {}),
+          },
         }
       ),
     cashStats: (period: AgentDashboardCashStatsPeriod) =>
