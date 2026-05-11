@@ -24,6 +24,7 @@ import {
 } from "@/app/(customer)/_utils/transaction-payload";
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import { notifications } from "@mantine/notifications";
 import ResidentUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import ResidentTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
 import ResidentPickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
@@ -120,9 +121,25 @@ export default function SellTransactionCreationPage() {
     if (uploadDocuments.isPending || createTransaction.isPending) return;
 
     const transactionType = mapUITypeToAPIType(flowType);
-    if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData || !pickupPointData) {
+    if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
       setConfirmationOpened(false);
+      notifications.show({
+        title: "Incomplete transaction",
+        message: "Complete each step before confirming.",
+        color: "orange",
+      });
       router.push("/transactions");
+      return;
+    }
+
+    if (!pickupPointData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Select a pickup location",
+        message: "Choose a pickup location or bank transfer option on the previous step before confirming.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
       return;
     }
 
@@ -157,8 +174,12 @@ export default function SellTransactionCreationPage() {
           })
         : [];
       const documents = toTransactionDocuments(uploaded);
-      const payload = buildTransactionPayload(transactionType, bag, documents);
+      console.log("documents", documents);
+      console.log("bag", bag);
+      console.log("transactionType", transactionType);
+      const payload = buildTransactionPayload(transactionType, bag, documents, "SELL");
       // console.log("payload", payload);
+ 
       const created = await createTransaction.mutateAsync(payload);
       setConfirmationOpened(false);
       // console.log("created", created);
@@ -329,6 +350,7 @@ default:
         confirmLabel="View Transaction"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
+        loading={uploadDocuments.isPending || createTransaction.isPending}
       />
     </div>
   );

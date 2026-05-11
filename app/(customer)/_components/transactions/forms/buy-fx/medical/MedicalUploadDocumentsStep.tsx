@@ -4,9 +4,9 @@ import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
-import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
 import {
   shouldLockKycPrefill,
@@ -14,35 +14,42 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
-import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
-import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
+import TransactionFileUploadInput from "../../../../forms/TransactionFileUploadInput";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
 
-const uploadDocumentsSchema = z.object({
-  bvn: kycBvnSchema,
-  ninNumber: kycNinRequiredSchema,
-  formAId: formAIdSchema,
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
-  }),
-  passportDocumentNumber: passportNumberSchema,
-  passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "International Passport file is required",
-  }),
-  visaDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Visa Number is too long"),
-  visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Valid Visa file is required",
-  }),
-  returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
-  returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Return Ticket file is required",
-  }),
-  referenceLetterFromDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Reference Letter (Nigerian Specialist or Hospital) is required",
-  }),
-  letterFromOverseasDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Letter from overseas doctor stating treatment cost is required",
-  }),
-});
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    formAId: formAIdSchema,
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "International Passport file is required",
+    }),
+    visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Valid Visa file is required",
+    }),
+    returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
+    returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Return Ticket file is required",
+    }),
+    referenceLetterFromDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Reference Letter (Nigerian Specialist or Hospital) is required",
+    }),
+    letterFromOverseasDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Letter from overseas doctor stating treatment cost is required",
+    }),
+  })
+  .superRefine(validatePassportDates);
 
 export type MedicalUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -88,10 +95,10 @@ export default function MedicalUploadDocumentsStep({
       bvn: initialValues?.bvn || kyc.defaultBvn || "",
       ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
-      formAFile: initialValues?.formAFile ?? null,
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
-      visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       visaFile: initialValues?.visaFile ?? null,
       returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
       returnTicketFile: initialValues?.returnTicketFile ?? null,
@@ -125,13 +132,9 @@ export default function MedicalUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
           Please note the maximum you can
           transact is <strong>$5,000 per quarter</strong>.
         </p>
-        {/* <p className="text-body-text-200 mt-2">
-          {REVIEW_TIMELINE_MESSAGE}
-        </p> */}
       </Alert>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,21 +190,51 @@ export default function MedicalUploadDocumentsStep({
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TransactionFileUploadInput
-          label="Form A"
-          required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
-        />
+      <TransactionFileUploadInput
+        label="International Passport"
+        required
+        value={form.values.passportFile}
+        onChange={(file) => form.setFieldValue("passportFile", file)}
+        error={form.errors.passportFile as string}
+      />
 
-        <TransactionFileUploadInput
-          label="International Passport"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
           required
-          value={form.values.passportFile}
-          onChange={(file) => form.setFieldValue("passportFile", file)}
-          error={form.errors.passportFile as string}
+          size="md"
+          rightSectionPointerEvents="all"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20}
+          
+          className="text-text-300!" />}
+        />
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
+          required
+          size="md"
+          minDate={new Date()}
+          rightSectionPointerEvents="all"
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
       </div>
 
@@ -211,16 +244,6 @@ export default function MedicalUploadDocumentsStep({
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}
-      />
-
-      <TextInput
-        label="Valid Visa Number"
-        required
-        size="md"
-        placeholder="Enter Visa Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("visaDocumentNumber")}
       />
 
       <TransactionFileUploadInput

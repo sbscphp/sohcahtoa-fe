@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type FormEvent } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Button, Loader, Select, TextInput } from "@mantine/core";
+import { Button, Loader, Select, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import SelectableLocationCard from "@/app/(customer)/_components/forms/SelectableLocationCard";
 import SelectableBankCard from "@/app/(customer)/_components/forms/SelectableBankCard";
 import { EmptyState } from "@/app/(customer)/_components/common";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDown } from "@hugeicons/core-free-icons";
-import { DateInput, TimeInput } from "@mantine/dates";
+import { DateInput, TimePicker } from "@mantine/dates";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { customerKeys } from "@/app/_lib/api/query-keys";
@@ -35,6 +36,22 @@ function toHHmm(value: unknown): string | undefined {
   const m = /^(\d{1,2}):(\d{2})/.exec(s);
   if (!m) return undefined;
   return `${m[1]!.padStart(2, "0")}:${m[2]}`;
+}
+
+/**
+ * Convert a 24h "HH:mm" / "HH:mm:ss" string to 12h "hh:mm AM/PM"
+ * (the format the API expects for pickupTime).
+ */
+function toAmPmTime(value: unknown): string | undefined {
+  const hhmm = toHHmm(value);
+  if (!hhmm) return undefined;
+  const [hStr, mStr] = hhmm.split(":");
+  const hours24 = Number(hStr);
+  if (!Number.isFinite(hours24)) return undefined;
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12Raw = hours24 % 12;
+  const hours12 = hours12Raw === 0 ? 12 : hours12Raw;
+  return `${String(hours12).padStart(2, "0")}:${mStr} ${period}`;
 }
 
 function toStartOfDay(dateString: string) {
@@ -310,29 +327,100 @@ export default function PickupPointStep({
     return locationsData;
   }, [locations.length, locationsData, state, city]);
 
-  const handleSubmit =
-    preferenceMode === "pickup-only"
-      ? pickupOnlyForm.onSubmit((v) => {
-          const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);
-          onSubmit({
-            ...v,
-            state: resolveOptionalLocationField(selectedLocation?.state, v.state),
-            city: resolveOptionalLocationField(selectedLocation?.city, v.city),
-          });
-        })
-      : pickupOrBankForm.onSubmit((v) => {
-          if (v.preference !== "pickup") {
-            onSubmit(v);
-            return;
-          }
+  const submitPickupOnlySuccess = (v: PickupPointFormData) => {
+    const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);
+    onSubmit({
+      ...v,
+      state: resolveOptionalLocationField(selectedLocation?.state, v.state),
+      city: resolveOptionalLocationField(selectedLocation?.city, v.city),
+      pickupTime: toAmPmTime(v.pickupTime) ?? v.pickupTime,
+    });
+  };
 
-          const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);
-          onSubmit({
-            ...v,
-            state: resolveOptionalLocationField(selectedLocation?.state, v.state),
-            city: resolveOptionalLocationField(selectedLocation?.city, v.city),
-          });
+  const submitPickupOrBankSuccess = (v: PickupOrBankFormData) => {
+    if (v.preference !== "pickup") {
+      onSubmit(v);
+      return;
+    }
+    const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);
+    onSubmit({
+      ...v,
+      state: resolveOptionalLocationField(selectedLocation?.state, v.state),
+      city: resolveOptionalLocationField(selectedLocation?.city, v.city),
+      pickupTime: toAmPmTime(v.pickupTime) ?? v.pickupTime,
+    });
+  };
+
+  function notifyPickupValidationErrors(
+    errors: Record<string, unknown>,
+    preferenceMode_: "pickup-only" | "pickup-or-bank",
+    bankPreference: "pickup" | "bank"
+  ) {
+    const locationMsg =
+      typeof errors.locationId === "string"
+        ? errors.locationId
+        : "Choose one of the pickup locations in the list before continuing.";
+    const bankMsg =
+      typeof errors.selectedBankId === "string"
+        ? errors.selectedBankId
+        : "Choose a bank account to receive your funds.";
+
+    if (preferenceMode_ === "pickup-only") {
+      if (errors.locationId) {
+        notifications.show({
+          title: "Select a pickup location",
+          message: locationMsg,
+          color: "orange",
         });
+      }
+      return;
+    }
+
+    if (bankPreference === "pickup" && errors.locationId) {
+      notifications.show({
+        title: "Select a pickup location",
+        message: locationMsg,
+        color: "orange",
+      });
+      return;
+    }
+
+    if (bankPreference === "bank" && errors.selectedBankId) {
+      notifications.show({
+        title: "Select a bank account",
+        message: bankMsg,
+        color: "orange",
+      });
+    }
+  }
+
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (preferenceMode === "pickup-only") {
+      const result = pickupOnlyForm.validate();
+      if (result.hasErrors) {
+        notifyPickupValidationErrors(
+          pickupOnlyForm.errors as Record<string, unknown>,
+          "pickup-only",
+          "pickup"
+        );
+        return;
+      }
+      submitPickupOnlySuccess(pickupOnlyForm.values as PickupPointFormData);
+      return;
+    }
+
+    const result = pickupOrBankForm.validate();
+    if (result.hasErrors) {
+      notifyPickupValidationErrors(
+        pickupOrBankForm.errors as Record<string, unknown>,
+        "pickup-or-bank",
+        pickupOrBankForm.values.preference
+      );
+      return;
+    }
+    submitPickupOrBankSuccess(pickupOrBankForm.values as PickupOrBankFormData);
+  };
 
   const showBankForm = isPickupOrBank && preference === "bank";
 
@@ -367,8 +455,21 @@ export default function PickupPointStep({
     ));
   };
 
+  const pickupOnlyLocationError =
+    preferenceMode === "pickup-only"
+      ? (pickupOnlyForm.errors.locationId as string | undefined)
+      : undefined;
+  const pickupOrBankLocationError =
+    preferenceMode === "pickup-or-bank" && preference === "pickup"
+      ? (pickupOrBankForm.errors.locationId as string | undefined)
+      : undefined;
+  const pickupOrBankBankError =
+    preferenceMode === "pickup-or-bank" && preference === "bank"
+      ? (pickupOrBankForm.errors.selectedBankId as string | undefined)
+      : undefined;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleFormSubmit} className="space-y-4">
       <div className="flex flex-col gap-2 justify-center items-center">
         <h2 className="text-body-heading-300 text-2xl font-semibold">
           {title}
@@ -443,28 +544,34 @@ export default function PickupPointStep({
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextInput
+            <DateInput
               key={pickupOrBankForm.key("pickupDate")}
               label="Date of collection"
+              placeholder="DD MM YYYY"
+              minDate={new Date()}
               required
               size="md"
-              type="date"
+              valueFormat="YYYY-MM-DD"
               {...pickupOrBankForm.getInputProps("pickupDate")}
-              onChange={(e) => {
-                const next = e.currentTarget.value;
+              onChange={(v) => {
+                let next = "";
+                if (typeof v === "string") {
+                  next = v;
+                } else if (v != null && typeof v === "object" && "getTime" in v) {
+                  next = (v as Date).toISOString().slice(0, 10);
+                }
                 pickupOrBankForm.setFieldValue("pickupDate", next);
                 pickupOrBankForm.setFieldValue("locationId", "");
               }}
             />
-            <TextInput
+            <TimePicker
               key={pickupOrBankForm.key("pickupTime")}
               label="Time of collection"
               required
               size="md"
-              type="time"
+              format="12h"
               {...pickupOrBankForm.getInputProps("pickupTime")}
-              onChange={(e) => {
-                const next = e.currentTarget.value;
+              onChange={(next) => {
                 pickupOrBankForm.setFieldValue("pickupTime", next);
                 pickupOrBankForm.setFieldValue("locationId", "");
               }}
@@ -479,6 +586,11 @@ export default function PickupPointStep({
             <div className="flex flex-col items-start w-full gap-4 max-h-[200px] overflow-y-auto">
               {renderTerminalEmptyOrList((id) => pickupOrBankForm.setFieldValue("locationId", id))}
             </div>
+            {pickupOrBankLocationError ? (
+              <Text size="sm" c="red" className="w-full">
+                {pickupOrBankLocationError}
+              </Text>
+            ) : null}
           </div>
         </>
       )}
@@ -541,15 +653,14 @@ export default function PickupPointStep({
                 pickupOnlyForm.setFieldValue("locationId", "");
               }}
             />
-            <TimeInput
+            <TimePicker
               key={pickupOnlyForm.key("pickupTime")}
               label="Pick Up Time"
-              placeholder="HH:MM"
               required
               size="md"
+              format="12h"
               {...pickupOnlyForm.getInputProps("pickupTime")}
-              onChange={(e) => {
-                const next = e.currentTarget.value;
+              onChange={(next) => {
                 pickupOnlyForm.setFieldValue("pickupTime", next);
                 pickupOnlyForm.setFieldValue("locationId", "");
               }}
@@ -564,6 +675,11 @@ export default function PickupPointStep({
             <div className="flex flex-col items-start w-full gap-4 max-h-[200px] overflow-y-auto">
               {renderTerminalEmptyOrList((id) => pickupOnlyForm.setFieldValue("locationId", id))}
             </div>
+            {pickupOnlyLocationError ? (
+              <Text size="sm" c="red" className="w-full">
+                {pickupOnlyLocationError}
+              </Text>
+            ) : null}
           </div>
         </>
       )}
@@ -602,6 +718,11 @@ export default function PickupPointStep({
               <span className="text-lg leading-none">+</span> Add New Bank
             </button>
           )}
+          {pickupOrBankBankError ? (
+            <Text size="sm" c="red" className="w-full">
+              {pickupOrBankBankError}
+            </Text>
+          ) : null}
         </div>
       )}
 

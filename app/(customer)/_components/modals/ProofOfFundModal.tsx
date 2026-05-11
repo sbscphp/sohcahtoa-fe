@@ -72,7 +72,7 @@ export default function ProofOfFundModal({
           {files.map((file, index) => (
             <FileUploadInput
               key={index}
-              label={`${PROOF_OF_FUND_LABEL} *`}
+              label={`${PROOF_OF_FUND_LABEL}`}
               required
               value={file}
               onChange={(value) => setFileAt(index, value)}

@@ -62,6 +62,7 @@ import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_component
 import type { TouristTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import type { TouristPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import { handleApiError } from "@/app/_lib/api/error-handler";
+import { notifications } from "@mantine/notifications";
 
 const TRANSACTION_TYPE_MAP = {
   vacation: "pta",
@@ -181,7 +182,12 @@ export default function TransactionCreationPage() {
     const transactionType = mapUITypeToAPIType(flowType);
     if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
       setConfirmationOpened(false);
-      router.push("/transactions/new/sell");
+      notifications.show({
+        title: "Incomplete transaction",
+        message: "Complete each step before confirming. Sign in again if the problem continues.",
+        color: "orange",
+      });
+      router.push("/transactions/new/buy");
       return;
     }
 
@@ -195,12 +201,22 @@ export default function TransactionCreationPage() {
     const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
     if (hasPickup && !pickupPointData) {
       setConfirmationOpened(false);
-      router.push("/transactions/new/sell");
+      notifications.show({
+        title: "Pickup location required",
+        message: "Go back and select a pickup location before initiating your transaction.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
       setConfirmationOpened(false);
-      router.push("/transactions/new/sell");
+      notifications.show({
+        title: "Bank details required",
+        message: "Go back and complete your bank details before continuing.",
+        color: "orange",
+      });
+      setActiveStep("bank-details");
       return;
     }
 
@@ -234,7 +250,7 @@ export default function TransactionCreationPage() {
           })
         : [];
       const documents = toTransactionDocuments(uploaded);
-      const payload = buildTransactionPayload(transactionType, bag, documents);
+      const payload = buildTransactionPayload(transactionType, bag, documents, "BUY");
       const created = await createTransaction.mutateAsync(payload);
       setConfirmationOpened(false);
       router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);

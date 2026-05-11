@@ -11,7 +11,7 @@ import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
-const MAX_PTA_BTA_AMOUNT = 4000;
+const MAX_PTA_BTA_AMOUNT = 5000;
 
 function receiveAmountExceedsMaxMessage(maxValue: number): string {
   return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;

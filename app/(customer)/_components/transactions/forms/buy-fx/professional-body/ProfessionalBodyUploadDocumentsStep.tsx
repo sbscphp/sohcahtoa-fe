@@ -4,6 +4,7 @@ import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
@@ -15,22 +16,33 @@ import {
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
-import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 
-const uploadDocumentsSchema = z.object({
-  bvn: kycBvnSchema,
-  ninNumber: kycNinRequiredSchema,
-  formAId: formAIdSchema,
-  passportDocumentNumber: passportNumberSchema,
-  evidenceOfMembershipFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Evidence of Membership is required",
-  }),
-  evidenceOfMembershipNumber: z.string().min(1, "Evidence of Membership Number is required").max(50, "Evidence of Membership Number is too long"),
-  invoiceFromProfessionalBodyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Invoice from Professional Body is required",
-  }),
-  invoiceFromProfessionalBodyNumber: z.string().min(1, "Invoice from Professional Body Number is required").max(50, "Invoice from Professional Body Number is too long"),
-});
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    formAId: formAIdSchema,
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    evidenceOfMembershipFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Evidence of Membership is required",
+    }),
+    evidenceOfMembershipNumber: z.string().min(1, "Evidence of Membership Number is required").max(50, "Evidence of Membership Number is too long"),
+    invoiceFromProfessionalBodyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Invoice from Professional Body is required",
+    }),
+    invoiceFromProfessionalBodyNumber: z.string().min(1, "Invoice from Professional Body Number is required").max(50, "Invoice from Professional Body Number is too long"),
+  })
+  .superRefine(validatePassportDates);
 
 export type ProfessionalBodyUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -70,6 +82,8 @@ export default function ProfessionalBodyUploadDocumentsStep({
       ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       evidenceOfMembershipFile: initialValues?.evidenceOfMembershipFile ?? null,
       evidenceOfMembershipNumber: initialValues?.evidenceOfMembershipNumber || "",
       invoiceFromProfessionalBodyFile: initialValues?.invoiceFromProfessionalBodyFile ?? null,
@@ -104,7 +118,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
         <p className="text-body-text-200">
           {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
           Please note the maximum you can
-          transact is <strong>$2,000 per quarter</strong>.
+          transact is <strong>$4,000 per quarter</strong>.
         </p>
         {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
@@ -165,6 +179,44 @@ export default function ProfessionalBodyUploadDocumentsStep({
         autoComplete="off"
         {...form.getInputProps("passportDocumentNumber")}
       />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
+          required
+          rightSectionPointerEvents="all"
+          size="md"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
+          required
+          size="md"
+          rightSectionPointerEvents="all"
+          minDate={new Date()}
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+      </div>
 
       <TransactionFileUploadInput
         label="Evidence of Membership"

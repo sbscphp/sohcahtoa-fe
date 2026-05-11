@@ -64,9 +64,38 @@ export function beneficiaryDetailsFromBankForm(
   return details;
 }
 
+type TransactionAmountSide = "send" | "receive";
+
+function normalizeCurrency(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toUpperCase();
+}
+
+function inferPrimaryAmountSide(data: Record<string, unknown> | null): TransactionAmountSide {
+  if (!data) return "receive";
+
+  const sendCurrency = normalizeCurrency(data.sendCurrency);
+  const receiveCurrency = normalizeCurrency(data.receiveCurrency);
+
+  // Buy flows are typically NGN -> FX, sell flows are FX -> NGN.
+  if (sendCurrency === "NGN" && receiveCurrency && receiveCurrency !== "NGN") {
+    return "receive";
+  }
+  if (receiveCurrency === "NGN" && sendCurrency && sendCurrency !== "NGN") {
+    return "send";
+  }
+
+  const hasReceiveAmount = data.receiveAmount != null && String(data.receiveAmount).trim() !== "";
+  const hasSendAmount = data.sendAmount != null && String(data.sendAmount).trim() !== "";
+  if (hasReceiveAmount) return "receive";
+  if (hasSendAmount) return "send";
+  return "receive";
+}
+
 function getAmount(data: Record<string, unknown> | null): number {
   if (!data) return 0;
-  const raw = data.receiveAmount ?? data.sendAmount;
+  const side = inferPrimaryAmountSide(data);
+  const raw = side === "send" ? data.sendAmount : data.receiveAmount;
   if (typeof raw === "number") return raw;
   if (typeof raw === "string") return Number.parseFloat(raw) || 0;
   return 0;
@@ -74,9 +103,13 @@ function getAmount(data: Record<string, unknown> | null): number {
 
 function getCurrency(data: Record<string, unknown> | null): string {
   if (!data) return "USD";
-  const raw = data.receiveCurrency ?? data.sendCurrency;
-  return typeof raw === "string" ? raw : "USD";
+  const side = inferPrimaryAmountSide(data);
+  const raw = side === "send" ? data.sendCurrency : data.receiveCurrency;
+  return typeof raw === "string" && raw.trim() ? raw : "USD";
 }
+
+/** Set by the buy vs sell route / agent flow — not inferred from currency fields. */
+export type TransactionPayloadMode = "BUY" | "SELL";
 
 function buildPickupLocation(data: Record<string, unknown> | null): PickupLocation | undefined {
   if (!data || typeof data.locationId !== "string") return undefined;
@@ -110,6 +143,12 @@ function buildPTAPayload(
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
+    passportDocumentNumber:
+      typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
+    passportIssueDate:
+      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
+    passportExpiryDate:
+      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
@@ -131,6 +170,12 @@ function buildBTAPayload(
     destinationCountry: "United States",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
+    passportDocumentNumber:
+      typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
+    passportIssueDate:
+      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
+    passportExpiryDate:
+      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
@@ -156,7 +201,6 @@ function buildTouristPayload(
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     passportIssueDate: upload?.passportIssueDate ?? undefined,
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
-    visaDocumentNumber: upload?.visaDocumentNumber ?? undefined,
     returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
     documents, 
     pickupLocation: buildPickupLocation(pickup ?? null),
@@ -179,6 +223,12 @@ function buildSchoolFeesPayload(
     destinationCountry: "United Kingdom",
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
     admissionType: (upload?.admissionType as "UNDERGRADUATE" | "POSTGRADUATE" | "OTHER") ?? undefined,
+    passportDocumentNumber:
+      typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
+    passportIssueDate:
+      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
+    passportExpiryDate:
+      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };
@@ -201,6 +251,12 @@ function buildMedicalPayload(
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
+    passportDocumentNumber:
+      typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
+    passportIssueDate:
+      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
+    passportExpiryDate:
+      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };
@@ -222,6 +278,12 @@ function buildProfessionalBodyPayload(
     destinationCountry: "United Kingdom",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
+    passportDocumentNumber:
+      typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
+    passportIssueDate:
+      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
+    passportExpiryDate:
+      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };
@@ -245,6 +307,10 @@ function buildResidentFxPayload(
     nin: upload?.ninNumber ?? undefined,
     tinNumber: upload?.tinNumber ?? undefined,
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
+    passportIssueDate:
+      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
+    passportExpiryDate:
+      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
@@ -279,35 +345,47 @@ function buildExpatriateFxPayload(
 /**
  * Builds the API payload for the given transaction type from collected form data and uploaded documents.
  * Pure function: no side effects, easily testable.
+ *
+ * @param mode - Pass `"BUY"` from buy FX routes or `"SELL"` from sell FX routes (agent mirrors customer).
  */
 export function buildTransactionPayload(
   transactionType: TransactionType,
   bag: TransactionFormDataBag,
-  documents: TransactionDocument[]
+  documents: TransactionDocument[],
+  mode: TransactionPayloadMode
 ): CreateTransactionRequest {
+  const amount = bag.transactionAmountData;
+  let payload: CreateTransactionRequest;
   switch (transactionType) {
     case "PTA":
-      return buildPTAPayload(bag, documents);
+      payload = buildPTAPayload(bag, documents);
+      break;
     case "BTA":
-      return buildBTAPayload(bag, documents);
+      payload = buildBTAPayload(bag, documents);
+      break;
     case "TOURIST_FX":
-      return buildTouristPayload(bag, documents);
+      payload = buildTouristPayload(bag, documents);
+      break;
     case "SCHOOL_FEES":
-      return buildSchoolFeesPayload(bag, documents);
+      payload = buildSchoolFeesPayload(bag, documents);
+      break;
     case "MEDICAL":
-      return buildMedicalPayload(bag, documents);
+      payload = buildMedicalPayload(bag, documents);
+      break;
     case "PROFESSIONAL_BODY":
-      return buildProfessionalBodyPayload(bag, documents);
+      payload = buildProfessionalBodyPayload(bag, documents);
+      break;
     case "RESIDENT_FX":
-      return buildResidentFxPayload(bag, documents);
+      payload = buildResidentFxPayload(bag, documents);
+      break;
     case "EXPATRIATE_FX":
-      return buildExpatriateFxPayload(bag, documents);
+      payload = buildExpatriateFxPayload(bag, documents);
+      break;
     default: {
-      const amount = bag.transactionAmountData;
       const bank = bag.bankDetailsData as Record<string, unknown> | null;
       const pickup = bag.pickupPointData;
 
-      return {
+      payload = {
         type: transactionType as TransactionTypeAPI,
         currency: getCurrency(amount),
         amount: getAmount(amount),
@@ -319,4 +397,5 @@ export function buildTransactionPayload(
       };
     }
   }
+  return { ...payload, mode };
 }

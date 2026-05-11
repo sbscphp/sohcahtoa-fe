@@ -80,6 +80,15 @@ const uploadDocumentsSchema = z
           message: passportResult.error.issues[0]?.message ?? "International Passport Number is required",
         });
       }
+      requireText("passportIssueDate", "Passport Issued Date is required");
+      requireText("passportExpiryDate", "Passport Expiry Date is required");
+      validatePassportDates(
+        {
+          passportIssueDate: (data.passportIssueDate ?? "").toString(),
+          passportExpiryDate: (data.passportExpiryDate ?? "").toString(),
+        },
+        ctx
+      );
       return;
     }
 
@@ -233,6 +242,8 @@ export default function SchoolFeesUploadDocumentsStep({
           schoolInvoiceFile={form.values.schoolInvoiceFile ?? null}
           passportFile={form.values.passportFile ?? null}
           passportDocumentNumber={form.values.passportDocumentNumber || ""}
+          passportIssueDate={form.values.passportIssueDate || ""}
+          passportExpiryDate={form.values.passportExpiryDate || ""}
           onEvidenceOfAdmissionChange={(file) => form.setFieldValue("evidenceOfAdmissionFile", file)}
           onSchoolInvoiceChange={(file) => form.setFieldValue("schoolInvoiceFile", file)}
           onPassportChange={(file) => form.setFieldValue("passportFile", file)}
@@ -241,10 +252,14 @@ export default function SchoolFeesUploadDocumentsStep({
             form.setFieldValue("passportDocumentNumber", normalized);
             form.validateField("passportDocumentNumber");
           }}
+          onPassportIssueDateChange={(value) => form.setFieldValue("passportIssueDate", value)}
+          onPassportExpiryDateChange={(value) => form.setFieldValue("passportExpiryDate", value)}
           evidenceOfAdmissionError={form.errors.evidenceOfAdmissionFile as string}
           schoolInvoiceError={form.errors.schoolInvoiceFile as string}
           passportError={form.errors.passportFile as string}
           passportNumberError={form.errors.passportDocumentNumber as string}
+          passportIssueDateError={form.errors.passportIssueDate as string}
+          passportExpiryDateError={form.errors.passportExpiryDate as string}
         />
       )}
 

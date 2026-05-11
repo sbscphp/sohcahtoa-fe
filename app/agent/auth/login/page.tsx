@@ -179,7 +179,7 @@ export default function AgentLoginPage() {
           </div>
 
           <div className="flex justify-between gap-2">
-          <Anchor
+          {/* <Anchor
               component="button"
               type="button"
               c="red"
@@ -188,7 +188,8 @@ export default function AgentLoginPage() {
               onClick={() => router.push("/agent/auth/create-password")}
             >
               Create Password
-            </Anchor>
+            </Anchor> */}
+            <div></div>
             <Anchor
               component="button"
               type="button"

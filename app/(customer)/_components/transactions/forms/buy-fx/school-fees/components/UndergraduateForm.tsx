@@ -1,22 +1,32 @@
 "use client";
 
 import { TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { FileWithPath } from "@mantine/dropzone";
-import TransactionFileUploadInput from '../../../../../forms/TransactionFileUploadInput';
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import { formatDateToIso } from "@/app/(customer)/_utils/input-validation";
+import TransactionFileUploadInput from "../../../../../forms/TransactionFileUploadInput";
 
 interface UndergraduateFormProps {
   evidenceOfAdmissionFile: FileWithPath | null;
   schoolInvoiceFile: FileWithPath | null;
   passportFile: FileWithPath | null;
   passportDocumentNumber: string;
+  passportIssueDate: string;
+  passportExpiryDate: string;
   onEvidenceOfAdmissionChange: (file: FileWithPath | null) => void;
   onSchoolInvoiceChange: (file: FileWithPath | null) => void;
   onPassportChange: (file: FileWithPath | null) => void;
   onPassportNumberChange: (value: string) => void;
+  onPassportIssueDateChange: (isoDate: string) => void;
+  onPassportExpiryDateChange: (isoDate: string) => void;
   evidenceOfAdmissionError?: string;
   schoolInvoiceError?: string;
   passportError?: string;
   passportNumberError?: string;
+  passportIssueDateError?: string;
+  passportExpiryDateError?: string;
 }
 
 export default function UndergraduateForm({
@@ -24,14 +34,20 @@ export default function UndergraduateForm({
   schoolInvoiceFile,
   passportFile,
   passportDocumentNumber,
+  passportIssueDate,
+  passportExpiryDate,
   onEvidenceOfAdmissionChange,
   onSchoolInvoiceChange,
   onPassportChange,
   onPassportNumberChange,
+  onPassportIssueDateChange,
+  onPassportExpiryDateChange,
   evidenceOfAdmissionError,
   schoolInvoiceError,
   passportError,
   passportNumberError,
+  passportIssueDateError,
+  passportExpiryDateError,
 }: UndergraduateFormProps) {
   return (
     <>
@@ -70,6 +86,34 @@ export default function UndergraduateForm({
         onChange={(e) => onPassportNumberChange(e.target.value)}
         error={passportNumberError}
       />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
+          required
+          size="md"
+          value={passportIssueDate?.trim() ? new Date(passportIssueDate) : null}
+          onChange={(value) => {
+            onPassportIssueDateChange(formatDateToIso(value));
+          }}
+          error={passportIssueDateError}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
+          required
+          size="md"
+          minDate={new Date()}
+          value={passportExpiryDate?.trim() ? new Date(passportExpiryDate) : null}
+          onChange={(value) => {
+            onPassportExpiryDateChange(formatDateToIso(value));
+          }}
+          error={passportExpiryDateError}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+      </div>
     </>
   );
 }
