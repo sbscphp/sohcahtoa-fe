@@ -578,6 +578,7 @@ export interface PickupLocation {
 
 export interface CreateTransactionRequest {
   type: TransactionTypeAPI;
+  mode?: "BUY" | "SELL" | string;
   currency: string;
   amount: number;
   purpose: string;

@@ -39,7 +39,7 @@ export type DocumentType =
   | "DIGITAL_SIGNATURE";
 
 export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, DocumentType[]> = {
-  PTA: ["BVN", "NIN", "PASSPORT", "VISA", "RETURN_TICKET", "FORM_A_DOCUMENT"],
+  PTA: ["BVN", "NIN", "PASSPORT", "VISA", "RETURN_TICKET"],
   // Buy FX – Business Travel Allowance (BTA)
   BTA: [
     "TIN",
@@ -59,14 +59,7 @@ export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, Document
     "DEGREE",
   ],
   // Buy FX – Medical
-  MEDICAL: [
-    "PASSPORT",
-    "VISA",
-    "RETURN_TICKET",
-    "FORM_A_DOCUMENT",
-    "MEDICAL_LETTER",
-    "OVERSEAS_MEDICAL_LETTER",
-  ],
+  MEDICAL: ["PASSPORT", "VISA", "RETURN_TICKET", "MEDICAL_LETTER", "OVERSEAS_MEDICAL_LETTER"],
   // Buy FX – Professional Body
   PROFESSIONAL_BODY: ["MEMBERSHIP_CARD", "INVOICE"],
   // Buy FX – Tourist FX

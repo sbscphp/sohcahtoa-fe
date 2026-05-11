@@ -35,7 +35,6 @@ const uploadDocumentsSchema = z.object({
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
-  visaDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Valid Visa Number is too long"),
   visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
@@ -88,7 +87,6 @@ export default function TouristUploadDocumentsStep({
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
-      visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       visaFile: initialValues?.visaFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
       receiptForInitialNairaPurchaseFile: initialValues?.receiptForInitialNairaPurchaseFile ?? null,
@@ -194,6 +192,7 @@ export default function TouristUploadDocumentsStep({
         <DateInput
           placeholder="Select"
           label="Passport Issued Date"
+          rightSectionPointerEvents="all"
           required
           size="md"
           value={
@@ -210,6 +209,7 @@ export default function TouristUploadDocumentsStep({
         <DateInput
           placeholder="Select"
           label="Passport Expiry Date"
+          rightSectionPointerEvents="all"
           required
           size="md"
           minDate={new Date()}
@@ -232,16 +232,6 @@ export default function TouristUploadDocumentsStep({
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}
-      />
-
-      <TextInput
-        label="Valid Visa Number"
-        required
-        size="md"
-        placeholder="Enter Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("visaDocumentNumber")}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

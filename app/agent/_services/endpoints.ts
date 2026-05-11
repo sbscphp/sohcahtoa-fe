@@ -18,12 +18,29 @@ export const AGENT_API_ENDPOINTS = {
       `/api/agent/customers/${userId}/transactions`,
   },
   customerAuth: {
+    passport: {
+      upload: "/api/auth/kyc/passport/upload",
+    },
     nigerian: {
       verifyBvn: "/api/agent/customer-auth/verify-bvn",
       sendOtp: "/api/agent/customer-auth/send-otp",
       resendOtp: "/api/agent/customer-auth/resend-otp",
       validateOtp: "/api/agent/customer-auth/validate-otp",
       createAccount: "/api/agent/customer-auth/create-account",
+    },
+    tourist: {
+      verifyPassport: "/api/agent/customer-auth/tourist/verify-passport",
+      sendOtp: "/api/agent/customer-auth/tourist/send-otp",
+      resendOtp: "/api/agent/customer-auth/tourist/resend-otp",
+      validateOtp: "/api/agent/customer-auth/tourist/validate-otp",
+      createAccount: "/api/agent/customer-auth/tourist/create-account",
+    },
+    expatriate: {
+      verifyPassport: "/api/agent/customer-auth/expatriate/verify-passport",
+      sendOtp: "/api/agent/customer-auth/expatriate/send-otp",
+      resendOtp: "/api/agent/customer-auth/expatriate/resend-otp",
+      validateOtp: "/api/agent/customer-auth/expatriate/validate-otp",
+      createAccount: "/api/agent/customer-auth/expatriate/create-account",
     },
   },
 

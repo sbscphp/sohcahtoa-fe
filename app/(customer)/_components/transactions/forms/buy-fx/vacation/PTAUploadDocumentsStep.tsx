@@ -3,11 +3,12 @@
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Alert, Button } from "@mantine/core";
+import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
-import { TextInput } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
-import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
   shouldLockKycPrefill,
   useCustomerProfileBvnNin,
@@ -16,28 +17,33 @@ import {
 import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
-import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 
-const uploadDocumentsSchema = z.object({
-  bvn: kycBvnSchema,
-  ninNumber: kycNinRequiredSchema,
-  formAId: formAIdSchema,
-  passportDocumentNumber: passportNumberSchema,
-  passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "International Passport file is required",
-  }),
-  visaDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Visa Number is too long"),
-  visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Valid Visa file is required",
-  }),
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
-  }),
-  returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Return Ticket file is required",
-  }),
-  returnTicketDocumentNumber: z.string().max(50, "Return Ticket Number is too long").optional().nullable(),
-});
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    formAId: formAIdSchema,
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "International Passport file is required",
+    }),
+    visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Valid Visa file is required",
+    }),
+    returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Return Ticket file is required",
+    }),
+    returnTicketDocumentNumber: z.string().max(50, "Return Ticket Number is too long").optional().nullable(),
+  })
+  .superRefine(validatePassportDates);
 
 export type UploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -78,16 +84,16 @@ export default function PTAUploadDocumentsStep({
 
   const form = useForm<UploadDocumentsFormValues>({
     mode: "uncontrolled",
-    // Backwards-compat: older PTA step stored visa under `passportFile` and passport number under `formADocumentNumber`
+    // Backwards-compat: older PTA step stored passport number under `formADocumentNumber`
     initialValues: {
       bvn: initialValues?.bvn || kyc.defaultBvn || "",
       ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || initialValues?.formADocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
-      visaDocumentNumber: initialValues?.visaDocumentNumber || initialValues?.passportDocumentNumber || "",
-      visaFile: initialValues?.visaFile ?? (initialValues?.passportFile ?? null),
-      formAFile: initialValues?.formAFile ?? null,
+      visaFile: initialValues?.visaFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
       returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
     },
@@ -184,20 +190,47 @@ export default function PTAUploadDocumentsStep({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        <TransactionFileUploadInput
-          label="Upload International Passport"
+      <TransactionFileUploadInput
+        label="Upload International Passport"
+        required
+        value={form.values.passportFile}
+        onChange={(file) => form.setFieldValue("passportFile", file)}
+        error={form.errors.passportFile as string}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
           required
-          value={form.values.passportFile}
-          onChange={(file) => form.setFieldValue("passportFile", file)}
-          error={form.errors.passportFile as string}
+          size="md"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
-        <TransactionFileUploadInput
-          label="Upload Form A"
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
           required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
+          size="md"
+          minDate={new Date()}
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
       </div>
 
@@ -210,16 +243,6 @@ export default function PTAUploadDocumentsStep({
       />
 
       <div className="space-y-3 ">
-      <TextInput
-              label="Valid Visa Number"
-              required
-              size="md"
-              placeholder="Enter  Visa Number"
-              maxLength={50}
-              {...form.getInputProps("visaDocumentNumber")}
-            />
-
-
         <div className="space-y-2">
         <TransactionFileUploadInput
             label="Upload Return Ticket"

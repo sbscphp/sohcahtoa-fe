@@ -40,7 +40,6 @@ const uploadDocumentsSchema = z.object({
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
-  visaDocumentNumber: z.string().min(1, "Visa document number is required").max(50, "Document number is too long"),
   visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
@@ -101,7 +100,6 @@ export default function BTAUploadDocumentsStep({
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
-      visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       visaFile: initialValues?.visaFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
       letterFromCompanyFile: initialValues?.letterFromCompanyFile ?? null,
@@ -281,14 +279,6 @@ export default function BTAUploadDocumentsStep({
             value={form.values.visaFile}
             onChange={(file) => form.setFieldValue("visaFile", file)}
             error={form.errors.visaFile as string}
-          />
-          <TextInput
-            label="Visa document number"
-            required
-            size="md"
-            placeholder="Enter Visa Number"
-            maxLength={50}
-            {...form.getInputProps("visaDocumentNumber")}
           />
         </div>
 

@@ -44,7 +44,6 @@ export function getDocumentUploadSpec(
     case "PTA":
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
       break;
     case "BTA":
@@ -77,7 +76,6 @@ export function getDocumentUploadSpec(
       break;
     case "MEDICAL":
       // Buy FX – Medical
-      collectFileAndType(uploadStepData, "formAFile", "FORM_A_DOCUMENT", spec);
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);

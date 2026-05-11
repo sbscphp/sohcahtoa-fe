@@ -4,11 +4,19 @@ import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
-import { passportNumberSchema } from "@/app/(customer)/_utils/input-validation";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 import {
   shouldLockKycPrefill,
   useCustomerProfileBvnNin,
@@ -16,20 +24,24 @@ import {
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 
-const uploadDocumentsSchema = z.object({
-  bvn: kycBvnSchema,
-  ninNumber: kycNinRequiredSchema,
-  tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
-  passportDocumentNumber: passportNumberSchema,
-  internationalPassportFile: z
-    .custom<FileWithPath | null>()
-    .refine((file) => file !== null, {
-      message: "International Passport is required",
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    internationalPassportFile: z
+      .custom<FileWithPath | null>()
+      .refine((file) => file !== null, {
+        message: "International Passport is required",
+      }),
+    utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Utility Bill is required",
     }),
-  utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Utility Bill is required",
-  }),
-});
+  })
+  .superRefine(validatePassportDates);
 
 export type ResidentUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -81,6 +93,8 @@ export default function ResidentUploadDocumentsStep({
         initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       tinNumber: initialValues?.tinNumber || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       internationalPassportFile: initialValues?.internationalPassportFile ?? null,
       utilityBillFile: initialValues?.utilityBillFile ?? null,
     },
@@ -184,6 +198,42 @@ export default function ResidentUploadDocumentsStep({
         onChange={(file) => form.setFieldValue("internationalPassportFile", file)}
         error={form.errors.internationalPassportFile as string}
       />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
+          required
+          size="md"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
+          required
+          size="md"
+          minDate={new Date()}
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+      </div>
 
       <TransactionFileUploadInput
         label="Utility Bill"

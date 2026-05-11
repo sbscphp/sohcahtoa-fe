@@ -74,6 +74,7 @@ export default function PostgraduateForm({
         <DateInput
           placeholder="Select"
           label="Passport Issued Date"
+          rightSectionPointerEvents="all"
           required
           size="md"
           value={passportIssueDate && passportIssueDate.trim() ? new Date(passportIssueDate) : null}
@@ -92,6 +93,7 @@ export default function PostgraduateForm({
           placeholder="Select"
           label="Passport Expiry Date"
           required
+          rightSectionPointerEvents="all"
           minDate={new Date()}
           size="md"
           value={passportExpiryDate && passportExpiryDate.trim() ? new Date(passportExpiryDate) : null}

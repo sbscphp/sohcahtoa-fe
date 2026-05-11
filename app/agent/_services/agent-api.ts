@@ -33,12 +33,14 @@ import type {
   SendOtpResponse,
   UnreadCountResponse,
   UpdateNotificationPreferencesRequest,
+  UploadPassportResponse,
   ValidateOtpRequestNigerian,
   ValidateOtpResponse,
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
   VerifyBvnRequest,
   VerifyBvnResponse,
+  VerifyPassportResponse,
   CalculateTransactionRateRequest,
   CalculateTransactionRateResponse,
   TransactionListParams,
@@ -92,6 +94,26 @@ export interface AgentCreateCustomerAccountRequest {
   verificationToken: string;
   password: string;
   customerType: "NIGERIAN_CITIZEN" | "EXPATRIATE";
+}
+
+export interface AgentVerifyPassportRequest {
+  passportDocumentUrl: string;
+  passportNumber: string;
+}
+
+export interface AgentPassportOtpRequest {
+  verificationToken: string;
+  verificationType: "phone" | "email";
+}
+
+export interface AgentPassportValidateOtpRequest {
+  verificationToken: string;
+  otp: string;
+}
+
+export interface AgentPassportCreateAccountRequest {
+  verificationToken: string;
+  password: string;
 }
 
 export const agentApi = {
@@ -221,6 +243,14 @@ export const agentApi = {
   },
 
   customerAuth: {
+    passport: {
+      upload: (data: FormData) =>
+        apiClient.post<UploadPassportResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.passport.upload,
+          data,
+          { skipAuth: true }
+        ),
+    },
     nigerian: {
       verifyBvn: (data: VerifyBvnRequest) =>
         apiClient.post<VerifyBvnResponse>(
@@ -245,6 +275,60 @@ export const agentApi = {
       createAccount: (data: AgentCreateCustomerAccountRequest) =>
         apiClient.post<LoginResponse>(
           AGENT_API_ENDPOINTS.customerAuth.nigerian.createAccount,
+          data
+        ),
+    },
+    tourist: {
+      verifyPassport: (data: AgentVerifyPassportRequest) =>
+        apiClient.post<VerifyPassportResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.tourist.verifyPassport,
+          data
+        ),
+      sendOtp: (data: AgentPassportOtpRequest) =>
+        apiClient.post<SendOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.tourist.sendOtp,
+          data
+        ),
+      resendOtp: (data: AgentPassportOtpRequest) =>
+        apiClient.post<SendOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.tourist.resendOtp,
+          data
+        ),
+      validateOtp: (data: AgentPassportValidateOtpRequest) =>
+        apiClient.post<ValidateOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.tourist.validateOtp,
+          data
+        ),
+      createAccount: (data: AgentPassportCreateAccountRequest) =>
+        apiClient.post<LoginResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.tourist.createAccount,
+          data
+        ),
+    },
+    expatriate: {
+      verifyPassport: (data: AgentVerifyPassportRequest) =>
+        apiClient.post<VerifyPassportResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.expatriate.verifyPassport,
+          data
+        ),
+      sendOtp: (data: AgentPassportOtpRequest) =>
+        apiClient.post<SendOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.expatriate.sendOtp,
+          data
+        ),
+      resendOtp: (data: AgentPassportOtpRequest) =>
+        apiClient.post<SendOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.expatriate.resendOtp,
+          data
+        ),
+      validateOtp: (data: AgentPassportValidateOtpRequest) =>
+        apiClient.post<ValidateOtpResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.expatriate.validateOtp,
+          data
+        ),
+      createAccount: (data: AgentPassportCreateAccountRequest) =>
+        apiClient.post<LoginResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.expatriate.createAccount,
           data
         ),
     },

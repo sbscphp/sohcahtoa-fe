@@ -22,7 +22,6 @@ const uploadDocumentsSchema = z.object({
   visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Valid Visa file is required",
   }),
-  visaDocumentNumber: z.string().min(1, "Valid Visa Number is required").max(50, "Valid Visa Number is too long"),
   returnTicketFile: z
     .custom<FileWithPath | null>()
     .refine((file) => file !== null, {
@@ -64,7 +63,6 @@ export default function TouringNigeriaUploadDocumentsStep({
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       visaFile: initialValues?.visaFile ?? null,
-      visaDocumentNumber: initialValues?.visaDocumentNumber || "",
       returnTicketFile: initialValues?.returnTicketFile ?? null,
       returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
       receiptForInitialNairaPurchaseFile: initialValues?.receiptForInitialNairaPurchaseFile ?? null,
@@ -163,16 +161,6 @@ export default function TouringNigeriaUploadDocumentsStep({
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}
-      />
-
-      <TextInput
-        label="Valid Visa Number"
-        required
-        size="md"
-        placeholder="Enter Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("visaDocumentNumber")}
       />
 
       <TransactionFileUploadInput

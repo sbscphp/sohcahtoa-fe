@@ -142,7 +142,7 @@ export default function AgentSellTransactionCreationPage() {
           })
         : [];
       const documents = toTransactionDocuments(uploaded);
-      const payload = buildTransactionPayload(transactionType, bag, documents);
+      const payload = buildTransactionPayload(transactionType, bag, documents, "SELL");
 
       const created = await createTransaction.mutateAsync({
         ...payload,
