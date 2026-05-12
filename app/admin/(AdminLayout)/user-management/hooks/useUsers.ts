@@ -6,6 +6,7 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 
 export interface AdminUserItem {
   id: string;
+  sequenceId: string;
   email: string;
   fullName: string;
   phoneNumber: string;

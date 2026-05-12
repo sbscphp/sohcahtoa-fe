@@ -86,7 +86,7 @@ export default function UsersTable() {
         {user.fullName}
       </Text>
       <Text size="xs" c="dimmed">
-        ID:{user.id}
+        ID:{user.sequenceId}
       </Text>
     </div>,
 
