@@ -224,7 +224,7 @@ export default function ViewAdminUserDetails() {
             </Text>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-y-6 gap-x-10">
-              <DetailItem label="User ID" value={user?.id ?? "—"} loading={isLoading} />
+              <DetailItem label="User ID" value={user?.sequenceId ?? "—"} loading={isLoading} />
               <DetailItem
                 label="Role"
                 value={user?.roleName ?? user?.roleId ?? "—"}
