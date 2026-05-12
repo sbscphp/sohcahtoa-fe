@@ -1,44 +1,42 @@
 /**
- * Transaction type / display name come from the API.
- * Do not derive or map transaction type labels on the frontend.
+ * Transaction type.
  */
 
-export type DetailViewStatus = "under_review" | "awaiting_disbursement" | "transaction_settled";
+export const TRANSACTION_STATUS_LABELS = {
+  DRAFT: "Draft",
+  AWAITING_VERIFICATION: "Awaiting verification",
+  VERIFICATION_IN_PROGRESS: "Verification in progress",
+  VERIFICATION_COMPLETED: "Verification completed",
+  AWAITING_DEPOSIT: "Awaiting deposit",
+  DEPOSIT_PENDING: "Deposit pending",
+  DEPOSIT_CONFIRMED: "Deposit confirmed",
+  COMPLIANCE_REVIEW: "Compliance review",
+  ADMIN_APPROVAL_PENDING: "Admin approval pending",
+  APPROVED: "Approved",
+  DISBURSEMENT_IN_PROGRESS: "Disbursement in progress",
+  PENDING_RECORD_VALIDATION: "Pending record validation",
+  COMPLETED: "Completed",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+  AWAITING_DISBURSEMENT: "Awaiting disbursement",
+} as const;
 
-/**
- * Derives which detail view to show from stage/status.
- * - Under Review: only Transaction Details + Required Documents; show "View Updates".
- * - Awaiting Disbursement: above + Payment Details; show "View Updates".
- * - Transaction Settled: all four sections; show "Download Receipt".
- */
-export function getDetailViewStatus(
-  stage: string,
-  status: string
-): DetailViewStatus {
-  const stageLower = stage.trim().toLowerCase();
-  const statusLower = status.trim().toLowerCase();
-  if (
-    stageLower.includes("settlement") ||
-    statusLower === "completed" ||
-    statusLower === "approved"
-  ) {
-    return "transaction_settled";
-  }
-  if (
-    stageLower.includes("disbursement") ||
-    stageLower.includes("awaiting")
-  ) {
-    return "awaiting_disbursement";
-  }
-  return "under_review";
+export type TransactionStatus = keyof typeof TRANSACTION_STATUS_LABELS;
+
+export function normalizeTransactionStatus(raw: string | null | undefined): string {
+  return (raw ?? "").trim().toUpperCase();
 }
 
-const DETAIL_VIEW_STATUS_LABELS: Record<DetailViewStatus, string> = {
-  under_review: "Under Review",
-  awaiting_disbursement: "Awaiting Disbursement",
-  transaction_settled: "Transaction Settled",
-};
-
-export function getDetailViewStatusLabel(viewStatus: DetailViewStatus): string {
-  return DETAIL_VIEW_STATUS_LABELS[viewStatus];
+/** Label for badges, timeline titles, etc. Title-cases unknown API values. */
+export function getTransactionStatusLabel(status: string | null | undefined): string {
+  const key = normalizeTransactionStatus(status) as TransactionStatus;
+  if (key && key in TRANSACTION_STATUS_LABELS) {
+    return TRANSACTION_STATUS_LABELS[key];
+  }
+  const s = (status ?? "").trim();
+  if (!s) return s;
+  return s
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

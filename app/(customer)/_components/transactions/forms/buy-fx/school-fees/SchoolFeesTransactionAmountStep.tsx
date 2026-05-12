@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -8,6 +9,11 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
+import { isAmountOverRequiredAmount } from "../../amount-step-utils";
+import ProofOfFundPrompt from "../../ProofOfFundPrompt";
+import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { notifications } from "@mantine/notifications";
 
 const transactionAmountSchema = z.object({
   receiveAmount: z.string().min(1, "Amount is required"),
@@ -15,6 +21,7 @@ const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
   sendCurrency: z.string().min(1, "Currency is required"),
   exchangeRate: z.string().optional(),
+  proofOfFundsFiles: z.custom<File[]>().optional(),
 });
 
 export type SchoolFeesTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
@@ -32,6 +39,10 @@ export default function SchoolFeesTransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: SchoolFeesTransactionAmountStepProps) {
+  const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(
+    initialValues?.proofOfFundsFiles ?? []
+  );
   const form = useForm<SchoolFeesTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -40,12 +51,36 @@ export default function SchoolFeesTransactionAmountStep({
       sendAmount: initialValues?.sendAmount || "",
       sendCurrency: initialValues?.sendCurrency || "NGN",
       exchangeRate: initialValues?.exchangeRate || exchangeRate,
+      proofOfFundsFiles: initialValues?.proofOfFundsFiles ?? [],
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const { displayRate, recalculate } = useTransactionRateCalculator({
+    getValues: () => form.values,
+    setSendAmount: (value) => form.setFieldValue("sendAmount", value),
+    setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
+    defaultLabel: exchangeRate,
+  });
+
+  const needsProofOfFund = isAmountOverRequiredAmount(
+    form.values.receiveAmount,
+    form.values.receiveCurrency,
+    form.values.sendAmount,
+    form.values.sendCurrency,
+    10000
+  );
+
+  const nextDisabled =
+    !form.values.receiveAmount?.trim() ||
+    !form.values.sendAmount?.trim() ||
+    (needsProofOfFund && proofOfFundsFiles.length === 0);
+
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values);
+    onSubmit({
+      ...values,
+      proofOfFundsFiles,
+    });
   });
 
   const handleSwap = () => {
@@ -73,19 +108,48 @@ export default function SchoolFeesTransactionAmountStep({
           <CurrencyAmountInput
             label="You Get Exactly"
             value={form.values.receiveAmount}
-            onChange={(value) => form.setFieldValue("receiveAmount", value)}
+            onChange={(value) => {
+              form.setFieldValue("receiveAmount", value);
+              recalculate(value);
+            }}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code)}
+            onCurrencyChange={(c) => {
+              form.setFieldValue("receiveCurrency", c.code);
+              recalculate(undefined, c.code);
+            }}
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
+          <div className="w-full">
+            <ProofOfFundPrompt
+              show={needsProofOfFund}
+              thresholdUsd={10000}
+              onUploadClick={() => setProofModalOpen(true)}
+            />
+          </div>
         </div>
+
+        <ProofOfFundModal
+          opened={proofModalOpen}
+          onClose={() => setProofModalOpen(false)}
+          onAttach={(files: File[]) => {
+            setProofOfFundsFiles(files);
+            setProofModalOpen(false);
+          }}
+        />
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            // onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >
@@ -103,11 +167,12 @@ export default function SchoolFeesTransactionAmountStep({
               placeholder="0"
               error={form.errors.sendAmount?.toString() || undefined}
               showDropdown={false}
+              disabled
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full h-14 bg-black rounded-b-3xl">
             <span className="font-normal text-base leading-6 text-white">Exchange Rate</span>
-            <span className="font-normal text-base leading-6 text-white">{exchangeRate}</span>
+            <span className="font-normal text-base leading-6 text-white">{displayRate}</span>
           </div>
         </div>
       </div>
@@ -131,6 +196,7 @@ export default function SchoolFeesTransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

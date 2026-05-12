@@ -2,7 +2,22 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
+import {
+  getBuyOverThresholdProofOfFundsUploadSpec,
+  getDocumentUploadSpec,
+} from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  buildTransactionPayload,
+  toTransactionDocuments,
+  type TransactionFormDataBag,
+} from "@/app/(customer)/_utils/transaction-payload";
+import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import {
   type TransactionStep,
   getStepsForTransactionType,
@@ -27,6 +42,7 @@ import TouristUploadDocumentsStep from "@/app/(customer)/_components/transaction
 import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
 import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
 import type { PickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
@@ -45,6 +61,8 @@ import type { ProfessionalBodyBankDetailsFormData } from "@/app/(customer)/_comp
 import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
 import type { TouristTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import type { TouristPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import { notifications } from "@mantine/notifications";
 
 const TRANSACTION_TYPE_MAP = {
   vacation: "pta",
@@ -106,6 +124,10 @@ export default function TransactionCreationPage() {
     | null
   >(null);
 
+  const userProfile = useAtomValue(userProfileAtom);
+  const uploadDocuments = useUploadDocuments();
+  const createTransaction = useCreateData(customerApi.transactions.create);
+
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
   const handleUploadDocumentsSubmit = (
@@ -155,25 +177,87 @@ export default function TransactionCreationPage() {
     setConfirmationOpened(true);
   };
 
-  const handleConfirmInitiate = () => {
-    console.log("Transaction data:", {
-      type: isBTA
-        ? "BTA"
-        : isSchoolFees
-          ? "School Fees"
-          : isMedical
-            ? "Medical"
-            : isProfessionalBody
-              ? "Professional Fee"
-              : isTourist
-                ? "Tourist"
-                : "PTA",
-      uploadDocuments: uploadDocumentsData,
-      transactionAmount: transactionAmountData,
-      pickupPoint: pickupPointData,
-      bankDetails: bankDetailsData,
-    });
-    router.push("/dashboard");
+  const handleConfirmInitiate = async () => {
+    if (uploadDocuments.isPending || createTransaction.isPending) return;
+    const transactionType = mapUITypeToAPIType(flowType);
+    if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Incomplete transaction",
+        message: "Complete each step before confirming. Sign in again if the problem continues.",
+        color: "orange",
+      });
+      router.push("/transactions/new/buy");
+      return;
+    }
+
+    const bag: TransactionFormDataBag = {
+      uploadDocumentsData: uploadDocumentsData as Record<string, unknown>,
+      transactionAmountData: transactionAmountData as Record<string, unknown>,
+      pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
+      bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
+    };
+
+    const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
+    if (hasPickup && !pickupPointData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Pickup location required",
+        message: "Go back and select a pickup location before initiating your transaction.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
+      return;
+    }
+    if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Bank details required",
+        message: "Go back and complete your bank details before continuing.",
+        color: "orange",
+      });
+      setActiveStep("bank-details");
+      return;
+    }
+
+    try {
+      const baseSpec = getDocumentUploadSpec(
+        transactionType,
+        bag.uploadDocumentsData,
+        bag.bankDetailsData
+      );
+      const overThresholdProofSpec = getBuyOverThresholdProofOfFundsUploadSpec(
+        bag.transactionAmountData
+      );
+      const combinedSpec =
+        baseSpec || overThresholdProofSpec
+          ? {
+              files: [
+                ...(baseSpec?.files ?? []),
+                ...(overThresholdProofSpec?.files ?? []),
+              ],
+              documentTypes: [
+                ...(baseSpec?.documentTypes ?? []),
+                ...(overThresholdProofSpec?.documentTypes ?? []),
+              ],
+            }
+          : null;
+      const uploaded = combinedSpec
+        ? await uploadDocuments.mutateAsync({
+            file: combinedSpec.files,
+            userId: userProfile.id,
+            documentType: combinedSpec.documentTypes,
+          })
+        : [];
+      const documents = toTransactionDocuments(uploaded);
+      const payload = buildTransactionPayload(transactionType, bag, documents, "BUY");
+      const created = await createTransaction.mutateAsync(payload);
+      setConfirmationOpened(false);
+      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
+    } catch (error) {
+      handleApiError(error);
+      setConfirmationOpened(false);
+    }
   };
 
   const handleBack = () => {
@@ -385,27 +469,16 @@ export default function TransactionCreationPage() {
   };
 
   const confirmTitle = isProfessionalBody
-    ? "Initiate Professional Fee?"
+    ? "Initiate Professional Fee Transaction request?"
     : isMedical
-      ? "Initiate Medical Fee?"
+      ? "Initiate Medical Fee Transaction request?"
       : isSchoolFees
-        ? "Initiate School Fees?"
+        ? "Initiate School Fees Transaction request?"
         : isBTA
-          ? "Initiate BTA?"
+          ? "Initiate BTA Transaction request?"
           : isTourist
-            ? "Initiate Tourist?"
-            : "Initiate PTA?";
-  const confirmDescription = isProfessionalBody
-    ? "Are you sure you want to initiate this professional fee transaction?"
-    : isMedical
-      ? "Are you sure you want to initiate this medical fee transaction?"
-      : isSchoolFees
-        ? "Are you sure you want to initiate this school fees transaction?"
-        : isBTA
-          ? "Are you sure you want to initiate a new BTA?"
-          : isTourist
-            ? "Are you sure you want to initiate this tourist transaction?"
-            : "Are you sure you want to initiate a new PTA?";
+            ? "Initiate Tourist Transaction request?"
+            : "Initiate PTA Transaction request?";
 
   return (
     <div className="space-y-6">
@@ -418,10 +491,12 @@ export default function TransactionCreationPage() {
         opened={confirmationOpened}
         onClose={() => setConfirmationOpened(false)}
         title={confirmTitle}
-        description={confirmDescription}
-        confirmLabel="View Transaction"
+        notices={getBuyFxInitiateNotices(flowType)}
+        confirmLabel="Yes, Initiate Request"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
+        requireInfoConfirmation
+        loading={uploadDocuments.isPending || createTransaction.isPending}
       />
     </div>
   );

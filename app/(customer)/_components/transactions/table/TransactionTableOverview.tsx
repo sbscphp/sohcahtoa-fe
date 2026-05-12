@@ -1,53 +1,64 @@
 "use client";
 
-import { ActionIcon, Text } from "@mantine/core";
-import { CircleArrowRight01Icon, Plus } from "@hugeicons/core-free-icons";
+import { ActionIcon } from "@mantine/core";
+import { Plus } from "@hugeicons/core-free-icons";
 import { Button } from "@mantine/core";
 import Link from "next/link";
-import { TableWrapper, type PaginatedTableColumn, type FilterTabOption } from "../../common";
+import {
+  TableWrapper,
+  type PaginatedTableColumn,
+  type FilterTabOption,
+} from "../../common";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { IconArrowRight } from "@/components/icons/IconArrowRight";
+import { getTransactionStatusLabel } from "@/app/(customer)/_lib/transaction-details";
+import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import type {
+  TableFilterGroup,
+  TableFilterValues,
+} from "@/app/(customer)/_components/common/table/TableFilterSheet";
 
 export interface Transaction {
   id: string;
+  referenceNumber?: string;
   date: string;
   type: string;
   stage: string;
-  status: "Pending" | "Completed" | "Rejected" | "Request More Info" | "Approved";
+  /** Normalized API status (uppercase snake_case). */
+  status: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
 }
 
 interface TransactionTableOverviewProps {
+  filterOptions: FilterTabOption[];
   activeType: string;
   onTypeChange: (type: string) => void;
   onFilterClick?: () => void;
+  filters?: TableFilterGroup[];
+  filterValues?: TableFilterValues;
+  onFiltersApply?: (values: TableFilterValues) => void;
   onExportClick?: () => void;
   transactions: Transaction[];
   pageSize?: number;
   onRowClick?: (transaction: Transaction) => void;
+  isLoading?: boolean;
+  skeletonRowCount?: number;
 }
 
-const statusColors: Record<Transaction["status"], string> = {
-  Pending: "text-yellow-600",
-  Completed: "text-green-600",
-  Rejected: "text-red-600",
-  "Request More Info": "text-blue-600",
-  Approved: "text-green-600",
-};
-
-const FILTER_OPTIONS: FilterTabOption[] = [
-  { value: "Buy FX", label: "Buy FX" },
-  { value: "Sell FX", label: "Sell FX" },
-  { value: "Receive FX", label: "Receive FX" },
-];
-
-export default function TransactionTableOverview({
+export default function  TransactionTableOverview({
+  filterOptions,
   activeType,
   onTypeChange,
   onFilterClick,
+  filters,
+  filterValues,
+  onFiltersApply,
   onExportClick,
   transactions,
   pageSize = 10,
   onRowClick,
+  isLoading = false,
+  skeletonRowCount = 4,
 }: TransactionTableOverviewProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -62,18 +73,9 @@ export default function TransactionTableOverview({
       key: "id",
       label: "Transaction ID",
       render: (transaction) => (
-        <Text
-          size="sm"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            fontSize: "14px",
-            lineHeight: "20px",
-            color: "#4D4B4B",
-          }}
-        >
-          {transaction.id}
-        </Text>
+        <p className="text-body-text-300 font-medium text-sm leading-5 max-w-[150px] truncate">
+          {transaction.referenceNumber ?? transaction.id}
+        </p>
       ),
     },
     {
@@ -83,30 +85,8 @@ export default function TransactionTableOverview({
         const { date, time } = formatDate(transaction.date);
         return (
           <div className="flex flex-col gap-0">
-            <Text
-              size="sm"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 500,
-                fontSize: "14px",
-                lineHeight: "20px",
-                color: "#6C6969",
-              }}
-            >
-              {date}
-            </Text>
-            <Text
-              size="sm"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 400,
-                fontSize: "14px",
-                lineHeight: "20px",
-                color: "#8F8B8B",
-              }}
-            >
-              {time}
-            </Text>
+            <p className="text-body-text-300 text-sm leading-5">{date}</p>
+            <p className="text-body-text-200 text-xs leading-5">{time}</p>
           </div>
         );
       },
@@ -115,46 +95,23 @@ export default function TransactionTableOverview({
       key: "type",
       label: "Transaction Type",
       render: (transaction) => (
-        <Text
-          size="sm"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            fontSize: "14px",
-            lineHeight: "20px",
-            color: "#4D4B4B",
-          }}
-        >
-          {transaction.type}
-        </Text>
+        <p className="text-body-text-400 text-sm leading-5">{transaction.type}</p>
       ),
     },
     {
       key: "stage",
       label: "Transaction Stage",
       render: (transaction) => (
-        <Text
-          size="sm"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            fontSize: "14px",
-            lineHeight: "20px",
-            color: "#4D4B4B",
-          }}
-        >
-          {transaction.stage}
-        </Text>
+        <p className="text-body-text-400 text-sm leading-5">{transaction.stage}</p>
       ),
     },
     {
       key: "status",
       label: "Status",
-      render: (transaction) => (
-        <Text size="sm" className={`font-medium ${statusColors[transaction.status]}`}>
-          {transaction.status}
-        </Text>
-      ),
+      render: (transaction) => {
+        const label = getTransactionStatusLabel(transaction.status);
+          return <div style={getStatusBadge(label)} className="min-w-0 flex-1 truncate capitalize">{label}</div>;
+        },
     },
     {
       key: "action",
@@ -178,7 +135,7 @@ export default function TransactionTableOverview({
           }}
           aria-label="View transaction details"
         >
-          <HugeiconsIcon icon={CircleArrowRight01Icon} className="w-5 h-5 text-primary-300!" />
+          <IconArrowRight className="w-8 h-8" />
         </ActionIcon>
       ),
     },
@@ -188,21 +145,34 @@ export default function TransactionTableOverview({
     
       <TableWrapper
       title="All Transactions"
-      filterOptions={FILTER_OPTIONS}
+      filterOptions={filterOptions}
       activeFilter={activeType}
       onFilterChange={onTypeChange}
       onFilterClick={onFilterClick}
+      filters={filters}
+      filterValues={filterValues}
+      onFiltersApply={onFiltersApply}
+      filterSheetTitle="Filter By"
       onExportClick={onExportClick}
       actionButton={
-        <Link href="/transactions/options">
+        <Link
+          href="/transactions/options"
+          className="block w-full min-w-0 sm:inline-block sm:w-auto"
+        >
           <Button
             variant="filled"
             size="sm"
             radius="xl"
-            rightSection={<HugeiconsIcon icon={Plus} className="w-3.5 h-3.5 hover:text-primary-300!" />}
-            className="bg-primary-400 hover:bg-primary-500"
+            className="w-full min-w-0 justify-center bg-primary-400 hover:bg-primary-500 sm:w-auto"
+            rightSection={
+              <HugeiconsIcon
+                icon={Plus}
+                className="h-3.5 w-3.5 shrink-0 hover:text-primary-300!"
+              />
+            }
           >
-            New Transaction
+            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">New Transaction</span>
           </Button>
         </Link>
       }
@@ -212,6 +182,8 @@ export default function TransactionTableOverview({
       onRowClick={onRowClick}
       keyExtractor={(transaction) => transaction.id}
       emptyMessage="No transactions found"
+      isLoading={isLoading}
+      skeletonRowCount={skeletonRowCount}
     />
 
   );

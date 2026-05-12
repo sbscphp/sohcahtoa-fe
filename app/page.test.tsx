@@ -1,21 +1,24 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@/test-utils";
+import { describe, it, expect, vi } from "vitest";
+import { render } from "@/test-utils";
 import Home from "./page";
+
+const mockRedirect = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    mockRedirect(path);
+  },
+}));
 
 describe("Home Page", () => {
   it("renders the welcome message", () => {
     render(<Home />);
-    const heading = screen.getByRole("heading", {
-      name: /welcome to sohcahtoa/i,
-    });
-    expect(heading).toBeInTheDocument();
+    expect(mockRedirect).toHaveBeenCalledWith("/auth/login");
   });
 
   it("has the correct styling classes", () => {
+    mockRedirect.mockClear();
     render(<Home />);
-    const heading = screen.getByRole("heading", {
-      name: /welcome to sohcahtoa/i,
-    });
-    expect(heading).toHaveClass("text-2xl", "font-bold", "text-primary-orange");
+    expect(mockRedirect).toHaveBeenCalledWith("/auth/login");
   });
 });

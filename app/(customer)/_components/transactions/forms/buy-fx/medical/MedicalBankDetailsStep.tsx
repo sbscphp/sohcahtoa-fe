@@ -2,31 +2,23 @@
 
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
-import { z } from "zod";
-import { Button, Select, TextInput } from "@mantine/core";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ChevronDown } from "@hugeicons/core-free-icons";
+import { Button } from "@mantine/core";
+import InternationalBankDetailsFields from "@/app/(customer)/_components/transactions/forms/InternationalBankDetailsFields";
+import {
+  internationalBankDetailsInitialValues,
+  internationalBankDetailsSchema,
+  type InternationalBankDetailsFormValues,
+} from "@/app/(customer)/_lib/international-bank-details-schema";
 
-const bankDetailsSchema = z.object({
-  bankName: z.string().min(1, "Bank name is required"),
-  accountNumber: z.string().min(1, "Account number is required"),
-  accountName: z.string().min(1, "Account name is required"),
-  iban: z.string().min(1, "IBAN is required"),
-});
-
-export type MedicalBankDetailsFormData = z.infer<typeof bankDetailsSchema>;
-
-const BANK_OPTIONS = [
-  "Access Bank",
-  "First Bank of Nigeria",
-  "GTBank",
-  "Union Bank",
-  "Zenith Bank",
-  "Other",
-];
+export type MedicalBankDetailsFormData = InternationalBankDetailsFormValues;
 
 interface MedicalBankDetailsStepProps {
-  initialValues?: Partial<MedicalBankDetailsFormData>;
+  initialValues?: Partial<MedicalBankDetailsFormData> & {
+    accountName?: string;
+    bankName?: string;
+    accountNumber?: string;
+    iban?: string;
+  };
   onSubmit: (data: MedicalBankDetailsFormData) => void;
   onBack?: () => void;
 }
@@ -35,16 +27,11 @@ export default function MedicalBankDetailsStep({
   initialValues,
   onSubmit,
   onBack,
-}: MedicalBankDetailsStepProps) {
+}: Readonly<MedicalBankDetailsStepProps>) {
   const form = useForm<MedicalBankDetailsFormData>({
     mode: "uncontrolled",
-    initialValues: {
-      bankName: initialValues?.bankName || "",
-      accountNumber: initialValues?.accountNumber || "",
-      accountName: initialValues?.accountName || "",
-      iban: initialValues?.iban || "",
-    },
-    validate: zod4Resolver(bankDetailsSchema),
+    initialValues: internationalBankDetailsInitialValues(initialValues),
+    validate: zod4Resolver(internationalBankDetailsSchema),
   });
 
   const handleSubmit = form.onSubmit((values) => {
@@ -58,45 +45,11 @@ export default function MedicalBankDetailsStep({
           Where would you like to send the fund to?
         </h2>
         <p className="text-body-text-200 text-base max-w-md">
-          Enter recipient bank details
+          Enter recipient bank details. Start by selecting the country where the bank account is held.
         </p>
       </div>
 
-      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
-          label="Bank Name"
-          required
-          placeholder="Select"
-          data={BANK_OPTIONS}
-          size="md"
-          rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
-          {...form.getInputProps("bankName")}
-        />
-
-        <TextInput
-          label="Account Number"
-          required
-          size="md"
-          placeholder="Enter"
-          {...form.getInputProps("accountNumber")}
-        />
-
-        <TextInput
-          label="Account Name"
-          required
-          size="md"
-          placeholder="Enter"
-          {...form.getInputProps("accountName")}
-        />
-
-        <TextInput
-          label="Iban"
-          required
-          size="md"
-          placeholder="Enter"
-          {...form.getInputProps("iban")}
-        />
-      </div>
+      <InternationalBankDetailsFields form={form} />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">
         {onBack && (

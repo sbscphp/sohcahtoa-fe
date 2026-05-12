@@ -4,62 +4,111 @@ import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
-import FileUploadInput from "../../../../forms/FileUploadInput";
 import { FileWithPath } from "@mantine/dropzone";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import TransactionFileUploadInput from "../../../../forms/TransactionFileUploadInput";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
 
-const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
-  }),
-  utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Utility Bill file is required",
-  }),
-  visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Valid Visa file is required",
-  }),
-  ticketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Valid Ticket file is required",
-  }),
-  referenceLetterFromDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Reference Letter from Doctor is required",
-  }),
-  letterFromOverseasDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Letter from overseas doctor stating treatment cost is required",
-  }),
-});
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    formAId: formAIdSchema,
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "International Passport file is required",
+    }),
+    visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Valid Visa file is required",
+    }),
+    returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
+    returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Return Ticket file is required",
+    }),
+    referenceLetterFromDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Reference Letter (Nigerian Specialist or Hospital) is required",
+    }),
+    letterFromOverseasDoctorFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Letter from overseas doctor stating treatment cost is required",
+    }),
+  })
+  .superRefine(validatePassportDates);
 
 export type MedicalUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
 type MedicalUploadDocumentsFormValues = z.input<typeof uploadDocumentsSchema>;
 
+/** Resuming / cross-flow state may pass `null` on optional keys (e.g. PTA shape → medical step). */
+export type MedicalUploadDocumentsInitialValues = {
+  [K in keyof MedicalUploadDocumentsFormValues]?:
+    | MedicalUploadDocumentsFormValues[K]
+    | null;
+};
+
 interface MedicalUploadDocumentsStepProps {
-  initialValues?: Partial<MedicalUploadDocumentsFormValues>;
+  initialValues?: MedicalUploadDocumentsInitialValues;
   onSubmit: (data: MedicalUploadDocumentsFormData) => void;
   onBack?: () => void;
+  lockKycPrefill?: boolean;
 }
 
 export default function MedicalUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
+  lockKycPrefill = false,
 }: MedicalUploadDocumentsStepProps) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(
+    kyc.hasBvnFromProfile,
+    initialValues?.bvn,
+    kyc.defaultBvn
+  );
+  const ninLocked = shouldLockKycPrefill(
+    kyc.hasNinFromProfile,
+    initialValues?.ninNumber,
+    kyc.defaultNin
+  );
+  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
+  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
+
   const form = useForm<MedicalUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
-      bvn: initialValues?.bvn || "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
-      formAFile: initialValues?.formAFile ?? null,
-      utilityBillFile: initialValues?.utilityBillFile ?? null,
+      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
+      passportFile: initialValues?.passportFile ?? null,
       visaFile: initialValues?.visaFile ?? null,
-      ticketFile: initialValues?.ticketFile ?? null,
+      returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
+      returnTicketFile: initialValues?.returnTicketFile ?? null,
       referenceLetterFromDoctorFile: initialValues?.referenceLetterFromDoctorFile ?? null,
       letterFromOverseasDoctorFile: initialValues?.letterFromOverseasDoctorFile ?? null,
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as MedicalUploadDocumentsFormData);
@@ -83,9 +132,8 @@ export default function MedicalUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your medical fee once your documents is approved. Please note the maximum
-          you can transact is <strong>$5,000 per quarter</strong>.
+          Please note the maximum you can
+          transact is <strong>$5,000 per quarter</strong>.
         </p>
       </Alert>
 
@@ -94,71 +142,138 @@ export default function MedicalUploadDocumentsStep({
           label="BVN"
           required
           size="md"
-          placeholder="Enter 11-digit BVN"
+          placeholder="BVN"
           maxLength={11}
           inputMode="numeric"
-          pattern="[0-9]*"
           autoComplete="off"
-          value={form.values.bvn}
-          onBlur={() => form.validateField("bvn")}
-          error={form.errors.bvn}
+          {...form.getInputProps("bvn")}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-            form.setFieldValue("bvn", digits);
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("bvn", raw);
           }}
+          disabled={bvnLocked || forceBvnLock}
         />
-
         <TextInput
-          label="Form A"
+          label="NIN"
+          required
+          size="md"
+          placeholder="NIN"
+          maxLength={11}
+          inputMode="numeric"
+          autoComplete="off"
+          {...form.getInputProps("ninNumber")}
+          onChange={(e) => {
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("ninNumber", raw);
+          }}
+          disabled={ninLocked || forceNinLock}
+        />
+        <TextInput
+          label="Form A ID"
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={30}
+          maxLength={10}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
-
-        <FileUploadInput
-          label="Upload Form A"
+        <TextInput
+          label="International Passport Number"
           required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
+          size="md"
+          placeholder="Enter Passport Number"
+          maxLength={9}
+          autoComplete="off"
+          {...form.getInputProps("passportDocumentNumber")}
         />
+      </div>
 
-        <FileUploadInput
-          label="Upload Utility Bill"
+      <TransactionFileUploadInput
+        label="International Passport"
+        required
+        value={form.values.passportFile}
+        onChange={(file) => form.setFieldValue("passportFile", file)}
+        error={form.errors.passportFile as string}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
           required
-          value={form.values.utilityBillFile}
-          onChange={(file) => form.setFieldValue("utilityBillFile", file)}
-          error={form.errors.utilityBillFile as string}
+          size="md"
+          rightSectionPointerEvents="all"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20}
+          
+          className="text-text-300!" />}
         />
-
-        <FileUploadInput
-          label="Valid Visa"
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
           required
-          value={form.values.visaFile}
-          onChange={(file) => form.setFieldValue("visaFile", file)}
-          error={form.errors.visaFile as string}
+          size="md"
+          minDate={new Date()}
+          rightSectionPointerEvents="all"
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
+      </div>
 
-        <FileUploadInput
-          label="Valid Ticket"
-          required
-          value={form.values.ticketFile}
-          onChange={(file) => form.setFieldValue("ticketFile", file)}
-          error={form.errors.ticketFile as string}
-        />
+      <TransactionFileUploadInput
+        label="Valid Visa"
+        required
+        value={form.values.visaFile}
+        onChange={(file) => form.setFieldValue("visaFile", file)}
+        error={form.errors.visaFile as string}
+      />
 
-        <FileUploadInput
-          label="Reference Letter from Doctor"
+      <TransactionFileUploadInput
+        label="Return Ticket"
+        required
+        value={form.values.returnTicketFile}
+        onChange={(file) => form.setFieldValue("returnTicketFile", file)}
+        error={form.errors.returnTicketFile as string}
+      />
+
+      <TextInput
+        label="Return Ticket Number"
+        required
+        size="md"
+        placeholder="Enter Ticket Number"
+        maxLength={50}
+        autoComplete="off"
+        {...form.getInputProps("returnTicketDocumentNumber")}
+      />
+
+      <div className="grid grid-cols-1 gap-4">
+        <TransactionFileUploadInput
+          label="Reference Letter (Nigerian Specialist or Hospital)"
           required
           value={form.values.referenceLetterFromDoctorFile}
           onChange={(file) => form.setFieldValue("referenceLetterFromDoctorFile", file)}
           error={form.errors.referenceLetterFromDoctorFile as string}
         />
 
-        <FileUploadInput
+        <TransactionFileUploadInput
           label="Letter from overseas doctor stating treatment cost"
           required
           value={form.values.letterFromOverseasDoctorFile}

@@ -8,14 +8,37 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { notifications } from "@mantine/notifications";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-});
+const MAX_PTA_BTA_AMOUNT = 4000;
+
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_PTA_BTA_AMOUNT;
+}
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (receiveAmountOverMax(data.receiveAmount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT),
+      });
+    }
+  });
 
 export type TransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -44,6 +67,18 @@ export default function PTATransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const { displayRate, recalculate } = useTransactionRateCalculator({
+    getValues: () => form.values,
+    setSendAmount: (value) => form.setFieldValue("sendAmount", value),
+    setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
+    defaultLabel: exchangeRate,
+  });
+
+  const nextDisabled =
+    !form.values.receiveAmount?.trim() ||
+    !form.values.sendAmount?.trim() ||
+    receiveAmountOverMax(form.values.receiveAmount);
+
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values);
   });
@@ -54,12 +89,19 @@ export default function PTATransactionAmountStep({
     const currentReceiveCurrency = form.values.receiveCurrency;
     const currentSendCurrency = form.values.sendCurrency;
 
-    form.setValues({
+    const swappedValues = {
       receiveAmount: currentSend,
       receiveCurrency: currentSendCurrency,
       sendAmount: currentReceive,
       sendCurrency: currentReceiveCurrency,
-    });
+    };
+    form.setValues(swappedValues);
+    if (receiveAmountOverMax(currentSend)) {
+      form.setFieldError("receiveAmount", receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT));
+    } else {
+      form.clearFieldError("receiveAmount");
+    }
+    recalculate(currentSend, currentSendCurrency);
   };
 
   return (
@@ -78,12 +120,23 @@ export default function PTATransactionAmountStep({
           <CurrencyAmountInput
             label="You Get Exactly"
             value={form.values.receiveAmount}
-            onChange={(value) => form.setFieldValue("receiveAmount", value)}
+            onChange={(value) => {
+              form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError("receiveAmount", receiveAmountExceedsMaxMessage(MAX_PTA_BTA_AMOUNT));
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
+              recalculate(value);
+            }}
             currency={
               getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
             }
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("receiveCurrency", c.code)}
+            onCurrencyChange={(c) => {
+              form.setFieldValue("receiveCurrency", c.code);
+              recalculate(undefined, c.code);
+            }}
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
@@ -92,7 +145,14 @@ export default function PTATransactionAmountStep({
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            // onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >
@@ -112,11 +172,12 @@ export default function PTATransactionAmountStep({
               placeholder="0"
               error={form.errors.sendAmount?.toString() || undefined}
               showDropdown={false}
+              disabled
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full h-14 bg-black rounded-b-3xl">
             <span className="font-normal text-base leading-6 text-white">Exchange Rate</span>
-            <span className="font-normal text-base leading-6 text-white">{exchangeRate}</span>
+            <span className="font-normal text-base leading-6 text-white">{displayRate}</span>
           </div>
         </div>
       </div>
@@ -140,6 +201,7 @@ export default function PTATransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

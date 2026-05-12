@@ -9,7 +9,11 @@ import { ChevronDown } from "@hugeicons/core-free-icons";
 
 const addBankSchema = z.object({
   bankName: z.string().min(1, "Select a bank"),
-  accountNumber: z.string().min(1, "Account number is required")
+  accountNumber: z
+    .string()
+    .min(1, "Account number is required")
+    .max(18, "Account number must not exceed 18 digits")
+    .regex(/^\d+$/, "Account number must contain digits only")
 });
 
 export type AddBankAccountFormData = z.infer<typeof addBankSchema>;
@@ -115,11 +119,19 @@ export function AddBankAccountModal({
               required
               placeholder="Enter Number"
               size="md"
+              maxLength={18}
+              inputMode="numeric"
+              pattern="[0-9]*"
               classNames={{
                 input:
                   "!min-h-[56px] !rounded-lg !border-[#CCCACA] !shadow-[0px_1px_2px_rgba(16,24,40,0.05)] !text-base !text-[#4D4B4B] placeholder:!text-[#8F8B8B]"
               }}
               {...form.getInputProps("accountNumber")}
+              onChange={(e) => {
+                const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 18);
+                e.currentTarget.value = raw;
+                form.setFieldValue("accountNumber", raw);
+              }}
             />
           </div>
         </div>

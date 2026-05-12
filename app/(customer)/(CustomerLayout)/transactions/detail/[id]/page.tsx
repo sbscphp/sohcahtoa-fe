@@ -1,35 +1,48 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Button } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { ChevronLeft } from "lucide-react";
+import type { FileWithPath } from "@mantine/dropzone";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDetailViewStatus,
-  getDetailViewStatusLabel,
-  type DetailViewStatus,
+  getTransactionStatusLabel,
+  normalizeTransactionStatus,
+  TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { useFetchSingleData } from "@/app/_lib/api/hooks";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import {
   TransactionDetailsSection,
   RequiredDocumentsSection,
   PaymentDetailsSection,
+  ProceedToPaymentModal,
   TransactionSettlementSection,
+  CashPickupDetailsSection,
+  BeneficiaryDetailsSection,
   type TransactionDetailsData,
   type RequiredDocumentsData,
   type PaymentDetailsData,
   type TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
-import TransactionRequestSheet from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
+import TransactionRequestSheet, { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
+import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
+import Loader from "@/components/loader";
+import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
+import EmptyState from "@/app/admin/_components/EmptyState";
 
-/** Full detail payload for a transaction (from API). Type/label come from backend. */
 export interface TransactionDetailPayload {
   id: string;
   date: string;
-  /** Transaction type code (e.g. from API) – not used for display. */
   type: string;
-  /** Display title for the transaction type – from API (e.g. "Personal Travel Allowance (PTA)"). */
   transactionTypeLabel: string;
   stage: string;
   status: string;
@@ -38,151 +51,87 @@ export interface TransactionDetailPayload {
   requiredDocuments: RequiredDocumentsData;
   paymentDetails?: PaymentDetailsData;
   settlement?: TransactionSettlementData;
-}
-
-// Simulated API response – full shape; transaction type label comes from backend.
-function getMockTransactionDetail(id: string): TransactionDetailPayload | null {
-  const base = {
-    id,
-    date: "2025-11-17T13:00:00",
-    type: "PTA",
-    transactionTypeLabel: "Personal Travel Allowance (PTA)",
-    currencyCode: "USD",
-    transactionDetails: {
-      transactionId: "2223334355",
-      amount: { code: "NGN", formatted: "400,000.00" },
-      equivalentAmount: { code: "USD", formatted: "400" },
-      dateInitiated: "25 Jun 2025",
-      pickupAddress: "3, Adeola Odeku, VI, Lagos",
-    },
-    requiredDocuments: {
-      bvn: "2223334355",
-      tin: "876r245623",
-      formAId: "23456786543",
-      formA: { filename: "Doc.pdf" },
-      utilityBill: { filename: "Doc.pdf" },
-      visa: { filename: "Doc.pdf" },
-      returnTicket: { filename: "Doc.pdf" },
-    },
-  };
-
-  // First two IDs: settled (all sections). Rest: under_review then awaiting_disbursement.
-  const settled: TransactionDetailPayload = {
-    ...base,
-    stage: "Transaction Settlement",
-    status: "Completed",
-    paymentDetails: {
-      transactionId: "783383AXSH",
-      transactionDate: "15 Nov 2025",
-      transactionTime: "11:00 am",
-      transactionReceipt: { filename: "payment-receipt.pdf" },
-      paidTo: "SohCahToa BSC\nAccess Bank\n0069000592",
-    },
-    settlement: {
-      settlementId: "278338233AC",
-      settlementDate: "17 Nov 2025",
-      settlementTime: "1:00 pm",
-      settlementReceipt: { filename: "settlement-receipt.pdf" },
-      settlementStructureCash: "25% ~ $375",
-      settlementStructurePrepaidCard: "75% ~ $1,125",
-      paidInto: "GTB Bank Card\n11 ******** 6773",
-      settlementStatus: "Completed",
-    },
-  };
-
-  const awaiting: TransactionDetailPayload = {
-    ...base,
-    date: "2025-11-15T11:00:00",
-    type: "Medical",
-    transactionTypeLabel: "Medical",
-    stage: "Awaiting Disbursement",
-    status: "Approved",
-    paymentDetails: {
-      transactionId: "783383AXSH",
-      transactionDate: "15 Nov 2025",
-      transactionTime: "11:00 am",
-      transactionReceipt: { filename: "payment-receipt.pdf" },
-      paidTo: "SohCahToa BSC\nAccess Bank\n0069000592",
-    },
-  };
-
-  const underReview: TransactionDetailPayload = {
-    ...base,
-    date: "2025-01-24T11:00:00",
-    stage: "Documentation",
-    status: "Pending",
-  };
-
-  const btaSettled: TransactionDetailPayload = {
-    ...settled,
-    type: "BTA",
-    transactionTypeLabel: "Business Travel Allowance (BTA)",
-  };
-
-  const map: Record<string, TransactionDetailPayload> = {
-    GHA67AGHA1: underReview,
-    GHA67AGHA2: settled,
-    GHA67AGHA3: awaiting,
-    GHA67AGHA8: btaSettled,
-  };
-  return map[id] ?? settled;
+  documentsForSheet?: unknown;
 }
 
 export default function TransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = typeof params.id === "string" ? params.id : "";
 
-  const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
-  const payload = useMemo(() => getMockTransactionDetail(id), [id]);
-  const viewStatus: DetailViewStatus = useMemo(
-    () =>
-      payload
-        ? getDetailViewStatus(payload.stage, payload.status)
-        : "under_review",
-    [payload]
+  const { data: apiResponse, isLoading: apiLoading } = useFetchSingleData(
+    [...customerKeys.transactions.detail(id)],
+    () => customerApi.transactions.getById(id),
+    !!id
   );
 
-  const formatHeaderDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const date = d.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-    const time = d.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    return `${date} | ${time}`;
-  };
+  const apiData = apiResponse?.data;
+  const payload = useMemo(
+    () => (apiData ? buildDetailPayloadFromApi(apiData) : null),
+    [apiData]
+  );
 
+  const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
+  const [proceedToPaymentOpen, setProceedToPaymentOpen] = useState(false);
+  const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
   if (!payload) {
+    if (apiLoading && id) {
+      return (
+        <div className="p-8">
+          <Loader fullPage />
+        </div>
+      );
+    }
     return (
       <div className="p-8">
-        <p className="text-[#6C6969]">Transaction not found.</p>
-        <Button variant="subtle" onClick={() => router.push("/transactions")} mt="md">
-          Back to Transactions
-        </Button>
+        <EmptyState title="Transaction not found" description="The transaction you are looking for does not exist." onClick={() => router.push("/transactions")} buttonText="Back to Transactions" />
       </div>
     );
   }
 
   const title = payload.transactionTypeLabel;
-  const statusLabel = getDetailViewStatusLabel(viewStatus);
-  const showPaymentDetails = viewStatus !== "under_review";
-  const showSettlement = viewStatus === "transaction_settled";
+  const statusLabel = getTransactionStatusLabel(payload.status);
+  const statusKey = normalizeTransactionStatus(payload.status);
+  const showPaymentDetails =
+    statusKey !== "" &&
+    statusKey in TRANSACTION_STATUS_LABELS &&
+    statusKey !== "DRAFT" &&
+    statusKey !== "AWAITING_VERIFICATION" &&
+    statusKey !== "VERIFICATION_IN_PROGRESS" &&
+    statusKey !== "VERIFICATION_COMPLETED" &&
+    statusKey !== "ADMIN_APPROVAL_PENDING" &&
+    statusKey !== "PENDING_RECORD_VALIDATION";
+  const showSettlement = statusKey === "COMPLETED";
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
+  const nairaRaw = apiData?.nairaEquivalent;
+  const paymentAmountNgn =
+    nairaRaw == null || nairaRaw === ""
+      ? null
+      : Number(nairaRaw);
+  const hasValidPaymentAmount =
+    paymentAmountNgn != null &&
+    Number.isFinite(paymentAmountNgn) &&
+    paymentAmountNgn > 0;
+  const cashPickup = apiData?.cashPickup ?? null;
+  const beneficiaryDetails = apiData?.beneficiaryDetails;
 
   return (
-    <div
-      className="flex flex-col rounded-2xl border border-[#F2F4F7] bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
-      style={{ maxWidth: 1142 }}
-    >
+    <div className="flex flex-col gap-4">
+      <Link
+        href="/transactions"
+        className="inline-flex items-center gap-1 text-body-text-100 text-sm font-medium hover:text-heading-200 transition-colors w-fit"
+      >
+        <ChevronLeft className="w-4 h-4 shrink-0" aria-hidden />
+        Back to Transactions
+      </Link>
+
+      <div
+        className="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden"
+      >
       {/* Header */}
-      <div className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-[#F2F4F7] px-8 pt-8 pb-6">
+      <div className="flex md:flex-row flex-col items-start justify-between gap-4 border-b border-[#F2F4F7] md:px-8 px-4 pt-8 pb-6">
         <div className="flex flex-col gap-3 flex-1 min-w-0">
           <h1
             className="font-medium text-2xl leading-8 text-[#131212] tracking-[-0.032px]"
@@ -194,9 +143,9 @@ export default function TransactionDetailPage() {
               className="text-base font-normal leading-6 text-[#6C6969]"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              {formatHeaderDate(payload.date)}
+              {formatHeaderDateTime(payload.date)}
             </span>
-            <div style={getStatusBadge(statusLabel)}>{statusLabel}</div>
+            <div style={getStatusBadge(statusLabel)} className="capitalize">{statusLabel}</div>
           </div>
           <div className="flex flex-row items-center gap-1 rounded-full border border-[#F2F4F7] py-2 px-2 w-fit">
             {flagUrl && (
@@ -217,7 +166,7 @@ export default function TransactionDetailPage() {
               radius="xl"
               size="md"
               className="border-[#E88A58] bg-[#FFF6F1] text-[#E36C2F] hover:bg-[#FFF6F1]/90 font-medium text-base"
-              style={{ fontFamily: "'Inter', sans-serif", padding: "14px 24px" }}
+              style={{ fontWeight: 500, fontSize: "14px" }}
               onClick={() => {}}
             >
               Download Receipt
@@ -228,7 +177,7 @@ export default function TransactionDetailPage() {
               radius="xl"
               size="md"
               className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
-              style={{ fontFamily: "'Inter', sans-serif", padding: "14px 24px" }}
+              style={{ fontWeight: 500, fontSize: "14px" }}
               onClick={() => setUpdatesSheetOpen(true)}
             >
               View Updates
@@ -240,30 +189,99 @@ export default function TransactionDetailPage() {
       <TransactionRequestSheet
         opened={updatesSheetOpen}
         onClose={() => setUpdatesSheetOpen(false)}
-        viewStatus={viewStatus}
+        transactionTypeLabel={payload.transactionTypeLabel}
+        transactionStatus={apiData?.status}
+        transactionId={payload.id}
+        date={formatShortDate(payload.date)}
+        time={formatShortTime(payload.date)}
+        adminMessage={
+          statusKey === "APPROVED" ||
+          statusKey === "AWAITING_DEPOSIT" ||
+          statusKey === "DEPOSIT_PENDING"
+            ? "This is a message box that show the message from the SohCahToa Admin regarding the approval of this client transaction request. As this is approved, this customer would then be able to take an action from this point"
+            : statusKey === "REJECTED"
+              ? "This is a message box that show the message from the SohCahToa Admin regarding the rejection of this client transaction request. As this is rejected, they can't take any action from this point at all"
+              : undefined
+        }
+        comments={apiData?.comments ?? []}
+        onResubmitDocuments={async (documents: Array<{ documentType: string; file: FileWithPath }>) => {
+          for (const document of documents) {
+            const formData = new FormData();
+            formData.append("documentType", document.documentType);
+            formData.append("documents", document.file);
+            await customerApi.transactions.uploadDocuments(id, formData);
+          }
+          await queryClient.invalidateQueries({
+            queryKey: [...customerKeys.transactions.detail(id)],
+          });
+        }}
+        onProceedToPayment={() => {
+          if (!hasValidPaymentAmount) {
+            notifications.show({
+              title: "Cannot proceed to payment",
+              message:
+                "The Naira amount for this transaction is missing or zero. Refresh the page or contact support if you need help.",
+              color: "red",
+            });
+            return;
+          }
+          setUpdatesSheetOpen(false);
+          setProceedToPaymentOpen(true);
+        }}
+        documents={payload.documentsForSheet as unknown as TransactionDocumentItem[]}
+        onOpenDocument={(doc) => {
+          if (doc.url) {
+            setDocumentViewer({
+              url: doc.url,
+              filename: doc.fileName ?? doc.name,
+            });
+          }
+        }}
+        onViewTransaction={() => setUpdatesSheetOpen(false)}
+      />
+      <ProceedToPaymentModal
+        opened={proceedToPaymentOpen && hasValidPaymentAmount}
+        onClose={() => setProceedToPaymentOpen(false)}
+        transactionId={payload.id}
+        amountNgn={paymentAmountNgn ?? 0}
       />
 
       {/* Sections */}
       <div className="flex flex-col gap-4 pb-8">
         <TransactionDetailsSection data={payload.transactionDetails} />
+        {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
+        {beneficiaryDetails ? (
+          <BeneficiaryDetailsSection data={beneficiaryDetails} />
+        ) : null}
         <RequiredDocumentsSection
           data={payload.requiredDocuments}
-          onDownload={(doc, filename) => {
-            console.log("Download", doc, filename);
+          onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}
+          onDownload={(docKey) => {
+            const file = payload.requiredDocuments.uploadedFiles.find((f) => f.documentType === docKey);
+            if (file?.url) window.open(file.url, "_blank");
           }}
         />
-        {showPaymentDetails && payload.paymentDetails && (
-          <PaymentDetailsSection
-            data={payload.paymentDetails}
-            onDownloadReceipt={() => {}}
-          />
-        )}
+        <DocumentViewerModal
+          opened={documentViewer !== null}
+          onClose={() => setDocumentViewer(null)}
+          fileUrl={documentViewer?.url ?? null}
+          filename={documentViewer?.filename}
+        />
+        {showPaymentDetails &&
+          payload.paymentDetails &&
+          payload.paymentDetails.inflows.length > 0 && (
+            <PaymentDetailsSection
+              key={`${payload.id}-pd-${payload.paymentDetails.inflows.map((r) => r.id).join(",")}`}
+              data={payload.paymentDetails}
+            />
+          )}
         {showSettlement && payload.settlement && (
           <TransactionSettlementSection
             data={payload.settlement}
             onDownloadReceipt={() => {}}
           />
         )}
+      </div>
       </div>
     </div>
   );

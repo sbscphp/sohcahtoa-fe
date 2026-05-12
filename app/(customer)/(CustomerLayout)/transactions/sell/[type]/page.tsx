@@ -2,12 +2,29 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
   type TransactionStep,
   getStepsForTransactionType,
   STEP_LABELS,
 } from "@/app/(customer)/_utils/transaction-flow";
+import {
+  getDocumentUploadSpec,
+  getSellOver10kDocumentUploadSpec,
+} from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  buildTransactionPayload,
+  toTransactionDocuments,
+  type TransactionFormDataBag,
+} from "@/app/(customer)/_utils/transaction-payload";
+import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import { notifications } from "@mantine/notifications";
 import ResidentUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import ResidentTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
 import ResidentPickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
@@ -69,6 +86,10 @@ export default function SellTransactionCreationPage() {
     | null
   >(null);
 
+  const userProfile = useAtomValue(userProfileAtom);
+  const uploadDocuments = useUploadDocuments();
+  const createTransaction = useCreateData(customerApi.transactions.create);
+
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
   const handleUploadDocumentsSubmit = (
@@ -96,20 +117,77 @@ export default function SellTransactionCreationPage() {
     setConfirmationOpened(true);
   };
 
-  const handleConfirmInitiate = () => {
-    const typeLabel =
-      flowType === "touring-nigeria"
-        ? "Tourist"
-        : flowType === "expatriate"
-          ? "Expatriate"
-          : "Resident";
-    console.log("Sell transaction data:", {
-      type: typeLabel,
-      uploadDocuments: uploadDocumentsData,
-      transactionAmount: transactionAmountData,
-      pickupPoint: pickupPointData,
-    });
-    router.push("/dashboard");
+  const handleConfirmInitiate = async () => {
+    if (uploadDocuments.isPending || createTransaction.isPending) return;
+
+    const transactionType = mapUITypeToAPIType(flowType);
+    if (!transactionType || !userProfile?.id || !uploadDocumentsData || !transactionAmountData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Incomplete transaction",
+        message: "Complete each step before confirming.",
+        color: "orange",
+      });
+      router.push("/transactions");
+      return;
+    }
+
+    if (!pickupPointData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Select a pickup location",
+        message: "Choose a pickup location or bank transfer option on the previous step before confirming.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
+      return;
+    }
+
+    const bag: TransactionFormDataBag = {
+      uploadDocumentsData: uploadDocumentsData as Record<string, unknown>,
+      transactionAmountData: transactionAmountData as Record<string, unknown>,
+      pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
+    };
+
+    try {
+      const baseSpec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
+      const over10kSpec = getSellOver10kDocumentUploadSpec(
+        transactionType,
+        bag.transactionAmountData
+      );
+      const combinedSpec =
+        baseSpec || over10kSpec
+          ? {
+              files: [...(baseSpec?.files ?? []), ...(over10kSpec?.files ?? [])],
+              documentTypes: [
+                ...(baseSpec?.documentTypes ?? []),
+                ...(over10kSpec?.documentTypes ?? []),
+              ],
+            }
+          : null;
+
+      const uploaded = combinedSpec
+        ? await uploadDocuments.mutateAsync({
+            file: combinedSpec.files,
+            userId: userProfile.id,
+            documentType: combinedSpec.documentTypes,
+          })
+        : [];
+      const documents = toTransactionDocuments(uploaded);
+      console.log("documents", documents);
+      console.log("bag", bag);
+      console.log("transactionType", transactionType);
+      const payload = buildTransactionPayload(transactionType, bag, documents, "SELL");
+      // console.log("payload", payload);
+ 
+      const created = await createTransaction.mutateAsync(payload);
+      setConfirmationOpened(false);
+      // console.log("created", created);
+      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
+    } catch (error) {
+      handleApiError(error);
+      setConfirmationOpened(false);
+    }
   };
 
   const handleBack = () => {
@@ -246,7 +324,7 @@ default:
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-[800px] mx-auto">
+      <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-200 mx-auto">
         <CustomStepper steps={steps} activeStep={activeStepIndex} className="mb-6" />
         <div className="bg-white rounded-xl md:p-4 p-2">{renderStepContent()}</div>
       </div>
@@ -268,9 +346,11 @@ default:
               ? "Are you sure you want to initiate this expatriate sell transaction?"
               : "Are you sure you want to initiate this sell transaction?"
         }
+        requireInfoConfirmation
         confirmLabel="View Transaction"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
+        loading={uploadDocuments.isPending || createTransaction.isPending}
       />
     </div>
   );

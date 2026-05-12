@@ -6,10 +6,7 @@ export interface AuthFlowConfig {
   verificationMethod: "bvn" | "passport";
 }
 
-/**
- * Get the next step in the auth flow based on user type and current step
- */
-export function getNextStep(userType: UserType, currentStep: string): string {
+export const getNextStep = (userType: UserType, currentStep: string): string => {
   const basePath = `/auth/${userType}`;
 
   switch (currentStep) {
@@ -17,7 +14,6 @@ export function getNextStep(userType: UserType, currentStep: string): string {
       if (userType === "citizen") {
         return `${basePath}/bvn`;
       } else {
-        // tourist or expatriate
         return `${basePath}/upload-passport`;
       }
 
@@ -37,25 +33,87 @@ export function getNextStep(userType: UserType, currentStep: string): string {
     default:
       return basePath;
   }
-}
+};
 
-/**
- * Get verification method for user type
- */
-export function getVerificationMethod(userType: UserType): "bvn" | "passport" {
+export const getVerificationMethod = (userType: UserType): "bvn" | "passport" => {
   return userType === "citizen" ? "bvn" : "passport";
-}
+};
 
-/**
- * Validate user type from route params
- */
-export function validateUserType(
+export const validateUserType = (
   userType: string | string[] | undefined
-): UserType | null {
+): UserType | null => {
   if (typeof userType === "string") {
     if (["citizen", "tourist", "expatriate"].includes(userType)) {
       return userType as UserType;
     }
   }
   return null;
-}
+};
+
+export const AUTH_STORAGE_KEYS = {
+  ONBOARDING: [
+    "verificationToken",
+    "validationToken",
+    "bvn",
+    "passportNumber",
+    "passportFileName",
+    "email",
+    "fullName",
+    "firstName",
+    "lastName",
+    "phoneNumber",
+    "address",
+    "nationality",
+    "otpDeliveryMethod",
+    "userType",
+  ],
+  PASSWORD_RESET: [
+    "resetEmail",
+    "resetToken",
+  ],
+  AUTH: [
+    "accessToken",
+    "refreshToken",
+    "userProfile",
+  ],
+} as const;
+
+export const clearOnboardingSessionStorage = () => {
+  if (typeof window === "undefined") return;
+  AUTH_STORAGE_KEYS.ONBOARDING.forEach((key) => {
+    sessionStorage.removeItem(key);
+  });
+};
+
+export const clearPasswordResetSessionStorage = () => {
+  if (typeof window === "undefined") return;
+  AUTH_STORAGE_KEYS.PASSWORD_RESET.forEach((key) => {
+    sessionStorage.removeItem(key);
+  });
+};
+
+export const clearAuthSessionStorage = () => {
+  if (typeof window === "undefined") return;
+  AUTH_STORAGE_KEYS.AUTH.forEach((key) => {
+    sessionStorage.removeItem(key);
+  });
+  // Also clear userInfo if it exists
+  sessionStorage.removeItem('userInfo');
+};
+
+export const clearTemporaryAuthData = () => {
+  clearOnboardingSessionStorage();
+  clearPasswordResetSessionStorage();
+};
+
+export const checkAndClearSessionIfUserTypeChanged = (currentUserType: UserType | null) => {
+  if (typeof window === "undefined" || !currentUserType) return;
+
+  const storedUserType = sessionStorage.getItem("userType");
+
+  if (storedUserType && storedUserType !== currentUserType) {
+    clearOnboardingSessionStorage();
+  }
+
+  sessionStorage.setItem("userType", currentUserType);
+};

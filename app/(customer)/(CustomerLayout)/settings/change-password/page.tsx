@@ -7,6 +7,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { EyeIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
 import { Check, Dot } from "lucide-react";
 import { PasswordInput as AuthPasswordInput } from "@/app/(customer)/_components/auth/PasswordInput";
+import {
+  isPasswordPolicyCompliant,
+  passwordLengthOk,
+  passwordNumberOk,
+  passwordSpecialOk,
+  passwordUpperLowerOk,
+} from "@/app/_lib/password-policy";
 
 type Step = "old" | "new";
 
@@ -18,15 +25,6 @@ function PasswordVisibilityIcon({ reveal }: { reveal: boolean }) {
       className="text-[#B2AFAF]"
     />
   );
-}
-
-function validateNewPassword(pwd: string) {
-  const hasLength = pwd.length >= 8 && pwd.length <= 12;
-  const hasUpper = /[A-Z]/.test(pwd);
-  const hasLower = /[a-z]/.test(pwd);
-  const hasNumber = /[0-9]/.test(pwd);
-  const hasSpecial = /[!@#$%^&*]/.test(pwd);
-  return hasLength && hasUpper && hasLower && hasNumber && hasSpecial;
 }
 
 export default function ChangePasswordPage() {
@@ -47,7 +45,7 @@ export default function ChangePasswordPage() {
 
   const newPasswordValid =
     newPassword.length > 0 &&
-    validateNewPassword(newPassword) &&
+    isPasswordPolicyCompliant(newPassword) &&
     newPassword === confirmNewPassword;
   const isValid =
     step === "old"
@@ -140,20 +138,20 @@ export default function ChangePasswordPage() {
               <ul className="space-y-1">
                 {[
                   {
-                    text: "8-12 characters",
-                    met: newPassword.length >= 8 && newPassword.length <= 12,
+                    text: "At least 8 characters",
+                    met: passwordLengthOk(newPassword),
                   },
                   {
                     text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-                    met: /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword),
+                    met: passwordUpperLowerOk(newPassword),
                   },
                   {
                     text: "Include Numbers (0-9)",
-                    met: /[0-9]/.test(newPassword),
+                    met: passwordNumberOk(newPassword),
                   },
                   {
-                    text: "Special characters (e.g. ! @ # $ % ^ & *)",
-                    met: /[!@#$%^&*]/.test(newPassword),
+                    text: "At least one symbol (e.g. ! ? @ # $ % ^ & * ( ) _ +)",
+                    met: passwordSpecialOk(newPassword),
                   },
                 ].map((req, index) => (
                   <li key={index} className="flex items-start gap-2">

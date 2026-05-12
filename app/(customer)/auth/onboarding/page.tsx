@@ -1,14 +1,13 @@
 "use client";
 
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { UserTypeCard } from "@/app/(customer)/_components/auth/UserTypeCard";
 import { citizenIcon, expatriateIcon, touristIcon } from "@/app/assets/asset";
-import { Button } from "@mantine/core";
+import { Button, Anchor } from "@mantine/core";
 import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { getNextStep } from "../../_utils/auth-flow";
+import { getNextStep, clearOnboardingSessionStorage } from "../../_utils/auth-flow";
 
 type UserType = "citizen" | "tourist" | "expatriate" | null;
 
@@ -18,13 +17,17 @@ export default function OnboardingPage() {
 
   const handleContinue = () => {
     if (selectedType) {
+      const storedUserType = sessionStorage.getItem("userType");
+      if (storedUserType && storedUserType !== selectedType) {
+        clearOnboardingSessionStorage();
+      }
       sessionStorage.setItem("userType", selectedType);
       router.push(getNextStep(selectedType, "onboarding"));
     }
   };
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold">
@@ -75,8 +78,23 @@ export default function OnboardingPage() {
           Continue
         </Button>
 
+        <div className="flex justify-start">
+          <span className="text-body-text-100 text-sm">
+            Already have an account?{" "}
+            <Anchor
+              component="button"
+              type="button"
+              onClick={() => router.push('/auth/login')}
+              size="sm"
+              underline="always"
+            >
+              Log in
+            </Anchor>
+          </span>
+        </div>
+
         <SecurityBadges />
       </div>
-    </AuthLayout>
+    </>
   );
 }

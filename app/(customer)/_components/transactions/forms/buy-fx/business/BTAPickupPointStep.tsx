@@ -15,23 +15,14 @@ interface BTAPickupPointStepProps {
   cities?: string[];
 }
 
-const DEFAULT_LOCATIONS = [
-  { id: "1", name: "SOHCAHTOA LAGOS", address: "ADEOLA ODEKU . RD VICTORIA ISLAND" },
-  { id: "2", name: "TRIGONOMETRY HUB", address: "FEMI OLADELE. RD LAGOS" },
-  { id: "3", name: "GEOMETRIC SPACE", address: "BOLA AWOYEMI. RD YABA" },
-  { id: "4", name: "CALCULUS CIRCLE", address: "KELECHI NWANKWO. RD LAGOS" },
-];
-const DEFAULT_STATES = ["Lagos", "Abuja", "Port Harcourt", "Kano"];
-const DEFAULT_CITIES = ["Lagos Island", "Victoria Island", "Ikoyi", "Lekki"];
-
 export default function BTAPickupPointStep({
   initialValues,
   onSubmit,
   onBack,
-  locations = DEFAULT_LOCATIONS,
-  states = DEFAULT_STATES,
-  cities = DEFAULT_CITIES,
-}: BTAPickupPointStepProps) {
+  locations,
+  states,
+  cities,
+}: Readonly<BTAPickupPointStepProps>) {
   return (
     <PickupPointStep
       preferenceMode="pickup-only"

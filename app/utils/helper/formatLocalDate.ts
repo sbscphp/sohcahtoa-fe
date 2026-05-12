@@ -42,5 +42,29 @@ export function formatLocalDate(
   // Create date object in local timezone
   const localDate = new Date(year, month - 1, day, hours, minutes, seconds);
 
-  return format(localDate, formatString);
+  // Fallback to a default format if none was provided
+  const safeFormat =
+    typeof formatString === "string" && formatString.trim().length > 0
+      ? formatString
+      : "d MMM yyyy";
+
+  return format(localDate, safeFormat);
+}
+
+/** Date + time for headers (e.g. "23 Feb 2026 | 11:46 am"). Uses date-fns. */
+export function formatHeaderDateTime(date: string | Date | null | undefined): string {
+  const datePart = formatLocalDate(date, "d MMM yyyy");
+  const timePart = formatLocalDate(date, "h:mm a");
+  if (!datePart || !timePart) return "";
+  return `${datePart} | ${timePart}`;
+}
+
+/** Short date only (e.g. "23 Feb 2026"). Uses date-fns. */
+export function formatShortDate(date: string | Date | null | undefined): string {
+  return formatLocalDate(date, "d MMM yyyy");
+}
+
+/** Short time only (e.g. "11:46 am"). Uses date-fns. */
+export function formatShortTime(date: string | Date | null | undefined): string {
+  return formatLocalDate(date, "h:mm a");
 }

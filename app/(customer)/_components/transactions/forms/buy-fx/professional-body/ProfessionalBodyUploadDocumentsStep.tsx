@@ -4,26 +4,45 @@ import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
-import FileUploadInput from "../../../../forms/FileUploadInput";
 import { FileWithPath } from "@mantine/dropzone";
+import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 
-const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
-  }),
-  utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Utility Bill file is required",
-  }),
-  evidenceOfMembershipFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Evidence of Membership is required",
-  }),
-  invoiceFromProfessionalBodyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Invoice from Professional Body is required",
-  }),
-});
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    formAId: formAIdSchema,
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    evidenceOfMembershipFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Evidence of Membership is required",
+    }),
+    evidenceOfMembershipNumber: z.string().min(1, "Evidence of Membership Number is required").max(50, "Evidence of Membership Number is too long"),
+    invoiceFromProfessionalBodyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Invoice from Professional Body is required",
+    }),
+    invoiceFromProfessionalBodyNumber: z.string().min(1, "Invoice from Professional Body Number is required").max(50, "Invoice from Professional Body Number is too long"),
+  })
+  .superRefine(validatePassportDates);
 
 export type ProfessionalBodyUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -33,25 +52,47 @@ interface ProfessionalBodyUploadDocumentsStepProps {
   initialValues?: Partial<ProfessionalBodyUploadDocumentsFormValues>;
   onSubmit: (data: ProfessionalBodyUploadDocumentsFormData) => void;
   onBack?: () => void;
+  lockKycPrefill?: boolean;
 }
 
 export default function ProfessionalBodyUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
+  lockKycPrefill = false,
 }: ProfessionalBodyUploadDocumentsStepProps) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(
+    kyc.hasBvnFromProfile,
+    initialValues?.bvn,
+    kyc.defaultBvn
+  );
+  const ninLocked = shouldLockKycPrefill(
+    kyc.hasNinFromProfile,
+    initialValues?.ninNumber,
+    kyc.defaultNin
+  );
+  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
+  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
+
   const form = useForm<ProfessionalBodyUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
-      bvn: initialValues?.bvn || "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
-      formAFile: initialValues?.formAFile ?? null,
-      utilityBillFile: initialValues?.utilityBillFile ?? null,
+      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       evidenceOfMembershipFile: initialValues?.evidenceOfMembershipFile ?? null,
+      evidenceOfMembershipNumber: initialValues?.evidenceOfMembershipNumber || "",
       invoiceFromProfessionalBodyFile: initialValues?.invoiceFromProfessionalBodyFile ?? null,
+      invoiceFromProfessionalBodyNumber: initialValues?.invoiceFromProfessionalBodyNumber || "",
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as ProfessionalBodyUploadDocumentsFormData);
@@ -75,73 +116,143 @@ export default function ProfessionalBodyUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your professional body transaction once your documents is approved. Please
-          note the maximum you can transact is <strong>$2,000 per quarter</strong>.
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
+          Please note the maximum you can
+          transact is <strong>$4,000 per quarter</strong>.
         </p>
+        {/* <p className="text-body-text-200 mt-2">
+          {REVIEW_TIMELINE_MESSAGE}
+        </p> */}
       </Alert>
+
+      <TextInput
+        label="BVN"
+        required
+        size="md"
+        placeholder="BVN"
+        maxLength={11}
+        inputMode="numeric"
+        autoComplete="off"
+        {...form.getInputProps("bvn")}
+        onChange={(e) => {
+          const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+          e.currentTarget.value = raw;
+          form.setFieldValue("bvn", raw);
+        }}
+        disabled={bvnLocked || forceBvnLock}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
-          label="BVN"
+          label="NIN"
           required
           size="md"
-          placeholder="Enter 11-digit BVN"
+          placeholder="NIN"
           maxLength={11}
           inputMode="numeric"
-          pattern="[0-9]*"
           autoComplete="off"
-          value={form.values.bvn}
-          onBlur={() => form.validateField("bvn")}
-          error={form.errors.bvn}
+          {...form.getInputProps("ninNumber")}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-            form.setFieldValue("bvn", digits);
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("ninNumber", raw);
           }}
+          disabled={ninLocked || forceNinLock}
         />
-
         <TextInput
-          label="Form A"
+          label="Form A ID"
           required
           size="md"
           placeholder="Enter Form A ID"
-          maxLength={30}
+          maxLength={10}
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
+      </div>
 
-        <FileUploadInput
-          label="Upload Form A"
+      <TextInput
+        label="International Passport Number"
+        required
+        size="md"
+        placeholder="Enter Passport Number"
+        maxLength={9}
+        autoComplete="off"
+        {...form.getInputProps("passportDocumentNumber")}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
           required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
+          rightSectionPointerEvents="all"
+          size="md"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
-
-        <FileUploadInput
-          label="Upload Utility Bill"
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
           required
-          value={form.values.utilityBillFile}
-          onChange={(file) => form.setFieldValue("utilityBillFile", file)}
-          error={form.errors.utilityBillFile as string}
-        />
-
-        <FileUploadInput
-          label="Evidence of Membership"
-          required
-          value={form.values.evidenceOfMembershipFile}
-          onChange={(file) => form.setFieldValue("evidenceOfMembershipFile", file)}
-          error={form.errors.evidenceOfMembershipFile as string}
-        />
-
-        <FileUploadInput
-          label="Invoice from Professional Body"
-          required
-          value={form.values.invoiceFromProfessionalBodyFile}
-          onChange={(file) => form.setFieldValue("invoiceFromProfessionalBodyFile", file)}
-          error={form.errors.invoiceFromProfessionalBodyFile as string}
+          size="md"
+          rightSectionPointerEvents="all"
+          minDate={new Date()}
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
       </div>
+
+      <TransactionFileUploadInput
+        label="Evidence of Membership"
+        required
+        value={form.values.evidenceOfMembershipFile}
+        onChange={(file) => form.setFieldValue("evidenceOfMembershipFile", file)}
+        error={form.errors.evidenceOfMembershipFile as string}
+      />
+
+      <TextInput
+        label="Evidence of Membership Number"
+        required
+        size="md"
+        placeholder="Enter Number"
+        maxLength={50}
+        autoComplete="off"
+        {...form.getInputProps("evidenceOfMembershipNumber")}
+      />
+
+      <TransactionFileUploadInput
+        label="Invoice from Professional Body"
+        required
+        value={form.values.invoiceFromProfessionalBodyFile}
+        onChange={(file) => form.setFieldValue("invoiceFromProfessionalBodyFile", file)}
+        error={form.errors.invoiceFromProfessionalBodyFile as string}
+      />
+
+      <TextInput
+        label="Invoice from Professional Body"
+        required
+        size="md"
+        placeholder="Enter Invoice Number"
+        maxLength={50}
+        autoComplete="off"
+        {...form.getInputProps("invoiceFromProfessionalBodyNumber")}
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">
         {onBack && (

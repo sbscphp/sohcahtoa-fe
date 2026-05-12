@@ -15,13 +15,13 @@ import {
 const FX_OPTIONS_BUY = [
   {
     icon: User,
-    title: "I am going on a Vacation",
+    title: "I am going on a Vacation (PTA)",
     description: "Buy FX to cover your travel, accommodation",
     href: "/transactions/vacation",
   },
   {
     icon: Building2,
-    title: "I am travelling for business",
+    title: "I am travelling for business (BTA)",
     description: "Buy FX to cover for your business trip abroad",
     href: "/transactions/business",
   },
@@ -106,7 +106,7 @@ export default function NewTransactionByOptionPage() {
   const options = config.options;
 
   return (
-    <div className="space-y-8 rounded-2xl bg-white p-4">
+    <div className="space-y-8 rounded-2xl bg-white p-4 min-h-screen">
       <div className="flex flex-col items-center space-y-4 text-center">
         <div className="space-y-2">
           <h1 className="text-body-heading-300 text-2xl font-semibold">
@@ -119,7 +119,7 @@ export default function NewTransactionByOptionPage() {
       </div>
 
       {options.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
           {options.map((opt, i) => (
             <FxTransactionTypeCard
               key={i}

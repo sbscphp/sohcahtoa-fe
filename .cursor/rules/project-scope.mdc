@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+We're working on the Admin App, let's limit our changes to the admin app folders to avoid conflicting with changes in other folders
+
+When implementing navigation, use and update routes in my lib/adminRoutes.ts

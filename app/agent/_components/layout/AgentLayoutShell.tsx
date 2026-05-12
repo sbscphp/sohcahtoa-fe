@@ -1,0 +1,297 @@
+"use client";
+
+import { AppShell } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { usePathname, useParams } from "next/navigation";
+import AgentHeader from "./AgentHeader";
+import AgentSidebar from "./AgentSidebar";
+import { AuthProfileSync } from "@/app/(customer)/_components/auth/AuthProfileSync";
+import {
+  getTransactionBreadcrumbs,
+  getTransactionTypeLabel,
+  type TransactionStep,
+  type TransactionType,
+} from "@/app/(customer)/_utils/transaction-flow";
+
+const HEADER_HEIGHT = 64;
+
+/** Maps `[type]` URL segment from `/transactions/[type]` / sell routes to internal transaction types */
+const TYPE_MAP: Record<string, TransactionType> = {
+  vacation: "pta",
+  business: "business",
+  "school-fees": "school-fees",
+  medical: "medical",
+  "professional-body": "professional-body",
+  tourist: "tourist",
+  resident: "resident",
+  "touring-nigeria": "touring-nigeria",
+  expatriate: "expatriate",
+};
+
+function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const params = useParams();
+
+  const urlType =
+    typeof params?.type === "string" ? params.type : undefined;
+  const transactionType = urlType ? (TYPE_MAP[urlType] ?? "pta") : null;
+  const isSellFlow = pathname?.startsWith("/agent/transactions/sell/");
+  const isReceiveImtoFlow = pathname?.startsWith(
+    "/agent/transactions/receive/imto"
+  );
+  const isTransactionCreatePage = Boolean(
+    urlType &&
+      pathname?.startsWith("/agent/transactions/") &&
+      !pathname.includes("/agent/transactions/detail/") &&
+      !pathname.includes("/agent/transactions/new/")
+  );
+  const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] =
+    useDisclosure(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useLayoutEffect(() => {
+    const mediaQuery = globalThis.matchMedia("(max-width: 768px)");
+    // This state update is necessary to prevent hydration mismatch between server and client
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- necessary for hydration mismatch prevention
+    setIsMobile(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      closeMobile();
+    }
+  }, [isMobile, closeMobile]);
+
+  const getPageTitle = () => {
+    if (pathname === "/agent/dashboard") return "Dashboard";
+    if (pathname?.startsWith("/agent/transactions/new")) return "New Transaction";
+    if (isReceiveImtoFlow) return "Receive Money: IMTO";
+    if (isTransactionCreatePage && transactionType) {
+      return isSellFlow
+        ? `Sell FX: ${getTransactionTypeLabel(transactionType)}`
+        : `Buy FX: ${getTransactionTypeLabel(transactionType)}`;
+    }
+    if (pathname?.startsWith("/agent/transactions")) return "Transactions";
+    if (pathname?.startsWith("/agent/fx-inventory")) return "FX Inventory";
+    if (pathname?.startsWith("/agent/customer-management")) {
+      if (
+        pathname.includes("/customer-management/") &&
+        pathname !== "/agent/customer-management"
+      ) {
+        return "View Customer Details";
+      }
+      return "Customer Management";
+    }
+    if (pathname?.startsWith("/agent/support")) {
+      if (pathname.includes("/support/chat")) return "Support: Chat Support";
+      if (pathname.includes("/support/history")) {
+        if (pathname.includes("/history/")) return "View request";
+        return "Support History";
+      }
+      return "Support";
+    }
+    if (pathname?.startsWith("/agent/rate-calculator"))
+      return "Rate Calculator";
+    if (pathname === "/agent/notifications") return "Notification";
+    if (pathname?.startsWith("/agent/settings")) {
+      if (pathname === "/agent/settings") return "Setting";
+      if (pathname.includes("/account-information"))
+        return "Setting: Account Information";
+      if (pathname.includes("/change-password"))
+        return "Setting: Change Password";
+      if (pathname.includes("/notifications")) {
+        if (pathname.includes("/notifications/settings"))
+          return "Setting: Notifications settings";
+        return "Setting: Notification";
+      }
+      if (pathname.includes("/account-security")) {
+        if (pathname.includes("/set-security-question"))
+          return "Setting: Set Security Question";
+        if (pathname.includes("/verify-security-question"))
+          return "Setting: Security Verification";
+        return "Setting: Account Security";
+      }
+      return "Setting";
+    }
+    return "Dashboard";
+  };
+
+  const getBreadcrumbs = () => {
+    if (pathname?.startsWith("/agent/transactions/new")) {
+      return [
+        { label: "Transactions", href: "/agent/transactions" },
+        { label: "Choose an Option", href: undefined },
+      ];
+    }
+    if (isReceiveImtoFlow) {
+      return [
+        { label: "Transactions", href: "/agent/transactions" },
+        { label: "Choose an Option", href: "/agent/transactions/options" },
+      ];
+    }
+    if (isTransactionCreatePage && transactionType && urlType) {
+      const stepMatch = pathname?.match(
+        /\/(upload-documents|amount|pickup-point|bank-details)/
+      );
+      const currentStep: TransactionStep =
+        (stepMatch?.[1] as TransactionStep) || "upload-documents";
+      const pathPrefix = isSellFlow
+        ? "agent/transactions/sell"
+        : "agent/transactions";
+      return getTransactionBreadcrumbs(
+        transactionType,
+        currentStep,
+        pathPrefix,
+        {
+          rootHref: "/agent/transactions",
+          chooseOptionsHref: "/agent/transactions/options",
+          urlTypeSegment: urlType,
+        }
+      );
+    }
+    if (
+      pathname?.startsWith("/agent/transactions") &&
+      pathname !== "/agent/transactions"
+    ) {
+      return [
+        { label: "Transactions", href: "/agent/transactions" },
+        { label: "Transaction details", href: undefined },
+      ];
+    }
+    if (pathname?.startsWith("/agent/settings")) {
+      if (pathname === "/agent/settings") return undefined;
+      if (pathname.includes("/account-information")) {
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Account Information", href: undefined },
+        ];
+      }
+      if (pathname.includes("/change-password")) {
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Change Password", href: undefined },
+        ];
+      }
+      if (pathname.includes("/notifications")) {
+        if (pathname.includes("/notifications/settings")) {
+          return [
+            { label: "Setting", href: "/agent/settings" },
+            { label: "Notifications settings", href: undefined },
+          ];
+        }
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Notification", href: undefined },
+        ];
+      }
+      if (pathname.includes("/account-security")) {
+        if (pathname.includes("/set-security-question")) {
+          return [
+            { label: "Setting", href: "/agent/settings" },
+            { label: "Set security question", href: undefined },
+          ];
+        }
+        if (pathname.includes("/verify-security-question")) {
+          return [
+            { label: "Setting", href: "/agent/settings" },
+            {
+              label: "Account Security",
+              href: "/agent/settings/account-security",
+            },
+            { label: "Security Verification", href: undefined },
+          ];
+        }
+        return [
+          { label: "Setting", href: "/agent/settings" },
+          { label: "Account Security", href: undefined },
+        ];
+      }
+    }
+    return undefined;
+  };
+
+  return (
+    <>
+      <AuthProfileSync />
+    <AppShell
+      layout={isMobile ? undefined : "alt"}
+      header={{ height: HEADER_HEIGHT }}
+      navbar={{
+        width: isMobile ? 256 : collapsed ? 80 : 256,
+        breakpoint: "sm",
+        collapsed: { mobile: !mobileOpened },
+      }}
+      padding={0}
+      style={{
+        minHeight: "100vh",
+      }}
+    >
+      <AppShell.Navbar style={{ zIndex: isMobile ? 220 : 50 }}>
+        <AgentSidebar
+          collapsed={isMobile ? false : collapsed}
+          onCollapse={toggleCollapsed}
+          onNavigate={closeMobile}
+        />
+      </AppShell.Navbar>
+
+      <AppShell.Header
+        style={{
+          marginLeft: isMobile ? 0 : collapsed ? "80px" : "256px",
+          transition: "margin-left 0.3s ease",
+          position: "fixed",
+          top: 0,
+          right: 0,
+          zIndex: 100,
+          ...(isMobile
+            ? {
+                left: 0,
+                width: "100%",
+                maxWidth: "100vw",
+                boxSizing: "border-box",
+              }
+            : {}),
+        }}
+      >
+        <AgentHeader
+          collapsed={collapsed}
+          title={getBreadcrumbs() ? undefined : getPageTitle()}
+          setCollapsed={toggleCollapsed}
+          toggleMobile={toggleMobile}
+          breadcrumbs={getBreadcrumbs()}
+          transactionTitle={getBreadcrumbs() ? getPageTitle() : undefined}
+        />
+      </AppShell.Header>
+
+      <AppShell.Main
+        style={{
+          backgroundColor: "#F7F7F7",
+          minHeight: "100vh",
+          padding: isMobile ? "1rem" : "1.5rem",
+          marginLeft: isMobile ? 0 : collapsed ? "80px" : "256px",
+          paddingTop: `calc(${HEADER_HEIGHT}px + ${isMobile ? "1rem" : "1.5rem"})`,
+          transition: "margin-left 0.3s ease",
+        }}
+      >
+        {children}
+      </AppShell.Main>
+    </AppShell>
+    </>
+  );
+}
+
+export default function AgentLayoutShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <AgentLayoutShellContent>{children}</AgentLayoutShellContent>;
+}

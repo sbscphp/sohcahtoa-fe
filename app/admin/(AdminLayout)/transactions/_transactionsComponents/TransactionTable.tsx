@@ -1,246 +1,195 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import {
-  Text,
-  ActionIcon,
-  Group,
-  TextInput,
-  Select,
-  Button,
-} from "@mantine/core";
-import { ChevronRight, Search, Upload, ListFilter } from "lucide-react";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { Text, Group, TextInput, Select, Button } from "@mantine/core";
+import { Search, Upload, ListFilter } from "lucide-react";
 import { Tabs } from "@mantine/core";
 import { useRouter } from "next/navigation";
+import AdminTabButton from "@/app/admin/_components/AdminTabButton";
+import { useDebouncedValue } from "@mantine/hooks";
+import {
+  useTransactions,
+  type TransactionListItem,
+} from "../hooks/useTransactions";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { notifications } from "@mantine/notifications";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { adminRoutes } from "@/lib/adminRoutes";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
-/* --------------------------------------------
- Types
---------------------------------------------- */
-interface Transaction {
-  customerName: string;
-  id: string;
-  date: string;
-  type: string;
-  stage: string;
-  workflow: string;
-  amount: number;
-  status: "Pending" | "Settled" | "Rejected" | "More Info";
-}
+const pageSize = 10;
 
-/* --------------------------------------------
- Mock Data
---------------------------------------------- */
-const transactions: Transaction[] = [
-  {
-    customerName: "Samuel Johnson",
-    id: "9023",
-    date: "Nov 19",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Review",
-    amount: 400,
-    status: "Pending",
-  },
-  {
-    customerName: "Michael Bennett",
-    id: "9025",
-    date: "Nov 21",
-    type: "BTA",
-    stage: "Documentation",
-    workflow: "Approval",
-    amount: 500,
-    status: "Pending",
-  },
-  {
-    customerName: "Ava Thompson",
-    id: "9026",
-    date: "Nov 23",
-    type: "PTA",
-    stage: "Settlement",
-    workflow: "Approval",
-    amount: 600,
-    status: "Settled",
-  },
-  {
-    customerName: "Emily Carter",
-    id: "9024",
-    date: "Nov 20",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Approval",
-    amount: 550,
-    status: "More Info",
-  },
-  {
-    customerName: "Emily Carter",
-    id: "9024",
-    date: "Nov 20",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Approval",
-    amount: 550,
-    status: "More Info",
-  },
-  {
-    customerName: "Emily Carter",
-    id: "9024",
-    date: "Nov 20",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Approval",
-    amount: 550,
-    status: "More Info",
-  },
-  {
-    customerName: "Emily Carter",
-    id: "9024",
-    date: "Nov 20",
-    type: "PTA",
-    stage: "Info request",
-    workflow: "Approval",
-    amount: 550,
-    status: "More Info",
-  },
+const typeByTab = {
+  "buy-fx": "buyfx",
+  "sell-fx": "sellfx",
+  "receive-fx": "receivefx",
+} as const;
+
+const statusOptions = [
+  { value: "All", label: "Filter By" },
+  { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
+  { value: "COMPLIANCE_REVIEW", label: "Compliance Review" },
+  { value: "PENDING", label: "Pending" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+  // { value: "REQUEST_INFO", label: "Request Information" },
 ];
 
-/* --------------------------------------------
- Component
---------------------------------------------- */
-export default function TransactionsTable() {
-  /* Pagination state */
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
 
+export default function TransactionsTable() {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Filter By");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [activeTab, setActiveTab] = useState<keyof typeof typeByTab>("buy-fx");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
   const router = useRouter();
 
-  const filteredData = useMemo(() => {
-    return transactions.filter((tx) => {
-      const matchesSearch =
-        tx.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        tx.id.includes(search);
 
-      const matchesFilter = filter === "Buy FX" ? true : tx.type === filter;
+  const exportParams = useMemo(() => ({
+  search: debouncedSearch.trim() || undefined,
+  status: statusFilter !== "All" ? statusFilter : undefined,
+  type: typeByTab[activeTab],
+}), [activeTab, debouncedSearch, statusFilter]);
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [search, filter]);
+  const { transactions, isLoading, isFetching, totalPages } = useTransactions({
+    page,
+    limit: pageSize,
+    search: debouncedSearch || undefined,
+    status: statusFilter !== "All" ? statusFilter : undefined,
+    type: typeByTab[activeTab],
+  });
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const safeTotalPages = Math.max(1, totalPages);
 
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [page, filteredData]);
-  /* Table headers */
+  const exportTransactionsMutation = useGetExportData(
+    () => adminApi.transactions.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-transactions-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as
+          | ApiResponse
+          | undefined;
+
+        notifications.show({
+          title: "Export Transactions Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export transactions at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
   const transactionHeaders = [
     { label: "Customer Name", key: "customer" },
     { label: "Date and ID", key: "date" },
     { label: "Transaction Type", key: "type" },
     { label: "Transaction Stage", key: "stage" },
-    { label: "Workflow Stage", key: "workflow" },
+    // { label: "Workflow Stage", key: "workflow" },
     { label: "Transaction Value", key: "amount" },
-    { label: "Status", key: "status" },
+    { label: "Workflow Stage", key: "status" },
     { label: "Action", key: "action" },
   ];
 
-  /* Row renderer */
-  const renderTransactionRow = (item: Transaction) => [
-    // Customer
+  const renderTransactionRow = (item: TransactionListItem) => [
     <div key="customer">
       <Text fw={500} size="sm">
         {item.customerName}
       </Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id}
+        ID:{item.id || "--"}
       </Text>
     </div>,
 
-    // Date & ID
     <div key="date">
       <Text size="sm">{item.date}</Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id}
+        Ref:{item.reference || "--"}
       </Text>
     </div>,
 
-    // Type
     <Text key="type" size="sm">
       {item.type}
     </Text>,
 
-    // Stage
     <Text key="stage" size="sm">
       {item.stage}
     </Text>,
 
-    // Workflow
-    <Text key="workflow" size="sm">
-      {item.workflow}
-    </Text>,
+    // <Text key="workflow" size="sm">
+    //   {item.workflow}
+    // </Text>,
 
-    // Amount
     <Text key="amount" size="sm">
-      ${item.amount}
+      {formatCurrency(item.amount, item.currency)}
     </Text>,
 
-    // Status
     <StatusBadge key="status" status={item.status} />,
 
-    // Action
-    <ActionIcon
+    <RowActionIcon
       key="action"
-      radius="xl"
-      variant="light"
-      color="orange"
-      w={10}
-      h={10}
-      onClick={() =>
-        router.push(`/admin/transactions/ViewTransaction?id=${item.id}`)
-      }
-    >
-      <ChevronRight size={14} />
-    </ActionIcon>,
+      onClick={() => router.push(adminRoutes.adminTransactionDetails(item.id))}
+    />,
   ];
 
   return (
     <div className="my-5 p-5 rounded-lg bg-white">
       <div>
-        <Group justify="space-between" mb="md" wrap="nowrap">
+        <Group justify="space-between" mb="md" wrap="wrap">
           <div className="flex items-center gap-4">
             <h2 className="font-semibold text-lg">All Transactions</h2>
-            {/* Search */}
             <TextInput
               placeholder="Enter keyword"
               leftSection={<Search size={16} color="#DD4F05" />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={320}
               radius="xl"
             />
           </div>
 
           <Group>
-            {/* Filter */}
             <Select
-              value={filter}
-              onChange={(value) => setFilter(value!)}
-              data={["Filter By", "Buy FX", "Sell FX", "Receive FX"]}
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value ?? "All");
+                setPage(1);
+              }}
+              data={statusOptions}
               radius="xl"
-              w={120}
+              w={150}
               rightSection={<ListFilter size={16} />}
             />
 
-            {/* Export */}
             <Button
               variant="outline"
               color="#E36C2F"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={() => exportTransactionsMutation.mutate()}
+              loading={exportTransactionsMutation.isPending}
+              disabled={exportTransactionsMutation.isPending}
             >
               Export
             </Button>
@@ -248,34 +197,39 @@ export default function TransactionsTable() {
         </Group>
       </div>
 
-      <Tabs color="orange" defaultValue="buy-fx">
-        <Tabs.List className="mb-3">
-          <Tabs.Tab value="buy-fx">Buy FX</Tabs.Tab>
-          <Tabs.Tab value="sell-fx">Sell FX</Tabs.Tab>
-          <Tabs.Tab value="receive-fx">Receive FX</Tabs.Tab>
+      <Tabs
+        className="mt-8!"
+        color="orange"
+        value={activeTab}
+        onChange={(value) => {
+          const nextTab = (value ?? "buy-fx") as keyof typeof typeByTab;
+          setActiveTab(nextTab);
+          setPage(1);
+        }}
+      >
+        <Tabs.List className="mb-4 border-0! before:content-none!">
+          <AdminTabButton value="buy-fx">Buy FX</AdminTabButton>
+          <AdminTabButton value="sell-fx">Sell FX</AdminTabButton>
+          <AdminTabButton value="receive-fx">Receive FX</AdminTabButton>
         </Tabs.List>
 
-        <Tabs.Panel value="buy-fx">
+        <Tabs.Panel value={activeTab}>
           <DynamicTableSection
             headers={transactionHeaders}
-            data={paginatedData}
-            loading={false}
+            data={transactions}
+            loading={isLoading || isFetching}
             renderItems={renderTransactionRow}
             emptyTitle="No Data Available Yet"
             emptyMessage="You currently don't have any data available yet. Check back later."
             pagination={{
               page,
-              totalPages,
-              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+              totalPages: safeTotalPages,
+              onNext: () => setPage((p) => Math.min(p + 1, safeTotalPages)),
               onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
               onPageChange: setPage,
             }}
           />
         </Tabs.Panel>
-
-        <Tabs.Panel value="sell-fx">Messages tab content</Tabs.Panel>
-
-        <Tabs.Panel value="receive-fx">Settings tab content</Tabs.Panel>
       </Tabs>
     </div>
   );

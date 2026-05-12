@@ -2,7 +2,6 @@
 
 import { landingFig } from "@/app/assets/asset";
 import OptionCard from "@/app/(customer)/_components/OptionCard";
-import { BanknoteIcon, Calculator, Wallet } from "lucide-react";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 
 const iconClass = "h-6 w-6 text-[#8F8B8B]";
+const CUSTOMER_TERMS_URL = "https://www.sohcahtoapayoutbdc.com/terms-of-use-customer";
 
 export default function LandingSupport() {
   return (
@@ -56,6 +56,7 @@ export default function LandingSupport() {
           title="Terms of Service"
           description="Want to know more about our services? Read the terms."
           ctaText="Read Terms"
+          href={CUSTOMER_TERMS_URL}
         />
       </div>
     </div>

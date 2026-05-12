@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -8,6 +9,13 @@ import CurrencyAmountInput from "@/app/(customer)/_components/forms/CurrencyAmou
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
+import { isAmountOverRequiredAmount } from "../../amount-step-utils";
+import ProofOfFundPrompt from "../../ProofOfFundPrompt";
+import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
+import SourceOfFundsDeclaration from "./SourceOfFundsDeclaration";
+import type { FileWithPath } from "@mantine/dropzone";
+import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { notifications } from "@mantine/notifications";
 
 const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
@@ -17,7 +25,12 @@ const transactionAmountSchema = z.object({
   exchangeRate: z.string().optional(),
 });
 
-export type ResidentTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
+export type ResidentTransactionAmountFormData = z.infer<typeof transactionAmountSchema> & {
+  sourceOfFundsSignatureMode?: "initials" | "upload";
+  sourceOfFundsInitials?: string;
+  sourceOfFundsSignatureFile?: FileWithPath | null;
+  proofOfFundsFiles?: File[];
+};
 
 interface ResidentTransactionAmountStepProps {
   initialValues?: Partial<ResidentTransactionAmountFormData>;
@@ -31,7 +44,17 @@ export default function ResidentTransactionAmountStep({
   onSubmit,
   onBack,
   exchangeRate = "USD1 - NGN1500",
-}: ResidentTransactionAmountStepProps) {
+}: Readonly<ResidentTransactionAmountStepProps>) {
+  const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">("initials");
+  const [sourceOfFundsInitials, setSourceOfFundsInitials] = useState(initialValues?.sourceOfFundsInitials ?? "");
+  const [sourceOfFundsSignatureFile, setSourceOfFundsSignatureFile] = useState<FileWithPath | null>(
+    initialValues?.sourceOfFundsSignatureFile ?? null
+  );
+  const [sourceOfFundsError, setSourceOfFundsError] = useState<string | null>(null);
+  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(initialValues?.proofOfFundsFiles ?? []);
+  const [proofOfFundsError, setProofOfFundsError] = useState<string | null>(null);
+
   const form = useForm<ResidentTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -44,8 +67,60 @@ export default function ResidentTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
+  const { displayRate, recalculate } = useTransactionRateCalculator({
+    // Re-map sell form to calculator shape:
+    // source amount/currency = sendAmount/sendCurrency
+    // target currency = receiveCurrency
+    getValues: () => ({
+      receiveAmount: form.values.sendAmount,
+      receiveCurrency: form.values.sendCurrency,
+      sendAmount: form.values.receiveAmount,
+      sendCurrency: form.values.receiveCurrency,
+      exchangeRate: form.values.exchangeRate,
+    }),
+    // Calculator writes converted amount into target side for sell flow.
+    setSendAmount: (value) => form.setFieldValue("receiveAmount", value),
+    setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
+    defaultLabel: exchangeRate,
+  });
+
+  const over10k = isAmountOverRequiredAmount(
+    form.values.receiveAmount,
+    form.values.receiveCurrency,
+    form.values.sendAmount,
+    form.values.sendCurrency
+  );
+
+  const validateOver10kRequirements = () => {
+    if (!over10k) return true;
+    if (!proofOfFundsFiles.length) {
+      setProofOfFundsError("Please upload at least one proof of fund document");
+      return false;
+    }
+    const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
+    const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
+    if (!hasInitials && !hasSignature) {
+      setSourceOfFundsError(
+        sourceOfFundsMode === "initials"
+          ? "Please enter your initials for the source of funds declaration"
+          : "Please upload your signature for the source of funds declaration"
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values);
+    setSourceOfFundsError(null);
+    setProofOfFundsError(null);
+    if (!validateOver10kRequirements()) return;
+    onSubmit({
+      ...values,
+      sourceOfFundsSignatureMode: over10k ? sourceOfFundsMode : undefined,
+      sourceOfFundsInitials: over10k && sourceOfFundsMode === "initials" ? sourceOfFundsInitials.trim() : undefined,
+      sourceOfFundsSignatureFile: over10k && sourceOfFundsMode === "upload" ? sourceOfFundsSignatureFile : undefined,
+      proofOfFundsFiles: over10k ? proofOfFundsFiles : undefined,
+    });
   });
 
   const handleSwap = () => {
@@ -56,6 +131,7 @@ export default function ResidentTransactionAmountStep({
       receiveAmount: sendAmount,
       receiveCurrency: sendCurrency,
     });
+    recalculate(receiveAmount, receiveCurrency, sendCurrency);
   };
 
   return (
@@ -74,21 +150,67 @@ export default function ResidentTransactionAmountStep({
           <CurrencyAmountInput
             label="When you Send"
             value={form.values.sendAmount}
-            onChange={(value) => form.setFieldValue("sendAmount", value)}
+            onChange={(value) => {
+              form.setFieldValue("sendAmount", value);
+              recalculate(value);
+            }}
             currency={
               getCurrencyByCode(form.values.sendCurrency) ?? CURRENCIES[0]
             }
             currencies={CURRENCIES}
-            onCurrencyChange={(c) => form.setFieldValue("sendCurrency", c.code)}
+            onCurrencyChange={(c) => {
+              form.setFieldValue("sendCurrency", c.code);
+              recalculate(undefined, c.code);
+            }}
             placeholder="0"
-            error={form.errors.sendAmount?.toString() || undefined}
+            error={typeof form.errors.sendAmount === "string" ? form.errors.sendAmount : undefined}
           />
+          <div className="w-full">
+            <ProofOfFundPrompt
+              show={over10k}
+              onUploadClick={() => setProofModalOpen(true)}
+            />
+            {over10k && proofOfFundsError && (
+              <p className="text-red-600 text-xs mt-1 text-right">
+                {proofOfFundsError}
+              </p>
+            )}
+          </div>
         </div>
+
+        {over10k && (
+          <SourceOfFundsDeclaration
+            signatureMode={sourceOfFundsMode}
+            onSignatureModeChange={setSourceOfFundsMode}
+            initialsValue={sourceOfFundsInitials}
+            onInitialsChange={setSourceOfFundsInitials}
+            initialsError={sourceOfFundsMode === "initials" ? (sourceOfFundsError ?? undefined) : undefined}
+            signatureFile={sourceOfFundsSignatureFile}
+            onSignatureFileChange={setSourceOfFundsSignatureFile}
+            signatureFileError={sourceOfFundsMode === "upload" ? (sourceOfFundsError ?? undefined) : undefined}
+          />
+        )}
+
+        <ProofOfFundModal
+          opened={proofModalOpen}
+          onClose={() => setProofModalOpen(false)}
+          onAttach={(files: File[]) => {
+            setProofOfFundsFiles(files);
+            setProofModalOpen(false);
+          }}
+        />
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            // onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >
@@ -105,9 +227,14 @@ export default function ResidentTransactionAmountStep({
               currency={
                 getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]
               }
+              onCurrencyChange={(c) => {
+                form.setFieldValue("receiveCurrency", c.code);
+                recalculate(undefined, undefined, c.code);
+              }}
               placeholder="0"
-              error={form.errors.receiveAmount?.toString() || undefined}
-              showDropdown={false}
+              error={typeof form.errors.receiveAmount === "string" ? form.errors.receiveAmount : undefined}
+              showDropdown
+              disabled
             />
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full h-14 bg-black rounded-b-3xl">
@@ -115,7 +242,7 @@ export default function ResidentTransactionAmountStep({
               Exchange Rate
             </span>
             <span className="font-normal text-base leading-6 text-white">
-              {exchangeRate}
+              {displayRate}
             </span>
           </div>
         </div>

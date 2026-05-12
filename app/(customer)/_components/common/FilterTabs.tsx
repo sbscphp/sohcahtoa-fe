@@ -11,6 +11,8 @@ interface FilterTabsProps {
   items: readonly FilterTabItem[];
   value: string;
   onChange?: (value: string) => void;
+  /** Appended to Tabs.List — use for toolbar layouts (e.g. nowrap + horizontal scroll on mobile). */
+  tabsListClassName?: string;
 }
 
 const tabBase =
@@ -18,9 +20,15 @@ const tabBase =
 const tabActive = "border! border-primary-100! bg-[#FFF6F1]! text-primary-400!";
 const tabInactive = "border! border-[#E4E4E7]! bg-white! text-gray-900! hover:border-gray-300!";
 
-export default function FilterTabs({ items, value }: FilterTabsProps) {
+export default function FilterTabs({
+  items,
+  value,
+  tabsListClassName,
+}: FilterTabsProps) {
   return (
-    <Tabs.List className="w-full flex flex-1 flex-wrap items-start gap-3 border-0 bg-transparent">
+    <Tabs.List
+      className={`w-full flex flex-1 flex-wrap items-start gap-3 border-0 bg-transparent ${tabsListClassName ?? ""}`}
+    >
       {items.map((tab) => (
         <Tabs.Tab
           key={tab.value}

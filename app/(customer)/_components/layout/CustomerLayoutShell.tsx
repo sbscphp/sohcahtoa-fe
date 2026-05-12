@@ -4,6 +4,7 @@ import { AppShell } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { usePathname, useParams } from 'next/navigation';
+import { AuthProfileSync } from '@/app/(customer)/_components/auth/AuthProfileSync';
 import CustomerHeader from './CustomerHeader';
 import CustomerSidebar from './CustomerSidebar';
 import {
@@ -138,7 +139,7 @@ export default function CustomerLayoutShell({
 
   // Use useLayoutEffect to check media query on client side before paint to prevent hydration mismatch
   useLayoutEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const mediaQuery = globalThis.matchMedia('(max-width: 768px)');
     // This state update is necessary to prevent hydration mismatch between server and client
     // eslint-disable-next-line -- necessary for hydration mismatch prevention
     setIsMobile(mediaQuery.matches);
@@ -159,6 +160,8 @@ export default function CustomerLayoutShell({
   }, [isMobile, closeMobile]);
 
   return (
+    <>
+      <AuthProfileSync />
     <AppShell
       layout={isMobile ? undefined : "alt"}
       header={{ height: HEADER_HEIGHT }}
@@ -172,8 +175,8 @@ export default function CustomerLayoutShell({
         minHeight: '100vh',
       }}
     >
-      <AppShell.Navbar>
-<CustomerSidebar
+      <AppShell.Navbar style={{ zIndex: isMobile ? 220 : 50 }}>
+        <CustomerSidebar
           collapsed={isMobile ? false : collapsed}
           onCollapse={toggleCollapsed}
           onNavigate={closeMobile}
@@ -187,7 +190,15 @@ export default function CustomerLayoutShell({
           position: 'fixed',
           top: 0,
           right: 0,
-          zIndex: 200,
+          zIndex: 100,
+          ...(isMobile
+            ? {
+                left: 0,
+                width: '100%',
+                maxWidth: '100vw',
+                boxSizing: 'border-box',
+              }
+            : {}),
         }}
       >
         <CustomerHeader 
@@ -204,14 +215,15 @@ export default function CustomerLayoutShell({
         style={{
           backgroundColor: '#F7F7F7',
           minHeight: '100vh',
-          padding: '1.5rem',
+          padding: isMobile ? '1rem' : '1.5rem',
           marginLeft: isMobile ? 0 : (collapsed ? '80px' : '256px'),
-          paddingTop: `calc(${HEADER_HEIGHT}px + 1.5rem)`,
+          paddingTop: `calc(${HEADER_HEIGHT}px + ${isMobile ? '1rem' : '1.5rem'})`,
           transition: 'margin-left 0.3s ease',
         }}
       >
         {children}
       </AppShell.Main>
     </AppShell>
+    </>
   );
 }

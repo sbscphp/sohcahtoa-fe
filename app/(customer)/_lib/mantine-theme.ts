@@ -3,6 +3,7 @@
  * 
  */
 
+import type React from 'react';
 import { createTheme } from '@mantine/core';
 
 export const mantineTheme = createTheme({
@@ -199,55 +200,82 @@ export const mantineTheme = createTheme({
     deg: 45,
   },
 
-  // Component-specific styling
+  // Z-index scale – drawer above header, modal above drawer (use CSS vars: --z-header, --z-drawer, --z-modal)
   components: {
-    TextInput: {
+    Modal: {
       defaultProps: {
-        styles: {
-          input: {
-            borderColor: '#CCCACA',
-            backgroundColor: '#FFFFFF',
-            color: '#1F1E1E',
-            '&::placeholder': {
-              color: '#8F8B8B',
-            },
-            '&:disabled': {
-              backgroundColor: '#F9F9F9',
-            },
-          },
-          label: {
-            color: '#6C6969',
-          },
-        },
+        zIndex: 300,
       },
     },
-    Textarea: {
+    Drawer: {
       defaultProps: {
-        styles: {
+        zIndex: 200,
+      },
+    },
+    Input: {
+      defaultProps: {
+        styles: (_theme: unknown, props: { leftSection?: React.ReactNode; rightSection?: React.ReactNode }) => ({
           input: {
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            ...(props.leftSection ? {} : { paddingInlineStart: '14px' }),
+            ...(props.rightSection ? {} : { paddingInlineEnd: '14px' }),
             backgroundColor: '#FFFFFF',
+            border: '1px solid #CCCACA',
+            borderRadius: '8px',
+            boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
             color: '#1F1E1E',
+            fontSize: '14px',
+            lineHeight: '20px',
+            fontWeight: 400,
             '&::placeholder': {
               color: '#8F8B8B',
+              fontSize: '14px',
+              lineHeight: '20px',
+              fontWeight: 400,
             },
             '&:disabled': {
               backgroundColor: '#F9F9F9',
             },
           },
+        }),
+      },
+    },
+    InputWrapper: {
+      defaultProps: {
+        styles: {
           label: {
             color: '#6C6969',
+            fontSize: '14px',
+            fontWeight: 500,
+            lineHeight: '20px',
+            letterSpacing: '0.04px',
+            marginBottom: '8px',
           },
         },
       },
     },
     Select: {
       defaultProps: {
-        styles: {
+        styles: (_theme: unknown, props: { leftSection?: React.ReactNode }) => ({
           input: {
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            // Select always has an internal right section (chevron) — never override paddingInlineEnd
+            ...(props.leftSection ? {} : { paddingInlineStart: '14px' }),
             backgroundColor: '#FFFFFF',
+            border: '1px solid #CCCACA',
+            borderRadius: '8px',
+            boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
             color: '#1F1E1E',
+            fontSize: '14px',
+            lineHeight: '20px',
+            fontWeight: 400,
             '&::placeholder': {
               color: '#8F8B8B',
+              fontSize: '14px',
+              lineHeight: '20px',
+              fontWeight: 400,
             },
             '&:disabled': {
               backgroundColor: '#F9F9F9',
@@ -255,8 +283,50 @@ export const mantineTheme = createTheme({
           },
           label: {
             color: '#6C6969',
+            fontSize: '14px',
+            fontWeight: 500,
+            lineHeight: '20px',
+            letterSpacing: '0.04px',
+            marginBottom: '8px',
           },
-        },
+        }),
+      },
+    },
+    TimeInput: {
+      defaultProps: {
+        styles: (_theme: unknown, props: { leftSection?: React.ReactNode; rightSection?: React.ReactNode }) => ({
+          input: {
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            ...(props.leftSection ? {} : { paddingInlineStart: '14px' }),
+            ...(props.rightSection ? {} : { paddingInlineEnd: '14px' }),
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #CCCACA',
+            borderRadius: '8px',
+            boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+            color: '#1F1E1E',
+            fontSize: '14px',
+            lineHeight: '20px',
+            fontWeight: 400,
+            '&::placeholder': {
+              color: '#8F8B8B',
+              fontSize: '14px',
+              lineHeight: '20px',
+              fontWeight: 400,
+            },
+            '&:disabled': {
+              backgroundColor: '#F9F9F9',
+            },
+          },
+          label: {
+            color: '#6C6969',
+            fontSize: '14px',
+            fontWeight: 500,
+            lineHeight: '20px',
+            letterSpacing: '0.04px',
+            marginBottom: '8px',
+          },
+        }),
       },
     },
     Card: {

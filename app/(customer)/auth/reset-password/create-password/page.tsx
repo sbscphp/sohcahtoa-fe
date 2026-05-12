@@ -3,46 +3,50 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { PasswordInput } from "@/app/(customer)/_components/auth/PasswordInput";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import { Button } from "@mantine/core";
 import { ArrowUpRight, Check, Dot } from "lucide-react";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import { clearPasswordResetSessionStorage, AUTH_STORAGE_KEYS } from "@/app/(customer)/_utils/auth-flow";
+import {
+  isPasswordPolicyCompliant,
+  passwordLengthOk,
+  passwordNumberOk,
+  passwordSpecialOk,
+  passwordUpperLowerOk,
+} from "@/app/_lib/password-policy";
 
 export default function CreateNewPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
   const [passwordResetOpened, { open: openPasswordReset, close: closePasswordReset }] =
     useDisclosure(false);
 
+  const resetPasswordMutation = useCreateData(customerApi.auth.resetPassword);
+
   useEffect(() => {
-    // Check if user came from OTP verification
-    const resetEmail =
+    // Check if user came from OTP verification (has resetToken)
+    const resetToken =
       typeof window !== "undefined"
-        ? sessionStorage.getItem("resetEmail")
+        ? sessionStorage.getItem("resetToken")
         : null;
     
-    if (!resetEmail) {
-      // Redirect if no email found (user didn't go through the flow)
+    if (!resetToken) {
+      // Redirect if no resetToken found (user didn't go through the flow)
+      clearPasswordResetSessionStorage();
       router.push("/auth/reset-password");
     }
   }, [router]);
 
-  const validatePassword = (pwd: string) => {
-    const hasLength = pwd.length >= 8 && pwd.length <= 12;
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasNumber = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*]/.test(pwd);
-
-    return hasLength && hasUpper && hasLower && hasNumber && hasSpecial;
-  };
-
   const handleCreatePassword = () => {
-    if (!validatePassword(password)) {
+    if (!isPasswordPolicyCompliant(password)) {
       setError("Password does not meet all requirements");
       return;
     }
@@ -52,37 +56,68 @@ export default function CreateNewPasswordPage() {
       return;
     }
 
+    const resetToken = sessionStorage.getItem("resetToken");
+    if (!resetToken) {
+      setError("Reset token not found. Please start over.");
+      clearPasswordResetSessionStorage();
+      router.push("/auth/reset-password");
+      return;
+    }
+
     setError("");
-    openPasswordReset();
+    setIsResetting(true);
+    resetPasswordMutation.mutate(
+      { resetToken, newPassword: password },
+      {
+        onSuccess: (response) => {
+          if (response.success) {
+            setIsResetting(false);
+            // Clear reset password data after successful reset
+            clearPasswordResetSessionStorage();
+            openPasswordReset();
+          } else {
+            setIsResetting(false);
+            handleApiError(
+              { message: response.error?.message || "Failed to reset password", status: 400 },
+              { customMessage: response.error?.message || "Failed to reset password. Please try again." }
+            );
+            setError(response.error?.message || "Failed to reset password");
+          }
+        },
+        onError: (error) => {
+          setIsResetting(false);
+          handleApiError(error, { customMessage: "Failed to reset password. Please try again." });
+          setError(error.message || "Failed to reset password");
+        },
+      }
+    );
   };
 
   const handleReturnToLogin = () => {
-    // Clear session storage
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("resetEmail");
-    }
+    // Clear reset password data (already cleared on success, but ensure cleanup)
+    clearPasswordResetSessionStorage();
     closePasswordReset();
     router.push("/auth/login");
   };
 
   const passwordRequirements = [
     {
-      text: "8-12 characters",
-      met: password.length >= 8 && password.length <= 12
+      text: "At least 8 characters",
+      met: passwordLengthOk(password),
     },
     {
       text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-      met: /[A-Z]/.test(password) && /[a-z]/.test(password)
+      met: passwordUpperLowerOk(password),
     },
-    { text: "Include Numbers (0-9)", met: /[0-9]/.test(password) },
+    { text: "Include Numbers (0-9)", met: passwordNumberOk(password) },
     {
-      text: "Special characters (e.g. ! @ # $ % ^ & *)",
-      met: /[!@#$%^&*]/.test(password)
-    }
+      text: "At least one symbol (e.g. ! ? @ # $ % ^ & * ( ) _ +)",
+      met: passwordSpecialOk(password),
+    },
   ];
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold mb-2">
@@ -101,7 +136,7 @@ export default function CreateNewPasswordPage() {
             onChange={setPassword}
             placeholder="Enter password"
             size="lg"
-            error={error && !validatePassword(password) ? error : undefined}
+            error={error && !isPasswordPolicyCompliant(password) ? error : undefined}
           />
 
           <div className="">
@@ -144,17 +179,19 @@ export default function CreateNewPasswordPage() {
           disabled={
             !password ||
             !confirmPassword ||
-            !validatePassword(password) ||
-            password !== confirmPassword
+            !isPasswordPolicyCompliant(password) ||
+            password !== confirmPassword ||
+            isResetting
           }
+          loading={isResetting}
           variant="filled"
           size="lg"
           fullWidth
           radius="xl"
-          rightSection={<ArrowUpRight size={18} />}
+          rightSection={!isResetting && <ArrowUpRight size={18} />}
           className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
         >
-          Create Password
+          {isResetting ? "Resetting Password..." : "Create Password"}
         </Button>
 
         <SecurityBadges />
@@ -168,6 +205,6 @@ export default function CreateNewPasswordPage() {
         buttonText="Return To Log In"
         onButtonClick={handleReturnToLogin}
       />
-    </AuthLayout>
+    </>
   );
 }

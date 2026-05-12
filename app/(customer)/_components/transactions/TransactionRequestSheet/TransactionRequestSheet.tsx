@@ -2,20 +2,55 @@
 
 import { Drawer, Tabs } from "@mantine/core";
 import OverviewDetail from "./OverviewDetail";
-import DocumentDetail from "./DocumentDetail";
-import type { DetailViewStatus } from "@/app/(customer)/_lib/transaction-details";
+import DocumentDetail, {
+  documentsIncludeRequiresManualReview,
+  type TransactionDocumentItem,
+} from "./DocumentDetail";
+import type { TransactionDetailComment } from "@/app/_lib/api/types";
+import type { FileWithPath } from "@mantine/dropzone";
+import type { ReactNode } from "react";
 
 interface TransactionRequestSheetProps {
   opened: boolean;
   onClose: () => void;
-  viewStatus: DetailViewStatus;
+  transactionTypeLabel?: string;
+  transactionStatus?: string;
+  transactionId?: string;
+  date?: string;
+  time?: string;
+  adminMessage?: string;
+  onProceedToPayment?: () => void;
+  /** Optional custom actions rendered in Overview when approved (agent uses Cash/Bank buttons). */
+  approvedActions?: ReactNode;
+  comments?: TransactionDetailComment[];
+  onResubmitDocuments?: (
+    documents: Array<{ documentType: string; file: FileWithPath }>
+  ) => Promise<void>;
+  /** Documents for Documentation tab (name, size, status, re-upload). */
+  documents?: TransactionDocumentItem[];
+  onViewTransaction?: () => void;
+  onOpenDocument?: (doc: TransactionDocumentItem) => void;
 }
 
 export default function TransactionRequestSheet({
   opened,
   onClose,
-  viewStatus,
-}: TransactionRequestSheetProps) {
+  transactionTypeLabel,
+  transactionStatus,
+  transactionId,
+  date,
+  time,
+  adminMessage,
+  onProceedToPayment,
+  approvedActions,
+  comments,
+  onResubmitDocuments,
+  documents,
+  onViewTransaction,
+  onOpenDocument,
+}: Readonly<TransactionRequestSheetProps>) {
+  const suppressTransactionActions = documentsIncludeRequiresManualReview(documents);
+
   return (
     <Drawer
       opened={opened}
@@ -75,11 +110,31 @@ export default function TransactionRequestSheet({
           </Tabs.List>
 
           <Tabs.Panel value="overview">
-            <OverviewDetail viewStatus={viewStatus} />
+            <OverviewDetail
+              transactionStatus={transactionStatus}
+              transactionId={transactionId}
+              date={date}
+              time={time}
+              adminMessage={adminMessage}
+              onProceedToPayment={
+                suppressTransactionActions ? undefined : onProceedToPayment
+              }
+              approvedActions={
+                suppressTransactionActions ? undefined : approvedActions
+              }
+              suppressTransactionActions={suppressTransactionActions}
+              comments={comments}
+            />
           </Tabs.Panel>
 
           <Tabs.Panel value="documentation">
-            <DocumentDetail />
+            <DocumentDetail
+              transactionTypeLabel={transactionTypeLabel}
+              documents={documents}
+              onResubmitDocuments={onResubmitDocuments}
+              onOpenDocument={onOpenDocument}
+              onViewTransaction={onViewTransaction ?? onClose}
+            />
           </Tabs.Panel>
         </Tabs>
       </div>

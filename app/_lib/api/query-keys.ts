@@ -1,0 +1,542 @@
+/**
+ * Query Key Factories
+ * Centralized query keys for better cache management
+ * Usage: customerKeys.profile(), adminKeys.transactions.list({ page: 1 })
+ */
+
+import type { RateListParams } from "@/app/admin/_services/admin-api";
+import type { PickupTerminalsQueryParams, TransactionListParams } from "./types";
+
+// ==================== Customer Query Keys ====================
+
+export const customerKeys = {
+  all: ["customer"] as const,
+  
+  auth: {
+    all: ["customer", "auth"] as const,
+    profile: () => [...customerKeys.auth.all, "profile"] as const,
+  },
+  
+  transactions: {
+    all: ["customer", "transactions"] as const,
+    lists: () => [...customerKeys.transactions.all, "list"] as const,
+    list: (filters?: TransactionListParams) =>
+      [...customerKeys.transactions.lists(), filters] as const,
+    details: () => [...customerKeys.transactions.all, "detail"] as const,
+    detail: (id: string) => [...customerKeys.transactions.details(), id] as const,
+    overview: () => [...customerKeys.transactions.all, "overview"] as const,
+    virtualAccount: (id: string) =>
+      [...customerKeys.transactions.detail(id), "virtual-account"] as const,
+    depositInstructions: (id: string) =>
+      [...customerKeys.transactions.detail(id), "deposit-instructions"] as const,
+    depositStatus: (id: string) =>
+      [...customerKeys.transactions.detail(id), "deposit-status"] as const,
+    pickupTerminals: (params?: PickupTerminalsQueryParams | "all") =>
+      [...customerKeys.transactions.all, "pickup-terminals", params ?? "all"] as const,
+    pickupLocationStates: () =>
+      [...customerKeys.transactions.all, "pickup-location-states"] as const,
+    pickupLocationCities: (params?: { state?: string; city?: string }) =>
+      [...customerKeys.transactions.all, "pickup-location-cities", params] as const,
+  },
+  
+  payments: {
+    all: ["customer", "payments"] as const,
+    history: (params?: { page?: number; limit?: number }) =>
+      [...customerKeys.payments.all, "history", params] as const,
+    status: (transactionId: string) =>
+      [...customerKeys.payments.all, "status", transactionId] as const,
+    exchangeRate: (params: { fromCurrency: string; toCurrency: string; amount: number }) =>
+      [...customerKeys.payments.all, "exchange-rate", params] as const,
+  },
+  
+  kyc: {
+    all: ["customer", "kyc"] as const,
+    passportStatus: () => [...customerKeys.kyc.all, "passport", "status"] as const,
+  },
+  
+  notifications: {
+    all: ["customer", "notifications"] as const,
+    lists: () => [...customerKeys.notifications.all, "list"] as const,
+    list: (params?: { limit?: number; offset?: number }) =>
+      [...customerKeys.notifications.lists(), params] as const,
+    unreadCount: () => [...customerKeys.notifications.all, "unread-count"] as const,
+    preferences: () => [...customerKeys.notifications.all, "preferences"] as const,
+    devices: () => [...customerKeys.notifications.all, "devices"] as const,
+  },
+  
+  documents: {
+    all: ["customer", "documents"] as const,
+    lists: () => [...customerKeys.documents.all, "list"] as const,
+    list: (params?: { userId: string; page?: number; limit?: number }) =>
+      [...customerKeys.documents.lists(), params] as const,
+    details: () => [...customerKeys.documents.all, "detail"] as const,
+    detail: (id: string) => [...customerKeys.documents.details(), id] as const,
+    byTransaction: (transactionId: string) =>
+      [...customerKeys.documents.all, "transaction", transactionId] as const,
+  },
+  
+  support: {
+    all: ["customer", "support"] as const,
+    tickets: {
+      all: ["customer", "support", "tickets"] as const,
+      lists: () => [...customerKeys.support.tickets.all, "list"] as const,
+      list: (params?: { page?: number; limit?: number }) =>
+        [...customerKeys.support.tickets.lists(), params] as const,
+      details: () => [...customerKeys.support.tickets.all, "detail"] as const,
+      detail: (id: string) => [...customerKeys.support.tickets.details(), id] as const,
+    },
+  },
+} as const;
+
+// ==================== Admin Query Keys ====================
+
+export const adminKeys = {
+  all: ["admin"] as const,
+  
+  auth: {
+    all: ["admin", "auth"] as const,
+    profile: () => [...adminKeys.auth.all, "profile"] as const,
+  },
+  
+  dashboard: {
+    all: ["admin", "dashboard"] as const,
+    stats: () => [...adminKeys.dashboard.all, "stats"] as const,
+    pendingApprovals: () => [...adminKeys.dashboard.all, "pending-approvals"] as const,
+  },
+
+  auditTrail: {
+    all: ["admin", "audit-trail"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      module?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) => [...adminKeys.auditTrail.all, "list", params] as const,
+  },
+
+  agent: {
+    all: ["admin", "agent"] as const,
+    stats: () => [...adminKeys.agent.all, "stats"] as const,
+    details: () => [...adminKeys.agent.all, "detail"] as const,
+    detail: (id: string) => [...adminKeys.agent.details(), id] as const,
+    transactions: (
+      id: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) => [...adminKeys.agent.detail(id), "transactions", params] as const,
+    transactionDetail: (id: string, transactionId: string) =>
+      [...adminKeys.agent.detail(id), "transactions", "detail", transactionId] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+      branch?: string;
+      fromDate?: string;
+      toDate?: string;
+      sort?: string;
+    }) => [...adminKeys.agent.all, "list", params] as const,
+  },
+  
+  customers: {
+    all: ["admin", "customers"] as const,
+    counts: () => [...adminKeys.customers.all, "counts"] as const,
+    allCustomers: () => [...adminKeys.customers.all, "all"] as const,
+    lists: () => [...adminKeys.customers.all, "list"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+    }) =>
+      [...adminKeys.customers.lists(), params] as const,
+    details: () => [...adminKeys.customers.all, "detail"] as const,
+    detail: (userId: string) => [...adminKeys.customers.details(), userId] as const,
+    transactions: (
+      userId: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        type?: string;
+        search?: string;
+      }
+    ) => [...adminKeys.customers.detail(userId), "transactions", params] as const,
+    flags: {
+      all: (userId: string) => [...adminKeys.customers.detail(userId), "flags"] as const,
+      list: (userId: string) => [...adminKeys.customers.flags.all(userId), "list"] as const,
+      allFlags: () => [...adminKeys.customers.all, "flags", "all"] as const,
+    },
+  },
+
+  tickets: {
+    all: ["admin", "tickets"] as const,
+    stats: () => [...adminKeys.tickets.all, "stats"] as const,
+    statuses: () => [...adminKeys.tickets.all, "statuses"] as const,
+    caseTypes: () => [...adminKeys.tickets.all, "case-types"] as const,
+    detail: (id: string) => [...adminKeys.tickets.all, "detail", id] as const,
+    comments: (id: string) => [...adminKeys.tickets.all, "comments", id] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      category?: string;
+      priority?: string;
+    }) => [...adminKeys.tickets.all, "list", params] as const,
+  },
+  rate: {
+    all: ["admin", "rate"] as const,
+    stats: () => [...adminKeys.rate.all, "stats"] as const,
+    detail: (id: string) => [...adminKeys.rate.all, "detail", id] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+    }) => [...adminKeys.rate.all, "list", params] as const,
+  },
+
+  outlet: {
+    all: ["admin", "outlet"] as const,
+    pickupStations: {
+      all: () => [...adminKeys.outlet.all, "pickup-stations"] as const,
+      details: () => [...adminKeys.outlet.pickupStations.all(), "detail"] as const,
+      detail: (id: string) =>
+        [...adminKeys.outlet.pickupStations.details(), id] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        state?: string;
+      }) => [...adminKeys.outlet.pickupStations.all(), "list", params] as const,
+      requests: (
+        stationId: string,
+        params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }
+      ) =>
+        [...adminKeys.outlet.pickupStations.all(), stationId, "requests", params] as const,
+    },
+    states: {
+      all: () => [...adminKeys.outlet.all, "states"] as const,
+      list: () => [...adminKeys.outlet.states.all(), "list"] as const,
+      cities: (state?: string) =>
+        [...adminKeys.outlet.states.all(), "cities", state ?? ""] as const,
+    },
+    franchises: {
+      all: () => [...adminKeys.outlet.all, "franchises"] as const,
+      stats: () => [...adminKeys.outlet.franchises.all(), "stats"] as const,
+      detail: (id: string) => [...adminKeys.outlet.franchises.all(), "detail", id] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      }) => [...adminKeys.outlet.franchises.all(), "list", params] as const,
+      branches: {
+        all: (id: string) => [...adminKeys.outlet.franchises.all(), "branches", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            isActive?: boolean;
+          }
+        ) => [...adminKeys.outlet.franchises.branches.all(id), "list", params] as const,
+      },
+      transactions: {
+        all: (id: string) => [...adminKeys.outlet.franchises.all(), "transactions", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            status?: string;
+            step?: string;
+            type?: string;
+            dateFrom?: string;
+            dateTo?: string;
+            sortBy?: string;
+            sortOrder?: "asc" | "desc";
+          }
+        ) => [...adminKeys.outlet.franchises.transactions.all(id), "list", params] as const,
+      },
+    },
+    branches: {
+      all: () => [...adminKeys.outlet.all, "branches"] as const,
+      stats: () => [...adminKeys.outlet.branches.all(), "stats"] as const,
+      detail: (id: string) => [...adminKeys.outlet.branches.all(), "detail", id] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        isActive?: boolean;
+      }) => [...adminKeys.outlet.branches.all(), "list", params] as const,
+      agents: {
+        all: (id: string) => [...adminKeys.outlet.branches.all(), "agents", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            isActive?: boolean;
+          }
+        ) => [...adminKeys.outlet.branches.agents.all(id), "list", params] as const,
+      },
+      transactions: {
+        all: (id: string) => [...adminKeys.outlet.branches.all(), "transactions", id] as const,
+        list: (
+          id: string,
+          params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            status?: string;
+          }
+        ) => [...adminKeys.outlet.branches.transactions.all(id), "list", params] as const,
+      },
+    },
+  },
+  
+  transactions: {
+    all: ["admin", "transactions"] as const,
+    stats: () => [...adminKeys.transactions.all, "stats"] as const,
+    lists: () => [...adminKeys.transactions.all, "list"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      step?: string;
+      type?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    }) =>
+      [...adminKeys.transactions.lists(), params] as const,
+    details: () => [...adminKeys.transactions.all, "detail"] as const,
+    detail: (id: string) => [...adminKeys.transactions.details(), id] as const,
+  },
+
+  reports: {
+    all: ["admin", "reports"] as const,
+    modules: () => [...adminKeys.reports.all, "modules"] as const,
+  },
+
+  settlement: {
+    all: ["admin", "settlement"] as const,
+    stats: () => [...adminKeys.settlement.all, "stats"] as const,
+    discrepancies: (params?: { page?: number; limit?: number }) =>
+      [...adminKeys.settlement.all, "discrepancies", params] as const,
+    pendingReconciliations: (params?: { page?: number; limit?: number }) =>
+      [
+        ...adminKeys.settlement.all,
+        "pending-reconciliations",
+        params,
+      ] as const,
+    escrowAccounts: () => [...adminKeys.settlement.all, "escrow-accounts"] as const,
+    fundingTransactions: (params?: { page?: number; limit?: number }) =>
+      [
+        ...adminKeys.settlement.all,
+        "funding-transactions",
+        params,
+      ] as const,
+  },
+
+  regulatory: {
+    all: ["admin", "regulatory"] as const,
+    compliance: {
+      all: () => [...adminKeys.regulatory.all, "compliance"] as const,
+      dashboard: () => [...adminKeys.regulatory.compliance.all(), "dashboard"] as const,
+      reports: {
+        all: () => [...adminKeys.regulatory.compliance.all(), "reports"] as const,
+        list: (params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }) => [...adminKeys.regulatory.compliance.reports.all(), "list", params] as const,
+        detail: (id: string) =>
+          [...adminKeys.regulatory.compliance.reports.all(), "detail", id] as const,
+      },
+    },
+    logs: {
+      all: () => [...adminKeys.regulatory.all, "logs"] as const,
+      audit: {
+        all: () => [...adminKeys.regulatory.logs.all(), "audit"] as const,
+        list: (params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          severity?: string;
+        }) => [...adminKeys.regulatory.logs.audit.all(), "list", params] as const,
+        detail: (id: string) =>
+          [...adminKeys.regulatory.logs.audit.all(), "detail", id] as const,
+      },
+      regulatory: {
+        all: () => [...adminKeys.regulatory.logs.all(), "regulatory"] as const,
+        list: (params?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          status?: string;
+        }) => [...adminKeys.regulatory.logs.regulatory.all(), "list", params] as const,
+        detail: (id: string) =>
+          [...adminKeys.regulatory.logs.regulatory.all(), "detail", id] as const,
+      },
+    },
+    trms: {
+      all: () => [...adminKeys.regulatory.all, "trms"] as const,
+      stats: () => [...adminKeys.regulatory.trms.all(), "stats"] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      }) => [...adminKeys.regulatory.trms.all(), "list", params] as const,
+      detail: (transactionId: string) =>
+        [...adminKeys.regulatory.trms.all(), "detail", transactionId] as const,
+    },
+    cbnFn: {
+      all: () => [...adminKeys.regulatory.all, "cbn-fn"] as const,
+      stats: () => [...adminKeys.regulatory.cbnFn.all(), "stats"] as const,
+      list: (params?: {
+        search?: string;
+        status?: string;
+        page?: number;
+        limit?: number;
+      }) => [...adminKeys.regulatory.cbnFn.all(), "list", params] as const,
+      detail: (id: string) => [...adminKeys.regulatory.cbnFn.all(), "detail", id] as const,
+    },
+  },
+
+  management: {
+    all: ["admin", "management"] as const,
+    lookups: (query: "role" | "department" | "branch") =>
+      [...adminKeys.management.all, "lookups", query] as const,
+    modules: () => [...adminKeys.management.all, "modules"] as const,
+    users: {
+      all: () => [...adminKeys.management.all, "users"] as const,
+      allUsers: () => [...adminKeys.management.users.all(), "all"] as const,
+      stats: () => [...adminKeys.management.users.all(), "stats"] as const,
+      details: () => [...adminKeys.management.users.all(), "detail"] as const,
+      detail: (id: string) => [...adminKeys.management.users.details(), id] as const,
+      activities: (id: string, params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.users.all(), "activities", id, params] as const,
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.users.all(), "list", params] as const,
+    },
+    roles: {
+      all: () => [...adminKeys.management.all, "roles"] as const,
+      stats: () => [...adminKeys.management.roles.all(), "stats"] as const,
+      list: (params?: { page?: number; limit?: number; search?: string; isActive?: boolean }) =>
+        [...adminKeys.management.roles.all(), "list", params] as const,
+      detail: (id: string) => [...adminKeys.management.roles.all(), "detail", id] as const,
+    },
+    departments: {
+      all: () => [...adminKeys.management.all, "departments"] as const,
+      stats: () => [...adminKeys.management.departments.all(), "stats"] as const,
+      list: (params?: { page?: number; limit?: number; search?: string }) =>
+        [...adminKeys.management.departments.all(), "list", params] as const,
+      detail: (id: string) => [...adminKeys.management.departments.all(), "detail", id] as const,
+    },
+  },
+} as const;
+
+// ==================== Agent Query Keys ====================
+
+export const agentKeys = {
+  all: ["agent"] as const,
+
+  rates: {
+    all: ["agent", "rates"] as const,
+    list: (params?: { fromCurrency?: string; toCurrency?: string }) =>
+      [...agentKeys.rates.all, "list", params] as const,
+  },
+
+  dashboard: {
+    all: ["agent", "dashboard"] as const,
+    cashStats: (period?: string) =>
+      [...agentKeys.dashboard.all, "cash-stats", period] as const,
+  },
+
+  customers: {
+    all: ["agent", "customers"] as const,
+    stats: () => [...agentKeys.customers.all, "stats"] as const,
+    lists: () => [...agentKeys.customers.all, "list"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      lastTransactionType?: string;
+      customerType?: string;
+      fromDate?: string;
+      toDate?: string;
+      search?: string;
+    }) => [...agentKeys.customers.lists(), params] as const,
+    details: () => [...agentKeys.customers.all, "detail"] as const,
+    detail: (userId: string) => [...agentKeys.customers.details(), userId] as const,
+    transactions: (
+      userId: string,
+      params?: { page?: number; limit?: number }
+    ) => [...agentKeys.customers.detail(userId), "transactions", params] as const,
+  },
+  
+  transactions: {
+    all: ["agent", "transactions"] as const,
+    stats: () => [...agentKeys.transactions.all, "stats"] as const,
+    lists: () => [...agentKeys.transactions.all, "list"] as const,
+    list: (params?: { page?: number; limit?: number }) =>
+      [...agentKeys.transactions.lists(), params] as const,
+    details: () => [...agentKeys.transactions.all, "detail"] as const,
+    detail: (id: string) => [...agentKeys.transactions.details(), id] as const,
+    virtualAccount: (id: string) =>
+      [...agentKeys.transactions.detail(id), "virtual-account"] as const,
+    depositInstructions: (id: string) =>
+      [...agentKeys.transactions.detail(id), "deposit-instructions"] as const,
+    depositStatus: (id: string) =>
+      [...agentKeys.transactions.detail(id), "deposit-status"] as const,
+    paymentMovements: (params: {
+      type: string;
+      page?: number;
+      limit?: number;
+    }) => [...agentKeys.transactions.all, "payments", "movements", params] as const,
+  },
+  
+  notifications: {
+    all: ["agent", "notifications"] as const,
+    lists: () => [...agentKeys.notifications.all, "list"] as const,
+    list: (params?: { limit?: number; offset?: number }) =>
+      [...agentKeys.notifications.lists(), params] as const,
+    unreadCount: () => [...agentKeys.notifications.all, "unread-count"] as const,
+  },
+
+  support: {
+    all: ["agent", "support"] as const,
+    tickets: {
+      all: ["agent", "support", "tickets"] as const,
+      lists: () => [...agentKeys.support.tickets.all, "list"] as const,
+      list: (params?: { page?: number; limit?: number }) =>
+        [...agentKeys.support.tickets.lists(), params] as const,
+      details: () => [...agentKeys.support.tickets.all, "detail"] as const,
+      detail: (id: string) => [...agentKeys.support.tickets.details(), id] as const,
+    },
+  },
+} as const;

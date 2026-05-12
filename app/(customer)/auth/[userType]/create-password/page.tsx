@@ -3,43 +3,83 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
-import { AuthLayout } from "@/app/(customer)/_components/auth/AuthLayout";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { PasswordInput } from "@/app/(customer)/_components/auth/PasswordInput";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import { Button } from "@mantine/core";
-import { ArrowUpRight, Check, Dot } from "lucide-react";
-import { validateUserType, getNextStep } from "@/app/(customer)/_utils/auth-flow";
+import { ArrowUpRight, ArrowLeft, Check, Dot } from "lucide-react";
+import { validateUserType, checkAndClearSessionIfUserTypeChanged, clearOnboardingSessionStorage } from "@/app/(customer)/_utils/auth-flow";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { handleApiError } from "@/app/_lib/api/error-handler";
+import {
+  isPasswordPolicyCompliant,
+  passwordLengthOk,
+  passwordNumberOk,
+  passwordSpecialOk,
+  passwordUpperLowerOk,
+} from "@/app/_lib/password-policy";
 
 export default function CreatePasswordPage() {
   const router = useRouter();
   const params = useParams();
   const userType = validateUserType(params.userType);
 
+  type CreatePasswordPayload = {
+    password: string;
+    token: string;
+  };
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const [successOpened, { open: openSuccess, close: closeSuccess }] =
     useDisclosure(false);
 
   useEffect(() => {
     if (!userType) {
       router.push("/auth/onboarding");
+      return;
+    }
+
+    checkAndClearSessionIfUserTypeChanged(userType);
+
+    const validationToken = sessionStorage.getItem("validationToken");
+    const verificationToken = sessionStorage.getItem("verificationToken");
+    
+    if (userType === "citizen") {
+      if (!validationToken) {
+        router.push(`/auth/${userType}/verify-email`);
+        return;
+      }
+    } else {
+      // For expatriate/tourist, check for either token
+      if (!validationToken && !verificationToken) {
+        router.push(`/auth/${userType}/verify-email`);
+        return;
+      }
     }
   }, [userType, router]);
 
-  const validatePassword = (pwd: string) => {
-    const hasLength = pwd.length >= 8 && pwd.length <= 12;
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasNumber = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*]/.test(pwd);
+  const createAccountMutation = useCreateData(
+    async ({ password, token }: CreatePasswordPayload) => {
+      if (userType === "citizen") {
+        return customerApi.auth.nigerian.createAccount({
+          password,
+          verificationToken: token,
+        });
+      }
 
-    return hasLength && hasUpper && hasLower && hasNumber && hasSpecial;
-  };
+      return customerApi.auth.tourist.createAccount({
+        password,
+        verificationToken: token,
+      });
+    }
+  );
 
   const handleCreatePassword = () => {
-    if (!validatePassword(password)) {
+    if (!isPasswordPolicyCompliant(password)) {
       setError("Password does not meet all requirements");
       return;
     }
@@ -49,33 +89,73 @@ export default function CreatePasswordPage() {
       return;
     }
 
+    const validationToken = sessionStorage.getItem("validationToken");
+    const verificationToken = sessionStorage.getItem("verificationToken");
+    
+    let tokenToUse: string | null = null;
+    if (userType === "citizen") {
+      tokenToUse = validationToken;
+    } else {
+      tokenToUse = validationToken || verificationToken;
+    }
+    
+    if (!tokenToUse) {
+      handleApiError(
+        { message: "Validation token not found", status: 400 },
+        { customMessage: "Please complete the previous steps first." }
+      );
+      return;
+    }
+
     setError("");
-    openSuccess();
+    setIsCreating(true);
+    createAccountMutation.mutate(
+      {
+        password,
+        token: tokenToUse,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.success && response.data) {
+            setIsCreating(false);
+            clearOnboardingSessionStorage();
+            openSuccess();
+          } else {
+            setIsCreating(false);
+            handleApiError(
+              { message: response.error?.message || "Account creation failed", status: 400 },
+              { customMessage: response.error?.message || "Failed to create account. Please try again." }
+            );
+          }
+        },
+        onError: (error) => {
+          setIsCreating(false);
+          handleApiError(error);
+        },
+      }
+    );
   };
 
   const handleSuccessContinue = () => {
-    // Clear session storage
-    if (typeof window !== "undefined") {
-      sessionStorage.clear();
-    }
+    clearOnboardingSessionStorage();
     closeSuccess();
     router.push("/auth/login");
   };
 
   const passwordRequirements = [
     {
-      text: "8-12 characters",
-      met: password.length >= 8 && password.length <= 12
+      text: "At least 8 characters",
+      met: passwordLengthOk(password),
     },
     {
       text: "Use both Uppercase letters (A-Z) and Lowercase letter (a-z).",
-      met: /[A-Z]/.test(password) && /[a-z]/.test(password)
+      met: passwordUpperLowerOk(password),
     },
-    { text: "Include Numbers (0-9)", met: /[0-9]/.test(password) },
+    { text: "Include Numbers (0-9)", met: passwordNumberOk(password) },
     {
-      text: "Special characters (e.g. ! @ # $ % ^ & *)",
-      met: /[!@#$%^&*]/.test(password)
-    }
+      text: "At least one symbol (e.g. ! ? @ # $ % ^ & * ( ) _ +)",
+      met: passwordSpecialOk(password),
+    },
   ];
 
   if (!userType) {
@@ -83,8 +163,16 @@ export default function CreatePasswordPage() {
   }
 
   return (
-    <AuthLayout>
+    <>
       <div className="space-y-8">
+        <Button
+          variant="subtle"
+          leftSection={<ArrowLeft size={18} />}
+          onClick={() => router.push(`/auth/${userType}/verify-email`)}
+          className="text-body-text-200 hover:text-body-text-300 p-0 h-auto"
+        >
+          Back
+        </Button>
         <div>
           <h1 className="text-body-heading-300 text-3xl font-semibold mb-2">
             Create Secure Password
@@ -102,7 +190,7 @@ export default function CreatePasswordPage() {
             onChange={setPassword}
             placeholder="Enter password"
             size="lg"
-            error={error && !validatePassword(password) ? error : undefined}
+            error={error && !isPasswordPolicyCompliant(password) ? error : undefined}
           />
 
           <div className="">
@@ -145,17 +233,19 @@ export default function CreatePasswordPage() {
           disabled={
             !password ||
             !confirmPassword ||
-            !validatePassword(password) ||
-            password !== confirmPassword
+            !isPasswordPolicyCompliant(password) ||
+            password !== confirmPassword ||
+            isCreating
           }
+          loading={isCreating}
           variant="filled"
           size="lg"
           fullWidth
           radius="xl"
-          rightSection={<ArrowUpRight size={18} />}
+          rightSection={!isCreating && <ArrowUpRight size={18} />}
           className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
         >
-          Create Password
+          {isCreating ? "Creating Account..." : "Create Password"}
         </Button>
 
         <SecurityBadges />
@@ -169,6 +259,6 @@ export default function CreatePasswordPage() {
         buttonText="Continue To Log In"
         onButtonClick={handleSuccessContinue}
       />
-    </AuthLayout>
+    </>
   );
 }

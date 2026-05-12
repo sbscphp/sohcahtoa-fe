@@ -3,59 +3,104 @@
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Alert, Button } from "@mantine/core";
+import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
-import FileUploadInput from "../../../../forms/FileUploadInput";
-import { TextInput } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
 
-const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
-  ninNumber: z.string().regex(/^\d{11}$/, "NIN must be exactly 11 digits"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
-  }),
-  passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "International Passport file is required",
-  }),
-  visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Valid Visa file is required",
-  }),
-  returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Return Ticket file is required",
-  }),
-});
+const uploadDocumentsSchema = z
+  .object({
+    bvn: kycBvnSchema,
+    ninNumber: kycNinRequiredSchema,
+    formAId: formAIdSchema,
+    passportDocumentNumber: passportNumberSchema,
+    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
+    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "International Passport file is required",
+    }),
+    visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Valid Visa file is required",
+    }),
+    returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+      message: "Return Ticket file is required",
+    }),
+    returnTicketDocumentNumber: z.string().max(50, "Return Ticket Number is too long").optional().nullable(),
+  })
+  .superRefine(validatePassportDates);
 
 export type UploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
 /** Form state allows null for file fields before validation */
 type UploadDocumentsFormValues = z.input<typeof uploadDocumentsSchema>;
 
+/** Saved PTA drafts may still use legacy keys (see initialValues mapping below). */
+type PTAUploadDocumentsInitialValues = Partial<UploadDocumentsFormValues> & {
+  formADocumentNumber?: string;
+};
+
 interface PTAUploadDocumentsStepProps {
-  initialValues?: Partial<UploadDocumentsFormValues>;
+  initialValues?: PTAUploadDocumentsInitialValues;
   onSubmit: (data: UploadDocumentsFormData) => void;
   onBack?: () => void;
+  lockKycPrefill?: boolean;
 }
 
 export default function PTAUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
-}: PTAUploadDocumentsStepProps) {
+  lockKycPrefill = false,
+}: Readonly<PTAUploadDocumentsStepProps>) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(
+    kyc.hasBvnFromProfile,
+    initialValues?.bvn,
+    kyc.defaultBvn
+  );
+  const ninLocked = shouldLockKycPrefill(
+    kyc.hasNinFromProfile,
+    initialValues?.ninNumber,
+    kyc.defaultNin
+  );
+  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
+  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
+
   const form = useForm<UploadDocumentsFormValues>({
     mode: "uncontrolled",
+    // Backwards-compat: older PTA step stored passport number under `formADocumentNumber`
     initialValues: {
-      bvn: initialValues?.bvn || "",
-      ninNumber: initialValues?.ninNumber || "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
-      formAFile: initialValues?.formAFile ?? null,
+      passportDocumentNumber: initialValues?.passportDocumentNumber || initialValues?.formADocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
       visaFile: initialValues?.visaFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
+      returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as UploadDocumentsFormData);
@@ -79,10 +124,13 @@ export default function PTAUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your PTA once your documents is approved. Please note the maximum you can
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
+          Please note the maximum you can
           transact is <strong>$4,000 per quarter</strong>.
         </p>
+        {/* <p className="text-body-text-200 mt-2">
+          {REVIEW_TIMELINE_MESSAGE}
+        </p> */}
       </Alert>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -90,81 +138,129 @@ export default function PTAUploadDocumentsStep({
           label="BVN"
           required
           size="md"
-          placeholder="Enter 11-digit BVN"
+          placeholder="BVN"
           maxLength={11}
           inputMode="numeric"
-          pattern="[0-9]*"
           autoComplete="off"
-          value={form.values.bvn}
-          onBlur={() => form.validateField("bvn")}
-          error={form.errors.bvn}
+          {...form.getInputProps("bvn")}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-            form.setFieldValue("bvn", digits);
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("bvn", raw);
           }}
+          disabled={bvnLocked || forceBvnLock}
         />
 
         <TextInput
           label="NIN Number"
           required
           size="md"
-          placeholder="Enter 11-digit NIN"
+          placeholder="NIN"
           maxLength={11}
           inputMode="numeric"
-          pattern="[0-9]*"
           autoComplete="off"
-          value={form.values.ninNumber}
-          onBlur={() => form.validateField("ninNumber")}
-          error={form.errors.ninNumber}
+          {...form.getInputProps("ninNumber")}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-            form.setFieldValue("ninNumber", digits);
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("ninNumber", raw);
           }}
+          disabled={ninLocked || forceNinLock}
         />
       </div>
 
-      <TextInput
-        label="Form A ID"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TextInput
+          label="Form A ID"
+          required
+          size="md"
+          placeholder="Enter Form A ID"
+          maxLength={10}
+          autoComplete="off"
+          {...form.getInputProps("formAId")}
+        />
+        <TextInput
+          label="International Passport Number"
+          required
+          size="md"
+          placeholder="Enter International Passport Number"
+          maxLength={9}
+          autoComplete="off"
+          {...form.getInputProps("passportDocumentNumber")}
+        />
+      </div>
+
+      <TransactionFileUploadInput
+        label="Upload International Passport"
         required
-        size="md"
-        placeholder="Enter Form A ID"
-        maxLength={30}
-        autoComplete="off"
-        {...form.getInputProps("formAId")}
+        value={form.values.passportFile}
+        onChange={(file) => form.setFieldValue("passportFile", file)}
+        error={form.errors.passportFile as string}
       />
 
-      <div className="space-y-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FileUploadInput
-          label="Upload Form A"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DateInput
+          placeholder="Select"
+          label="Passport Issued Date"
           required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
+          size="md"
+          value={
+            form.values.passportIssueDate?.trim()
+              ? new Date(form.values.passportIssueDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportIssueDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportIssueDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
         />
+        <DateInput
+          placeholder="Select"
+          label="Passport Expiry Date"
+          required
+          size="md"
+          minDate={new Date()}
+          value={
+            form.values.passportExpiryDate?.trim()
+              ? new Date(form.values.passportExpiryDate)
+              : null
+          }
+          onChange={(value) => {
+            form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+          }}
+          error={form.errors.passportExpiryDate as string}
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+      </div>
 
-        <FileUploadInput
-          label="Upload International Passport"
-          required
-          value={form.values.passportFile}
-          onChange={(file) => form.setFieldValue("passportFile", file)}
-          error={form.errors.passportFile as string}
-        />
+      <TransactionFileUploadInput
+        label="Valid Visa"
+        required
+        value={form.values.visaFile}
+        onChange={(file) => form.setFieldValue("visaFile", file)}
+        error={form.errors.visaFile as string}
+      />
 
-        <FileUploadInput
-          label="Valid Visa"
-          required
-          value={form.values.visaFile}
-          onChange={(file) => form.setFieldValue("visaFile", file)}
-          error={form.errors.visaFile as string}
-        />
+      <div className="space-y-3 ">
+        <div className="space-y-2">
+        <TransactionFileUploadInput
+            label="Upload Return Ticket"
+            required
+            value={form.values.returnTicketFile}
+            onChange={(file) => form.setFieldValue("returnTicketFile", file)}
+            error={form.errors.returnTicketFile as string}
+          />
+          {/* <TextInput
+            label="Return Ticket Number"
+            required
+            size="md"
+            placeholder="Enter Ticket Number"
+            maxLength={50}
+            {...form.getInputProps("returnTicketDocumentNumber")}
+          /> */}
 
-        <FileUploadInput
-          label="Upload Return Ticket"
-          required
-          value={form.values.returnTicketFile}
-          onChange={(file) => form.setFieldValue("returnTicketFile", file)}
-          error={form.errors.returnTicketFile as string}
-        />
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

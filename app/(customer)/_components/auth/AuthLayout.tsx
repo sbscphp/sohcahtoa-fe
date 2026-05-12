@@ -29,7 +29,7 @@ const testimonials: TestimonialContent[] = [
       "Sohcahtoa has changed my fx trading in Nigeria. It's easy to use, with excellent tools and real-time market updates. The community support is invaluable. I highly recommend it for anyone visiting Nigeria!",
     name: "Daphne Park",
     role: "Traveller",
-    image: "https://via.placeholder.com/150"
+    image: "https://placehold.co/60x60/teal/white?text=DP"
   },
   {
     headline: "Exchange Money the Right Way",
@@ -39,7 +39,7 @@ const testimonials: TestimonialContent[] = [
       "SohCahToa makes managing my small FX needs simple. The rates are fair, the process is quick, and I never worry about delays. It's the most reliable platform I've used",
     name: "Adekunle, Ibrahim",
     role: "Student",
-    image: "https://via.placeholder.com/150"
+    image: "https://placehold.co/60x60/grey/white?text=AI"
   }
 ];
 
@@ -59,7 +59,7 @@ export function AuthLayout({ children, variant = "default" }: AuthLayoutProps) {
   return (
     <div className="min-h-screen flex p-3">
       {/* Left Column - Marketing/Information */}
-      <div className="hidden lg:flex lg:w-2/5 xl:w-1/3 bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg">
+      <div className="hidden xl:flex xl:w-1/3 bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg">
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
@@ -134,7 +134,7 @@ export function AuthLayout({ children, variant = "default" }: AuthLayoutProps) {
 
       {/* Right Column - Form Content */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-xl">{children}</div>
+        <div className="w-full md:max-w-lg">{children}</div>
       </div>
     </div>
   );

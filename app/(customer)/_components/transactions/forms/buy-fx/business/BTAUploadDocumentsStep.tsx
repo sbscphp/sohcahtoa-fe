@@ -1,21 +1,42 @@
 "use client";
 
+import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
+import { Alert, Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
+import { FileWithPath } from "@mantine/dropzone";
 import { useForm } from "@mantine/form";
+import { Info } from "lucide-react";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
-import { Alert, Button } from "@mantine/core";
-import { Info } from "lucide-react";
-import FileUploadInput from "../../../../forms/FileUploadInput";
-import { TextInput } from "@mantine/core";
-import { FileWithPath } from "@mantine/dropzone";
+import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  formatDateToIso,
+  passportNumberSchema,
+  requiredIsoDateSchema,
+  validatePassportDates,
+} from "@/app/(customer)/_utils/input-validation";
+import {
+  shouldLockKycPrefill,
+  useCustomerProfileBvnNin,
+  useKycProfilePrefillEffect,
+} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 
+/** TCC document number + TIN certificate file optional — not collected when inputs are hidden. */
 const uploadDocumentsSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
+  bvn: kycBvnSchema,
+  ninNumber: kycNinOptionalSchema,
   tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
-  formAId: z.string().min(1, "Form A ID is required").max(30, "Form A ID is too long"),
-  formAFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Form A file is required",
+  formAId: formAIdSchema,
+  tccDocumentNumber: z.string().max(50, "Document number is too long"),
+  tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "TCC (Tax Clearance Certificate) file is required",
   }),
+  passportDocumentNumber: passportNumberSchema,
+  passportIssueDate: requiredIsoDateSchema("Passport issue date"),
+  passportExpiryDate: requiredIsoDateSchema("Passport expiry date"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
@@ -25,13 +46,14 @@ const uploadDocumentsSchema = z.object({
   returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Return Ticket file is required",
   }),
-  letterOfRequestFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Letter of Request from Corporate Body is required",
+  letterFromCompanyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
+    message: "Letter from company/business confirming what the payment is about is required",
   }),
   letterOfInvitationFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Letter of Invitation from Partner is required",
   }),
-});
+  tinCertificateFile: z.custom<FileWithPath | null>().optional(),
+}).superRefine(validatePassportDates);
 
 export type BTAUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -42,28 +64,52 @@ interface BTAUploadDocumentsStepProps {
   initialValues?: Partial<BTAUploadDocumentsFormValues>;
   onSubmit: (data: BTAUploadDocumentsFormData) => void;
   onBack?: () => void;
+  lockKycPrefill?: boolean;
 }
 
 export default function BTAUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
-}: BTAUploadDocumentsStepProps) {
+  lockKycPrefill = false,
+}: Readonly<BTAUploadDocumentsStepProps>) {
+  const kyc = useCustomerProfileBvnNin();
+  const bvnLocked = shouldLockKycPrefill(
+    kyc.hasBvnFromProfile,
+    initialValues?.bvn,
+    kyc.defaultBvn
+  );
+  const ninLocked = shouldLockKycPrefill(
+    kyc.hasNinFromProfile,
+    initialValues?.ninNumber,
+    kyc.defaultNin
+  );
+  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
+  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
+
   const form = useForm<BTAUploadDocumentsFormValues>({
-    mode: "uncontrolled",
+    mode: "controlled",
     initialValues: {
-      bvn: initialValues?.bvn || "",
+      bvn: initialValues?.bvn || kyc.defaultBvn || "",
+      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       tinNumber: initialValues?.tinNumber || "",
       formAId: initialValues?.formAId || "",
-      formAFile: initialValues?.formAFile ?? null,
+      tccDocumentNumber: initialValues?.tccDocumentNumber || "",
+      tccFile: initialValues?.tccFile ?? null,
+      passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      passportIssueDate: initialValues?.passportIssueDate || "",
+      passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
       visaFile: initialValues?.visaFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
-      letterOfRequestFile: initialValues?.letterOfRequestFile ?? null,
+      letterFromCompanyFile: initialValues?.letterFromCompanyFile ?? null,
       letterOfInvitationFile: initialValues?.letterOfInvitationFile ?? null,
+      tinCertificateFile: initialValues?.tinCertificateFile ?? null,
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
+
+  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as BTAUploadDocumentsFormData);
@@ -87,100 +133,179 @@ export default function BTAUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          All uploads will be verified before approval. You will be able to process
-          your BTA once your documents is approved. Please note the maximum you can
+          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
+          Please note the maximum you can
           transact is <strong>$5,000 per quarter</strong>.
         </p>
+        {/* <p className="text-body-text-200 mt-2">
+          {REVIEW_TIMELINE_MESSAGE}
+        </p> */}
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
           label="BVN"
           required
           size="md"
-          placeholder="Enter 11-digit BVN"
+          placeholder="BVN"
           maxLength={11}
           inputMode="numeric"
-          pattern="[0-9]*"
           autoComplete="off"
-          value={form.values.bvn}
-          onBlur={() => form.validateField("bvn")}
-          error={form.errors.bvn}
+          {...form.getInputProps("bvn")}
           onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-            form.setFieldValue("bvn", digits);
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("bvn", raw);
           }}
+          disabled={bvnLocked || forceBvnLock}
         />
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TextInput
+          label="NIN"
+          size="md"
+          placeholder="NIN"
+          maxLength={11}
+          inputMode="numeric"
+          autoComplete="off"
+          {...form.getInputProps("ninNumber")}
+          onChange={(e) => {
+            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+            e.currentTarget.value = raw;
+            form.setFieldValue("ninNumber", raw);
+          }}
+          disabled={ninLocked || forceNinLock}
+        />
         <TextInput
           label="TIN Number"
           required
           size="md"
           placeholder="Enter TIN Number"
-          maxLength={30}
+          maxLength={8}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
         />
+        <TextInput
+          label="Form A ID"
+          required
+          size="md"
+          placeholder="Enter Form A ID"
+          maxLength={10}
+          autoComplete="off"
+          {...form.getInputProps("formAId")}
+        />
+        <TextInput
+          label="International Passport"
+          required
+          size="md"
+          placeholder="Enter Passport Number"
+          maxLength={9}
+          autoComplete="off"
+          {...form.getInputProps("passportDocumentNumber")}
+        />
       </div>
 
-      <TextInput
-        label="Form A"
-        required
-        size="md"
-        placeholder="Enter Form A ID"
-        maxLength={30}
-        autoComplete="off"
-        {...form.getInputProps("formAId")}
-      />
+      <div className="space-y-3">
 
-      <div className="space-y-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FileUploadInput
-          label="Upload Form A"
-          required
-          value={form.values.formAFile}
-          onChange={(file) => form.setFieldValue("formAFile", file)}
-          error={form.errors.formAFile as string}
-        />
+          <TransactionFileUploadInput
+            label="Upload Tax Clearance Certificate (TCC)"
+            required
+            value={form.values.tccFile}
+            onChange={(file) => form.setFieldValue("tccFile", file)}
+            error={form.errors.tccFile as string}
+          />
 
-        <FileUploadInput
-          label="Upload International Passport"
-          required
-          value={form.values.passportFile}
-          onChange={(file) => form.setFieldValue("passportFile", file)}
-          error={form.errors.passportFile as string}
-        />
+{/* <TextInput
+            label="TCC document number"
+            required
+            size="md"
+            placeholder="Document number for API"
+            maxLength={50}
+            {...form.getInputProps("tccDocumentNumber")}
+          /> */}
 
-        <FileUploadInput
-          label="Valid Visa"
-          required
-          value={form.values.visaFile}
-          onChange={(file) => form.setFieldValue("visaFile", file)}
-          error={form.errors.visaFile as string}
-        />
+        <div className="space-y-2">
+          <TransactionFileUploadInput
+            label="Upload International Passport"
+            required
+            value={form.values.passportFile}
+            onChange={(file) => form.setFieldValue("passportFile", file)}
+            error={form.errors.passportFile as string}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DateInput
+            placeholder="Select issue date"
+              label="Passport issue date"
+              required
+              value={
+                form.values.passportIssueDate?.trim()
+                  ? new Date(form.values.passportIssueDate)
+                  : null
+              }
+              onChange={(value) => {
+                form.setFieldValue("passportIssueDate", formatDateToIso(value));
+              }}
+              error={form.errors.passportIssueDate as string}
+              rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+            />
+            <DateInput
+              placeholder="Select expiry date"
+              label="Passport expiry date"
+              required
+              value={
+                form.values.passportExpiryDate?.trim()
+                  ? new Date(form.values.passportExpiryDate)
+                  : null
+              }
+              onChange={(value) => {
+                form.setFieldValue("passportExpiryDate", formatDateToIso(value));
+              }}
+              minDate={new Date()}
+              error={form.errors.passportExpiryDate as string}
+              rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+            />
+          </div>
+        </div>
 
-        <FileUploadInput
-          label="Upload Return Ticket"
+        {/* <TransactionFileUploadInput
+            label="Tax Identification Number (TIN)"
+            required
+            value={form.values.tinCertificateFile}
+            onChange={(file) => form.setFieldValue("tinCertificateFile", file)}
+            error={form.errors.tinCertificateFile as string}
+          /> */}
+        <div className="space-y-2">
+          <TransactionFileUploadInput
+            label="Valid Visa"
+            required
+            value={form.values.visaFile}
+            onChange={(file) => form.setFieldValue("visaFile", file)}
+            error={form.errors.visaFile as string}
+          />
+        </div>
+
+        <TransactionFileUploadInput
+          label="Return Ticket"
           required
           value={form.values.returnTicketFile}
           onChange={(file) => form.setFieldValue("returnTicketFile", file)}
           error={form.errors.returnTicketFile as string}
         />
 
-        <FileUploadInput
-          label="Letter of Request from Corporate Body"
-          required
-          value={form.values.letterOfRequestFile}
-          onChange={(file) => form.setFieldValue("letterOfRequestFile", file)}
-          error={form.errors.letterOfRequestFile as string}
-        />
+        <TransactionFileUploadInput
+            label="Letter of request from Employer"
+            required
+            value={form.values.letterFromCompanyFile}
+            onChange={(file) => form.setFieldValue("letterFromCompanyFile", file)}
+            error={form.errors.letterFromCompanyFile as string}
+          />
 
-        <FileUploadInput
-          label="Letter of Invitation from Partner"
-          required
-          value={form.values.letterOfInvitationFile}
-          onChange={(file) => form.setFieldValue("letterOfInvitationFile", file)}
-          error={form.errors.letterOfInvitationFile as string}
-        />
+        <TransactionFileUploadInput
+            label="Letter of Invitation from Oversea Partner"
+            required
+            value={form.values.letterOfInvitationFile}
+            onChange={(file) => form.setFieldValue("letterOfInvitationFile", file)}
+            error={form.errors.letterOfInvitationFile as string}
+          />
+
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

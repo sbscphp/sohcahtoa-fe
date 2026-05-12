@@ -56,7 +56,7 @@ export function OTPDeliveryModal({
 
           <UserTypeCard
             icon={emailIcon}
-            title="Send to my Mail"
+            title="Send to my Email Address"
             isSelected={selectedMethod === "email"}
             onClick={() => setSelectedMethod("email")}
           />

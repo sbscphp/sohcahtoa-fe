@@ -1,9 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
-import { PaginatedTable, type PaginatedTableColumn } from "@/app/(customer)/_components/common";
+import {
+  PaginatedTable,
+  type PaginatedTableColumn
+} from "@/app/(customer)/_components/common";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { ActionIcon } from "@mantine/core";
+import { IconArrowRight } from "@/components/icons/IconArrowRight";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { customerKeys } from "@/app/_lib/api/query-keys";
+import type { SupportTicket, SupportTicketListResponse } from "@/app/_lib/api/types";
+import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
+import { useTableState } from "@/app/_hooks/use-table-state";
 
 export interface SupportRequestRow {
   id: string;
@@ -12,42 +22,47 @@ export interface SupportRequestRow {
   status: string;
 }
 
-const MOCK_HISTORY: SupportRequestRow[] = [
-  {
-    id: "1",
-    categoryDescription: "Failed login/password reset not working.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved",
-  },
-  {
-    id: "2",
-    categoryDescription: "Customer unable to access account settings.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved",
-  },
-  {
-    id: "3",
-    categoryDescription: "2FA/OTP not delivered.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved",
-  },
-  {
-    id: "4",
-    categoryDescription: "BVN/TIN mismatch issue.",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved",
-  },
-  {
-    id: "5",
-    categoryDescription:
-      "Error uploading document (flight ticket, admission letter, Medical bill, etc.)",
-    date: "Oct 29, 2025 10:25am",
-    status: "Approved",
-  },
-];
+function getCategoryLabel(category: string): string {
+  const match = [
+    { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
+    { value: "ACCOUNT_ACCESS", label: "Account access" },
+    { value: "PAYMENT_ISSUE", label: "Payment issue" },
+    { value: "DOCUMENT_VERIFICATION", label: "Document verification" },
+    { value: "TECHNICAL_ISSUE", label: "Technical issue" },
+    { value: "COMPLIANCE_INQUIRY", label: "Compliance / regulatory inquiry" },
+    { value: "GENERAL_INQUIRY", label: "General inquiry" },
+    { value: "OTHER", label: "Other" },
+  ].find((opt) => opt.value === category);
+  return match?.label ?? category;
+}
 
 export default function SupportHistorySection() {
   const router = useRouter();
+
+  const table = useTableState({
+    initial: { page: 1, limit: 10 },
+  });
+
+  const listParams = {
+    page: table.page ?? 1,
+    limit: table.limit ?? 10,
+  };
+
+  const { data, isLoading } = useFetchData(
+    [...customerKeys.support.tickets.list(listParams)],
+    () => customerApi.support.tickets.list(listParams),
+    true
+  );
+
+  const typed = data as unknown as SupportTicketListResponse | undefined;
+
+  const rows: SupportRequestRow[] =
+    typed?.data?.map((t: SupportTicket) => ({
+      id: t.id,
+      categoryDescription: getCategoryLabel(t.category),
+      date: formatHeaderDateTime(t.createdAt) || t.createdAt,
+      status: t.status,
+    })) ?? [];
 
   const goToViewSupport = (id: string) => {
     router.push(`/support/history/${id}`);
@@ -71,7 +86,7 @@ export default function SupportHistorySection() {
             {row.date}
           </span>
         </div>
-      ),
+      )
     },
     {
       key: "status",
@@ -79,25 +94,33 @@ export default function SupportHistorySection() {
       align: "center",
       render: (row) => (
         <div style={getStatusBadge(row.status)}>{row.status}</div>
-      ),
+      )
     },
     {
       key: "view",
       label: "View",
       align: "right",
       render: (row) => (
-        <button
-          type="button"
+        <ActionIcon
+          radius="md"
+          variant="light"
+          w={40}
+          h={40}
+          className="bg-[#FFF6F1]! border border-[#FFF6F1]!"
+          style={{
+            boxShadow: "0px 1px 2px rgba(16, 24, 40, 0.05)",
+            padding: "10px"
+          }}
           onClick={(e) => {
             e.stopPropagation();
             goToViewSupport(row.id);
           }}
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-primary-400 hover:bg-primary-500 text-white text-sm font-medium px-3 py-2 min-h-[36px]"
+          aria-label="View transaction details"
         >
-          <ChevronRight size={16} strokeWidth={2} />
-        </button>
-      ),
-    },
+          <IconArrowRight className="w-8 h-8 "/>
+        </ActionIcon>
+      )
+    }
   ];
 
   return (
@@ -111,9 +134,13 @@ export default function SupportHistorySection() {
         </p>
       </div>
       <PaginatedTable<SupportRequestRow>
-        data={MOCK_HISTORY}
+        data={rows}
         columns={columns}
-        pageSize={10}
+        isLoading={isLoading}
+        pageSize={listParams.limit}
+        page={listParams.page}
+        totalPages={typed?.pagination?.totalPages ?? 1}
+        onPageChange={(next) => table.setPage(next)}
         keyExtractor={(row) => row.id}
         emptyMessage="No support requests yet."
         onRowClick={(row) => goToViewSupport(row.id)}

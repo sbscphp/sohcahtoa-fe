@@ -1,0 +1,191 @@
+"use client";
+
+import { useState } from "react";
+import { Text, Group, TextInput, Button, Select } from "@mantine/core";
+import { Search, Plus, Upload, ListFilter } from "lucide-react";
+import { notifications } from "@mantine/notifications";
+import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
+import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { AddUserModal } from "./AddUserModal";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
+import { useUsers, type AdminUserItem } from "../../hooks/useUsers";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+
+const PAGE_SIZE = 10;
+
+const FILTER_OPTIONS = [
+  { value: "", label: "Filter By" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "PENDING", label: "Pending" },
+  { value: "DEACTIVATED", label: "Deactivated" },
+];
+
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+export default function UsersTable() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 400);
+  const [filter, setFilter] = useState<string>("");
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const router = useRouter();
+
+  const { users, totalPages, isLoading } = useUsers({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    status: filter !== "" ? filter : undefined,
+  });
+
+  const exportUsersMutation = useGetExportData(
+    () => adminApi.management.users.export(),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `admin-users-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Export Users Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export users at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const headers = [
+    { label: "Admin Name", key: "name" },
+    { label: "Department", key: "department" },
+    { label: "Email Address", key: "email" },
+    { label: "Role", key: "role" },
+    { label: "Status", key: "status" },
+    { label: "Action", key: "action" },
+  ];
+
+  const renderRow = (user: AdminUserItem) => [
+    <div key="name">
+      <Text fw={500} size="sm">
+        {user.fullName}
+      </Text>
+      <Text size="xs" c="dimmed">
+        ID:{user.sequenceId}
+      </Text>
+    </div>,
+
+    <div key="department">
+      <Text size="sm">{user.departmentName ?? "—"}</Text>
+      <Text size="xs" c="dimmed">
+        {user.departmentId ? `ID:${user.departmentId}` : ""}
+      </Text>
+    </div>,
+
+    <Text key="email" size="sm">
+      {user.email}
+    </Text>,
+
+    <div key="role">
+      <Text size="sm">{user.roleName ?? "—"}</Text>
+      <Text size="xs" c="dimmed">
+        {user.roleId ? `ID:${user.roleId}` : ""}
+      </Text>
+    </div>,
+
+    <StatusBadge key="status" status={capitalize(user.status)} />,
+
+    <RowActionIcon key="action" onClick={() => router.push(adminRoutes.adminUserManagementUser(user.id))} />,
+  ];
+
+  return (
+    <div className="p-5 bg-white rounded-lg">
+      <Group justify="space-between" mb="md" wrap="wrap">
+        <Group>
+          <Text fw={600} size="lg">
+            All Users
+          </Text>
+
+          <TextInput
+            placeholder="Enter keyword"
+            leftSection={<Search size={16} color="#DD4F05" />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
+            w={320}
+            radius="xl"
+          />
+        </Group>
+
+        <Group>
+          <Select
+            value={filter}
+            onChange={(value) => setFilter(value!)}
+            data={FILTER_OPTIONS}
+            radius="xl"
+            w={120}
+            rightSection={<ListFilter size={16} />}
+          />
+          <Button
+            variant="outline"
+            color="#DD4F05"
+            radius="xl"
+            rightSection={<Upload size={16} />}
+            onClick={() => exportUsersMutation.mutate()}
+            loading={exportUsersMutation.isPending}
+            disabled={exportUsersMutation.isPending}
+          >
+            Export
+          </Button>
+
+          <Button
+            color="orange"
+            radius="xl"
+            onClick={() => setAddUserOpen(true)}
+            rightSection={<Plus size={16} />}
+          >
+            Add New
+          </Button>
+        </Group>
+      </Group>
+
+      <DynamicTableSection
+        headers={headers}
+        data={users}
+        loading={isLoading}
+        renderItems={renderRow}
+        emptyTitle="No Users Found"
+        emptyMessage="There are no users available yet."
+        pagination={{
+          page,
+          totalPages,
+          onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+          onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+          onPageChange: setPage,
+        }}
+      />
+
+      <AddUserModal
+        opened={addUserOpen}
+        onClose={() => setAddUserOpen(false)}
+      />
+    </div>
+  );
+}

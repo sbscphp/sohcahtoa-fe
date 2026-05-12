@@ -4,7 +4,7 @@ import { OTPInput } from "../OTPInput";
 
 describe("OTPInput", () => {
   it("renders OTP expires text and timer", () => {
-    render(<OTPInput onComplete={vi.fn()} expiryMinutes={15} />);
+    render(<OTPInput onComplete={vi.fn()} expiryMinutes={5} />);
     expect(screen.getByText(/OTP expires in/i)).toBeInTheDocument();
     expect(screen.getByText(/15:00/)).toBeInTheDocument();
   });
