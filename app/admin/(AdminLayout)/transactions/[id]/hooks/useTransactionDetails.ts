@@ -5,6 +5,8 @@ import { useFetchData } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import {
   adminApi,
+  type AdminTransactionApprovalProcess,
+  type AdminTransactionApprovalWorkflowStage,
   type AdminTransactionDetailsData,
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
@@ -71,6 +73,15 @@ export interface TransactionWorkflowHistoryItemViewModel {
   time: string;
   comment: string;
   documentType: string;
+}
+
+export interface TransactionApprovalUiViewModel {
+  isApprovalOfficer: boolean;
+  canActOnTransactionFooter: boolean;
+}
+
+export interface UseTransactionDetailsOptions {
+  adminUserId?: string;
 }
 
 export interface TransactionReceiptViewModel {
@@ -575,7 +586,83 @@ function extractWorkflowHistory(
     .filter((item): item is TransactionWorkflowHistoryItemViewModel => Boolean(item));
 }
 
-export function useTransactionDetails(transactionId?: string) {
+function resolveApprovalProcess(
+  data: AdminTransactionDetailsData | null
+): AdminTransactionApprovalProcess | null {
+  if (!data) return null;
+  if (data.approvalProcess && typeof data.approvalProcess === "object") {
+    return data.approvalProcess;
+  }
+  const nested = asRecord(data.raw).approvalProcess;
+  if (nested && typeof nested === "object") {
+    return nested as AdminTransactionApprovalProcess;
+  }
+  return null;
+}
+
+function pickAssigneeId(assignee: unknown): string | null {
+  const r = asRecord(assignee);
+  const v = r.id ?? r.adminId ?? r.userId;
+  if (typeof v === "string" && v.trim()) return v.trim();
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return null;
+}
+
+export function buildTransactionApprovalUi(
+  data: AdminTransactionDetailsData | null,
+  adminUserId: string | undefined
+): TransactionApprovalUiViewModel {
+  const legacy: TransactionApprovalUiViewModel = {
+    isApprovalOfficer: false,
+    canActOnTransactionFooter: true,
+  };
+  if (!data) return legacy;
+
+  const ap = resolveApprovalProcess(data);
+  const isApprovalOfficer = Boolean(ap?.isApprovalOfficer);
+  const stages = ap?.workflowStages;
+
+  if (!ap || !Array.isArray(stages) || stages.length === 0) {
+    return { isApprovalOfficer, canActOnTransactionFooter: true };
+  }
+
+  const currentStage = stages.find((s) => {
+    if (!s || typeof s !== "object") return false;
+    return (s as AdminTransactionApprovalWorkflowStage).isCurrent === true;
+  }) as AdminTransactionApprovalWorkflowStage | undefined;
+  if (!currentStage) {
+    return { isApprovalOfficer, canActOnTransactionFooter: false };
+  }
+
+  const assignees = currentStage.assignees;
+  if (!Array.isArray(assignees) || assignees.length === 0) {
+    return { isApprovalOfficer, canActOnTransactionFooter: false };
+  }
+
+  const assigneeIds = new Set<string>();
+  for (const a of assignees) {
+    const id = pickAssigneeId(a);
+    if (id) assigneeIds.add(id);
+  }
+  if (assigneeIds.size === 0) {
+    return { isApprovalOfficer, canActOnTransactionFooter: false };
+  }
+
+  const uid = adminUserId?.trim();
+  if (!uid) {
+    return { isApprovalOfficer, canActOnTransactionFooter: false };
+  }
+
+  return {
+    isApprovalOfficer,
+    canActOnTransactionFooter: assigneeIds.has(uid),
+  };
+}
+
+export function useTransactionDetails(
+  transactionId?: string,
+  options?: UseTransactionDetailsOptions
+) {
   const query = useFetchData<ApiResponse<AdminTransactionDetailsData>>(
     [...adminKeys.transactions.detail(transactionId ?? "")],
     () =>
@@ -597,12 +684,19 @@ export function useTransactionDetails(transactionId?: string) {
     [query.data?.data?.raw]
   );
 
+  const approvalUi = useMemo(
+    () => buildTransactionApprovalUi(query.data?.data ?? null, options?.adminUserId),
+    [query.data?.data, options?.adminUserId]
+  );
+
   return {
     overview,
     receipt,
     settlement,
     actionDocuments,
     workflowHistory,
+    isApprovalOfficer: approvalUi.isApprovalOfficer,
+    canActOnTransactionFooter: approvalUi.canActOnTransactionFooter,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
