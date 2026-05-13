@@ -737,7 +737,7 @@ export default function TakeActionOverlay({
           </div>
 
           {/* Sticky Footer */}
-          {!hideTransactionFooter && (
+          {(!hideTransactionFooter && isApprovalOfficer) && (
             <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
               <Group justify="center" gap="md">
                 <Button
