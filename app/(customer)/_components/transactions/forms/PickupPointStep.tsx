@@ -137,7 +137,68 @@ const pickupOrBankSchema = z
   )
   .superRefine(validatePickupDate);
 
-export type PickupPointFormData = z.infer<typeof pickupOnlySchema>;
+export const PAYOUT_METHOD_OPTIONS = [
+  {
+    value: "electronic_transfer_100",
+    label: "Electronic transfer (100%)",
+  },
+  {
+    value: "card_100",
+    label: "Card (100%)",
+  },
+  {
+    value: "card_75_cash_25",
+    label: "Card (75%) + Cash (25%)",
+  },
+] as const;
+
+export type PayoutMethod = (typeof PAYOUT_METHOD_OPTIONS)[number]["value"];
+
+const payoutMethodSchema = z
+  .object({
+    payoutMethod: z.enum([
+      "electronic_transfer_100",
+      "card_100",
+      "card_75_cash_25",
+    ]),
+    state: z.string(),
+    city: z.string(),
+    locationId: z.string(),
+    selectedBankId: z.string(),
+    pickupDate: z.string(),
+    pickupTime: z.string(),
+  })
+  .refine(
+    (data) => {
+      if (data.payoutMethod === "electronic_transfer_100") return true;
+      return (
+        data.locationId.trim().length > 0 &&
+        (data.pickupDate?.trim().length ?? 0) > 0 &&
+        (data.pickupTime?.trim().length ?? 0) > 0
+      );
+    },
+    { message: "Pickup location, date and time are required", path: ["locationId"] }
+  )
+  .refine(
+    (data) => data.payoutMethod.trim().length > 0,
+    { message: "Select a payout method", path: ["payoutMethod"] }
+  )
+  .superRefine((data, ctx) => {
+    validatePickupDate(
+      {
+        pickupDate: data.pickupDate,
+        preference: data.payoutMethod === "electronic_transfer_100" ? "bank" : "pickup",
+      },
+      ctx
+    );
+  });
+
+type PayoutMethodFormData = z.infer<typeof payoutMethodSchema>;
+
+export type PickupPointFormData = z.infer<typeof pickupOnlySchema> &
+  Partial<PayoutMethodFormData> & {
+    bankAccount?: BankAccount;
+  };
 
 export type PickupOrBankFormData = z.infer<typeof pickupOrBankSchema>;
 
@@ -174,6 +235,8 @@ export interface PickupPointStepProps {
   cities?: string[];
   banks?: BankAccount[];
   onAddBank?: () => void;
+  enablePayoutMethod?: boolean;
+  bankSelectionMode?: "inline" | "separate";
 }
 
 const DEFAULT_SUBTITLE =
@@ -194,8 +257,11 @@ export default function PickupPointStep({
   cities = [],
   banks = [],
   onAddBank,
+  enablePayoutMethod = false,
+  bankSelectionMode = "inline",
 }: Readonly<PickupPointStepProps>) {
   const isPickupOrBank = preferenceMode === "pickup-or-bank";
+  const isPayoutMethodFlow = preferenceMode === "pickup-only" && enablePayoutMethod;
 
   const pickupOnlyForm = useForm<PickupPointFormData>({
     initialValues: {
@@ -206,6 +272,22 @@ export default function PickupPointStep({
       pickupTime: (initialValues as Partial<PickupPointFormData>)?.pickupTime || "",
     },
     validate: zod4Resolver(pickupOnlySchema),
+  });
+
+  const payoutMethodForm = useForm<PayoutMethodFormData>({
+    initialValues: {
+      payoutMethod:
+        (initialValues as Partial<PayoutMethodFormData>)?.payoutMethod ||
+        ("" as PayoutMethod),
+      state: (initialValues as Partial<PayoutMethodFormData>)?.state || "",
+      city: (initialValues as Partial<PayoutMethodFormData>)?.city || "",
+      locationId: (initialValues as Partial<PayoutMethodFormData>)?.locationId || "",
+      selectedBankId:
+        (initialValues as Partial<PayoutMethodFormData>)?.selectedBankId || "",
+      pickupDate: (initialValues as Partial<PayoutMethodFormData>)?.pickupDate || "",
+      pickupTime: (initialValues as Partial<PayoutMethodFormData>)?.pickupTime || "",
+    },
+    validate: zod4Resolver(payoutMethodSchema),
   });
 
   const pickupOrBankForm = useForm<PickupOrBankFormData>({
@@ -221,15 +303,26 @@ export default function PickupPointStep({
     validate: zod4Resolver(pickupOrBankSchema),
   });
 
-  const values = isPickupOrBank ? pickupOrBankForm.values : pickupOnlyForm.values;
+  const values = isPayoutMethodFlow
+    ? payoutMethodForm.values
+    : isPickupOrBank
+      ? pickupOrBankForm.values
+      : pickupOnlyForm.values;
 
   const preference = isPickupOrBank
     ? ((values as PickupOrBankFormData).preference ?? "pickup")
     : "pickup";
+  const payoutMethod = isPayoutMethodFlow
+    ? (values as PayoutMethodFormData).payoutMethod
+    : undefined;
   const state = values.state ?? "";
   const city = values.city ?? "";
   const locationId = "locationId" in values ? values.locationId : "";
-  const selectedBankId = isPickupOrBank ? (values as PickupOrBankFormData).selectedBankId : "";
+  const selectedBankId = isPayoutMethodFlow
+    ? (values as PayoutMethodFormData).selectedBankId
+    : isPickupOrBank
+      ? (values as PickupOrBankFormData).selectedBankId
+      : "";
 
   const resolveOptionalLocationField = (selected?: string, formValue?: string) => {
     const selectedValue = selected?.trim();
@@ -250,7 +343,9 @@ export default function PickupPointStep({
     Boolean(state)
   );
 
-  const showPickupForm = !isPickupOrBank || preference === "pickup";
+  const showPickupForm = isPayoutMethodFlow
+    ? payoutMethod === "card_100" || payoutMethod === "card_75_cash_25"
+    : !isPickupOrBank || preference === "pickup";
   const shouldFetchTerminals = showPickupForm && locations.length === 0;
 
   /** Drives query key + request — changes here refetch terminals (state/city/date/time). */
@@ -337,6 +432,30 @@ export default function PickupPointStep({
     });
   };
 
+  const submitPayoutMethodSuccess = (v: PayoutMethodFormData) => {
+    if (v.payoutMethod === "electronic_transfer_100") {
+      if (bankSelectionMode === "separate") {
+        onSubmit(v);
+        return;
+      }
+
+      const selectedBank = banks.find((bank) => bank.id === v.selectedBankId);
+      onSubmit({
+        ...v,
+        bankAccount: selectedBank,
+      });
+      return;
+    }
+
+    const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);
+    onSubmit({
+      ...v,
+      state: resolveOptionalLocationField(selectedLocation?.state, v.state),
+      city: resolveOptionalLocationField(selectedLocation?.city, v.city),
+      pickupTime: toAmPmTime(v.pickupTime) ?? v.pickupTime,
+    });
+  };
+
   const submitPickupOrBankSuccess = (v: PickupOrBankFormData) => {
     if (v.preference !== "pickup") {
       onSubmit(v);
@@ -396,6 +515,35 @@ export default function PickupPointStep({
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (isPayoutMethodFlow) {
+      const result = payoutMethodForm.validate();
+      if (
+        bankSelectionMode === "inline" &&
+        payoutMethodForm.values.payoutMethod === "electronic_transfer_100" &&
+        !payoutMethodForm.values.selectedBankId.trim()
+      ) {
+        payoutMethodForm.setFieldError("selectedBankId", "Please select a bank account");
+        notifyPickupValidationErrors(
+          { selectedBankId: "Please select a bank account" },
+          "pickup-or-bank",
+          "bank"
+        );
+        return;
+      }
+      if (result.hasErrors) {
+        notifyPickupValidationErrors(
+          payoutMethodForm.errors as Record<string, unknown>,
+          "pickup-or-bank",
+          payoutMethodForm.values.payoutMethod === "electronic_transfer_100"
+            ? "bank"
+            : "pickup"
+        );
+        return;
+      }
+      submitPayoutMethodSuccess(payoutMethodForm.values);
+      return;
+    }
+
     if (preferenceMode === "pickup-only") {
       const result = pickupOnlyForm.validate();
       if (result.hasErrors) {
@@ -422,7 +570,11 @@ export default function PickupPointStep({
     submitPickupOrBankSuccess(pickupOrBankForm.values as PickupOrBankFormData);
   };
 
-  const showBankForm = isPickupOrBank && preference === "bank";
+  const showBankForm =
+    (isPickupOrBank && preference === "bank") ||
+    (isPayoutMethodFlow &&
+      bankSelectionMode === "inline" &&
+      payoutMethod === "electronic_transfer_100");
 
   const showTerminalLoading =
     locations.length === 0 && Boolean(shouldFetchTerminals) && isFetchingTerminals;
@@ -467,6 +619,22 @@ export default function PickupPointStep({
     preferenceMode === "pickup-or-bank" && preference === "bank"
       ? (pickupOrBankForm.errors.selectedBankId as string | undefined)
       : undefined;
+  const payoutLocationError =
+    isPayoutMethodFlow && showPickupForm
+      ? (payoutMethodForm.errors.locationId as string | undefined)
+      : undefined;
+  const payoutBankError =
+    isPayoutMethodFlow && showBankForm
+      ? (payoutMethodForm.errors.selectedBankId as string | undefined)
+      : undefined;
+
+  const setSelectedBankId = (id: string) => {
+    if (isPayoutMethodFlow) {
+      payoutMethodForm.setFieldValue("selectedBankId", id);
+    } else {
+      pickupOrBankForm.setFieldValue("selectedBankId", id);
+    }
+  };
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-4">
@@ -478,6 +646,26 @@ export default function PickupPointStep({
           {subtitle}
         </p>
       </div>
+
+      {isPayoutMethodFlow && (
+        <Select
+          key={payoutMethodForm.key("payoutMethod")}
+          label="Payout Method"
+          placeholder="Select an Option"
+          required
+          data={[...PAYOUT_METHOD_OPTIONS]}
+          rightSection={
+            <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
+          }
+          size="md"
+          {...payoutMethodForm.getInputProps("payoutMethod")}
+          onChange={(value) => {
+            payoutMethodForm.setFieldValue("payoutMethod", (value ?? "") as PayoutMethod);
+            payoutMethodForm.setFieldValue("locationId", "");
+            payoutMethodForm.setFieldValue("selectedBankId", "");
+          }}
+        />
+      )}
 
       {isPickupOrBank && (
         <div className="flex rounded-md border border-gray-100 bg-gray-50/50 p-0.5 text-sm">
@@ -595,7 +783,103 @@ export default function PickupPointStep({
         </>
       )}
 
-      {showPickupForm && !isPickupOrBank && (
+      {showPickupForm && isPayoutMethodFlow && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              key={payoutMethodForm.key("state")}
+              label="Select State"
+              placeholder="Select an Option"
+              data={statesData}
+              rightSection={
+                <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
+              }
+              size="md"
+              {...payoutMethodForm.getInputProps("state")}
+              onChange={(v) => {
+                const next = v ?? "";
+                payoutMethodForm.setFieldValue("state", next);
+                payoutMethodForm.setFieldValue("city", "");
+                payoutMethodForm.setFieldValue("locationId", "");
+              }}
+            />
+            <Select
+              key={payoutMethodForm.key("city")}
+              label="Select City"
+              placeholder="Select an Option"
+              data={citiesData}
+              rightSection={
+                <HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />
+              }
+              size="md"
+              {...payoutMethodForm.getInputProps("city")}
+              onChange={(v) => {
+                const next = v ?? "";
+                payoutMethodForm.setFieldValue("city", next);
+                payoutMethodForm.setFieldValue("locationId", "");
+              }}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DateInput
+              key={payoutMethodForm.key("pickupDate")}
+              label="Pick Up Date"
+              placeholder="DD MM YYYY"
+              minDate={new Date()}
+              required
+              size="md"
+              valueFormat="YYYY-MM-DD"
+              {...payoutMethodForm.getInputProps("pickupDate")}
+              onChange={(v) => {
+                let next = "";
+                if (typeof v === "string") {
+                  next = v;
+                } else if (v != null && typeof v === "object" && "getTime" in v) {
+                  next = (v as Date).toISOString().slice(0, 10);
+                }
+                payoutMethodForm.setFieldValue("pickupDate", next);
+                payoutMethodForm.setFieldValue("locationId", "");
+              }}
+            />
+            <TimePicker
+              key={payoutMethodForm.key("pickupTime")}
+              label="Pick Up Time"
+              required
+              size="md"
+              format="12h"
+              {...payoutMethodForm.getInputProps("pickupTime")}
+              onChange={(next) => {
+                payoutMethodForm.setFieldValue("pickupTime", next);
+                payoutMethodForm.setFieldValue("locationId", "");
+              }}
+            />
+          </div>
+
+          {payoutMethod === "card_75_cash_25" && (
+            <p className="text-body-text-200 text-sm">
+              Maximum cash collection is $500. The remaining 75% will be issued
+              on card.
+            </p>
+          )}
+
+          <div className="box-border flex flex-col items-start p-4 gap-6 w-full bg-white border border-gray-100 rounded-2xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)]">
+            <p className="text-body-text-200 text-base font-normal leading-6 flex-none">
+              Pickup Locations (
+              {showTerminalLoading ? "—" : locationsFilteredData.length.toString().padStart(2, "0")})
+            </p>
+            <div className="flex flex-col items-start w-full gap-4 max-h-[200px] overflow-y-auto">
+              {renderTerminalEmptyOrList((id) => payoutMethodForm.setFieldValue("locationId", id))}
+            </div>
+            {payoutLocationError ? (
+              <Text size="sm" c="red" className="w-full">
+                {payoutLocationError}
+              </Text>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {showPickupForm && !isPickupOrBank && !isPayoutMethodFlow && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
@@ -704,7 +988,7 @@ export default function PickupPointStep({
                   accountNumber={bank.accountNumber}
                   accountName={bank.accountName}
                   isSelected={selectedBankId === bank.id}
-                  onClick={() => pickupOrBankForm.setFieldValue("selectedBankId", bank.id)}
+                  onClick={() => setSelectedBankId(bank.id)}
                 />
               ))
             )}
@@ -718,9 +1002,9 @@ export default function PickupPointStep({
               <span className="text-lg leading-none">+</span> Add New Bank
             </button>
           )}
-          {pickupOrBankBankError ? (
+          {pickupOrBankBankError || payoutBankError ? (
             <Text size="sm" c="red" className="w-full">
-              {pickupOrBankBankError}
+              {pickupOrBankBankError ?? payoutBankError}
             </Text>
           ) : null}
         </div>

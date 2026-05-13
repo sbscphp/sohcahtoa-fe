@@ -108,11 +108,57 @@ function getCurrency(data: Record<string, unknown> | null): string {
   return typeof raw === "string" && raw.trim() ? raw : "USD";
 }
 
+function payoutFieldsFromSelection(
+  data: Record<string, unknown> | null | undefined,
+  amount: Record<string, unknown> | null
+) {
+  const payoutMethod =
+    typeof data?.payoutMethod === "string" && data.payoutMethod.trim()
+      ? data.payoutMethod
+      : undefined;
+
+  if (!payoutMethod) return {};
+
+  const transactionAmount = getAmount(amount);
+  const payoutBreakdown: Record<string, unknown> = { method: payoutMethod };
+
+  if (payoutMethod === "electronic_transfer_100") {
+    payoutBreakdown.electronicTransferPercentage = 100;
+  } else if (payoutMethod === "card_100") {
+    payoutBreakdown.cardPercentage = 100;
+  } else if (payoutMethod === "card_75_cash_25") {
+    payoutBreakdown.cardPercentage = 75;
+    payoutBreakdown.cashPercentage = 25;
+    payoutBreakdown.cashAmount = transactionAmount * 0.25;
+  }
+
+  return {
+    payoutMethod,
+    payoutBreakdown,
+  };
+}
+
+function beneficiaryDetailsFromPayoutSelection(
+  data: Record<string, unknown> | null | undefined
+): Record<string, unknown> | undefined {
+  if (data?.payoutMethod !== "electronic_transfer_100") return undefined;
+  const bankAccount = data.bankAccount as Record<string, unknown> | undefined;
+  if (!bankAccount) return undefined;
+
+  return {
+    bankName: bankAccount.bankName,
+    accountNumber: bankAccount.accountNumber,
+    accountName: bankAccount.accountName,
+  };
+}
+
 /** Set by the buy vs sell route / agent flow — not inferred from currency fields. */
 export type TransactionPayloadMode = "BUY" | "SELL";
 
 function buildPickupLocation(data: Record<string, unknown> | null): PickupLocation | undefined {
-  if (!data || typeof data.locationId !== "string") return undefined;
+  if (!data || typeof data.locationId !== "string" || !data.locationId.trim()) {
+    return undefined;
+  }
   return {
     id: data.locationId,
     name: (data as { name?: string }).name ?? "",
@@ -133,6 +179,7 @@ function buildPTAPayload(
   const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+  const payout = payoutFieldsFromSelection(pickup, amount);
 
   return {
     type: "PTA",
@@ -150,6 +197,8 @@ function buildPTAPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
+    ...payout,
+    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -161,6 +210,7 @@ function buildBTAPayload(
   const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+  const payout = payoutFieldsFromSelection(pickup, amount);
 
   return {
     type: "BTA",
@@ -177,6 +227,8 @@ function buildBTAPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
+    ...payout,
+    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -188,6 +240,7 @@ function buildTouristPayload(
   const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+  const payout = payoutFieldsFromSelection(pickup, amount);
 
   return {
     type: "TOURIST_FX",
@@ -202,7 +255,9 @@ function buildTouristPayload(
     passportIssueDate: upload?.passportIssueDate ?? undefined,
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
     returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
-    documents, 
+    documents,
+    ...payout,
+    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }

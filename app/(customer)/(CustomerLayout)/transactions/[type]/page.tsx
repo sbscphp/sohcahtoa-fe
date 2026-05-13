@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
@@ -41,7 +41,11 @@ import ProfessionalBodyBankDetailsStep from "@/app/(customer)/_components/transa
 import TouristUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
 import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
+import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
 import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
@@ -73,6 +77,27 @@ const TRANSACTION_TYPE_MAP = {
   tourist: "tourist",
 } as const;
 
+function createBankId() {
+  return `bank-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function getRequestedForeignAmount(
+  data:
+    | TransactionAmountFormData
+    | BTATransactionAmountFormData
+    | TouristTransactionAmountFormData
+    | SchoolFeesTransactionAmountFormData
+    | MedicalTransactionAmountFormData
+    | ProfessionalBodyTransactionAmountFormData
+    | null
+) {
+  const record = data as Record<string, unknown> | null;
+  const rawAmount = record?.receiveAmount ?? record?.sendAmount ?? 0;
+  return typeof rawAmount === "number"
+    ? rawAmount
+    : Number.parseFloat(String(rawAmount)) || 0;
+}
+
 export default function TransactionCreationPage() {
   const router = useRouter();
   const params = useParams();
@@ -83,6 +108,7 @@ export default function TransactionCreationPage() {
   const isMedical = type === "medical";
   const isProfessionalBody = type === "professional-body";
   const isTourist = type === "tourist";
+  const usesPayoutMethod = !isSchoolFees && !isMedical && !isProfessionalBody;
 
   const steps = useMemo(
     () =>
@@ -117,6 +143,8 @@ export default function TransactionCreationPage() {
   const [pickupPointData, setPickupPointData] = useState<
     PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData | null
   >(null);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [addBankOpened, setAddBankOpened] = useState(false);
   const [bankDetailsData, setBankDetailsData] = useState<
     | SchoolFeesBankDetailsFormData
     | MedicalBankDetailsFormData
@@ -164,6 +192,50 @@ export default function TransactionCreationPage() {
     data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
   ) => {
     setPickupPointData(data);
+    if (data.payoutMethod === "electronic_transfer_100") {
+      setActiveStep("bank-details");
+      return;
+    }
+
+    if (data.payoutMethod === "card_75_cash_25") {
+      const cashAmount = getRequestedForeignAmount(transactionAmountData) * 0.25;
+      if (cashAmount > 500) {
+        notifications.show({
+          title: "Cash limit exceeded",
+          message:
+            "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
+          color: "orange",
+        });
+        return;
+      }
+    }
+
+    setConfirmationOpened(true);
+  };
+
+  const handleAddBank = useCallback((data: AddBankAccountFormData) => {
+    setBankAccounts((prev) => [
+      ...prev,
+      {
+        id: createBankId(),
+        bankName: data.bankName,
+        accountNumber: data.accountNumber,
+        accountName: "Account holder",
+      },
+    ]);
+  }, []);
+
+  const handlePayoutBankAccountSubmit = (bankAccount: BankAccount) => {
+    setPickupPointData((prev) => ({
+      locationId: prev?.locationId ?? "",
+      pickupDate: prev?.pickupDate ?? "",
+      pickupTime: prev?.pickupTime ?? "",
+      state: prev?.state,
+      city: prev?.city,
+      payoutMethod: prev?.payoutMethod ?? "electronic_transfer_100",
+      selectedBankId: bankAccount.id,
+      bankAccount,
+    }));
     setConfirmationOpened(true);
   };
 
@@ -198,7 +270,7 @@ export default function TransactionCreationPage() {
       bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
     };
 
-    const hasPickup = !isSchoolFees && !isMedical && !isProfessionalBody;
+    const hasPickup = usesPayoutMethod;
     if (hasPickup && !pickupPointData) {
       setConfirmationOpened(false);
       notifications.show({
@@ -207,6 +279,19 @@ export default function TransactionCreationPage() {
         color: "orange",
       });
       setActiveStep("pickup-point");
+      return;
+    }
+    if (
+      pickupPointData?.payoutMethod === "electronic_transfer_100" &&
+      !pickupPointData.bankAccount
+    ) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Bank account required",
+        message: "Select or add a bank account before initiating your transaction.",
+        color: "orange",
+      });
+      setActiveStep("bank-details");
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
@@ -263,6 +348,8 @@ export default function TransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "bank-details" && usesPayoutMethod) {
+      setActiveStep("pickup-point");
     } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
       setActiveStep("amount");
     } else {
@@ -299,6 +386,16 @@ export default function TransactionCreationPage() {
               initialValues={pickupPointData || undefined}
               onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
+            />
+          );
+        case "bank-details":
+          return (
+            <BankAccountSelectionStep
+              banks={bankAccounts}
+              initialSelectedBankId={pickupPointData?.selectedBankId}
+              onSubmit={handlePayoutBankAccountSubmit}
+              onBack={handleBack}
+              onAddBank={() => setAddBankOpened(true)}
             />
           );
         default:
@@ -433,6 +530,16 @@ export default function TransactionCreationPage() {
               onBack={handleBack}
             />
           );
+        case "bank-details":
+          return (
+            <BankAccountSelectionStep
+              banks={bankAccounts}
+              initialSelectedBankId={pickupPointData?.selectedBankId}
+              onSubmit={handlePayoutBankAccountSubmit}
+              onBack={handleBack}
+              onAddBank={() => setAddBankOpened(true)}
+            />
+          );
         default:
           return null;
       }
@@ -461,6 +568,16 @@ export default function TransactionCreationPage() {
             initialValues={pickupPointData || undefined}
             onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
+          />
+        );
+      case "bank-details":
+        return (
+          <BankAccountSelectionStep
+            banks={bankAccounts}
+            initialSelectedBankId={pickupPointData?.selectedBankId}
+            onSubmit={handlePayoutBankAccountSubmit}
+            onBack={handleBack}
+            onAddBank={() => setAddBankOpened(true)}
           />
         );
       default:
@@ -497,6 +614,11 @@ export default function TransactionCreationPage() {
         onConfirm={handleConfirmInitiate}
         requireInfoConfirmation
         loading={uploadDocuments.isPending || createTransaction.isPending}
+      />
+      <AddBankAccountModal
+        opened={addBankOpened}
+        onClose={() => setAddBankOpened(false)}
+        onAddAccount={handleAddBank}
       />
     </div>
   );

@@ -26,7 +26,8 @@ export default function TouristPickupPointStep({
   return (
     <PickupPointStep
       preferenceMode="pickup-only"
-      subtitle="Select the closest sohcahtoa office to pick up your prepaid card"
+      title="Choose Your Payout Method"
+      subtitle="Tailor how you receive your funds to fit your needs."
       submitLabel="Save"
       initialValues={initialValues}
       onSubmit={onSubmit as (data: PickupPointFormData) => void}
@@ -34,6 +35,8 @@ export default function TouristPickupPointStep({
       locations={locations}
       states={states}
       cities={cities}
+      enablePayoutMethod
+      bankSelectionMode="separate"
     />
   );
 }

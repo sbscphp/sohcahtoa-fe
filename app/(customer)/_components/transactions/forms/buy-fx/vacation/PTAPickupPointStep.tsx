@@ -26,7 +26,8 @@ export default function PTAPickupPointStep({
   return (
     <PickupPointStep
       preferenceMode="pickup-only"
-      subtitle="Select the closest sohcahtoa office to pick up your card and cash"
+      title="Choose Your Payout Method"
+      subtitle="Tailor how you receive your funds to fit your needs."
       submitLabel="Next"
       initialValues={initialValues}
       onSubmit={onSubmit as (data: PickupPointFormData) => void}
@@ -34,6 +35,8 @@ export default function PTAPickupPointStep({
       locations={locations}
       states={states}
       cities={cities}
+      enablePayoutMethod
+      bankSelectionMode="separate"
     />
   );
 }

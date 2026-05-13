@@ -597,6 +597,8 @@ export interface CreateTransactionRequest {
   workPermitNumber?: string;
   utilityBillNumber?: string;
   admissionType?: AdmissionType;
+  payoutMethod?: string;
+  payoutBreakdown?: Record<string, unknown>;
   beneficiaryDetails?: Record<string, unknown>;
   pickupLocation?: PickupLocation;
   documents?: TransactionDocument[];
