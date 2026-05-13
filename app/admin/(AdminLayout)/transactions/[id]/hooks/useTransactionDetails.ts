@@ -234,10 +234,15 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const raw = asRecord(data.raw);
   const cashPickup = asRecord(raw.cashPickup);
   const receipt = asRecord(raw.receipt);
-  const beneficiary = asRecord(raw.beneficiary);
-  const stepData = asRecord(
-    asRecord((Array.isArray(raw.steps) ? raw.steps[0] : undefined)?.data)
+  const steps = raw.steps;
+  const firstStep = Array.isArray(steps) ? steps[0] : undefined;
+  const firstStepDataRaw = asRecord(firstStep).data;
+  const beneficiary = asRecord(
+    raw.beneficiary ||
+      raw.beneficiaryDetails ||
+      asRecord(firstStepDataRaw).beneficiaryDetails
   );
+  const stepData = asRecord(asRecord(firstStepDataRaw));
 
   const header = buildHeaderData(data, raw);
 

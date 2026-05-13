@@ -102,12 +102,13 @@ export default function Overview({
       </Group>
 
       {/* Basic Details */}
+      <div className="space-y-10">
       <div className="space-y-6">
         <Text fw={600} c="orange" mb={"lg"} className="font-medium! text-lg!">
           Basic Details
         </Text>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {basicDetailsToRender.map((item) => (
             <DetailItem
               key={item.label}
@@ -137,6 +138,7 @@ export default function Overview({
           </div>
         </div>
       ))}
+      </div>
 
       <div className="space-y-6">
         {!isLoading && (((hasData && transaction?.isEmpty) || !hasData || isError)) && (
