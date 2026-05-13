@@ -962,6 +962,23 @@ export interface AdminTransactionDetailsPayload {
   pickupLocation?: string | null;
 }
 
+/** Assignee on a transaction workflow stage (id shape may vary by API). */
+export interface AdminTransactionApprovalStageAssignee {
+  id?: string;
+  adminId?: string;
+  userId?: string;
+}
+
+export interface AdminTransactionApprovalWorkflowStage {
+  isCurrent?: boolean;
+  assignees?: AdminTransactionApprovalStageAssignee[] | null;
+}
+
+export interface AdminTransactionApprovalProcess {
+  workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
+  isApprovalOfficer?: boolean;
+}
+
 export interface AdminTransactionDetailsData {
   id: string;
   reference: string;
@@ -976,6 +993,7 @@ export interface AdminTransactionDetailsData {
   requestStatus: string;
   details: AdminTransactionDetailsPayload | null;
   raw?: Record<string, unknown> | null;
+  approvalProcess?: AdminTransactionApprovalProcess | null;
 }
 
 export type FranchiseTransactionListParams = AdminTransactionListParams;

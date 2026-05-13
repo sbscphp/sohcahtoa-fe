@@ -102,7 +102,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
       {/* Menu - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3">
         <nav className="mt-2 space-y-1">
-          {!collapsed && (
+          {(!collapsed && visibleMenuItems?.length > 0) && (
             <div>
               <h5 className="px-3 mb-3 text-xs text-body-text-100 uppercase tracking-wider">
                 MAIN MENU
@@ -138,7 +138,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
         </nav>
 
         <nav className="mt-6 space-y-1">
-          {!collapsed && (
+          {(!collapsed && visibleMenuItems2?.length > 0) && (
             <div>
               <h5 className="px-3 mb-3 text-xs text-body-text-100 uppercase tracking-wider">
                 OTHERS

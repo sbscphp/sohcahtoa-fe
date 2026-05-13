@@ -21,6 +21,8 @@ interface SettlementProps {
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
+  isApprovalOfficer?: boolean;
+  canActOnTransactionFooter?: boolean;
 }
 
 const loadingFields = [
@@ -42,6 +44,8 @@ export default function Settlement({
   transactionId,
   isLoading = false,
   isError = false,
+  isApprovalOfficer = false,
+  canActOnTransactionFooter = true,
 }: SettlementProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   const hasData = Boolean(transaction);
@@ -73,6 +77,8 @@ export default function Settlement({
           }
           documents={actionDocuments}
           workflowHistory={workflowHistory}
+          isApprovalOfficer={isApprovalOfficer}
+          canActOnTransactionFooter={canActOnTransactionFooter}
         />
       </Group>
 

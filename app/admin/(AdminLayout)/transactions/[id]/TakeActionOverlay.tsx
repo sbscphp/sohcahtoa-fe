@@ -40,6 +40,10 @@ interface TakeActionOverlayProps {
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  /** When false, hides transaction-level sticky footer. Default true (legacy when not enforced). */
+  canActOnTransactionFooter?: boolean;
+  /** When true, shows per-document approval popover. Default false. */
+  isApprovalOfficer?: boolean;
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -85,10 +89,13 @@ export default function TakeActionOverlay({
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
+  canActOnTransactionFooter = true,
+  isApprovalOfficer = false,
 }: TakeActionOverlayProps) {
   const router = useRouter();
   const hideTransactionFooter =
-    isTransactionStatusApproved(transactionStatusLabel);
+    isTransactionStatusApproved(transactionStatusLabel) ||
+    canActOnTransactionFooter === false;
   const queryClient = useQueryClient();
   const [takeActionPopoverKey, setTakeActionPopoverKey] = useState<string | null>(
     null
@@ -564,7 +571,7 @@ export default function TakeActionOverlay({
                               status={doc.verificationStatus}
                             />
 
-                            {!docActionsHidden && (
+                            {!docActionsHidden && isApprovalOfficer && (
                               <Popover
                                 width={360}
                                 position="bottom-end"
@@ -730,7 +737,7 @@ export default function TakeActionOverlay({
           </div>
 
           {/* Sticky Footer */}
-          {!hideTransactionFooter && (
+          {(!hideTransactionFooter && isApprovalOfficer) && (
             <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
               <Group justify="center" gap="md">
                 <Button
