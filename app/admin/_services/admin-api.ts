@@ -2232,6 +2232,20 @@ export const adminApi = {
           API_ENDPOINTS.admin.regulatory.cbnFn.reports,
           { params }
         ),
+
+      export: async (params?: AdminCbnFnReportListParams) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.regulatory.cbnFn.reportsExport,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       getById: (id: string) =>
         apiClient.get<ApiResponse<AdminCbnFnReportDetailsData>>(
           API_ENDPOINTS.admin.regulatory.cbnFn.reportById(id)
