@@ -70,7 +70,7 @@ function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
         escalateToUser: undefined,
         selectedUsers: [],
         selectedRoles: [],
-        expanded: false,
+        expanded: true,
       },
     ];
   }
@@ -92,7 +92,7 @@ function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
       escalateToUser: firstUser ? { id: firstUser.id, name: firstUser.name } : undefined,
       selectedUsers: mappedUsers,
       selectedRoles: [],
-      expanded: false,
+      expanded: true,
     };
   });
 }
@@ -137,7 +137,7 @@ export default function EditWorkflowPage() {
           escalateToUser: undefined,
           selectedUsers: [],
           selectedRoles: [],
-          expanded: false,
+          expanded: true,
         },
       ],
     },
@@ -365,7 +365,7 @@ export default function EditWorkflowPage() {
       escalateToUser: undefined,
       selectedUsers: [],
       selectedRoles: [],
-      expanded: false,
+      expanded: true,
     };
     form.setFieldValue("workflowLines", [...form.values.workflowLines, newLine]);
   };

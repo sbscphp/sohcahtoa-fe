@@ -977,6 +977,7 @@ export interface AdminTransactionApprovalWorkflowStage {
 export interface AdminTransactionApprovalProcess {
   workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
   isApprovalOfficer?: boolean;
+  approvalState?: string;
 }
 
 export interface AdminTransactionDetailsData {

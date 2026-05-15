@@ -78,6 +78,7 @@ export interface TransactionWorkflowHistoryItemViewModel {
 export interface TransactionApprovalUiViewModel {
   isApprovalOfficer: boolean;
   canActOnTransactionFooter: boolean;
+  approvalState?: string;
 }
 
 export interface UseTransactionDetailsOptions {
@@ -615,15 +616,17 @@ export function buildTransactionApprovalUi(
   const legacy: TransactionApprovalUiViewModel = {
     isApprovalOfficer: false,
     canActOnTransactionFooter: true,
+    approvalState: undefined,
   };
   if (!data) return legacy;
 
   const ap = resolveApprovalProcess(data);
+  const approvalState = ap?.approvalState;
   const isApprovalOfficer = Boolean(ap?.isApprovalOfficer);
   const stages = ap?.workflowStages;
 
   if (!ap || !Array.isArray(stages) || stages.length === 0) {
-    return { isApprovalOfficer, canActOnTransactionFooter: true };
+    return { isApprovalOfficer, canActOnTransactionFooter: true, approvalState };
   }
 
   const currentStage = stages.find((s) => {
@@ -631,12 +634,12 @@ export function buildTransactionApprovalUi(
     return (s as AdminTransactionApprovalWorkflowStage).isCurrent === true;
   }) as AdminTransactionApprovalWorkflowStage | undefined;
   if (!currentStage) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
   }
 
   const assignees = currentStage.assignees;
   if (!Array.isArray(assignees) || assignees.length === 0) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
   }
 
   const assigneeIds = new Set<string>();
@@ -645,17 +648,18 @@ export function buildTransactionApprovalUi(
     if (id) assigneeIds.add(id);
   }
   if (assigneeIds.size === 0) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
   }
 
   const uid = adminUserId?.trim();
   if (!uid) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
   }
 
   return {
     isApprovalOfficer,
     canActOnTransactionFooter: assigneeIds.has(uid),
+    approvalState,
   };
 }
 
@@ -696,6 +700,7 @@ export function useTransactionDetails(
     actionDocuments,
     workflowHistory,
     isApprovalOfficer: approvalUi.isApprovalOfficer,
+    approvalState: approvalUi.approvalState,
     canActOnTransactionFooter: approvalUi.canActOnTransactionFooter,
     isLoading: query.isLoading,
     isError: query.isError,
