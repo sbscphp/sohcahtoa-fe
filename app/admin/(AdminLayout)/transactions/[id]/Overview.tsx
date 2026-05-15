@@ -23,6 +23,7 @@ interface OverviewProps {
   onActionSuccess?: () => void;
   isApprovalOfficer?: boolean;
   canActOnTransactionFooter?: boolean;
+  approvalState?: string;
 }
 
 const loadingBasicDetails = [
@@ -65,6 +66,7 @@ export default function Overview({
   isError = false,
   isApprovalOfficer = false,
   canActOnTransactionFooter = true,
+  approvalState,
 }: OverviewProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   const hasData = Boolean(transaction);
@@ -104,6 +106,7 @@ export default function Overview({
           workflowHistory={workflowHistory}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       </Group>
 

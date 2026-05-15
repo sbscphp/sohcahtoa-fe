@@ -32,6 +32,7 @@ export default function ViewTransactionPage() {
     workflowHistory,
     isApprovalOfficer,
     canActOnTransactionFooter,
+    approvalState,
     isLoading,
     isError,
   } = useTransactionDetails(transactionId, { adminUserId: adminUser?.id });
@@ -61,6 +62,7 @@ export default function ViewTransactionPage() {
           isError={isError}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       )}
       {activeTab === "receipt" && (
@@ -73,6 +75,7 @@ export default function ViewTransactionPage() {
           isError={isError}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       )}
       {activeTab === "transaction-settlement" && (
@@ -85,6 +88,7 @@ export default function ViewTransactionPage() {
           isError={isError}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       )}
     </div>

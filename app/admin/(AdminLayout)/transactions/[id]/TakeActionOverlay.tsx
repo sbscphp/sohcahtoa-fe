@@ -9,6 +9,7 @@ import {
   Avatar,
   Tabs,
   Popover,
+  Flex,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import Connector from "../../../_components/assets/Connector.png";
@@ -44,6 +45,7 @@ interface TakeActionOverlayProps {
   canActOnTransactionFooter?: boolean;
   /** When true, shows per-document approval popover. Default false. */
   isApprovalOfficer?: boolean;
+  approvalState?: string;
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -91,6 +93,7 @@ export default function TakeActionOverlay({
   workflowHistory = [],
   canActOnTransactionFooter = true,
   isApprovalOfficer = false,
+  approvalState,
 }: TakeActionOverlayProps) {
   const router = useRouter();
   const hideTransactionFooter =
@@ -438,6 +441,10 @@ export default function TakeActionOverlay({
               </Tabs.List>
 
               <Tabs.Panel value="overview" className="flex-1 overflow-y-auto pb-4 pt-4">
+              <Flex className="mb-4" align="center" gap="sm">
+                <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
+                <Text size="sm" className="text-body-text-200">{approvalState}</Text>
+              </Flex>
                 {workflowHistory.length === 0 ? (
                   <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
                     <Text fw={600} className="text-body-heading-300">
