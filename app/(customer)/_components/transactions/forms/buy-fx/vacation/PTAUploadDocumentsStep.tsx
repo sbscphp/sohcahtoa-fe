@@ -17,6 +17,7 @@ import {
 import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import VisaDocumentUploadInput from '../../../../forms/VisaDocumentUploadInput';
 import {
   formatDateToIso,
   passportNumberSchema,
@@ -234,9 +235,7 @@ export default function PTAUploadDocumentsStep({
         />
       </div>
 
-      <TransactionFileUploadInput
-        label="Valid Visa"
-        required
+      <VisaDocumentUploadInput
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}

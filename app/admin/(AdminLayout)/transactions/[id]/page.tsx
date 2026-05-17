@@ -2,12 +2,14 @@
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useAtomValue } from "jotai";
 import { useSetHeaderContent } from "../../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../../_components/HeaderTabs";
 import Overview from "./Overview";
 import Receipt from "./Receipt";
 import Settlement from "./Settlement";
 import { useTransactionDetails } from "./hooks/useTransactionDetails";
+import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
 
 export const TRANSACTION_TABS = [
   { value: "overview", label: "Overview" },
@@ -21,16 +23,19 @@ export default function ViewTransactionPage() {
   const [activeTab, setActiveTab] = useState<TransactionTabValue>("overview");
   const params = useParams<{ id: string }>();
   const transactionId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const adminUser = useAtomValue(adminUserAtom);
   const {
     overview,
     receipt,
     settlement,
     actionDocuments,
     workflowHistory,
+    isApprovalOfficer,
+    canActOnTransactionFooter,
+    approvalState,
     isLoading,
     isError,
-  } =
-    useTransactionDetails(transactionId);
+  } = useTransactionDetails(transactionId, { adminUserId: adminUser?.id });
 
   const headerContent = useMemo(
     () => (
@@ -55,6 +60,9 @@ export default function ViewTransactionPage() {
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
+          isApprovalOfficer={isApprovalOfficer}
+          canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       )}
       {activeTab === "receipt" && (
@@ -65,6 +73,9 @@ export default function ViewTransactionPage() {
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
+          isApprovalOfficer={isApprovalOfficer}
+          canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       )}
       {activeTab === "transaction-settlement" && (
@@ -75,6 +86,9 @@ export default function ViewTransactionPage() {
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
+          isApprovalOfficer={isApprovalOfficer}
+          canActOnTransactionFooter={canActOnTransactionFooter}
+          approvalState={approvalState}
         />
       )}
     </div>

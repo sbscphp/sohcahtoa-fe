@@ -9,6 +9,7 @@ import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import VisaDocumentUploadInput from '../../../../forms/VisaDocumentUploadInput';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
@@ -226,9 +227,7 @@ export default function TouristUploadDocumentsStep({
         />
       </div>
 
-      <TransactionFileUploadInput
-        label="Valid Visa"
-        required
+      <VisaDocumentUploadInput
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}

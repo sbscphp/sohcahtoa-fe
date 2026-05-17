@@ -9,19 +9,38 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
-import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-  proofOfFundsFiles: z.custom<File[]>().optional(),
-});
+const MAX_PROFESSIONAL_BODY_AMOUNT = 2000;
+
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_PROFESSIONAL_BODY_AMOUNT;
+}
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+    proofOfFundsFiles: z.custom<File[]>().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (receiveAmountOverMax(data.receiveAmount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: receiveAmountExceedsMaxMessage(MAX_PROFESSIONAL_BODY_AMOUNT),
+      });
+    }
+  });
 
 export type ProfessionalBodyTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -62,6 +81,11 @@ export default function ProfessionalBodyTransactionAmountStep({
     defaultLabel: exchangeRate,
   });
 
+  const nextDisabled =
+    !form.values.receiveAmount?.trim() ||
+    !form.values.sendAmount?.trim() ||
+    receiveAmountOverMax(form.values.receiveAmount);
+
   const handleSubmit = form.onSubmit((values) => {
     onSubmit({
       ...values,
@@ -70,12 +94,26 @@ export default function ProfessionalBodyTransactionAmountStep({
   });
 
   const handleSwap = () => {
+    const currentReceive = form.values.receiveAmount;
+    const currentSend = form.values.sendAmount;
+    const currentReceiveCurrency = form.values.receiveCurrency;
+    const currentSendCurrency = form.values.sendCurrency;
+
     form.setValues({
-      receiveAmount: form.values.sendAmount,
-      receiveCurrency: form.values.sendCurrency,
-      sendAmount: form.values.receiveAmount,
-      sendCurrency: form.values.receiveCurrency,
+      receiveAmount: currentSend,
+      receiveCurrency: currentSendCurrency,
+      sendAmount: currentReceive,
+      sendCurrency: currentReceiveCurrency,
     });
+    if (receiveAmountOverMax(currentSend)) {
+      form.setFieldError(
+        "receiveAmount",
+        receiveAmountExceedsMaxMessage(MAX_PROFESSIONAL_BODY_AMOUNT)
+      );
+    } else {
+      form.clearFieldError("receiveAmount");
+    }
+    recalculate(currentSend, currentSendCurrency);
   };
 
   return (
@@ -96,6 +134,14 @@ export default function ProfessionalBodyTransactionAmountStep({
             value={form.values.receiveAmount}
             onChange={(value) => {
               form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError(
+                  "receiveAmount",
+                  receiveAmountExceedsMaxMessage(MAX_PROFESSIONAL_BODY_AMOUNT)
+                );
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
               recalculate(value);
             }}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}
@@ -107,7 +153,7 @@ export default function ProfessionalBodyTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <div className="w-full">
+          {/* <div className="w-full">
             <ProofOfFundPrompt
               show={isAmountOverRequiredAmount(
                 form.values.receiveAmount,
@@ -117,7 +163,7 @@ export default function ProfessionalBodyTransactionAmountStep({
               )}
               onUploadClick={() => setProofModalOpen(true)}
             />
-          </div>
+          </div> */}
         </div>
 
         <ProofOfFundModal
@@ -179,6 +225,7 @@ export default function ProfessionalBodyTransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

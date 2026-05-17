@@ -9,6 +9,7 @@ import {
   Avatar,
   Tabs,
   Popover,
+  Flex,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import Connector from "../../../_components/assets/Connector.png";
@@ -40,6 +41,11 @@ interface TakeActionOverlayProps {
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  /** When false, hides transaction-level sticky footer. Default true (legacy when not enforced). */
+  canActOnTransactionFooter?: boolean;
+  /** When true, shows per-document approval popover. Default false. */
+  isApprovalOfficer?: boolean;
+  approvalState?: string;
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -85,10 +91,14 @@ export default function TakeActionOverlay({
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
+  canActOnTransactionFooter = true,
+  isApprovalOfficer = false,
+  approvalState,
 }: TakeActionOverlayProps) {
   const router = useRouter();
   const hideTransactionFooter =
-    isTransactionStatusApproved(transactionStatusLabel);
+    isTransactionStatusApproved(transactionStatusLabel) ||
+    canActOnTransactionFooter === false;
   const queryClient = useQueryClient();
   const [takeActionPopoverKey, setTakeActionPopoverKey] = useState<string | null>(
     null
@@ -431,6 +441,10 @@ export default function TakeActionOverlay({
               </Tabs.List>
 
               <Tabs.Panel value="overview" className="flex-1 overflow-y-auto pb-4 pt-4">
+              <Flex className="mb-4" align="center" gap="sm">
+                <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
+                <Text size="sm" className="text-body-text-200">{approvalState}</Text>
+              </Flex>
                 {workflowHistory.length === 0 ? (
                   <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
                     <Text fw={600} className="text-body-heading-300">
@@ -537,7 +551,7 @@ export default function TakeActionOverlay({
                           wrap="nowrap"
                         >
                           <div className="flex flex-col gap-1 min-w-0 flex-1">
-                            <Text size="sm" fw={500} className="text-body-heading-300">
+                            <Text size="sm" fw={500} className="text-body-heading-300 truncate!">
                               {doc.title}
                             </Text>
                             <Text size="xs" c="dimmed" className="text-body-text-50!">
@@ -564,7 +578,7 @@ export default function TakeActionOverlay({
                               status={doc.verificationStatus}
                             />
 
-                            {!docActionsHidden && (
+                            {!docActionsHidden && isApprovalOfficer && (
                               <Popover
                                 width={360}
                                 position="bottom-end"
@@ -730,7 +744,7 @@ export default function TakeActionOverlay({
           </div>
 
           {/* Sticky Footer */}
-          {!hideTransactionFooter && (
+          {(!hideTransactionFooter && isApprovalOfficer) && (
             <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
               <Group justify="center" gap="md">
                 <Button
@@ -808,7 +822,7 @@ export default function TakeActionOverlay({
                             className="text-body-text-200! mt-1 leading-relaxed"
                           >
                             Place action under review and request more
-                            information from Requestor.
+                            information from customer.
                           </Text>
                         </span>
                       </button>
@@ -834,7 +848,7 @@ export default function TakeActionOverlay({
                             size="sm"
                             className="text-body-text-200! mt-1 leading-relaxed"
                           >
-                            Reject and provide feedback to the requestor.
+                            Reject and provide feedback to the customer.
                           </Text>
                         </span>
                       </button>

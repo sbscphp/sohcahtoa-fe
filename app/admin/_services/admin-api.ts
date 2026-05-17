@@ -962,6 +962,24 @@ export interface AdminTransactionDetailsPayload {
   pickupLocation?: string | null;
 }
 
+/** Assignee on a transaction workflow stage (id shape may vary by API). */
+export interface AdminTransactionApprovalStageAssignee {
+  id?: string;
+  adminId?: string;
+  userId?: string;
+}
+
+export interface AdminTransactionApprovalWorkflowStage {
+  isCurrent?: boolean;
+  assignees?: AdminTransactionApprovalStageAssignee[] | null;
+}
+
+export interface AdminTransactionApprovalProcess {
+  workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
+  isApprovalOfficer?: boolean;
+  approvalState?: string;
+}
+
 export interface AdminTransactionDetailsData {
   id: string;
   reference: string;
@@ -976,6 +994,7 @@ export interface AdminTransactionDetailsData {
   requestStatus: string;
   details: AdminTransactionDetailsPayload | null;
   raw?: Record<string, unknown> | null;
+  approvalProcess?: AdminTransactionApprovalProcess | null;
 }
 
 export type FranchiseTransactionListParams = AdminTransactionListParams;
@@ -2214,6 +2233,20 @@ export const adminApi = {
           API_ENDPOINTS.admin.regulatory.cbnFn.reports,
           { params }
         ),
+
+      export: async (params?: AdminCbnFnReportListParams) => {
+        const response = await apiClient.get<Blob | string>(
+          API_ENDPOINTS.admin.regulatory.cbnFn.reportsExport,
+          { params }
+        );
+
+        if (response instanceof Blob) {
+          return response;
+        }
+
+        return new Blob([response], { type: "text/csv;charset=utf-8;" });
+      },
+
       getById: (id: string) =>
         apiClient.get<ApiResponse<AdminCbnFnReportDetailsData>>(
           API_ENDPOINTS.admin.regulatory.cbnFn.reportById(id)

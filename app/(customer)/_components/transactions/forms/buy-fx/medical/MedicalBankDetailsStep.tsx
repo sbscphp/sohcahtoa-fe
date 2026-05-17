@@ -15,8 +15,7 @@ export type MedicalBankDetailsFormData = InternationalBankDetailsFormValues;
 interface MedicalBankDetailsStepProps {
   initialValues?: Partial<MedicalBankDetailsFormData> & {
     accountName?: string;
-    bankName?: string;
-    accountNumber?: string;
+    beneficiaryName?: string;
     iban?: string;
   };
   onSubmit: (data: MedicalBankDetailsFormData) => void;
@@ -45,7 +44,7 @@ export default function MedicalBankDetailsStep({
           Where would you like to send the fund to?
         </h2>
         <p className="text-body-text-200 text-base max-w-md">
-          Enter recipient bank details. Start by selecting the country where the bank account is held.
+          Enter the medical provider and bank details for this payment.
         </p>
       </div>
 

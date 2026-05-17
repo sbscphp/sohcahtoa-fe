@@ -10,6 +10,7 @@ export const API_ENDPOINTS = {
     forgotPassword: "/api/auth/forgot-password",
     verifyResetOtp: "/api/auth/verify-reset-otp",
     resetPassword: "/api/auth/reset-password",
+    changePassword: "/api/auth/change-password",
     
     nigerian: {
       verifyBvn: "/api/auth/signup/nigerian/verify-bvn",
@@ -106,6 +107,11 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `/api/documents/${id}`,
     getByTransaction: (transactionId: string) => `/api/documents/transaction/${transactionId}`,
     list: "/api/documents",
+  },
+
+  wallet: {
+    transientHistory: "/api/customer/wallet/transient-history",
+    transientHistoryExport: "/api/customer/wallet/transient-history/export",
   },
 
   // Support (Customer)

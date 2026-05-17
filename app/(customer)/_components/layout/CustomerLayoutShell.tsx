@@ -60,6 +60,7 @@ export default function CustomerLayoutShell({
   const getPageTitle = () => {
     if (pathname === '/dashboard') return 'Dashboard';
     if (pathname === '/transactions') return 'Transactions';
+    if (pathname === '/transient-history') return 'Transient History';
     if (pathname?.startsWith('/transactions/new')) return 'New Transaction';
     if (pathname?.startsWith('/rate-calculator')) return 'Rate Calculator';
     if (pathname === '/settings') return 'Setting';

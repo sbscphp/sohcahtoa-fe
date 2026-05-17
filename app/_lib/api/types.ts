@@ -78,10 +78,37 @@ export interface SendOtpRequestTourist {
 export interface SendOtpRequest {
   bvn?: string;
   passportNumber?: string;
-  verificationType: "phone" | "email";
+  verificationType?: "phone" | "email";
   phoneNumber?: string;
   email?: string;
+  purpose?: AuthOtpPurpose;
 }
+
+export type AuthOtpPurpose =
+  | "REGISTRATION"
+  | "CHANGE_PASSWORD"
+  | "PASSWORD_RESET";
+
+export interface AuthOtpSendRequest {
+  phoneNumber?: string;
+  email?: string;
+  purpose: AuthOtpPurpose;
+}
+
+export interface AuthOtpValidateRequest {
+  otp: string;
+  purpose: AuthOtpPurpose;
+  email?: string;
+  phoneNumber?: string;
+}
+
+export interface AuthOtpValidateResponseData {
+  valid: boolean;
+  message: string;
+}
+
+export type AuthOtpValidateResponse =
+  ApiResponseWrapper<AuthOtpValidateResponseData>;
 
 export interface SendOtpResponseData {
   message: string;
@@ -203,6 +230,12 @@ export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
   newPasswordConfirm: string;
+}
+
+/** Customer authenticated change password (POST /api/auth/change-password) */
+export interface CustomerChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
 }
 
 export interface ChangePasswordResponseData {
@@ -1200,12 +1233,39 @@ export interface TransactionListParams extends PaginationParams {
   status?: string;
   type?: string;
   group?: "BUY" | "SELL" | "REMITTANCE";
+  /** Used with `type` on list endpoints (same semantics as transactions page). */
+  mode?: "BUY" | "SELL" | "REMITTANCE";
   currency?: string;
   stage?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+}
+
+export interface CustomerTransientHistoryListParams extends PaginationParams {
+  q?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface CustomerTransientHistoryApiItem {
+  id: string;
+  transaction_id?: string | number | null;
+  transaction_date?: string | null;
+  created_at?: string | null;
+  total_debit?: number | null;
+  total_credit?: number | null;
+  total_debits?: number | null;
+  total_credits?: number | null;
+  balance?: number | null;
+}
+
+export interface CustomerTransientHistoryListResponse
+  extends ApiResponseWrapper<CustomerTransientHistoryApiItem[]> {
+  pagination: PaginationMetadata;
 }
 
 export interface ApiResponse<T> {

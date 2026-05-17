@@ -164,9 +164,9 @@ export default function WorkflowLineItem({
                       <Trash2 size={16} />
                     </ActionIcon>
                   )}
-                  <ActionIcon 
-                    size="sm" 
-                    variant="subtle" 
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
                     color="gray"
                     onClick={() => onToggleExpanded(line.id)}
                   >
@@ -178,7 +178,15 @@ export default function WorkflowLineItem({
               {/* Expanded Content */}
               {line.expanded && (totalAssigned > 0) && (
                 <div className="mt-3">
-                  <ScrollArea h={200} type="scroll">
+                  <ScrollArea h={200}
+                    type="always"
+                    offsetScrollbars
+                    scrollbarSize={8}
+                    classNames={{
+                      scrollbar: "bg-gray-100 rounded-full p-0.5",
+                      thumb: "bg-gray-300 rounded-full hover:bg-gray-400",
+                    }}
+                  >
                     <div className="space-y-2">
                       {/* Selected Users */}
                       {line.selectedUsers.map((user) => (
@@ -204,9 +212,8 @@ export default function WorkflowLineItem({
                               {user.roles.map((role) => (
                                 <span
                                   key={role}
-                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                    ROLE_PILL_COLORS[role] ?? "bg-gray-100 text-gray-700"
-                                  }`}
+                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_PILL_COLORS[role] ?? "bg-gray-100 text-gray-700"
+                                    }`}
                                 >
                                   {role}
                                 </span>

@@ -8,6 +8,7 @@ import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import VisaDocumentUploadInput from '../../../../forms/VisaDocumentUploadInput';
 import { passportNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
@@ -155,9 +156,7 @@ export default function TouringNigeriaUploadDocumentsStep({
         />
       </div>
 
-      <TransactionFileUploadInput
-        label="Valid Visa"
-        required
+      <VisaDocumentUploadInput
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}

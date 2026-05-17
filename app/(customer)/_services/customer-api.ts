@@ -35,8 +35,12 @@ import type {
   RegisterDeviceRequest,
   ResetPasswordRequest,
   ResetPasswordResponse,
+  AuthOtpSendRequest,
+  AuthOtpValidateRequest,
+  AuthOtpValidateResponse,
+  CustomerChangePasswordRequest,
+  ChangePasswordResponse,
   SendEmailOtpRequestNigerian,
-  SendOtpRequest,
   SendOtpRequestNigerian,
   SendOtpRequestTourist,
   SendOtpResponse,
@@ -51,7 +55,6 @@ import type {
   UploadPassportResponse,
   ValidateEmailOtpRequestNigerian,
   ValidateEmailOtpResponse,
-  ValidateOtpRequest,
   ValidateOtpRequestNigerian,
   ValidateOtpRequestTourist,
   ValidateOtpResponse,
@@ -76,6 +79,8 @@ import type {
   TransactionVirtualAccountResponse,
   TransactionDepositInstructionsResponse,
   TransactionDepositStatusResponse,
+  CustomerTransientHistoryListParams,
+  CustomerTransientHistoryListResponse,
   PickupPointsResponse,
   PickupTerminalsQueryParams,
   PickupLocationStatesResponse,
@@ -110,6 +115,9 @@ export const customerApi = {
 
     resetPassword: (data: ResetPasswordRequest) =>
       apiClient.post<ResetPasswordResponse>(API_ENDPOINTS.auth.resetPassword, data, { skipAuth: true }),
+
+    changePassword: (data: CustomerChangePasswordRequest) =>
+      apiClient.post<ChangePasswordResponse>(API_ENDPOINTS.auth.changePassword, data),
 
     // Nigerian signup flow
     nigerian: {
@@ -156,13 +164,13 @@ export const customerApi = {
         apiClient.post<LoginResponse>(API_ENDPOINTS.auth.tourist.createAccount, data, { skipAuth: true }),
     },
 
-    // OTP
+    // OTP (generic send/validate with purpose)
     otp: {
-      send: (data: SendOtpRequest) =>
-        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.otp.send, data, { skipAuth: true }),
+      send: (data: AuthOtpSendRequest, config?: Pick<ApiRequestConfig, "skipAuth">) =>
+        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.otp.send, data, config),
 
-      validate: (data: ValidateOtpRequest) =>
-        apiClient.post<ValidateOtpResponse>(API_ENDPOINTS.auth.otp.validate, data, { skipAuth: true }),
+      validate: (data: AuthOtpValidateRequest, config?: Pick<ApiRequestConfig, "skipAuth">) =>
+        apiClient.post<AuthOtpValidateResponse>(API_ENDPOINTS.auth.otp.validate, data, config),
     },
 
     // KYC
@@ -255,6 +263,22 @@ export const customerApi = {
           params: params as ApiRequestConfig["params"],
         }
       ),
+  },
+
+  // ==================== Wallet ====================
+  wallet: {
+    transientHistory: {
+      list: (params?: CustomerTransientHistoryListParams) =>
+        apiClient.get<CustomerTransientHistoryListResponse>(
+          API_ENDPOINTS.wallet.transientHistory,
+          { params: params as ApiRequestConfig["params"] }
+        ),
+
+      export: (params?: CustomerTransientHistoryListParams) =>
+        apiClient.download(API_ENDPOINTS.wallet.transientHistoryExport, {
+          params: params as ApiRequestConfig["params"],
+        }),
+    },
   },
 
   // ==================== Notifications ====================

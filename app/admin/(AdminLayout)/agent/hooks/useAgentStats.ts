@@ -7,8 +7,8 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 
 export interface AgentStatsData {
   total: number;
-  activeAgents: number;
-  deactivatedAgents: number;
+  active: number;
+  deactivated: number;
   pendingApproval: number;
 }
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Group, Tabs } from "@mantine/core";
+import { Button, Group, Tabs, TextInput } from "@mantine/core";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, UploadIcon } from "@hugeicons/core-free-icons";
+import { Search } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import PaginatedTable, { type PaginatedTableColumn } from "./PaginatedTable";
 import FilterTabs from "../FilterTabs";
@@ -28,11 +29,20 @@ interface TableWrapperProps<T> {
   filterSheetTitle?: string;
   onExportClick?: () => void;
   actionButton?: ReactNode;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  /** Renders between the filter/export row and the table. */
+  toolbarBelowFilters?: ReactNode;
   data: T[];
   columns: PaginatedTableColumn<T>[];
   pageSize?: number;
+  /** Server-side pagination (pass with onPageChange + totalPages). */
+  page?: number;
+  onPageChange?: (page: number) => void;
+  totalPages?: number;
   onRowClick?: (item: T) => void;
   keyExtractor?: (item: T, index: number) => string | number;
+  emptyTitle?: string;
   emptyMessage?: string;
   isLoading?: boolean;
   skeletonRowCount?: number;
@@ -50,11 +60,18 @@ export default function TableWrapper<T>({
   filterSheetTitle,
   onExportClick,
   actionButton,
+  searchValue = "",
+  onSearchChange,
+  toolbarBelowFilters,
   data,
   columns,
   pageSize = 10,
+  page: serverPage,
+  onPageChange,
+  totalPages: serverTotalPages,
   onRowClick,
   keyExtractor,
+  emptyTitle,
   emptyMessage = "No data found",
   isLoading = false,
   skeletonRowCount = 4,
@@ -76,12 +93,16 @@ export default function TableWrapper<T>({
     activeFilter != null &&
     onFilterChange != null;
 
+  const showSearchInput = onSearchChange != null;
+
+  const shouldJustifyBetween = showFilterTabs || showSearchInput;
+
   return (
     <div className="min-w-0 space-y-4">
       <h2 className="text-body-heading-300 text-lg font-semibold">{title}</h2>
 
       <Group
-        justify={showFilterTabs ? "space-between" : "flex-end"}
+        justify={shouldJustifyBetween ? "space-between" : "flex-end"}
         align="flex-start"
         wrap="wrap"
         gap="md"
@@ -102,6 +123,20 @@ export default function TableWrapper<T>({
             >
               <FilterTabs items={filterOptions} value={activeFilter} />
             </Tabs>
+          </div>
+        )}
+
+        {showSearchInput && (
+          <div className="min-w-0 flex-1 basis-0">
+            <TextInput
+              placeholder="Enter keyword"
+              leftSection={<Search size={16} className="text-primary-400" />}
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.currentTarget.value)}
+              size="sm"
+              radius="xl"
+              className="w-full"
+            />
           </div>
         )}
 
@@ -155,13 +190,19 @@ export default function TableWrapper<T>({
         </Group>
       </Group>
 
+      {toolbarBelowFilters}
+
       {/* Table */}
       <PaginatedTable
         data={data}
         columns={columns}
         pageSize={pageSize}
+        page={serverPage}
+        onPageChange={onPageChange}
+        totalPages={serverTotalPages}
         onRowClick={onRowClick}
         keyExtractor={keyExtractor}
+        emptyTitle={emptyTitle}
         emptyMessage={emptyMessage}
         isLoading={isLoading}
         skeletonRowCount={skeletonRowCount}
