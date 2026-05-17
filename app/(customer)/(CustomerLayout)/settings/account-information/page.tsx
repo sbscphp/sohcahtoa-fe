@@ -8,6 +8,7 @@ import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { normalizeProfile, setProfileInStorage } from "@/app/(customer)/_utils/auth-profile";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { formatAccountDate as formatDate, formatAccountPhone as formatPhone } from "@/app/_lib/utils/account-format";
+import { shouldCollectBvnNin } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 
 function FieldGrid({ fields }: { fields: { label: string; value: string }[] }) {
   return (
@@ -65,7 +66,9 @@ export default function AccountInformationPage() {
   const phone = formatPhone(userProfile.phoneNumber);
   const dateJoined = formatDate(userProfile.createdAt);
   const lastActive = formatDate(userProfile.updatedAt);
+  const collectsBvnNin = shouldCollectBvnNin(userProfile.customerType);
   const bvn = userProfile.kyc?.bvn || "N/A";
+  const passportNumber = userProfile.kyc?.passportNumber || "N/A";
   const tin = userProfile.kyc?.tin || "N/A";
   const dateOfBirth = formatDate(userProfile.profile?.dateOfBirth);
 
@@ -78,8 +81,10 @@ export default function AccountInformationPage() {
   ];
 
   const FIELDS_ROW_2 = [
-    { label: "BVN", value: bvn },
-    { label: "TIN", value: tin },
+    ...(collectsBvnNin
+      ? [{ label: "BVN", value: bvn }]
+      : [{ label: "Passport Number", value: passportNumber }]),
+    ...(collectsBvnNin ? [{ label: "TIN", value: tin }] : []),
     { label: "Date of Birth", value: dateOfBirth },
   ];
 

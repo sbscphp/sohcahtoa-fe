@@ -72,20 +72,38 @@ export function shouldLockKycPrefill(
   return normalizedInitial === normalizeForCompare(profileField);
 }
 
+export function shouldCollectBvnNin(customerType?: string | null): boolean {
+  if (!customerType?.trim()) return true;
+  const normalized = customerType.trim().toUpperCase();
+  if (normalized.includes("TOURIST") || normalized.includes("EXPATRIATE")) {
+    return false;
+  }
+  return (
+    normalized.includes("NIGERIAN") ||
+    normalized.includes("CITIZEN") ||
+    normalized === "RESIDENT"
+  );
+}
+
 /**
  * BVN / NIN from `userProfileAtom` (GET profile / `AuthProfileSync`).
  * Uses API values as returned (including masked BVN such as `*******9933`).
+ * Returns empty defaults when the logged-in user is not a Nigerian citizen.
  */
 export function useCustomerProfileBvnNin() {
   const profile = useAtomValue(userProfileAtom);
+  const collectsBvnNin = shouldCollectBvnNin(profile?.customerType);
   const bvn = profile?.kyc?.bvn;
   const nin = profile?.kyc?.nin;
-  const defaultBvn = bvn != null && bvn !== "" ? String(bvn) : "";
-  const defaultNin = nin != null && nin !== "" ? String(nin) : "";
+  const defaultBvn =
+    collectsBvnNin && bvn != null && bvn !== "" ? String(bvn) : "";
+  const defaultNin =
+    collectsBvnNin && nin != null && nin !== "" ? String(nin) : "";
   return {
     defaultBvn,
     defaultNin,
     hasBvnFromProfile: defaultBvn.length > 0,
     hasNinFromProfile: defaultNin.length > 0,
+    collectsBvnNin,
   };
 }

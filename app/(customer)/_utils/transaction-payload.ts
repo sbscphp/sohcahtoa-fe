@@ -267,8 +267,6 @@ function buildTouristPayload(
     amount: getAmount(amount),
     purpose: "Tourist travel",
     destinationCountry: "United States",
-    bvn: upload?.bvn ?? undefined,
-    nin: upload?.ninNumber ?? undefined,
     formAId: upload?.formAId ?? undefined,
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     passportIssueDate: upload?.passportIssueDate ?? undefined,

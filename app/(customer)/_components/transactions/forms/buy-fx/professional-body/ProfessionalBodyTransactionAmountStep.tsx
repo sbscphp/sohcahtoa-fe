@@ -11,6 +11,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
+import { notifications } from "@mantine/notifications";
 
 const MAX_PROFESSIONAL_BODY_AMOUNT = 2000;
 
@@ -93,29 +94,6 @@ export default function ProfessionalBodyTransactionAmountStep({
     });
   });
 
-  const handleSwap = () => {
-    const currentReceive = form.values.receiveAmount;
-    const currentSend = form.values.sendAmount;
-    const currentReceiveCurrency = form.values.receiveCurrency;
-    const currentSendCurrency = form.values.sendCurrency;
-
-    form.setValues({
-      receiveAmount: currentSend,
-      receiveCurrency: currentSendCurrency,
-      sendAmount: currentReceive,
-      sendCurrency: currentReceiveCurrency,
-    });
-    if (receiveAmountOverMax(currentSend)) {
-      form.setFieldError(
-        "receiveAmount",
-        receiveAmountExceedsMaxMessage(MAX_PROFESSIONAL_BODY_AMOUNT)
-      );
-    } else {
-      form.clearFieldError("receiveAmount");
-    }
-    recalculate(currentSend, currentSendCurrency);
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex flex-col gap-2 justify-center items-center">
@@ -166,19 +144,25 @@ export default function ProfessionalBodyTransactionAmountStep({
           </div> */}
         </div>
 
-        <ProofOfFundModal
+        {/* <ProofOfFundModal
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
             setProofOfFundsFiles(files);
             setProofModalOpen(false);
           }}
-        />
+        /> */}
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            onClick={handleSwap}
+            onClick={() => {
+              notifications.show({
+                title: "Swap currencies",
+                message: "Swap currencies not supported for this transaction",
+                color: "blue",
+              });
+            }}
             className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors shadow-md"
             aria-label="Swap currencies"
           >
