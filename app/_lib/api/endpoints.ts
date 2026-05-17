@@ -267,6 +267,7 @@ export const API_ENDPOINTS = {
       cbnFn: {
         stats: "/api/admin/regulatory/cbn-fn/stats",
         reports: "/api/admin/regulatory/cbn-fn/reports",
+        reportsExport: "/api/admin/regulatory/cbn-fn/reports/export",
         reportById: (id: string) => `/api/admin/regulatory/cbn-fn/reports/${id}`,
       },
     },

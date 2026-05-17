@@ -38,7 +38,7 @@ export default function AgentPage() {
 
               <StatCard
                 title="Active Agents"
-                value={stats?.activeAgents ?? 0}
+                value={stats?.active ?? 0}
                 icon={activeAgentsIcon}
                 iconBg="bg-green-100"
                 isEmpty={isStatsEmpty}
@@ -46,7 +46,7 @@ export default function AgentPage() {
 
               <StatCard
                 title="Deactivated Agents"
-                value={stats?.deactivatedAgents ?? 0}
+                value={stats?.deactivated ?? 0}
                 icon={deactivatedAgentsIcon}
                 iconBg="bg-[#FFE4E8]"
                 isEmpty={isStatsEmpty}

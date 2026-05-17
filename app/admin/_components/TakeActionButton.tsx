@@ -27,6 +27,11 @@ interface TakeActionButtonProps {
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  /** When false, transaction-level footer actions (Complete Review / Take Action) are hidden. Default true (legacy). */
+  canActOnTransactionFooter?: boolean;
+  /** When true, per-document approval actions are shown (independent of assignee check). Default false. */
+  isApprovalOfficer?: boolean;
+  approvalState?: string;
 }
 
 export default function TakeActionButton({
@@ -41,6 +46,9 @@ export default function TakeActionButton({
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
+  canActOnTransactionFooter = true,
+  isApprovalOfficer = false,
+  approvalState,
 }: TakeActionButtonProps) {
   const [opened, setOpened] = useState(false);
 
@@ -73,6 +81,9 @@ export default function TakeActionButton({
         transactionStatusLabel={transactionStatusLabel}
         documents={documents}
         workflowHistory={workflowHistory}
+        canActOnTransactionFooter={canActOnTransactionFooter}
+        isApprovalOfficer={isApprovalOfficer}
+        approvalState={approvalState}
       />
     </>
   );
