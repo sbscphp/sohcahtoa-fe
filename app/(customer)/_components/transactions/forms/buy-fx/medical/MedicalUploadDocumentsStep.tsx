@@ -15,6 +15,7 @@ import {
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 import TransactionFileUploadInput from "../../../../forms/TransactionFileUploadInput";
+import VisaDocumentUploadInput from "../../../../forms/VisaDocumentUploadInput";
 import {
   formatDateToIso,
   passportNumberSchema,
@@ -238,9 +239,7 @@ export default function MedicalUploadDocumentsStep({
         />
       </div>
 
-      <TransactionFileUploadInput
-        label="Valid Visa"
-        required
+      <VisaDocumentUploadInput
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}

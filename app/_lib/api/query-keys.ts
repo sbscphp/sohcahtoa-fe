@@ -75,6 +75,19 @@ export const customerKeys = {
       [...customerKeys.documents.all, "transaction", transactionId] as const,
   },
   
+  wallet: {
+    all: ["customer", "wallet"] as const,
+    transientHistory: (params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      startDate?: string;
+      endDate?: string;
+      sortBy?: string;
+      sortOrder?: string;
+    }) => [...customerKeys.wallet.all, "transient-history", params] as const,
+  },
+
   support: {
     all: ["customer", "support"] as const,
     tickets: {

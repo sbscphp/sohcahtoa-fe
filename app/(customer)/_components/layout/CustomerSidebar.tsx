@@ -12,7 +12,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Avatar, UnstyledButton } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useAtom } from "jotai";
-import { ArrowUpRight, BanknoteIcon, Calculator, LayoutGrid, LogOut } from "lucide-react";
+import { ArrowUpRight, BanknoteIcon, Calculator, History, LayoutGrid, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -26,6 +26,7 @@ type CustomerSidebarProps = {
 const menuItems = [
   { icon: LayoutGrid, label: "Overview", href: "/dashboard" },
   { icon: BanknoteIcon, label: "Transactions", href: "/transactions" },
+  { icon: History, label: "Transient History", href: "/transient-history" },
   { icon: Calculator, label: "Rate Calculator", href: "/rate-calculator" },
   // { icon: Settings, label: "Settings", href: "/settings" },
 ];

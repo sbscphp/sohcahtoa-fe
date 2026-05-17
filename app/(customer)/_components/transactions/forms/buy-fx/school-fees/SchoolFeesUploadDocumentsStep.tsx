@@ -21,13 +21,11 @@ const uploadDocumentsSchema = z
     formAId: formAIdSchema,
     evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
     schoolInvoiceFile: z.custom<FileWithPath | null>().optional(),
-    schoolInvoiceNumber: z.string().max(50, "School Invoice Number is too long").optional(),
     passportFile: z.custom<FileWithPath | null>().optional(),
     passportDocumentNumber: z.string().optional(),
     passportIssueDate: z.string().optional(),
     passportExpiryDate: z.string().optional(),
     statementOfResultFile: z.custom<FileWithPath | null>().optional(),
-    statementOfResultsNumber: z.string().max(50, "Statement of Results Number is too long").optional(),
     firstDegreeCertificateFile: z.custom<FileWithPath | null>().optional(),
     transactionFile: z.custom<FileWithPath | null>().optional(),
     transactionDescription: z.string().max(1000, "Transaction Description is too long").optional(),
@@ -52,8 +50,6 @@ const uploadDocumentsSchema = z
     const requireText = (
       path:
         | "passportDocumentNumber"
-        | "schoolInvoiceNumber"
-        | "statementOfResultsNumber"
         | "transactionDescription"
         | "passportIssueDate"
         | "passportExpiryDate",
@@ -93,14 +89,13 @@ const uploadDocumentsSchema = z
     }
 
     if (data.admissionType === "Postgraduate") {
+      requireFile("evidenceOfAdmissionFile", "Evidence of Admission is required");
       requireFile("schoolInvoiceFile", "School Invoice is required");
-      requireText("schoolInvoiceNumber", "School Invoice Number is required");
+      requireFile("firstDegreeCertificateFile", "First Degree Certificate is required");
+      requireFile("statementOfResultFile", "Statement of Result is required");
       requireFile("passportFile", "International Passport file is required");
       requireText("passportIssueDate", "Passport Issued Date is required");
       requireText("passportExpiryDate", "Passport Expiry Date is required");
-      requireFile("statementOfResultFile", "Statement of Result is required");
-      requireText("statementOfResultsNumber", "Statement of Results Number is required");
-      requireFile("firstDegreeCertificateFile", "First Degree Certificate is required");
 
       validatePassportDates(
         {
@@ -125,19 +120,17 @@ type SchoolFeesUploadDocumentsFormValues = {
   formAId?: string;
   evidenceOfAdmissionFile?: FileWithPath | null;
   schoolInvoiceFile?: FileWithPath | null;
-  schoolInvoiceNumber?: string;
   passportFile?: FileWithPath | null;
   passportDocumentNumber?: string;
   passportIssueDate?: string;
   passportExpiryDate?: string;
   statementOfResultFile?: FileWithPath | null;
-  statementOfResultsNumber?: string;
   firstDegreeCertificateFile?: FileWithPath | null;
   transactionFile?: FileWithPath | null;
   transactionDescription?: string;
 };
 
-const ADMISSION_TYPES = ["Undergraduate", "Postgraduate", "Other"];
+const ADMISSION_TYPES = ["Undergraduate", "Postgraduate", "Other (high school, pre-school etc)"];
 
 interface SchoolFeesUploadDocumentsStepProps {
   initialValues?: Partial<SchoolFeesUploadDocumentsFormValues>;
@@ -161,13 +154,11 @@ export default function SchoolFeesUploadDocumentsStep({
       admissionType: initialValues?.admissionType || "",
       evidenceOfAdmissionFile: initialValues?.evidenceOfAdmissionFile ?? null,
       schoolInvoiceFile: initialValues?.schoolInvoiceFile ?? null,
-      schoolInvoiceNumber: initialValues?.schoolInvoiceNumber || "",
       passportFile: initialValues?.passportFile ?? null,
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       statementOfResultFile: initialValues?.statementOfResultFile ?? null,
-      statementOfResultsNumber: initialValues?.statementOfResultsNumber || "",
       firstDegreeCertificateFile: initialValues?.firstDegreeCertificateFile ?? null,
       transactionFile: initialValues?.transactionFile ?? null,
       transactionDescription: initialValues?.transactionDescription || "",
@@ -265,30 +256,33 @@ export default function SchoolFeesUploadDocumentsStep({
 
       {isPostgraduate && (
         <PostgraduateForm
-          passportFile={(form.values as FormValues).passportFile ?? null}
-          passportIssueDate={(form.values as FormValues).passportIssueDate || ""}
-          passportExpiryDate={(form.values as FormValues).passportExpiryDate || ""}
-          statementOfResultFile={(form.values as FormValues).statementOfResultFile ?? null}
-          statementOfResultsNumber={(form.values as FormValues).statementOfResultsNumber || ""}
-          schoolInvoiceFile={(form.values as FormValues).schoolInvoiceFile ?? null}
-          schoolInvoiceNumber={(form.values as FormValues).schoolInvoiceNumber || ""}
-          firstDegreeCertificateFile={(form.values as FormValues).firstDegreeCertificateFile ?? null}
+          evidenceOfAdmissionFile={form.values.evidenceOfAdmissionFile ?? null}
+          schoolInvoiceFile={form.values.schoolInvoiceFile ?? null}
+          statementOfResultFile={form.values.statementOfResultFile ?? null}
+          firstDegreeCertificateFile={form.values.firstDegreeCertificateFile ?? null}
+          passportFile={form.values.passportFile ?? null}
+          passportIssueDate={form.values.passportIssueDate || ""}
+          passportExpiryDate={form.values.passportExpiryDate || ""}
+          onEvidenceOfAdmissionChange={(file) =>
+            form.setFieldValue("evidenceOfAdmissionFile", file)
+          }
+          onSchoolInvoiceChange={(file) => form.setFieldValue("schoolInvoiceFile", file)}
+          onStatementOfResultChange={(file) =>
+            form.setFieldValue("statementOfResultFile", file)
+          }
+          onFirstDegreeCertificateChange={(file) =>
+            form.setFieldValue("firstDegreeCertificateFile", file)
+          }
           onPassportChange={(file) => form.setFieldValue("passportFile", file)}
           onPassportIssueDateChange={(value) => form.setFieldValue("passportIssueDate", value)}
           onPassportExpiryDateChange={(value) => form.setFieldValue("passportExpiryDate", value)}
-          onStatementOfResultChange={(file) => form.setFieldValue("statementOfResultFile", file)}
-          onStatementOfResultsNumberChange={(value) => form.setFieldValue("statementOfResultsNumber", value)}
-          onSchoolInvoiceChange={(file) => form.setFieldValue("schoolInvoiceFile", file)}
-          onSchoolInvoiceNumberChange={(value) => form.setFieldValue("schoolInvoiceNumber", value)}
-          onFirstDegreeCertificateChange={(file) => form.setFieldValue("firstDegreeCertificateFile", file)}
+          evidenceOfAdmissionError={form.errors.evidenceOfAdmissionFile as string}
+          schoolInvoiceError={form.errors.schoolInvoiceFile as string}
+          statementOfResultError={form.errors.statementOfResultFile as string}
+          firstDegreeCertificateError={form.errors.firstDegreeCertificateFile as string}
           passportError={form.errors.passportFile as string}
           passportIssueDateError={form.errors.passportIssueDate as string}
           passportExpiryDateError={form.errors.passportExpiryDate as string}
-          statementOfResultError={form.errors.statementOfResultFile as string}
-          statementOfResultsNumberError={form.errors.statementOfResultsNumber as string}
-          schoolInvoiceError={form.errors.schoolInvoiceFile as string}
-          schoolInvoiceNumberError={form.errors.schoolInvoiceNumber as string}
-          firstDegreeCertificateError={form.errors.firstDegreeCertificateFile as string}
         />
       )}
 

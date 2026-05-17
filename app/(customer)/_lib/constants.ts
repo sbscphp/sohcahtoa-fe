@@ -1,3 +1,6 @@
+/** Proof-of-funds template download URL — set when available from API/CDN. */
+export const PROOF_OF_FUNDS_TEMPLATE_URL = "";
+
 export interface Currency {
   code: string;
   name?: string;

@@ -34,20 +34,36 @@ export function beneficiaryDetailsFromBankForm(
   bank: Record<string, unknown> | null | undefined
 ): Record<string, unknown> | undefined {
   if (!bank) return undefined;
-  const displayName = (bank.beneficiaryName ?? bank.accountName) as string | undefined;
+  const organizationName = (
+    (bank.organizationName as string | undefined) ??
+    (bank.beneficiaryName as string | undefined) ??
+    (bank.accountName as string | undefined)
+  )?.trim();
+  const bankAccountName = (
+    (bank.bankAccountName as string | undefined) ??
+    (bank.accountName as string | undefined) ??
+    organizationName
+  )?.trim();
   const region = bank.beneficiaryCountryRegion;
   const otherInformation =
     typeof bank.otherInformation === "string" ? bank.otherInformation.trim() : "";
 
   const details: Record<string, unknown> = {
-    name: displayName,
-    beneficiaryName: bank.beneficiaryName ?? bank.accountName,
+    name: organizationName,
+    organizationName,
+    beneficiaryName: organizationName,
+    beneficiaryPhone: bank.beneficiaryPhone,
+    beneficiaryEmail: bank.beneficiaryEmail,
     beneficiaryAddress: bank.beneficiaryAddress,
+    beneficiaryCity: bank.beneficiaryCity,
+    beneficiaryState: bank.beneficiaryState,
+    beneficiaryCountry: bank.beneficiaryCountry,
     beneficiaryCountryRegion: bank.beneficiaryCountryRegion,
+    bankAccountName,
+    accountName: bankAccountName,
     bankName: bank.bankName,
     bankAddress: bank.bankAddress,
     accountNumber: bank.accountNumber,
-    accountName: bank.accountName ?? bank.beneficiaryName,
     swiftCode: bank.swiftCode,
     paymentReference: bank.paymentReference,
     iban: bank.iban,
@@ -55,6 +71,9 @@ export function beneficiaryDetailsFromBankForm(
     ifscNumber: bank.ifscNumber,
     purposeCode: bank.purposeCode,
     bsbCode: bank.bsbCode,
+    correspondenceBankName: bank.correspondenceBankName,
+    correspondenceBankAddress: bank.correspondenceBankAddress,
+    correspondenceBankSwiftCode: bank.correspondenceBankSwiftCode,
   };
 
   if (region === "OTHER") {

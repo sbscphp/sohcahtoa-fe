@@ -321,14 +321,22 @@ export default function AgentTransactionCreationPage() {
               onBack={handleBack}
             />
           );
-        case "bank-details":
+        case "bank-details": {
+          const pbUpload = uploadDocumentsData as
+            | ProfessionalBodyUploadDocumentsFormData
+            | null;
           return (
             <ProfessionalBodyBankDetailsStep
               initialValues={bankDetailsData || undefined}
+              memberSummary={{
+                memberName: selectedCustomer?.fullName || undefined,
+                memberNumber: pbUpload?.evidenceOfMembershipNumber || undefined,
+              }}
               onSubmit={handleBankDetailsSubmit}
               onBack={handleBack}
             />
           );
+        }
         default:
           return null;
       }
@@ -484,7 +492,9 @@ export default function AgentTransactionCreationPage() {
           opened={confirmationOpened}
           onClose={() => setConfirmationOpened(false)}
           title={confirmTitle}
-          notices={getBuyFxInitiateNotices(flowType)}
+          notices={getBuyFxInitiateNotices(flowType, {
+            amount: transactionAmountData,
+          })}
           confirmLabel="Yes, Initiate Request"
           cancelLabel="No, Close"
           onConfirm={handleConfirmInitiate}

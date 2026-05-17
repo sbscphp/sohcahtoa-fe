@@ -58,7 +58,7 @@ export default function SchoolFeesBankDetailsStep({
           Where would you like to send the fund to?
         </h2>
         <p className="text-body-text-200 text-base max-w-md">
-          Enter recipient bank details. Start by selecting the country where the bank account is held.
+          Enter the school and bank details for this payment.
         </p>
       </div>
 

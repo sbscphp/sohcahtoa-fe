@@ -12,28 +12,56 @@ export const BENEFICIARY_REGION_OPTIONS: { value: BeneficiaryBankRegion; label: 
 ];
 
 const swiftOptional = z.string().trim();
+const correspondenceSwiftOptional = z.string().trim();
+
+function validateSwiftWhenPresent(swift: string, path: string, ctx: z.RefinementCtx) {
+  if (!swift) return;
+  if (swift.length < 8 || swift.length > 11) {
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: "SWIFT / BIC must be 8–11 characters when provided",
+    });
+  } else if (!/^[A-Za-z0-9]+$/.test(swift)) {
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: "SWIFT / BIC must be alphanumeric",
+    });
+  }
+}
 
 export const internationalBankDetailsSchema = z
   .object({
     beneficiaryCountryRegion: z.enum(["UK", "US_CA", "IN", "AU", "NG", "OTHER"]),
-    beneficiaryName: z.string().trim().min(1, "Beneficiary name is required"),
-    beneficiaryAddress: z.string().trim().min(1, "Beneficiary address is required"),
-    bankName: z.string().trim().min(1, "Bank name is required"),
-    bankAddress: z.string().trim().min(1, "Bank address is required"),
+    organizationName: z.string().trim().min(1, "Name of organization is required"),
+    beneficiaryPhone: z.string().trim().min(1, "Phone number is required"),
+    beneficiaryEmail: z.string().trim().email("Enter a valid email address"),
+    beneficiaryAddress: z.string().trim().min(1, "Address is required"),
+    beneficiaryCity: z.string().trim().min(1, "City is required"),
+    beneficiaryState: z.string().trim().min(1, "State is required"),
+    beneficiaryCountry: z.string().trim().min(1, "Country is required"),
+    bankAccountName: z.string().trim().min(1, "Bank account name is required"),
+    bankAddress: z.string().trim().min(1, "Bank account address is required"),
     accountNumber: z
       .string()
       .trim()
-      .min(1, "Account number is required")
-      .max(18, "Account number must not exceed 18 digits")
-      .regex(/^\d+$/, "Account number must contain digits only"),
-    paymentReference: z.string().trim().min(1, "Payment reference / ID is required"),
-    swiftCode: swiftOptional,
+      .min(1, "Bank account number is required")
+      .max(34, "Bank account number is too long"),
     iban: z.string(),
+    swiftCode: swiftOptional,
+    correspondenceBankName: z.string().trim(),
+    correspondenceBankAddress: z.string().trim(),
+    correspondenceBankSwiftCode: correspondenceSwiftOptional,
+    paymentReference: z.string().trim(),
     routingNumber: z.string(),
     ifscNumber: z.string(),
     purposeCode: z.string(),
     bsbCode: z.string(),
-    /** Free text when country/region is "Other" (e.g. local codes, intermediary bank). */
+    /** @deprecated Legacy field — kept for persisted drafts */
+    bankName: z.string().trim().optional(),
+    /** @deprecated Alias — mapped from organizationName in payload */
+    beneficiaryName: z.string().trim().optional(),
     otherInformation: z.string().trim().max(2000),
   })
   .superRefine((data, ctx) => {
@@ -43,31 +71,28 @@ export const internationalBankDetailsSchema = z
       }
     };
 
-    const swift = data.swiftCode.trim();
-    if (swift) {
-      if (swift.length < 8 || swift.length > 11) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["swiftCode"],
-          message: "SWIFT / BIC must be 8–11 characters when provided",
-        });
-      } else if (!/^[A-Za-z0-9]+$/.test(swift)) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["swiftCode"],
-          message: "SWIFT / BIC must be alphanumeric",
-        });
-      }
+    validateSwiftWhenPresent(data.swiftCode.trim(), "swiftCode", ctx);
+    validateSwiftWhenPresent(
+      data.correspondenceBankSwiftCode.trim(),
+      "correspondenceBankSwiftCode",
+      ctx
+    );
+
+    const region = data.beneficiaryCountryRegion;
+
+    const paymentRequired = region !== "NG";
+    if (paymentRequired) {
+      need("paymentReference", "Payment reference / ID is required", data.paymentReference);
     }
 
-    switch (data.beneficiaryCountryRegion) {
+    switch (region) {
       case "UK": {
         const iban = data.iban.replaceAll(/\s/g, "").trim();
         if (!iban) {
           ctx.addIssue({
             code: "custom",
             path: ["iban"],
-            message: "IBAN is required for United Kingdom",
+            message: "Bank account IBAN is required for United Kingdom",
           });
         } else if (iban.length < 15 || iban.length > 34) {
           ctx.addIssue({
@@ -76,6 +101,7 @@ export const internationalBankDetailsSchema = z
             message: "Enter a valid IBAN",
           });
         }
+        need("swiftCode", "Bank account SWIFT / BIC is required for United Kingdom", data.swiftCode);
         break;
       }
       case "US_CA": {
@@ -87,6 +113,7 @@ export const internationalBankDetailsSchema = z
             message: "Routing number must be 9 digits",
           });
         }
+        need("swiftCode", "Bank account SWIFT / BIC is required", data.swiftCode);
         break;
       }
       case "IN": {
@@ -100,12 +127,15 @@ export const internationalBankDetailsSchema = z
           });
         }
         need("purposeCode", "Purpose code is required for India", data.purposeCode);
+        need("swiftCode", "Bank account SWIFT / BIC is required for India", data.swiftCode);
         break;
       }
       case "AU":
         need("bsbCode", "BSB code is required for Australia", data.bsbCode);
+        need("swiftCode", "Bank account SWIFT / BIC is required for Australia", data.swiftCode);
         break;
       case "NG":
+        break;
       case "OTHER":
         break;
     }
@@ -113,11 +143,14 @@ export const internationalBankDetailsSchema = z
 
 export type InternationalBankDetailsFormValues = z.infer<typeof internationalBankDetailsSchema>;
 
+export type InternationalBankDetailsLegacyInitial = Partial<InternationalBankDetailsFormValues> & {
+  accountName?: string;
+  beneficiaryName?: string;
+};
+
 /** Maps legacy bank step fields and defaults empty region-specific strings. */
 export function internationalBankDetailsInitialValues(
-  initial?: Partial<InternationalBankDetailsFormValues> & {
-    accountName?: string;
-  }
+  initial?: InternationalBankDetailsLegacyInitial
 ): InternationalBankDetailsFormValues {
   let inferredRegion: BeneficiaryBankRegion = "OTHER";
   if (initial?.beneficiaryCountryRegion) {
@@ -132,11 +165,23 @@ export function internationalBankDetailsInitialValues(
     inferredRegion = "AU";
   }
 
+  const organizationName = (
+    initial?.organizationName ??
+    initial?.beneficiaryName ??
+    initial?.accountName ??
+    ""
+  ).trim();
+
   return {
     beneficiaryCountryRegion: inferredRegion,
-    beneficiaryName: (initial?.beneficiaryName ?? initial?.accountName ?? "").trim(),
+    organizationName,
+    beneficiaryPhone: (initial?.beneficiaryPhone ?? "").trim(),
+    beneficiaryEmail: (initial?.beneficiaryEmail ?? "").trim(),
     beneficiaryAddress: (initial?.beneficiaryAddress ?? "").trim(),
-    bankName: (initial?.bankName ?? "").trim(),
+    beneficiaryCity: (initial?.beneficiaryCity ?? "").trim(),
+    beneficiaryState: (initial?.beneficiaryState ?? "").trim(),
+    beneficiaryCountry: (initial?.beneficiaryCountry ?? "").trim(),
+    bankAccountName: (initial?.bankAccountName ?? initial?.accountName ?? organizationName).trim(),
     bankAddress: (initial?.bankAddress ?? "").trim(),
     accountNumber: (initial?.accountNumber ?? "").trim(),
     paymentReference: (initial?.paymentReference ?? "").trim(),
@@ -146,6 +191,13 @@ export function internationalBankDetailsInitialValues(
     ifscNumber: (initial?.ifscNumber ?? "").trim().toUpperCase(),
     purposeCode: (initial?.purposeCode ?? "").trim(),
     bsbCode: (initial?.bsbCode ?? "").trim(),
+    correspondenceBankName: (initial?.correspondenceBankName ?? "").trim(),
+    correspondenceBankAddress: (initial?.correspondenceBankAddress ?? "").trim(),
+    correspondenceBankSwiftCode: (initial?.correspondenceBankSwiftCode ?? "")
+      .trim()
+      .toUpperCase(),
+    bankName: (initial?.bankName ?? "").trim(),
+    beneficiaryName: organizationName,
     otherInformation: (initial?.otherInformation ?? "").trim(),
   };
 }
