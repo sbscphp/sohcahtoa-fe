@@ -39,7 +39,6 @@ const uploadDocumentsSchema = z
     visaFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
       message: "Valid Visa file is required",
     }),
-    returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
     returnTicketFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
       message: "Return Ticket file is required",
     }),
@@ -101,7 +100,6 @@ export default function MedicalUploadDocumentsStep({
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       passportFile: initialValues?.passportFile ?? null,
       visaFile: initialValues?.visaFile ?? null,
-      returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
       returnTicketFile: initialValues?.returnTicketFile ?? null,
       referenceLetterFromDoctorFile: initialValues?.referenceLetterFromDoctorFile ?? null,
       letterFromOverseasDoctorFile: initialValues?.letterFromOverseasDoctorFile ?? null,
@@ -251,16 +249,6 @@ export default function MedicalUploadDocumentsStep({
         value={form.values.returnTicketFile}
         onChange={(file) => form.setFieldValue("returnTicketFile", file)}
         error={form.errors.returnTicketFile as string}
-      />
-
-      <TextInput
-        label="Return Ticket Number"
-        required
-        size="md"
-        placeholder="Enter Ticket Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("returnTicketDocumentNumber")}
       />
 
       <div className="grid grid-cols-1 gap-4">
