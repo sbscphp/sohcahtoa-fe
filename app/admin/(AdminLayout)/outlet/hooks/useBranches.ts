@@ -8,7 +8,7 @@ import {
   type BranchListParams,
 } from "@/app/admin/_services/admin-api";
 
-export type BranchStatus = "Active" | "Deactivated";
+export type BranchStatus = "Active" | "Deactivated" | "Pending";
 
 export interface BranchListItem {
   id: string;
@@ -40,7 +40,8 @@ function parseBranch(item: BranchListItemData): BranchListItem {
     managerName: item.branchManager || "--",
     managerEmail: item.email || "--",
     address: item.address || "--",
-    status: item.isActive ? "Active" : "Deactivated",
+    // status: item.isActive ? "Active" : "Deactivated",
+    status: item.status as BranchStatus,
   };
 }
 

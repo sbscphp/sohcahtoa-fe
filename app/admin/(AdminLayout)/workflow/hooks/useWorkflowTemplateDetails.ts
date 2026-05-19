@@ -10,7 +10,7 @@ import {
 } from "@/app/admin/_services/admin-api";
 import type { ViewWorkflowLine, ViewUser } from "../_workflowComponents/WorkflowLineView";
 
-interface WorkflowTemplateDetailsResponse extends ApiResponse<WorkflowTemplateDetailsData> {}
+type WorkflowTemplateDetailsResponse = ApiResponse<WorkflowTemplateDetailsData>;
 
 export interface WorkflowTemplateDetailsViewModel {
   id: string;
@@ -30,6 +30,7 @@ export interface WorkflowTemplateDetailsViewModel {
 export interface WorkflowTemplateEditAssignee {
   id: string;
   name: string;
+  email: string;
   roleName: string;
 }
 
@@ -109,7 +110,8 @@ function mapAssigneeToUser(
   adminId: string,
   stageType: string,
   adminName?: string,
-  roleName?: string
+  roleName?: string,
+  adminEmail?: string
 ): ViewUser {
   const displayName = adminName || `Admin ${adminId.slice(0, 8).toUpperCase()}`;
   const roleLabel = roleName ? toTitleCase(roleName) : toTitleCase(stageType) || "User";
@@ -117,7 +119,7 @@ function mapAssigneeToUser(
   return {
     id: adminId,
     name: displayName,
-    email: "--",
+    email: adminEmail || "--",
     roles: [roleLabel],
   };
 }
@@ -129,7 +131,7 @@ function mapStageToViewLine(stage: WorkflowTemplateStage): ViewWorkflowLine {
     escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
     escalateToName: "--",
     users: (stage.assignees ?? []).map((assignee) =>
-      mapAssigneeToUser(assignee.adminId, stage.type, assignee.adminName, assignee.roleName)
+      mapAssigneeToUser(assignee.adminId, stage.type, assignee.adminName, assignee.roleName, assignee.adminEmail)
     ),
   };
 }
@@ -152,6 +154,7 @@ function mapStageForEdit(stage: WorkflowTemplateStage): WorkflowTemplateEditStag
       .map((assignee) => ({
         id: asString(assignee.adminId),
         name: asString(assignee.adminName, `Admin ${asString(assignee.adminId).slice(0, 8).toUpperCase()}`),
+        email: asString(assignee.adminEmail),
         roleName: asString(assignee.roleName),
       }))
       .filter((a) => Boolean(a.id)),

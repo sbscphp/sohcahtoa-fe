@@ -15,6 +15,7 @@ import { adminApi, type BranchTransactionExportParams, type BranchTransactionLis
 import type { BranchTransactionListItem } from "../../hooks/useBranchTransactions";
 import { useBranchTransactions } from "../../hooks/useBranchTransactions";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 const PAGE_SIZE = 6;
 
@@ -125,7 +126,7 @@ export function BranchTransactionsTable({ branchId }: { branchId: string }) {
       {item.workflowStage}
     </Text>,
     <Text key="value" size="sm">
-      {item.transactionValue}
+      {formatCurrency(item.transactionValue)}
     </Text>,
     <StatusBadge key="status" status={item.status} />,
     <RowActionIcon
