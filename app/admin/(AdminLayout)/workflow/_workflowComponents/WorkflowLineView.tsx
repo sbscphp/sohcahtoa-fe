@@ -69,7 +69,8 @@ export default function WorkflowLineView({
             </span>
           </div>
           <Text size="sm" c="dimmed" mt={2}>
-            Escalation Protocol: <span className="font-semibold text-gray-900">{line.escalationPeriod} mins</span> | {line.escalateToName}
+            Escalation Protocol: <span className="font-semibold text-gray-900">{line.escalationPeriod} mins</span>
+            {/* | {line.escalateToName} */}
           </Text>
         </div>
 
@@ -91,11 +92,14 @@ export default function WorkflowLineView({
         <div className="mt-4 rounded-lg border border-orange-200 p-3">
           <div className="flex items-center gap-2 mb-3">
             <Text size="sm" fw={500} className="text-gray-900">
-              Admin users ({String(line.users.length).padStart(2, "0")}) 
+              Admin users ({String(line.users.length).padStart(2, "0")})
             </Text>
           </div>
 
-          <ScrollArea h={220} type="scroll">
+          <ScrollArea h={220}
+            type="always"
+            offsetScrollbars
+          >
             <div className="space-y-2">
               {line.users.map((user) => (
                 <div
@@ -120,9 +124,8 @@ export default function WorkflowLineView({
                       {user.roles.map((role) => (
                         <span
                           key={role}
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            ROLE_PILL_COLORS[role] ?? "bg-gray-100 text-gray-700"
-                          }`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_PILL_COLORS[role] ?? "bg-gray-100 text-gray-700"
+                            }`}
                         >
                           {role}
                         </span>
