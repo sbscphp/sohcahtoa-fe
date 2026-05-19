@@ -68,6 +68,7 @@ export default function ResidentTransactionAmountStep({
   });
 
   const { displayRate, recalculate } = useTransactionRateCalculator({
+    mode: "sell",
     // Re-map sell form to calculator shape:
     // source amount/currency = sendAmount/sendCurrency
     // target currency = receiveCurrency

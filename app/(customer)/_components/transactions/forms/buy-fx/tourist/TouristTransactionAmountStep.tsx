@@ -56,6 +56,7 @@ export default function TouristTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
   const { displayRate, recalculate } = useTransactionRateCalculator({
+    mode: "buy",
     getValues: () => form.values,
     setSendAmount: (value) => form.setFieldValue("sendAmount", value),
     setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),

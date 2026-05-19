@@ -1107,10 +1107,14 @@ export interface TransactionRate {
 
 export type TransactionRatesListResponse = ApiResponseWrapper<TransactionRate[]>;
 
+export type TransactionRateMode = "buy" | "sell";
+
 export interface CalculateTransactionRateRequest {
   fromCurrency: string;
   toCurrency: string;
   amount: number;
+  /** Which side of the spread applies (drives `convertedAmount` on the server). */
+  mode?: TransactionRateMode;
 }
 
 export interface CalculateTransactionRateData {
