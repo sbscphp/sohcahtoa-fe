@@ -29,6 +29,9 @@ interface TransactionTableOverviewProps {
   onExportClick?: () => void;
   transactions: Transaction[] | any;
   pageSize?: number;
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   onRowClick?: (transaction: Transaction) => void;
   isLoading?: boolean;
   skeletonRowCount?: number;
@@ -50,6 +53,9 @@ export default function TransactionTableOverview({
   onExportClick,
   transactions,
   pageSize = 10,
+  page,
+  totalPages,
+  onPageChange,
   onRowClick,
   isLoading = false,
   skeletonRowCount = 4,
@@ -184,6 +190,9 @@ export default function TransactionTableOverview({
       data={transactions}
       columns={columns}
       pageSize={pageSize}
+      page={page}
+      totalPages={totalPages}
+      onPageChange={onPageChange}
       onRowClick={onRowClick}
       keyExtractor={(transaction) => transaction.id}
       emptyMessage="No transactions found"

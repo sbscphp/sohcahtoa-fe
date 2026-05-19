@@ -124,19 +124,81 @@ export function getStringField(source: unknown, keys: string[]): string | null {
   return null;
 }
 
-export function getInstructionsText(source: unknown): string | null {
+function ensureSentenceEnd(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function joinInstructionSentences(...parts: string[]): string {
+  return parts
+    .map((part) => ensureSentenceEnd(part))
+    .filter(Boolean)
+    .join(" ");
+}
+
+/**
+ * Groups deposit `instructions[]` into justified paragraphs (pairs of lines + punctuation).
+ */
+export function formatPaymentInstructionsParagraphs(instructions: string[]): string[] {
+  const lines = instructions.map((item) => item.trim()).filter(Boolean);
+  if (!lines.length) return [];
+
+  const paragraphs: string[] = [];
+
+  for (let i = 0; i < lines.length; i += 2) {
+    const first = lines[i];
+    const second = lines[i + 1];
+
+    if (!second) {
+      paragraphs.push(ensureSentenceEnd(first));
+      continue;
+    }
+
+    if (
+      i === 0 &&
+      /^use your registered name as the sender(?:'s)? name$/i.test(second)
+    ) {
+      paragraphs.push(
+        joinInstructionSentences(
+          first,
+          "Kindly use your registered name as the sender's name"
+        )
+      );
+      continue;
+    }
+
+    paragraphs.push(joinInstructionSentences(first, second));
+  }
+
+  return paragraphs;
+}
+
+export function getInstructionsParagraphs(source: unknown): string[] | null {
   if (!source || typeof source !== "object") return null;
   const data = source as Record<string, unknown>;
   const instructions = data.instructions;
 
   if (Array.isArray(instructions)) {
     const lines = instructions.filter((item): item is string => typeof item === "string");
-    return lines.length ? lines.join(" ") : null;
+    return lines.length ? formatPaymentInstructionsParagraphs(lines) : null;
   }
 
-  if (typeof instructions === "string" && instructions.trim()) return instructions;
-  if (typeof data.message === "string" && data.message.trim()) return data.message;
-  if (typeof data.note === "string" && data.note.trim()) return data.note;
+  if (typeof instructions === "string" && instructions.trim()) {
+    return [instructions.trim()];
+  }
+  if (typeof data.message === "string" && data.message.trim()) {
+    return [data.message.trim()];
+  }
+  if (typeof data.note === "string" && data.note.trim()) {
+    return [data.note.trim()];
+  }
 
   return null;
+}
+
+/** @deprecated Prefer {@link getInstructionsParagraphs} for UI. */
+export function getInstructionsText(source: unknown): string | null {
+  const paragraphs = getInstructionsParagraphs(source);
+  return paragraphs?.length ? paragraphs.join(" ") : null;
 }

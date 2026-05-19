@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Button, Modal } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import {
-  getInstructionsText,
+  getInstructionsParagraphs,
   getStringField,
   getVirtualAccountRemainingSeconds,
 } from "@/app/(customer)/_utils/transaction-payment";
@@ -19,6 +19,7 @@ import { getCustomerApiErrorMessage } from "@/app/(customer)/_utils/customer-api
 import { notifications } from "@mantine/notifications";
 import { DepositConfirmingModal } from "./DepositConfirmingModal";
 import { useDepositConfirmationPoll } from "./useDepositConfirmationPoll";
+import { PaymentInstructionsCallout } from "./PaymentInstructionsCallout";
 import { VirtualAccountBankPaymentSection } from "./VirtualAccountBankPaymentSection";
 
 interface ProceedToPaymentModalProps {
@@ -179,9 +180,13 @@ export default function ProceedToPaymentModal({
     getStringField(accountData, ["accountNumber", "number", "account_no"]) ?? "—";
   const bankName = getStringField(accountData, ["bankName", "bank"]) ?? "—";
   const accountName = getStringField(accountData, ["accountName", "name"]) ?? "—";
-  const infoMessage =
-    getInstructionsText(instructionsQuery.data?.data) ??
-    "Once approved, 75% of your funds will be sent to your bank account or prepaid card, while the remaining 25% will be available for cash pickup at the nearest branch (passport endorsement required).";
+  const instructionsParagraphs = useMemo(() => {
+    const fromApi = getInstructionsParagraphs(instructionsQuery.data?.data);
+    if (fromApi?.length) return fromApi;
+    return [
+      "Once approved, 75% of your funds will be sent to your bank account or prepaid card, while the remaining 25% will be available for cash pickup at the nearest branch (passport endorsement required).",
+    ];
+  }, [instructionsQuery.data?.data]);
 
   const formattedAmount = useMemo(
     () => Number(amountNgn || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -285,10 +290,7 @@ export default function ProceedToPaymentModal({
             />
 
             {showInstructionsCallout ? (
-              <div className="flex gap-2 rounded-lg border border-[#B2AFAF] p-3 sm:p-4">
-                <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#DD4F05]" />
-                <p className="text-xs leading-4 text-[#6C6969] sm:text-sm">{infoMessage}</p>
-              </div>
+              <PaymentInstructionsCallout paragraphs={instructionsParagraphs} />
             ) : null}
           </div>
 

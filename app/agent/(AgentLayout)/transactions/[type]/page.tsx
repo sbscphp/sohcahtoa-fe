@@ -278,11 +278,10 @@ export default function AgentTransactionCreationPage() {
               initialValues={
                 uploadDocumentsData
                   ? (uploadDocumentsData as Partial<TouristUploadDocumentsFormData>)
-                  : (selectedCustomerKycPrefill as Partial<TouristUploadDocumentsFormData>)
+                  : undefined
               }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
-              lockKycPrefill={lockSelectedCustomerKyc}
             />
           );
         case "amount":
