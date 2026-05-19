@@ -11,16 +11,13 @@ import { useRouter } from "next/navigation";
 export default function RegisterEscrowPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [formData, setFormData] = useState<any>(null);
   const router = useRouter();
 
-  const handleFormSubmit = (data: any) => {
-    setFormData(data);
+  const handleFormSubmit = () => {
     setConfirmOpen(true);
   };
   const handleConfirm = () => {
     setConfirmOpen(false);
-    console.log("Submitting Data:", formData);
     
 
     setTimeout(() => {

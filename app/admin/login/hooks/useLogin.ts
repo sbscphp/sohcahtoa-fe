@@ -44,8 +44,6 @@ export function useVerifyOtp(
     },
     onError: (error, variables, context, mutation) => {
       const apiResponse = (error as unknown as ApiError).data as ApiResponse;
-      console.log(apiResponse);
-      console.log(error);
       notifications.show({
         title: "Verification Failed",
         message: apiResponse?.error?.message ?? error.message ?? "An error occurred during OTP verification. Please try again.",
