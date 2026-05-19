@@ -28,6 +28,8 @@ export default function WorkflowDetailPage() {
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
 
   const workflow = template;
+
+  console.log(workflow);
   const effectiveStatus = status === "Active" && workflow?.status ? workflow.status : status;
 
   const handleDelete = async () => {

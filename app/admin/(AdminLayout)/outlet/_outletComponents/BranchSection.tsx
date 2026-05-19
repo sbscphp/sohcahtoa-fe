@@ -16,6 +16,7 @@ import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useBranchStats } from "../hooks/useBranchStats";
 import { useBranches, type BranchListItem } from "../hooks/useBranches";
+import { formatBranchStatusForBadge } from "../hooks/useBranchDetails";
 
 const branchHeaders = [
   { label: "Branch Name", key: "name" },
@@ -110,7 +111,7 @@ export default function BranchSection() {
     <Text key="address" size="sm">
       {item.address}
     </Text>,
-    <StatusBadge key="status" status={item.status} />,
+    <StatusBadge key="status" status={formatBranchStatusForBadge(item.status)} />,
     <RowActionIcon
       key="action"
       onClick={() => router.push(adminRoutes.adminOutletBranchDetails(item.id))}
