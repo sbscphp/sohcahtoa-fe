@@ -296,6 +296,7 @@ export interface BranchListItemData {
   branchManager: string;
   email: string;
   address: string;
+  status: string;
   isActive: boolean;
 }
 
@@ -851,7 +852,7 @@ export type AdminWorkflowActionsListParams = Record<
 > & {
   page?: number;
   limit?: number;
-  status?: "Pending" | "Rejected" | "Approved";
+  status?: string;
   module?: string;
   search?: string;
 };
@@ -898,6 +899,7 @@ export interface WorkflowTemplateStageAssignee {
   order: number;
   adminName?: string;
   roleName?: string;
+  adminEmail?: string;
 }
 
 export interface WorkflowTemplateStage {

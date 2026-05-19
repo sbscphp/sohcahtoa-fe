@@ -239,7 +239,7 @@ export default function AgentTransactionsTable({
       {tx.type}
     </Text>,
     <Text key="transactionValue" size="sm" fw={500}>
-      {formatCurrency(tx.transactionValue, tx.transactionCurrency)}
+      {formatCurrency(tx.transactionValue)}
     </Text>,
     <StatusBadge key="actionEffect" status={tx.status} />,
     <RowActionIcon

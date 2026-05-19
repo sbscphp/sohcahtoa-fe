@@ -11,6 +11,7 @@ import { useManagementLookups } from "../../user-management/hooks/useManagementL
 interface EscalationUserOption {
   id: string;
   name: string;
+  email: string;
 }
 
 function normalizeUsers(data: unknown): AssignableUser[] {
@@ -68,6 +69,7 @@ export function useWorkflowEditOptions() {
       users.map((user) => ({
         id: user.id,
         name: user.name,
+        email: user.email,
       })),
     [users]
   );

@@ -139,7 +139,7 @@ export default function TransactionsTable() {
     // </Text>,
 
     <Text key="amount" size="sm">
-      {formatCurrency(item.amount, item.currency)}
+      {formatCurrency(item.amount, "NGN")}
     </Text>,
 
     <StatusBadge key="status" status={item.status} />,

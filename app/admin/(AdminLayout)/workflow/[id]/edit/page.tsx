@@ -79,7 +79,7 @@ function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
     const mappedUsers: AssignableUser[] = stage.assignees.map((a) => ({
       id: a.id,
       name: a.name,
-      email: "--",
+      email: a.email,
       roles: a.roleName ? [a.roleName] : [],
     }));
 

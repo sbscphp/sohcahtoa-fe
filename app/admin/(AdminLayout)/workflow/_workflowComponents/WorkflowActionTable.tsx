@@ -9,7 +9,6 @@ import { Group, TextInput, Select, Button, Text, Tabs } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { ListFilter, Search, Upload } from "lucide-react";
 import {
-  mapWorkflowTabToApiStatus,
   useWorkflowActions,
   type WorkflowActionTableRow,
 } from "../hooks/useWorkflowActions";
@@ -17,6 +16,8 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 import { useGetExportData } from "@/app/_lib/api/hooks";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { notifications } from "@mantine/notifications";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 type FilterTab = "all" | "pending" | "completed" | "rejected";
 
@@ -34,16 +35,16 @@ export default function WorkflowActionTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Filter By");
-  const [activeTab, setActiveTab] = useState<FilterTab>("pending");
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const pageSize = 6;
   const [debouncedSearch] = useDebouncedValue(search, 350);
-
+  const router = useRouter();
   const queryParams = useMemo(
     () => ({
       page,
       limit: pageSize,
       search: debouncedSearch.trim() || undefined,
-      status: mapWorkflowTabToApiStatus(activeTab),
+      status: activeTab,
       module: filter !== "Filter By" && filter !== "All" ? filter : undefined,
     }),
     [activeTab, debouncedSearch, filter, page],
@@ -52,7 +53,7 @@ export default function WorkflowActionTable() {
   const exportParams = useMemo(
     () => ({
       search: debouncedSearch.trim() || undefined,
-      status: mapWorkflowTabToApiStatus(activeTab),
+      status: activeTab,
       module: filter !== "Filter By" && filter !== "All" ? filter : undefined,
     }),
     [activeTab, debouncedSearch, filter]
@@ -121,7 +122,7 @@ export default function WorkflowActionTable() {
       key="action"
       onClick={() => {
         // TODO: wire up workflow action details navigation.
-        console.log("View workflow action:", item.id);
+        router.push(adminRoutes.adminTransactionDetails(item.id));
       }}
     />,
   ];

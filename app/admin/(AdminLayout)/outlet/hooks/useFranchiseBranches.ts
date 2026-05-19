@@ -16,7 +16,7 @@ export interface FranchiseBranchListItem {
   managerName: string;
   managerEmail: string;
   address: string;
-  status: BranchStatus;
+  status: string;
 }
 
 interface Pagination {
@@ -40,7 +40,7 @@ function parseBranch(item: BranchListItemData): FranchiseBranchListItem {
     managerName: item.branchManager || "--",
     managerEmail: item.email || "--",
     address: item.address || "--",
-    status: item.isActive ? "Active" : "Deactivated",
+    status: item.status as BranchStatus,
   };
 }
 
