@@ -49,6 +49,12 @@ function setSwiftFromInput(
   form.setFieldValue(field, cleaned);
 }
 
+/** True when the region-specific block below has at least one input to show. */
+function hasPaymentIdentifierFields(region: BeneficiaryBankRegion): boolean {
+  if (region === "NG") return false;
+  return true;
+}
+
 export default function InternationalBankDetailsFields({
   form,
   trailingFields,
@@ -205,26 +211,27 @@ export default function InternationalBankDetailsFields({
         />
       </BankDetailsFormSection>
 
-      <BankDetailsFormSection title="Payment identifiers (by bank country / region)">
-        {region === "UK" ? null : (
+      {hasPaymentIdentifierFields(region) ? (
+        <BankDetailsFormSection title="Payment identifiers (by bank country / region)">
+          {region !== "UK" ? (
           <p className="text-sm text-body-text-200 -mt-1">
             Fields below depend on the bank account country / region selected above.
           </p>
-        )}
+          ) : null}
 
-        {region !== "NG" ? (
-          <TextInput
-            label="Payment reference / ID"
+          {region !== "NG" ? (
+            <TextInput
+              label="Payment reference / ID"
             required
             size="md"
             placeholder="Enter"
-            {...form.getInputProps("paymentReference")}
-          />
-        ) : null}
+              {...form.getInputProps("paymentReference")}
+            />
+          ) : null}
 
-        {region === "US_CA" ? (
-          <TextInput
-            label="Routing number"
+          {region === "US_CA" ? (
+            <TextInput
+              label="Routing number"
             required
             size="md"
             placeholder="e.g. 026009593"
@@ -284,8 +291,9 @@ export default function InternationalBankDetailsFields({
             placeholder="Enter any additional information we should know for this transfer"
             {...form.getInputProps("otherInformation")}
           />
-        ) : null}
-      </BankDetailsFormSection>
+          ) : null}
+        </BankDetailsFormSection>
+      ) : null}
 
       {trailingFields}
     </div>

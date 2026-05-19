@@ -295,6 +295,7 @@ function buildSchoolFeesPayload(
     destinationCountry: "United Kingdom",
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
     admissionType: (upload?.admissionType as "UNDERGRADUATE" | "POSTGRADUATE" | "OTHER") ?? undefined,
+    nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
     passportDocumentNumber:
       typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
     passportIssueDate:
