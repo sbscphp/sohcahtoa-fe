@@ -46,10 +46,10 @@ export default function ProofOfFundPrompt({
     });
   };
 
-  const linkClassName = "text-inherit! font-normal!";
+  const linkClassName = "font-normal! text-[#0C090D]!";
 
   return (
-    <div className="flex w-full flex-col gap-1 text-right">
+    <div className="flex w-full flex-col gap-1 text-left">
       <p className="text-error-700 text-sm leading-5">
         <span>Amount is higher than {label}. Please </span>
         <Anchor
