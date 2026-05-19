@@ -486,8 +486,10 @@ export const agentKeys = {
 
   dashboard: {
     all: ["agent", "dashboard"] as const,
-    cashStats: (period?: string) =>
-      [...agentKeys.dashboard.all, "cash-stats", period] as const,
+    cashStats: (period?: string, currency?: string) =>
+      [...agentKeys.dashboard.all, "cash-stats", period, currency] as const,
+    balance: (period?: string, currency?: string) =>
+      [...agentKeys.dashboard.all, "balance", period, currency] as const,
   },
 
   customers: {

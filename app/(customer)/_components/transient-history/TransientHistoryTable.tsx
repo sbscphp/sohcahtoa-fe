@@ -8,16 +8,9 @@ import type {
   TableFilterGroup,
   TableFilterValues,
 } from "@/app/(customer)/_components/common/table/TableFilterSheet";
-import { formatCurrency } from "@/app/(customer)/_lib/formatCurrency";
+import { formatCurrencyAmount } from "@/app/(customer)/_lib/currency";
 import type { TransientHistoryRow } from "@/app/(customer)/(CustomerLayout)/transient-history/helper";
 import { useMemo } from "react";
-
-const NGN = "NGN";
-
-function formatNgnAmount(amount: number): string {
-  const { formatted } = formatCurrency(amount, NGN);
-  return formatted.replace(/^₦/, "₦ ");
-}
 
 function formatDateTime(dateString: string) {
   const date = new Date(dateString);
@@ -97,7 +90,7 @@ export default function TransientHistoryTable({
         label: "Total Debits",
         render: (row) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatNgnAmount(row.totalDebit)}
+            {formatCurrencyAmount(row.totalDebit)}
           </p>
         ),
       },
@@ -106,7 +99,7 @@ export default function TransientHistoryTable({
         label: "Total Credit",
         render: (row) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatNgnAmount(row.totalCredit)}
+            {formatCurrencyAmount(row.totalCredit)}
           </p>
         ),
       },
@@ -115,7 +108,7 @@ export default function TransientHistoryTable({
         label: "Balance",
         render: (row) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatNgnAmount(row.balance)}
+            {formatCurrencyAmount(row.balance)}
           </p>
         ),
       },

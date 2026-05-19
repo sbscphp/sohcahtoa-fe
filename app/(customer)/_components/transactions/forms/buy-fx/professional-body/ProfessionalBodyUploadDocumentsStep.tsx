@@ -115,7 +115,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
         <p className="text-body-text-200">
           {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
           Please note the maximum you can
-          transact is <strong>$4,000 per quarter</strong>.
+          transact is <strong>$2,000</strong>.
         </p>
         {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}

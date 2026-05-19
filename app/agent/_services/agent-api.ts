@@ -64,6 +64,7 @@ import type {
   AgentSupportTicketDetailResponse,
   AgentDashboardCashStatsPeriod,
   AgentDashboardCashStatsResponse,
+  AgentDashboardBalanceResponse,
   AgentPaymentMovementType,
   AgentPaymentMovementsResponse,
 } from "@/app/_lib/api/types";
@@ -221,11 +222,18 @@ export const agentApi = {
           },
         }
       ),
-    cashStats: (period: AgentDashboardCashStatsPeriod) =>
+    cashStats: (period: AgentDashboardCashStatsPeriod, currency: string) =>
       apiClient.get<AgentDashboardCashStatsResponse>(
         AGENT_API_ENDPOINTS.dashboard.cashStats,
         {
-          params: { period },
+          params: { period, currency },
+        }
+      ),
+    balance: (period: AgentDashboardCashStatsPeriod, currency: string) =>
+      apiClient.get<AgentDashboardBalanceResponse>(
+        AGENT_API_ENDPOINTS.dashboard.balance,
+        {
+          params: { period, currency },
         }
       ),
   },

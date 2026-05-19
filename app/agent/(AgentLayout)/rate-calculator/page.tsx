@@ -128,7 +128,7 @@ export default function RateCalculatorPage() {
               onClick={() => {
                 notifications.show({
                   title: "Swap currencies",
-                  message: "Swap currencies not supported for this transaction",
+                  message: "Swap currencies not supported",
                   color: "blue",
                 });
               }}

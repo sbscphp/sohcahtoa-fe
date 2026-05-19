@@ -8,9 +8,9 @@ import type {
   AgentPaymentMovementItem,
   AgentPaymentMovementType,
 } from "@/app/_lib/api/types";
+import { formatCurrencyAmount } from "@/app/(customer)/_lib/currency";
 import {
   formatMovementDate,
-  formatNgnAmount,
   formatTransactionTypeLabel,
   movementAmountDisplay,
   movementReceivedFromLabel,
@@ -68,7 +68,7 @@ export function buildCashInventoryColumns(options: {
         label: "Cash Disbursed",
         render: (t) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatNgnAmount(t.amount_disbursed, currencyCode)}
+            {formatCurrencyAmount(t.amount_disbursed, currencyCode)}
           </p>
         ),
       },
@@ -84,7 +84,7 @@ export function buildCashInventoryColumns(options: {
         label: "Prepaid Amount",
         render: (t) => (
           <p className="text-body-text-400 text-sm leading-5">
-            {formatNgnAmount(
+            {formatCurrencyAmount(
               typeof t.prepaid_amount === "number" ? t.prepaid_amount : null,
               currencyCode
             )}

@@ -393,7 +393,9 @@ export type AgentDashboardCashStatsPeriod =
 export interface AgentDashboardCashStatsData {
   currency: string;
   currencyName: string;
-  period: {
+  /** Snapshot date (some API versions). */
+  date?: string;
+  period?: {
     preset: string;
     start: string;
     end: string;
@@ -405,6 +407,23 @@ export interface AgentDashboardCashStatsData {
 
 export type AgentDashboardCashStatsResponse =
   ApiResponseWrapper<AgentDashboardCashStatsData>;
+
+export interface AgentDashboardBalanceData {
+  currency: string;
+  currencyName: string;
+  period: {
+    preset: string;
+    start: string;
+    end: string;
+  };
+  openingBalance: number;
+  totalReceived: number;
+  totalDisbursed: number;
+  currentBalance: number;
+}
+
+export type AgentDashboardBalanceResponse =
+  ApiResponseWrapper<AgentDashboardBalanceData>;
 
 export type AgentPaymentMovementType =
   | "cash_disbursed"

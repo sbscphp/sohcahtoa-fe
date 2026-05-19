@@ -75,6 +75,7 @@ export const AGENT_API_ENDPOINTS = {
     recentTransactions: "/api/agent/dashboard/recent-transactions",
     transactionsByType: "/api/agent/dashboard/transactions-by-type",
     cashStats: "/api/agent/dashboard/cash-stats",
+    balance: "/api/agent/dashboard/balance",
   },
 
   support: {
