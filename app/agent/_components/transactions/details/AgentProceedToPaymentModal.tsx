@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Button, Modal, Textarea } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
@@ -18,6 +18,7 @@ import {
 } from "@/app/(customer)/_utils/transaction-payment";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { AgentDepositConfirmingModal } from "@/app/agent/_components/transactions/details/AgentDepositConfirmingModal";
+import { PaymentInstructionsCallout } from "@/app/(customer)/_components/transactions/details/PaymentInstructionsCallout";
 import { AgentVirtualAccountBankPaymentSection } from "@/app/agent/_components/transactions/details/AgentVirtualAccountBankPaymentSection";
 import { useAgentDepositConfirmationPoll } from "@/app/agent/_components/transactions/details/useAgentDepositConfirmationPoll";
 import { getVirtualAccountBankStepUiState } from "@/app/agent/_utils/virtualAccountBankStepUi";
@@ -316,14 +317,7 @@ export default function AgentProceedToPaymentModal({
       ) : null}
 
       {showInstructionsCallout ? (
-        <div className="flex gap-2 rounded-lg border border-[#B2AFAF] p-3">
-          <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#DD4F05]" />
-          <div className="min-w-0 flex-1 space-y-3 text-justify text-sm leading-snug text-[#6C6969] sm:text-base sm:leading-6">
-            {instructionsParagraphs.map((paragraph, index) => (
-              <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
-            ))}
-          </div>
-        </div>
+        <PaymentInstructionsCallout paragraphs={instructionsParagraphs} />
       ) : null}
     </div>
   );

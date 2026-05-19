@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Button, Modal } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
@@ -19,6 +19,7 @@ import { getCustomerApiErrorMessage } from "@/app/(customer)/_utils/customer-api
 import { notifications } from "@mantine/notifications";
 import { DepositConfirmingModal } from "./DepositConfirmingModal";
 import { useDepositConfirmationPoll } from "./useDepositConfirmationPoll";
+import { PaymentInstructionsCallout } from "./PaymentInstructionsCallout";
 import { VirtualAccountBankPaymentSection } from "./VirtualAccountBankPaymentSection";
 
 interface ProceedToPaymentModalProps {
@@ -289,14 +290,7 @@ export default function ProceedToPaymentModal({
             />
 
             {showInstructionsCallout ? (
-              <div className="flex gap-2 rounded-lg border border-[#B2AFAF] p-3 sm:p-4">
-                <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#DD4F05]" />
-                <div className="min-w-0 flex-1 space-y-3 text-justify text-xs leading-5 text-[#6C6969] sm:text-sm sm:leading-6">
-                  {instructionsParagraphs.map((paragraph, index) => (
-                    <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
-                  ))}
-                </div>
-              </div>
+              <PaymentInstructionsCallout paragraphs={instructionsParagraphs} />
             ) : null}
           </div>
 
