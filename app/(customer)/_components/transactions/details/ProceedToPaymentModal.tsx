@@ -10,7 +10,7 @@ import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import {
-  getInstructionsText,
+  getInstructionsParagraphs,
   getStringField,
   getVirtualAccountRemainingSeconds,
 } from "@/app/(customer)/_utils/transaction-payment";
@@ -179,9 +179,13 @@ export default function ProceedToPaymentModal({
     getStringField(accountData, ["accountNumber", "number", "account_no"]) ?? "—";
   const bankName = getStringField(accountData, ["bankName", "bank"]) ?? "—";
   const accountName = getStringField(accountData, ["accountName", "name"]) ?? "—";
-  const infoMessage =
-    getInstructionsText(instructionsQuery.data?.data) ??
-    "Once approved, 75% of your funds will be sent to your bank account or prepaid card, while the remaining 25% will be available for cash pickup at the nearest branch (passport endorsement required).";
+  const instructionsParagraphs = useMemo(() => {
+    const fromApi = getInstructionsParagraphs(instructionsQuery.data?.data);
+    if (fromApi?.length) return fromApi;
+    return [
+      "Once approved, 75% of your funds will be sent to your bank account or prepaid card, while the remaining 25% will be available for cash pickup at the nearest branch (passport endorsement required).",
+    ];
+  }, [instructionsQuery.data?.data]);
 
   const formattedAmount = useMemo(
     () => Number(amountNgn || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -287,7 +291,11 @@ export default function ProceedToPaymentModal({
             {showInstructionsCallout ? (
               <div className="flex gap-2 rounded-lg border border-[#B2AFAF] p-3 sm:p-4">
                 <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#DD4F05]" />
-                <p className="text-xs leading-4 text-[#6C6969] sm:text-sm">{infoMessage}</p>
+                <div className="min-w-0 flex-1 space-y-3 text-justify text-xs leading-5 text-[#6C6969] sm:text-sm sm:leading-6">
+                  {instructionsParagraphs.map((paragraph, index) => (
+                    <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
+                  ))}
+                </div>
               </div>
             ) : null}
           </div>
