@@ -130,93 +130,62 @@ export interface UpdateAgentStatusPayload {
   isActive: boolean;
 }
 
-export interface AgentTransactionPersonalInfo {
+export interface AgentTransactionAgentDetails {
+  agentId?: string | null;
+  agentName?: string | null;
+  emailAddress?: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface AgentTransactionDetails {
+  transactionId?: string | null;
+  amountNgn?: string | null;
+  equivalentAmount?: string | null;
+  currency?: string | null;
+  exchangeRate?: string | null;
+  dateInitiated?: string | null;
+  timeInitiated?: string | null;
+  purpose?: string | null;
+  destinationCountry?: string | null;
+  formAId?: string | null;
+  disbursementMethod?: string | null;
+}
+
+export interface AgentTransactionRequiredDocuments {
   bvn?: string | null;
   nin?: string | null;
-  admissionType?: string | null;
+  taxClearanceNumber?: string | null;
+  documentsCount?: number | null;
+  visa?: string | null;
+  returnTicket?: string | null;
 }
 
-export interface AgentTransactionUploadedDocument {
-  id?: string | null;
-  fileName?: string | null;
-  fileUrl?: string | null;
-  status?: string | null;
-  rejectionNotes?: string | null;
-  uploadedAt?: string | null;
-  verifiedAt?: string | null;
-}
-
-export interface AgentTransactionRequiredDocument {
-  type?: string | null;
-  uploaded?: AgentTransactionUploadedDocument | null;
-}
-
-export interface AgentTransactionStep {
-  id?: string | null;
+export interface AgentTransactionPaymentDetails {
   transactionId?: string | null;
-  step?: string | null;
-  status?: string | null;
-  data?: Record<string, unknown> | null;
-  completedAt?: string | null;
-  createdAt?: string | null;
+  transactionDate?: string | null;
+  transactionTime?: string | null;
+  transactionReceipt?: string | null;
+  paidTo?: string | null;
+  bankName?: string | null;
 }
 
-export interface AgentTransactionComment {
-  id?: string | null;
-  action?: string | null;
-  message?: string | null;
-  addedBy?: string | null;
-  createdAt?: string | null;
-}
-
-export interface AgentTransactionCashPickup {
-  id?: string | null;
-  amount?: number | string | null;
-  status?: string | null;
-  paidAt?: string | null;
-}
-
-export interface AgentTransactionPrepaidCard {
-  id?: string | null;
-  amount?: number | string | null;
-  status?: string | null;
-  issuedAt?: string | null;
-}
-
-export interface AgentTransactionSettlement {
-  id?: string | null;
-  status?: string | null;
-  settledAt?: string | null;
-  receipt?: string | null;
+export interface AgentTransactionSettlementDetails {
+  settlementId?: string | null;
+  settlementDate?: string | null;
+  settlementTime?: string | null;
+  settlementReceipt?: string | null;
+  settlementStructureCash?: string | null;
+  settlementStructurePrepaidCard?: string | null;
+  seventyFivePercentPaidInto?: string | null;
+  settlementStatus?: string | null;
 }
 
 export interface AgentSingleTransactionData {
-  transactionId: string;
-  referenceNumber?: string | null;
-  type?: string | null;
-  mode?: string | null;
-  status?: string | null;
-  currentStep?: string | null;
-  purpose?: string | null;
-  destinationCountry?: string | null;
-  currency?: string | null;
-  foreignAmount?: number | string | null;
-  nairaEquivalent?: number | string | null;
-  exchangeRate?: number | string | null;
-  disbursementMethod?: string | null;
-  formAId?: string | null;
-  taxClearanceNumber?: string | null;
-  personalInfo?: AgentTransactionPersonalInfo | null;
-  beneficiaryDetails?: Record<string, unknown> | null;
-  rejection?: unknown;
-  requiredDocuments?: AgentTransactionRequiredDocument[] | null;
-  cashPickup?: AgentTransactionCashPickup | null;
-  prepaidCard?: AgentTransactionPrepaidCard | null;
-  settlement?: AgentTransactionSettlement | null;
-  steps?: AgentTransactionStep[] | null;
-  comments?: AgentTransactionComment[] | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
+  agentDetails?: AgentTransactionAgentDetails | null;
+  transactionDetails?: AgentTransactionDetails | null;
+  requiredDocuments?: AgentTransactionRequiredDocuments | null;
+  paymentDetails?: AgentTransactionPaymentDetails | null;
+  transactionSettlement?: AgentTransactionSettlementDetails | null;
 }
 
 export interface UpdateAdminUserStatusPayload {

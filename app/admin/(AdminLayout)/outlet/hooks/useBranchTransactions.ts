@@ -103,7 +103,7 @@ function parseTransaction(raw: UnknownRecord): BranchTransactionListItem {
     transactionStage: toSentenceCase(asString(raw.transactionStage) || "--"),
     workflowStage: toSentenceCase(asString(raw.workflowStage) || "--"),
     transactionValue,
-    status: toSentenceCase(asString(raw.status) || "Pending"),
+    status: asString(raw.status) || "Pending",
   };
 }
 

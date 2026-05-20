@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
@@ -142,7 +142,7 @@ export default function TransactionsTable() {
       {formatCurrency(item.amount, "NGN")}
     </Text>,
 
-    <StatusBadge key="status" status={item.status} />,
+    <TransactionStatusBadge key="status" status={item.status} />,
 
     <RowActionIcon
       key="action"

@@ -59,12 +59,6 @@ function toSentenceCase(value: string): string {
     .join(" ");
 }
 
-function normalizeStatus(value: unknown): TransactionListItem["status"] {
-  const normalized = String(value ?? "").trim();
-  if (!normalized) return "Pending";
-  return toSentenceCase(normalized);
-}
-
 function formatDate(value: unknown): string {
   if (!value) return "--";
   const stringValue = String(value);
@@ -113,7 +107,7 @@ function parseTransaction(raw: UnknownRecord): TransactionListItem {
     stage: toSentenceCase(asString(raw.step) || asString(raw.stage) || asString(raw.transactionStage) || "--"),
     workflow: toSentenceCase(asString(raw.workflow) || asString(raw.workflowStage) || "--"),
     amount: asNumber(raw.amount ?? raw.value ?? raw.transactionValue),
-    status: normalizeStatus(raw.status),
+    status: asString(raw.status),
   };
 }
 
