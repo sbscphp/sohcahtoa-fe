@@ -46,6 +46,12 @@ import { ConfirmationModal } from "@/app/(customer)/_components/modals/Confirmat
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
+import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
+import {
+  getCreatedTransactionId,
+  getPickupBankAccountId,
+  toCreateBankAccountPayload,
+} from "@/app/(customer)/_utils/customer-bank-accounts";
 import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
 import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
@@ -76,10 +82,6 @@ const TRANSACTION_TYPE_MAP = {
   "professional-body": "professional-body",
   tourist: "tourist",
 } as const;
-
-function createBankId() {
-  return `bank-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 function getRequestedForeignAmount(
   data:
@@ -143,8 +145,14 @@ export default function TransactionCreationPage() {
   const [pickupPointData, setPickupPointData] = useState<
     PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData | null
   >(null);
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [addBankOpened, setAddBankOpened] = useState(false);
+  const {
+    accounts: bankAccounts,
+    isLoading: bankAccountsLoading,
+    addAccount,
+    isSaving: isSavingBankAccount,
+    attachToTransaction,
+  } = useCustomerBankAccounts();
   const [bankDetailsData, setBankDetailsData] = useState<
     | SchoolFeesBankDetailsFormData
     | MedicalBankDetailsFormData
@@ -213,17 +221,17 @@ export default function TransactionCreationPage() {
     setConfirmationOpened(true);
   };
 
-  const handleAddBank = useCallback((data: AddBankAccountFormData) => {
-    setBankAccounts((prev) => [
-      ...prev,
-      {
-        id: createBankId(),
-        bankName: data.bankName,
-        accountNumber: data.accountNumber,
-        accountName: "Account holder",
-      },
-    ]);
-  }, []);
+  const handleAddBank = useCallback(
+    async (data: AddBankAccountFormData) => {
+      try {
+        await addAccount(toCreateBankAccountPayload(data));
+      } catch (error) {
+        handleApiError(error);
+        throw error;
+      }
+    },
+    [addAccount],
+  );
 
   const handlePayoutBankAccountSubmit = (bankAccount: BankAccount) => {
     setPickupPointData((prev) => ({
@@ -337,8 +345,29 @@ export default function TransactionCreationPage() {
       const documents = toTransactionDocuments(uploaded);
       const payload = buildTransactionPayload(transactionType, bag, documents, "BUY");
       const created = await createTransaction.mutateAsync(payload);
+      const transactionId = getCreatedTransactionId(created);
+      const bankAccountId = getPickupBankAccountId(
+        pickupPointData as Record<string, unknown> | null,
+      );
+      if (transactionId && bankAccountId) {
+        try {
+          await attachToTransaction(transactionId, [bankAccountId]);
+        } catch (attachError) {
+          handleApiError(attachError);
+          notifications.show({
+            title: "Transaction created",
+            message:
+              "Your request was submitted, but linking the bank account failed. You can retry from transaction details.",
+            color: "orange",
+          });
+        }
+      }
       setConfirmationOpened(false);
-      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
+      if (transactionId) {
+        router.push(`/transactions/detail/${transactionId}`);
+      } else {
+        router.push("/transactions");
+      }
     } catch (error) {
       handleApiError(error);
       setConfirmationOpened(false);
@@ -392,6 +421,7 @@ export default function TransactionCreationPage() {
           return (
             <BankAccountSelectionStep
               banks={bankAccounts}
+              isLoading={bankAccountsLoading}
               initialSelectedBankId={pickupPointData?.selectedBankId}
               onSubmit={handlePayoutBankAccountSubmit}
               onBack={handleBack}
@@ -549,6 +579,7 @@ export default function TransactionCreationPage() {
           return (
             <BankAccountSelectionStep
               banks={bankAccounts}
+              isLoading={bankAccountsLoading}
               initialSelectedBankId={pickupPointData?.selectedBankId}
               onSubmit={handlePayoutBankAccountSubmit}
               onBack={handleBack}
@@ -589,6 +620,7 @@ export default function TransactionCreationPage() {
         return (
           <BankAccountSelectionStep
             banks={bankAccounts}
+            isLoading={bankAccountsLoading}
             initialSelectedBankId={pickupPointData?.selectedBankId}
             onSubmit={handlePayoutBankAccountSubmit}
             onBack={handleBack}
@@ -636,6 +668,7 @@ export default function TransactionCreationPage() {
         opened={addBankOpened}
         onClose={() => setAddBankOpened(false)}
         onAddAccount={handleAddBank}
+        isSubmitting={isSavingBankAccount}
       />
     </div>
   );

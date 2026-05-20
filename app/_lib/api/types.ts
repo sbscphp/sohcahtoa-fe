@@ -1130,6 +1130,53 @@ export interface CalculateTransactionRateData {
 export type CalculateTransactionRateResponse =
   ApiResponseWrapper<CalculateTransactionRateData>;
 
+export interface NigerianBankOption {
+  code: string;
+  name: string;
+}
+
+export type NigerianBanksListResponse = ApiResponseWrapper<NigerianBankOption[]>;
+
+export interface BankAccountLookupData {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  simulated?: boolean;
+}
+
+export type BankAccountLookupResponse = ApiResponseWrapper<BankAccountLookupData>;
+
+export interface CustomerBankAccount {
+  id: string;
+  userId: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  isVerified: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomerBankAccountsListResponse =
+  ApiResponseWrapper<CustomerBankAccount[]>;
+
+export interface CreateCustomerBankAccountRequest {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+export type CreateCustomerBankAccountResponse =
+  ApiResponseWrapper<CustomerBankAccount>;
+
+export interface AttachBankAccountsToTransactionRequest {
+  bankAccountIds: string[];
+}
+
+export type AttachBankAccountsToTransactionResponse =
+  ApiResponseWrapper<CustomerBankAccount[]>;
+
 /** Item from GET .../pickup-locations/terminals (`data.terminals`). */
 export interface PickupTerminal {
   id: string;

@@ -7,26 +7,24 @@ export interface SelectableBankCardProps {
   accountNumber: string;
   accountName: string;
   isSelected: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  readOnly?: boolean;
 }
 
-export default function SelectableBankCard({
+const cardClass = (isSelected: boolean, interactive: boolean) =>
+  `w-full text-left flex flex-row items-start p-4 gap-4 min-h-[72px] rounded-lg border transition-all ${
+    isSelected
+      ? "border border-primary-400 bg-[#FFF6F1]"
+      : `border-[1.5px] border-gray-100 bg-white${interactive ? " hover:border-gray-200" : ""}`
+  }`;
+
+function BankCardContent({
   bankName,
   accountNumber,
   accountName,
-  isSelected,
-  onClick,
-}: SelectableBankCardProps) {
+}: Pick<SelectableBankCardProps, "bankName" | "accountNumber" | "accountName">) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left flex flex-row items-start p-4 gap-4 min-h-[72px] rounded-lg border transition-all ${
-        isSelected
-          ? "border border-primary-400 bg-[#FFF6F1]"
-          : "border-[1.5px] border-gray-100 bg-white hover:border-gray-200"
-      }`}
-    >
+    <>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-text-300">
         <Landmark className="size-5" />
       </div>
@@ -38,6 +36,41 @@ export default function SelectableBankCard({
           {accountNumber} | {accountName}
         </span>
       </div>
+    </>
+  );
+}
+
+export default function SelectableBankCard({
+  bankName,
+  accountNumber,
+  accountName,
+  isSelected,
+  onClick,
+  readOnly = false,
+}: SelectableBankCardProps) {
+  if (readOnly) {
+    return (
+      <div className={cardClass(isSelected, false)}>
+        <BankCardContent
+          bankName={bankName}
+          accountNumber={accountNumber}
+          accountName={accountName}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cardClass(isSelected, true)}
+    >
+      <BankCardContent
+        bankName={bankName}
+        accountNumber={accountNumber}
+        accountName={accountName}
+      />
     </button>
   );
 }

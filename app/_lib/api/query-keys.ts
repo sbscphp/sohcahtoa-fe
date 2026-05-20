@@ -75,6 +75,14 @@ export const customerKeys = {
       [...customerKeys.documents.all, "transaction", transactionId] as const,
   },
   
+  bankAccounts: {
+    all: ["customer", "bank-accounts"] as const,
+    list: () => [...customerKeys.bankAccounts.all, "list"] as const,
+    banks: (q?: string) => [...customerKeys.bankAccounts.all, "banks", q ?? ""] as const,
+    forTransaction: (transactionId: string) =>
+      [...customerKeys.bankAccounts.all, "transaction", transactionId] as const,
+  },
+
   wallet: {
     all: ["customer", "wallet"] as const,
     transientHistory: (params?: {

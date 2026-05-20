@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Button, Loader, Select, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import SelectableLocationCard from "@/app/(customer)/_components/forms/SelectableLocationCard";
-import SelectableBankCard from "@/app/(customer)/_components/forms/SelectableBankCard";
+import { BankAccountsList } from "@/app/(customer)/_components/bank-accounts/BankAccountsList";
 import { EmptyState } from "@/app/(customer)/_components/common";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDown } from "@hugeicons/core-free-icons";
@@ -234,6 +234,7 @@ export interface PickupPointStepProps {
   states?: string[];
   cities?: string[];
   banks?: BankAccount[];
+  banksLoading?: boolean;
   onAddBank?: () => void;
   enablePayoutMethod?: boolean;
   bankSelectionMode?: "inline" | "separate";
@@ -256,6 +257,7 @@ export default function PickupPointStep({
   states = [],
   cities = [],
   banks = [],
+  banksLoading = false,
   onAddBank,
   enablePayoutMethod = false,
   bankSelectionMode = "inline",
@@ -969,45 +971,16 @@ export default function PickupPointStep({
       )}
 
       {showBankForm && (
-        <div className="box-border flex flex-col items-start p-4 gap-6 w-full bg-white border border-gray-100 rounded-2xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)]">
-          <p className="text-body-text-200 text-base font-normal leading-6 flex-none">
-            Bank Accounts ({banks.length.toString().padStart(2, "0")})
-          </p>
-          <div className="flex flex-col items-start w-full gap-4 max-h-[200px] overflow-y-auto">
-            {banks.length === 0 ? (
-              <EmptyState
-                title="No Data available"
-                description="Add a bank account to receive your funds"
-                className="w-full py-4"
-              />
-            ) : (
-              banks.map((bank) => (
-                <SelectableBankCard
-                  key={bank.id}
-                  bankName={bank.bankName}
-                  accountNumber={bank.accountNumber}
-                  accountName={bank.accountName}
-                  isSelected={selectedBankId === bank.id}
-                  onClick={() => setSelectedBankId(bank.id)}
-                />
-              ))
-            )}
-          </div>
-          {onAddBank && (
-            <button
-              type="button"
-              onClick={onAddBank}
-              className="flex items-center gap-2 text-primary-400 font-medium text-sm hover:underline"
-            >
-              <span className="text-lg leading-none">+</span> Add New Bank
-            </button>
-          )}
-          {pickupOrBankBankError || payoutBankError ? (
-            <Text size="sm" c="red" className="w-full">
-              {pickupOrBankBankError ?? payoutBankError}
-            </Text>
-          ) : null}
-        </div>
+        <BankAccountsList
+          accounts={banks}
+          isLoading={banksLoading}
+          searchable
+          selectedId={selectedBankId}
+          onSelect={setSelectedBankId}
+          onAddBank={onAddBank}
+          maxHeightClassName="max-h-[200px]"
+          selectionError={pickupOrBankBankError ?? payoutBankError}
+        />
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

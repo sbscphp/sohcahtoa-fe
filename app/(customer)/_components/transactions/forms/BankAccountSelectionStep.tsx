@@ -1,13 +1,13 @@
 "use client";
 
-import { Button, Text } from "@mantine/core";
+import { Button } from "@mantine/core";
 import { useState } from "react";
-import { EmptyState } from "@/app/(customer)/_components/common";
-import SelectableBankCard from "@/app/(customer)/_components/forms/SelectableBankCard";
+import { BankAccountsList } from "@/app/(customer)/_components/bank-accounts/BankAccountsList";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 
 interface BankAccountSelectionStepProps {
   banks: BankAccount[];
+  isLoading?: boolean;
   initialSelectedBankId?: string;
   onSubmit: (bank: BankAccount) => void;
   onBack?: () => void;
@@ -16,6 +16,7 @@ interface BankAccountSelectionStepProps {
 
 export default function BankAccountSelectionStep({
   banks,
+  isLoading = false,
   initialSelectedBankId,
   onSubmit,
   onBack,
@@ -35,43 +36,17 @@ export default function BankAccountSelectionStep({
         </p>
       </div>
 
-      <div className="box-border flex flex-col items-start p-4 gap-6 w-full bg-white border border-gray-100 rounded-2xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)]">
-        <p className="text-body-text-200 text-base font-normal leading-6 flex-none">
-          Bank Accounts ({banks.length.toString().padStart(2, "0")})
-        </p>
-        <div className="flex flex-col items-start w-full gap-4 max-h-[240px] overflow-y-auto">
-          {banks.length === 0 ? (
-            <EmptyState
-              title="No Data available"
-              description="Add a bank account to receive your funds"
-              className="w-full py-4"
-            />
-          ) : (
-            banks.map((bank) => (
-              <SelectableBankCard
-                key={bank.id}
-                bankName={bank.bankName}
-                accountNumber={bank.accountNumber}
-                accountName={bank.accountName}
-                isSelected={selectedBankId === bank.id}
-                onClick={() => setSelectedBankId(bank.id)}
-              />
-            ))
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onAddBank}
-          className="flex items-center gap-2 text-primary-400 font-medium text-sm hover:underline"
-        >
-          <span className="text-lg leading-none">+</span> Add New Bank
-        </button>
-        {!selectedBankId && banks.length > 0 ? (
-          <Text size="sm" c="red" className="w-full">
-            Please select a bank account
-          </Text>
-        ) : null}
-      </div>
+      <BankAccountsList
+        accounts={banks}
+        isLoading={isLoading}
+        searchable
+        selectedId={selectedBankId}
+        onSelect={setSelectedBankId}
+        onAddBank={onAddBank}
+        selectionError={
+          !selectedBankId && banks.length > 0 ? "Please select a bank account" : undefined
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">
         {onBack && (

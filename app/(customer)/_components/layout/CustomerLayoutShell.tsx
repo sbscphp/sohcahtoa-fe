@@ -65,6 +65,7 @@ export default function CustomerLayoutShell({
     if (pathname?.startsWith('/rate-calculator')) return 'Rate Calculator';
     if (pathname === '/settings') return 'Setting';
     if (pathname === '/settings/account-information') return 'Setting: Account Information';
+    if (pathname === '/settings/bank-accounts') return 'Setting: Bank Accounts';
     if (pathname === '/settings/change-password') return 'Setting: Change Password';
     if (isNotificationsPage) return 'Notification';
     if (isSupportChatPage) return 'Support: Chat Support';
@@ -105,6 +106,12 @@ export default function CustomerLayoutShell({
       return [
         { label: 'Setting', href: '/settings' },
         { label: 'Account Information', href: undefined },
+      ];
+    }
+    if (pathname === '/settings/bank-accounts') {
+      return [
+        { label: 'Setting', href: '/settings' },
+        { label: 'Bank Accounts', href: undefined },
       ];
     }
     if (pathname === '/settings/change-password') {

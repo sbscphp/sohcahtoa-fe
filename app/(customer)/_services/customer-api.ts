@@ -85,6 +85,13 @@ import type {
   PickupTerminalsQueryParams,
   PickupLocationStatesResponse,
   PickupLocationCitiesResponse,
+  NigerianBanksListResponse,
+  BankAccountLookupResponse,
+  CustomerBankAccountsListResponse,
+  CreateCustomerBankAccountRequest,
+  CreateCustomerBankAccountResponse,
+  AttachBankAccountsToTransactionRequest,
+  AttachBankAccountsToTransactionResponse,
 } from "@/app/_lib/api/types";
 import { API_ENDPOINTS } from "./endpoints";
 
@@ -403,6 +410,56 @@ export const customerApi = {
 
     getSettlement: (transactionId: string) =>
       apiClient.get<unknown>(API_ENDPOINTS.payments.settlement(transactionId)),
+  },
+
+  bankAccounts: {
+    list: () =>
+      apiClient.get<CustomerBankAccountsListResponse>(API_ENDPOINTS.bankAccounts.list),
+
+    listBanks: (params?: { q?: string }) =>
+      apiClient.get<NigerianBanksListResponse>(API_ENDPOINTS.bankAccounts.banks, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    lookup: (params: { bankName: string; accountNumber: string }) =>
+      apiClient.get<BankAccountLookupResponse>(API_ENDPOINTS.bankAccounts.lookup, {
+        params: params as ApiRequestConfig["params"],
+      }),
+
+    create: (data: CreateCustomerBankAccountRequest) =>
+      apiClient.post<CreateCustomerBankAccountResponse>(
+        API_ENDPOINTS.bankAccounts.create,
+        data,
+      ),
+
+    setDefault: (bankAccountId: string) =>
+      apiClient.patch<CreateCustomerBankAccountResponse>(
+        API_ENDPOINTS.bankAccounts.setDefault(bankAccountId),
+      ),
+
+    remove: (bankAccountId: string) =>
+      apiClient.delete<{ success: boolean }>(
+        API_ENDPOINTS.bankAccounts.remove(bankAccountId),
+      ),
+
+    attachToTransaction: (
+      transactionId: string,
+      data: AttachBankAccountsToTransactionRequest,
+    ) =>
+      apiClient.post<AttachBankAccountsToTransactionResponse>(
+        API_ENDPOINTS.bankAccounts.attachToTransaction(transactionId),
+        data,
+      ),
+
+    listForTransaction: (transactionId: string) =>
+      apiClient.get<CustomerBankAccountsListResponse>(
+        API_ENDPOINTS.bankAccounts.listForTransaction(transactionId),
+      ),
+
+    detachFromTransaction: (transactionId: string, bankAccountId: string) =>
+      apiClient.delete<{ success: boolean }>(
+        API_ENDPOINTS.bankAccounts.detachFromTransaction(transactionId, bankAccountId),
+      ),
   },
 
   // ==================== Transaction FX Rates ====================

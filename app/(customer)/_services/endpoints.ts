@@ -114,6 +114,22 @@ export const API_ENDPOINTS = {
     transientHistoryExport: "/api/customer/wallet/transient-history/export",
   },
 
+  bankAccounts: {
+    list: "/api/customer/bank-accounts",
+    banks: "/api/customer/bank-accounts/banks",
+    lookup: "/api/customer/bank-accounts/lookup",
+    create: "/api/customer/bank-accounts",
+    setDefault: (bankAccountId: string) =>
+      `/api/customer/bank-accounts/${bankAccountId}/default`,
+    remove: (bankAccountId: string) => `/api/customer/bank-accounts/${bankAccountId}`,
+    attachToTransaction: (transactionId: string) =>
+      `/api/customer/transactions/${transactionId}/bank-accounts`,
+    listForTransaction: (transactionId: string) =>
+      `/api/customer/transactions/${transactionId}/bank-accounts`,
+    detachFromTransaction: (transactionId: string, bankAccountId: string) =>
+      `/api/customer/transactions/${transactionId}/bank-accounts/${bankAccountId}`,
+  },
+
   // Support (Customer)
   support: {
     tickets: {
