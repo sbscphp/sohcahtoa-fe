@@ -51,7 +51,8 @@ export interface TransactionDetailPayload {
   requiredDocuments: RequiredDocumentsData;
   paymentDetails?: PaymentDetailsData;
   settlement?: TransactionSettlementData;
-  documentsForSheet?: unknown;
+  documentsForSheet?: TransactionDocumentItem[];
+  allowMissingDocumentUpload?: boolean;
 }
 
 export default function TransactionDetailPage() {
@@ -228,7 +229,8 @@ export default function TransactionDetailPage() {
           setUpdatesSheetOpen(false);
           setProceedToPaymentOpen(true);
         }}
-        documents={payload.documentsForSheet as unknown as TransactionDocumentItem[]}
+        documents={payload.documentsForSheet}
+        allowMissingDocumentUpload={payload.allowMissingDocumentUpload}
         onOpenDocument={(doc) => {
           if (doc.url) {
             setDocumentViewer({

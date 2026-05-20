@@ -10,7 +10,10 @@ import type { RequiredDocumentsData, TransactionDetailsData } from "@/app/(custo
 import type { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import type { TransactionDetailPayload } from "@/app/(customer)/(CustomerLayout)/transactions/detail/[id]/page";
 import { getTransactionTypeLabel } from "@/app/(customer)/_lib/mock-transactions";
-import { normalizeTransactionStatus } from "@/app/(customer)/_lib/transaction-details";
+import {
+  normalizeTransactionStatus,
+  transactionAllowsMissingDocumentUpload,
+} from "@/app/(customer)/_lib/transaction-details";
 import { formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import { getDocumentLabelForApiType } from "@/app/(customer)/_utils/transaction-validation";
 
@@ -79,34 +82,48 @@ function mapPaymentDetailsFromApi(entries: TransactionDetailPaymentEntry[]): Pay
   };
 }
 
+function isRequiredDocEntry(doc: TransactionDetailRequiredDoc): boolean {
+  return doc.required !== false;
+}
+
 function mapRequiredDocsToDocumentItems(
   requiredDocuments: TransactionDetailRequiredDoc[],
   comments: TransactionDetailComment[] = []
 ): TransactionDocumentItem[] {
   const statusOverrides = buildDocStatusOverrideMap(comments);
-  return requiredDocuments
-    .filter((doc) => doc.uploaded != null)
-    .map((doc) => {
-      const uploaded = doc.uploaded!;
+  return requiredDocuments.filter(isRequiredDocEntry).map((doc) => {
+    const uploaded = doc.uploaded;
+    const overrideStatus = statusOverrides.get(doc.type);
 
-      const lastUploadDate = uploaded.uploadedAt
-        ? formatShortDate(uploaded.uploadedAt)
-        : undefined;
-      const lastUploadTime = uploaded.uploadedAt
-        ? formatShortTime(uploaded.uploadedAt)
-        : undefined;
-
+    if (!uploaded) {
       return {
         id: doc.type,
         name: getDocumentDisplayName(doc.type),
         size: "—",
-        status: statusOverrides.get(doc.type) ?? formatStatusLabel(uploaded.status),
-        lastUploadDate,
-        lastUploadTime,
-        fileName: uploaded.fileName,
-        url: uploaded.fileUrl,
+        status: overrideStatus ?? "Not uploaded",
+        needsUpload: true,
       };
-    });
+    }
+
+    const lastUploadDate = uploaded.uploadedAt
+      ? formatShortDate(uploaded.uploadedAt)
+      : undefined;
+    const lastUploadTime = uploaded.uploadedAt
+      ? formatShortTime(uploaded.uploadedAt)
+      : undefined;
+
+    return {
+      id: doc.type,
+      name: getDocumentDisplayName(doc.type),
+      size: "—",
+      status: overrideStatus ?? formatStatusLabel(uploaded.status),
+      lastUploadDate,
+      lastUploadTime,
+      fileName: uploaded.fileName,
+      url: uploaded.fileUrl,
+      needsUpload: false,
+    };
+  });
 }
 
 export function buildDetailPayloadFromApi(api: TransactionDetailData): TransactionDetailPayload {
@@ -117,11 +134,17 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     bvn: stepData?.bvn ?? api.personalInfo?.bvn ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: docs
-      .filter((d) => d.uploaded != null)
+      .filter((d) => isRequiredDocEntry(d) && d.uploaded != null)
       .map((d) => ({
         documentType: d.type,
         filename: d.uploaded!.fileName,
         url: d.uploaded!.fileUrl,
+      })),
+    missingDocumentTypes: docs
+      .filter((d) => isRequiredDocEntry(d) && d.uploaded == null)
+      .map((d) => ({
+        documentType: d.type,
+        label: getDocumentDisplayName(d.type),
       })),
   };
   const ninFromStep = stepData?.nin;
@@ -153,6 +176,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     transactionDetails,
     requiredDocuments,
     documentsForSheet: mapRequiredDocsToDocumentItems(docs, api.comments ?? []),
+    allowMissingDocumentUpload: transactionAllowsMissingDocumentUpload(api.status),
   };
 
   const apiPaymentRows = Array.isArray(api.paymentDetails) ? api.paymentDetails : [];

@@ -616,6 +616,8 @@ export interface TransactionDocument {
   fileSize: number;
 }
 
+export type DisbursementOption = "ELECTRONIC_TRANSFER" | "CARD" | "CARD_AND_CASH";
+
 export interface PickupLocation {
   id: string;
   name: string;
@@ -649,8 +651,7 @@ export interface CreateTransactionRequest {
   workPermitNumber?: string;
   utilityBillNumber?: string;
   admissionType?: AdmissionType;
-  payoutMethod?: string;
-  payoutBreakdown?: Record<string, unknown>;
+  disbursementOption?: DisbursementOption;
   beneficiaryDetails?: Record<string, unknown>;
   pickupLocation?: PickupLocation;
   documents?: TransactionDocument[];
@@ -796,6 +797,7 @@ export interface TransactionDetailRequiredDocUploaded {
 
 export interface TransactionDetailRequiredDoc {
   type: string;
+  required?: boolean;
   uploaded: TransactionDetailRequiredDocUploaded | null;
 }
 
@@ -904,6 +906,7 @@ export interface TransactionDetailData {
   nairaEquivalent: string | null;
   exchangeRate: string | null;
   disbursementMethod: string | null;
+  disbursementOption?: DisbursementOption | null;
   formAId?: string | null;
   taxClearanceNumber?: string | null;
   personalInfo?: {

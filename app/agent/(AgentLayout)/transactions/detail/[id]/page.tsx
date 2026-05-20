@@ -275,7 +275,8 @@ export default function AgentTransactionDetailPage() {
               </div>
             )
           }
-          documents={payload.documentsForSheet as TransactionDocumentItem[]}
+          documents={payload.documentsForSheet}
+          allowMissingDocumentUpload={payload.allowMissingDocumentUpload}
           onOpenDocument={(doc) => {
             if (doc.url) {
               setDocumentViewer({

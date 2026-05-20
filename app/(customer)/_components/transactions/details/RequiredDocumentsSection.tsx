@@ -15,6 +15,10 @@ export interface RequiredDocumentsData {
     filename: string;
     url?: string;
   }>;
+  missingDocumentTypes?: Array<{
+    documentType: string;
+    label: string;
+  }>;
 }
 
 interface RequiredDocumentsSectionProps {
@@ -34,12 +38,15 @@ export default function RequiredDocumentsSection({
   const hasAnyUploaded = data.uploadedFiles.some(
     (f) => !isBlankDetailText(f.filename)
   );
+  const missingDocs = data.missingDocumentTypes ?? [];
+  const hasMissing = missingDocs.length > 0;
   const hasSection =
     !isBlankDetailText(data.bvn) ||
     !isBlankDetailText(data.formAId) ||
     hasNin ||
     hasTin ||
-    hasAnyUploaded;
+    hasAnyUploaded ||
+    hasMissing;
 
   if (!hasSection) {
     return null;
@@ -76,6 +83,13 @@ export default function RequiredDocumentsSection({
             { filename: file.filename, url: file.url },
             file.documentType
           )}
+        />
+      ))}
+      {missingDocs.map((doc) => (
+        <LabelText
+          key={`missing-${doc.documentType}`}
+          label={doc.label}
+          text="Not uploaded — use View Updates → Documentation to upload"
         />
       ))}
     </SectionBlock>

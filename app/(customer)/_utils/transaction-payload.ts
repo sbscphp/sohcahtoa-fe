@@ -1,5 +1,6 @@
 import type {
   CreateTransactionRequest,
+  DisbursementOption,
   TransactionDocument,
   TransactionTypeAPI,
   PickupLocation,
@@ -127,10 +128,25 @@ function getCurrency(data: Record<string, unknown> | null): string {
   return typeof raw === "string" && raw.trim() ? raw : "USD";
 }
 
-function payoutFieldsFromSelection(
+/** UI payout radio values from PickupPointStep → API `disbursementOption`. */
+export function mapUiPayoutMethodToDisbursementOption(
+  payoutMethod: string,
+): DisbursementOption | undefined {
+  switch (payoutMethod) {
+    case "electronic_transfer_100":
+      return "ELECTRONIC_TRANSFER";
+    case "card_100":
+      return "CARD";
+    case "card_75_cash_25":
+      return "CARD_AND_CASH";
+    default:
+      return undefined;
+  }
+}
+
+function disbursementOptionFromSelection(
   data: Record<string, unknown> | null | undefined,
-  amount: Record<string, unknown> | null
-) {
+): Pick<CreateTransactionRequest, "disbursementOption"> {
   const payoutMethod =
     typeof data?.payoutMethod === "string" && data.payoutMethod.trim()
       ? data.payoutMethod
@@ -138,23 +154,10 @@ function payoutFieldsFromSelection(
 
   if (!payoutMethod) return {};
 
-  const transactionAmount = getAmount(amount);
-  const payoutBreakdown: Record<string, unknown> = { method: payoutMethod };
+  const disbursementOption = mapUiPayoutMethodToDisbursementOption(payoutMethod);
+  if (!disbursementOption) return {};
 
-  if (payoutMethod === "electronic_transfer_100") {
-    payoutBreakdown.electronicTransferPercentage = 100;
-  } else if (payoutMethod === "card_100") {
-    payoutBreakdown.cardPercentage = 100;
-  } else if (payoutMethod === "card_75_cash_25") {
-    payoutBreakdown.cardPercentage = 75;
-    payoutBreakdown.cashPercentage = 25;
-    payoutBreakdown.cashAmount = transactionAmount * 0.25;
-  }
-
-  return {
-    payoutMethod,
-    payoutBreakdown,
-  };
+  return { disbursementOption };
 }
 
 function beneficiaryDetailsFromPayoutSelection(
@@ -198,7 +201,7 @@ function buildPTAPayload(
   const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
-  const payout = payoutFieldsFromSelection(pickup, amount);
+  const payout = disbursementOptionFromSelection(pickup);
 
   return {
     type: "PTA",
@@ -229,7 +232,7 @@ function buildBTAPayload(
   const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
-  const payout = payoutFieldsFromSelection(pickup, amount);
+  const payout = disbursementOptionFromSelection(pickup);
 
   return {
     type: "BTA",
@@ -259,7 +262,7 @@ function buildTouristPayload(
   const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
-  const payout = payoutFieldsFromSelection(pickup, amount);
+  const payout = disbursementOptionFromSelection(pickup);
 
   return {
     type: "TOURIST_FX",

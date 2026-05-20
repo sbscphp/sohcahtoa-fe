@@ -28,6 +28,19 @@ export function normalizeTransactionStatus(raw: string | null | undefined): stri
 }
 
 /** Label for badges, timeline titles, etc. Title-cases unknown API values. */
+/** Transaction statuses where customer may upload docs that were never submitted (`uploaded: null`). */
+const MISSING_DOCUMENT_UPLOAD_STATUSES = new Set([
+  "DRAFT",
+  "AWAITING_VERIFICATION",
+  "VERIFICATION_IN_PROGRESS",
+]);
+
+export function transactionAllowsMissingDocumentUpload(
+  status: string | null | undefined,
+): boolean {
+  return MISSING_DOCUMENT_UPLOAD_STATUSES.has(normalizeTransactionStatus(status));
+}
+
 export function getTransactionStatusLabel(status: string | null | undefined): string {
   const key = normalizeTransactionStatus(status) as TransactionStatus;
   if (key && key in TRANSACTION_STATUS_LABELS) {
