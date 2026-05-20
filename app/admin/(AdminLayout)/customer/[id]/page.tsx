@@ -17,6 +17,7 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import CustomerTransactionsTable from "../_customerComponents/CustomerTransactionTable";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 export type CustomerStatus = "Active" | "Deactivated";
 
@@ -173,7 +174,7 @@ export default function CustomerDetailsPage() {
               />
               <DetailItem
                 label="Transaction Volume"
-                value={String(customer?.transactionVolume ?? 0)}
+                value={formatCurrency(customer?.transactionVolume ?? 0)}
                 loading={isLoading}
               />
               <DetailItem
