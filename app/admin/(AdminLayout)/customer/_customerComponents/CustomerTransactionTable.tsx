@@ -16,6 +16,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 /* --------------------------------------------
  Types
@@ -255,7 +256,7 @@ export default function CustomerTransactionsTable({
       {item.workflow}
     </Text>,
     <Text key="amount" size="sm">
-      ${item.amount}
+      {formatCurrency(item.amount)}
     </Text>,
     <StatusBadge key="status" status={item.status} defaultColor="orange" />,
     <RowActionIcon
