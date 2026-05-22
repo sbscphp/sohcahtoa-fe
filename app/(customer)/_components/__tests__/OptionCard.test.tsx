@@ -30,6 +30,23 @@ describe("OptionCard", () => {
     );
     const link = screen.getByRole("link", { name: /get started/i });
     expect(link).toHaveAttribute("href", "/transfer");
+    expect(link).not.toHaveAttribute("target");
+  });
+
+  it("opens in a new tab when openInNewTab is true", () => {
+    render(
+      <OptionCard
+        icon={<User />}
+        title="Terms"
+        description="Read terms."
+        ctaText="Read Terms"
+        href="https://example.com/terms"
+        openInNewTab
+      />
+    );
+    const link = screen.getByRole("link", { name: /read terms/i });
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("calls onClick when CTA button is clicked", async () => {

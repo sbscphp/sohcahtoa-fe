@@ -1,63 +1,70 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
 import type { DocumentType } from "@/app/(customer)/_utils/transaction-document-requirements";
+import {
+  assertDocumentUploadBatch,
+  buildSingleUploadFormData,
+  uploadDocumentsSequential,
+  type UploadedDocumentInfo,
+} from "@/app/(customer)/_utils/document-upload";
+import { customerApi } from "@/app/(customer)/_services/customer-api";
 
-export interface UploadedDocumentInfo {
-  documentType: DocumentType;
-  fileUrl: string;
-  fileName: string;
-  fileSize: number | string;
-}
+export type { DocumentUploadError } from "@/app/(customer)/_utils/document-upload";
+export type { UploadedDocumentInfo };
 
 export interface UploadDocumentParams {
   file: File | File[];
   userId: string;
   documentType: DocumentType | DocumentType[];
+  transactionId?: string;
+}
+
+function mapUploadedDocument(doc: {
+  documentType: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize?: number;
+}): UploadedDocumentInfo {
+  return {
+    documentType: doc.documentType as DocumentType,
+    fileUrl: doc.fileUrl,
+    fileName: doc.fileName,
+    fileSize: doc.fileSize ?? 0,
+  };
 }
 
 export function useUploadDocument() {
   return useMutation({
-    mutationFn: async ({ file, userId, documentType }: UploadDocumentParams): Promise<UploadedDocumentInfo> => {
-      const formData = new FormData();
-      formData.append("document", file as File);
-      formData.append("userId", userId);
-      formData.append("documentType", documentType as DocumentType);
+    mutationFn: async ({
+      file,
+      userId,
+      documentType,
+      transactionId,
+    }: UploadDocumentParams): Promise<UploadedDocumentInfo> => {
+      const singleFile = file as File;
+      const singleType = documentType as DocumentType;
+      assertDocumentUploadBatch([singleFile], [singleType]);
 
-      const response = await customerApi.documents.upload(formData);
-      const d = response.data;
-      return { documentType: d.documentType, fileUrl: d.fileUrl, fileName: d.fileName, fileSize: d.fileSize };
+      const response = await customerApi.documents.upload(
+        buildSingleUploadFormData(singleFile, userId, singleType, transactionId),
+      );
+      return mapUploadedDocument(response.data);
     },
   });
 }
 
+/** Uploads transaction documents one file per request (POST /api/documents/upload). */
 export function useUploadDocuments() {
   return useMutation({
-    mutationFn: async ({ file, userId, documentType }: UploadDocumentParams): Promise<UploadedDocumentInfo[]> => {
-      const files = file as File[];
-      const types = documentType as DocumentType[];
-      if (files.length !== types.length) {
-        throw new Error("Files and documentTypes arrays must have the same length");
-      }
-
-      const formData = new FormData();
-      files.forEach((f) => formData.append("documents", f));
-      formData.append("userId", userId);
-      formData.append("documentTypes", JSON.stringify(types));
-
-      const response = await customerApi.documents.uploadMultiple(formData);
-
-      const documents = Array.isArray(response?.data) ? response?.data : [];
-
-      return documents.map((doc: unknown) => {
-        const d = doc as { documentType: string; fileUrl: string; fileName: string; fileSize?: number };
-        return {
-          documentType: d.documentType as DocumentType,
-          fileUrl: d.fileUrl,
-          fileName: d.fileName,
-          fileSize: d.fileSize ?? 0,
-        };
+    mutationFn: async (params: UploadDocumentParams): Promise<UploadedDocumentInfo[]> => {
+      const files = params.file as File[];
+      const types = params.documentType as DocumentType[];
+      return uploadDocumentsSequential({
+        files,
+        documentTypes: types,
+        userId: params.userId,
+        transactionId: params.transactionId,
       });
     },
   });

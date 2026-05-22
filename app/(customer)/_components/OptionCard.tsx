@@ -9,6 +9,8 @@ type OptionCardProps = {
   description: string;
   ctaText: string;
   href?: string;
+  /** When true, opens the link in a new tab (e.g. external terms URL). Default: same tab. */
+  openInNewTab?: boolean;
   onClick?: () => void;
 };
 
@@ -21,8 +23,9 @@ export default function OptionCard({
   description,
   ctaText,
   href,
-  onClick
-}: OptionCardProps) {
+  openInNewTab = false,
+  onClick,
+}: Readonly<OptionCardProps>) {
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border-[1.5px] border-text-50 bg-white">
       <div className="flex flex-1 flex-row items-start gap-6 px-6 pt-6 pb-4">
@@ -39,7 +42,13 @@ export default function OptionCard({
         </div>
       </div>
       {href ? (
-        <Link href={href} className={ctaClassName}>
+        <Link
+          href={href}
+          className={ctaClassName}
+          {...(openInNewTab
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
+        >
           <span className="text-base font-medium leading-6 text-primary-400">
             {ctaText}
           </span>

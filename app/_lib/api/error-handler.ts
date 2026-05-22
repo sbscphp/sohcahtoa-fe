@@ -15,6 +15,7 @@ const ERROR_MESSAGES: Record<number, string> = {
   403: "Forbidden: You do not have access to this resource.",
   404: "Not Found: The resource was not found.",
   422: "Validation Error: Please check your input.",
+  413: "Files are too large. Maximum size is 10MB per file.",
   429: "Too many requests. Please try again later.",
   500: "Internal Server Error: Please try again later.",
   502: "Service temporarily unavailable. Please try again later.",
@@ -33,7 +34,7 @@ export function handleApiError(error: unknown, options?: { showNotification?: bo
   if (error && typeof error === "object" && "status" in error) {
     const apiError = error as ApiError;
     status = apiError.status;
-    
+
     if (apiError.message && apiError.message !== `HTTP ${status}`) {
       message = apiError.message;
     } else {

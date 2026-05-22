@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
-import { authTokensAtom, userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { useHydratedProfileDisplay } from "@/app/_lib/hooks/use-hydrated-profile-display";
 import { performLogout } from "@/app/_lib/api/auth-logout";
 import { collapsed_logo, logo } from "@/app/assets/asset";
 import { Logout01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Avatar, UnstyledButton } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useAtom } from "jotai";
 import { ArrowUpRight, BanknoteIcon, Calculator, History, LayoutGrid, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,21 +33,10 @@ const menuItems = [
 export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [userProfile] = useAtom(userProfileAtom);
   const [logoutModalOpened, { open: openLogoutModal, close: closeLogoutModal }] = useDisclosure(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [avatarReady, setAvatarReady] = useState(false);
-
-  useEffect(() => {
-    setAvatarReady(true);
-  }, []);
-
-  const displayName = userProfile?.profile?.fullName || 
-    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
-    userProfile?.email?.split('@')[0] ||
-    'User';
-  const displayEmail = userProfile?.email || '';
-  const avatarUrl = userProfile?.profile?.avatar || undefined;
+  const { hydrated: profileHydrated, displayName, displayEmail, avatarUrl } =
+    useHydratedProfileDisplay();
 
   const handlePerformLogout = useCallback(() => {
     closeLogoutModal();
@@ -159,7 +147,7 @@ export default function CustomerSidebar({ collapsed, onNavigate }: CustomerSideb
             }}
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
-              {avatarReady ? (
+              {profileHydrated ? (
                 <Avatar src={avatarUrl} name={displayName} color="initials" />
               ) : (
                 <div

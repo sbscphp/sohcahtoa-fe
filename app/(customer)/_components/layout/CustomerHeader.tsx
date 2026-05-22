@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useHydratedProfileDisplay } from "@/app/_lib/hooks/use-hydrated-profile-display";
 import Link from "next/link";
 import { Bell, ChevronLeft, Menu, ChevronDown } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { Avatar, Popover } from "@mantine/core";
-import { useAtomValue } from "jotai";
-import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { customerKeys } from "@/app/_lib/api/query-keys";
@@ -33,7 +32,7 @@ export default function CustomerHeader({
 }: CustomerHeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const userProfile = useAtomValue(userProfileAtom);
+  const { hydrated: profileHydrated, displayName, avatarUrl } = useHydratedProfileDisplay();
 
   // Fetch unread notification count
   const { data: unreadCountResponse } = useFetchData(
@@ -42,14 +41,6 @@ export default function CustomerHeader({
   );
 
   const unreadCount = unreadCountResponse?.data?.count as number || 0;
-
-  // Get user display info from profile
-  const displayName = userProfile?.profile?.fullName || 
-    [userProfile?.profile?.firstName, userProfile?.profile?.lastName].filter(Boolean).join(' ') ||
-    userProfile?.email?.split('@')[0] ||
-    'User';
-  const avatarUrl = userProfile?.profile?.avatar || undefined;
-
 
   return (
     <header className="relative flex h-16 w-full max-w-full items-center justify-between border-b border-gray-50 bg-white px-4 sm:px-6 box-border">
@@ -121,7 +112,16 @@ export default function CustomerHeader({
           href="/settings"
           className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50"
         >
-          <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl"/>
+          {profileHydrated ? (
+            <Avatar src={avatarUrl} name={displayName} color="initials" size={40} radius="xl" />
+          ) : (
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-500"
+              aria-hidden
+            >
+              …
+            </div>
+          )}
           {!collapsed &&
             !isMobile &&
             <ChevronDown size={16} className="text-primary-400" />}

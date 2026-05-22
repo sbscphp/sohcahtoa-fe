@@ -5,8 +5,12 @@ import Image from "next/image";
 import { FileAddIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Text } from "@mantine/core";
-import { Dropzone, FileWithPath } from "@mantine/dropzone";
+import { Dropzone, FileWithPath, type FileRejection } from "@mantine/dropzone";
 import { Folder, X } from "lucide-react";
+import {
+  MAX_DOCUMENT_FILE_BYTES,
+  MAX_DOCUMENT_FILE_MB,
+} from "@/app/(customer)/_utils/document-upload";
 
 interface TransactionFileUploadInputProps {
   label: string;
@@ -27,10 +31,11 @@ export default function TransactionFileUploadInput({
   accept = ["image/*", "application/pdf"],
   error,
   placeholder = "Click to upload",
-  supportingText ="PDF, PNG, IMG, JPG Supported. Max. size: 5 MB",
+  supportingText = `PDF, PNG, IMG, JPG supported. Max. size: ${MAX_DOCUMENT_FILE_MB} MB`,
 }: TransactionFileUploadInputProps) {
   const isImage = value?.type.startsWith("image/");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   // Create a fresh blob URL whenever we have a file (so preview works after going back)
   useEffect(() => {
@@ -50,9 +55,21 @@ export default function TransactionFileUploadInput({
   }, [value, isImage]);
 
   const handleFileDrop = (files: FileWithPath[]) => {
+    setLocalError(null);
     if (files.length > 0) {
       onChange(files[0]!);
     }
+  };
+
+  const handleReject = (fileRejections: FileRejection[]) => {
+    if (!fileRejections.length) return;
+    const tooLarge = fileRejections[0]!.errors.some((e) => e.code === "file-too-large");
+    setLocalError(
+      tooLarge
+        ? `File must be ${MAX_DOCUMENT_FILE_MB}MB or smaller`
+        : "Unsupported file type",
+    );
+    onChange(null);
   };
 
   const handleChangeFile = () => {
@@ -81,8 +98,10 @@ export default function TransactionFileUploadInput({
       {!value ? (
         <Dropzone
           onDrop={handleFileDrop}
+          onReject={handleReject}
           accept={accept}
           maxFiles={1}
+          maxSize={MAX_DOCUMENT_FILE_BYTES}
           className="border-2 border-dashed border-[#E4E4E7] rounded-[20px] bg-[#F7F7F7] hover:border-primary-400 transition-all duration-200 w-full"
         >
           <div className="flex flex-col justify-end items-end p-3 gap-5 min-h-[132px] w-full ">
@@ -194,8 +213,8 @@ export default function TransactionFileUploadInput({
         </div>
       )}
 
-      {error && (
-        <p className="text-error-500 text-xs">{error}</p>
+      {(error || localError) && (
+        <p className="text-error-500 text-xs">{error || localError}</p>
       )}
     </div>
   );

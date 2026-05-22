@@ -7,6 +7,7 @@ import type { FileWithPath } from "@mantine/dropzone";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { getStatusBadge, normalizeStatus } from "@/app/(customer)/_utils/status-badge";
 import ResubmitSuccessModal from "./ResubmitSuccessModal";
+import { MAX_DOCUMENT_FILE_BYTES, MAX_DOCUMENT_FILE_MB } from "@/app/(customer)/_utils/document-upload";
 
 export function isRequiresManualReviewStatus(status: string): boolean {
   return normalizeStatus(status) === "requires_manual_review";
@@ -44,7 +45,6 @@ interface DocumentDetailProps {
   onOpenDocument?: (doc: TransactionDocumentItem) => void;
 }
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -72,9 +72,9 @@ function validateSelectedFiles(
     return "Please choose at least one document to upload.";
   }
 
-  const tooLarge = selected.find(({ file }) => file.size > MAX_FILE_SIZE_BYTES);
+  const tooLarge = selected.find(({ file }) => file.size > MAX_DOCUMENT_FILE_BYTES);
   if (tooLarge) {
-    return `${tooLarge.file.name} exceeds 5MB. Please upload a smaller file.`;
+    return `${tooLarge.file.name} exceeds ${MAX_DOCUMENT_FILE_MB}MB. Please upload a smaller file.`;
   }
 
   const unsupported = selected.find(({ file }) => {
