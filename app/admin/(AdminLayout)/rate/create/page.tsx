@@ -162,14 +162,32 @@ export default function CreateRatePage() {
         parseRateValue(value) !== null
           ? null
           : "Enter a valid sell rate greater than 0",
-      startDate: (value) => (value ? null : "Effective start date is required"),
+      startDate: (value) => {
+        if (!value) return "Effective start date is required";
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selected = new Date(value);
+        selected.setHours(0, 0, 0, 0);
+        if (selected < today) return "Start date cannot be before today";
+        return null;
+      },
       startTime: (value, values) => {
         if (!value.trim()) return "Effective start time is required";
         return buildDateTimeIso(values.startDate, value)
           ? null
           : "Enter a valid start time";
       },
-      endDate: (value) => (value ? null : "Effective end date is required"),
+      endDate: (value, values) => {
+        if (!value) return "Effective end date is required";
+        if (values.startDate) {
+          const start = new Date(values.startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(value);
+          end.setHours(0, 0, 0, 0);
+          if (end < start) return "End date cannot be before start date";
+        }
+        return null;
+      },
       endTime: (value, values) => {
         if (!value.trim()) return "Effective end time is required";
         const validUntil = buildDateTimeIso(values.endDate, value);
@@ -455,6 +473,7 @@ export default function CreateRatePage() {
                   value={form.values.startDate}
                   onChange={(value) => form.setFieldValue("startDate", value)}
                   error={form.errors.startDate}
+                  minDate={new Date()}
                   radius="md"
                   rightSection={<Calendar size={16} />}
                 />
@@ -492,6 +511,11 @@ export default function CreateRatePage() {
                   value={form.values.endDate}
                   onChange={(value) => form.setFieldValue("endDate", value)}
                   error={form.errors.endDate}
+                  minDate={
+                    form.values.startDate
+                      ? new Date(form.values.startDate)
+                      : new Date()
+                  }
                   radius="md"
                   rightSection={<Calendar size={16} />}
                 />

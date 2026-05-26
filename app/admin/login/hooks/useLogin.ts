@@ -40,6 +40,11 @@ export function useVerifyOtp(
       if (data.success && data.data) {
         setAdminUser(data.data);
       }
+      notifications.show({
+        title: "Login Successful",
+        message: "You have successfully logged in to your account.",
+        color: "green",
+      });
       options?.onSuccess?.(data);
     },
     onError: (error, variables, context, mutation) => {

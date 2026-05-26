@@ -52,7 +52,7 @@ export default function BranchSection() {
       page,
       limit: PAGE_SIZE,
       search: trimmedSearch || undefined,
-      isActive: getIsActiveParam(filter),
+      status: filter,
     };
   }, [debouncedSearch, filter, page]);
 
