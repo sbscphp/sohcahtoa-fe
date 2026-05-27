@@ -3,6 +3,24 @@
 import { FileWithPath } from "@mantine/dropzone";
 import TransactionFileUploadInput from "../../../../../forms/TransactionFileUploadInput";
 
+export interface SchoolFeesCoreDocumentLabels {
+  evidenceOfAdmission: string;
+  schoolInvoice: string;
+  passport: string;
+}
+
+const DEFAULT_LABELS: SchoolFeesCoreDocumentLabels = {
+  evidenceOfAdmission: "Evidence of Admission",
+  schoolInvoice: "School Invoice",
+  passport: "International Passport",
+};
+
+export const OTHER_ADMISSION_DOCUMENT_LABELS: SchoolFeesCoreDocumentLabels = {
+  evidenceOfAdmission: "Evidence of Enrollment",
+  schoolInvoice: "School Invoice",
+  passport: "International Passport",
+};
+
 interface UndergraduateFormProps {
   evidenceOfAdmissionFile: FileWithPath | null;
   schoolInvoiceFile: FileWithPath | null;
@@ -13,6 +31,7 @@ interface UndergraduateFormProps {
   evidenceOfAdmissionError?: string;
   schoolInvoiceError?: string;
   passportError?: string;
+  labels?: SchoolFeesCoreDocumentLabels;
 }
 
 export default function UndergraduateForm({
@@ -25,11 +44,12 @@ export default function UndergraduateForm({
   evidenceOfAdmissionError,
   schoolInvoiceError,
   passportError,
+  labels = DEFAULT_LABELS,
 }: Readonly<UndergraduateFormProps>) {
   return (
     <>
       <TransactionFileUploadInput
-        label="Evidence of Admission"
+        label={labels.evidenceOfAdmission}
         required
         value={evidenceOfAdmissionFile}
         onChange={onEvidenceOfAdmissionChange}
@@ -37,7 +57,7 @@ export default function UndergraduateForm({
       />
 
       <TransactionFileUploadInput
-        label="School Invoice"
+        label={labels.schoolInvoice}
         required
         value={schoolInvoiceFile}
         onChange={onSchoolInvoiceChange}
@@ -45,7 +65,7 @@ export default function UndergraduateForm({
       />
 
       <TransactionFileUploadInput
-        label="International Passport"
+        label={labels.passport}
         required
         value={passportFile}
         onChange={onPassportChange}

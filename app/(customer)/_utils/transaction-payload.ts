@@ -6,6 +6,7 @@ import type {
   PickupLocation,
 } from "@/app/_lib/api/types";
 import type { TransactionType } from "./transaction-document-requirements";
+import { mapUiAdmissionTypeToApi } from "./school-fees-admission";
 
 export interface TransactionFormDataBag {
   uploadDocumentsData: Record<string, unknown> | null;
@@ -297,7 +298,9 @@ function buildSchoolFeesPayload(
     purpose: "School fees",
     destinationCountry: "United Kingdom",
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
-    admissionType: (upload?.admissionType as "UNDERGRADUATE" | "POSTGRADUATE" | "OTHER") ?? undefined,
+    admissionType: mapUiAdmissionTypeToApi(
+      typeof upload?.admissionType === "string" ? upload.admissionType : undefined,
+    ),
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
     passportDocumentNumber:
       typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,

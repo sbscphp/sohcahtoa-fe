@@ -6,6 +6,12 @@ import {
   shouldLockKycPrefill,
   useCustomerProfileBvnNin,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
+import {
+  isOtherAdmissionType,
+  requiresUndergraduateStyleDocuments,
+  SCHOOL_FEES_ADMISSION_OPTIONS,
+  SCHOOL_FEES_ADMISSION_UI,
+} from "@/app/(customer)/_utils/school-fees-admission";
 import { passportNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
 import { ChevronDown } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,14 +22,11 @@ import { Info } from "lucide-react";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import OtherForm from "./components/OtherForm";
 import PostgraduateForm from "./components/PostgraduateForm";
 import SchoolFeesKycFields from "./components/SchoolFeesKycFields";
-import UndergraduateForm from "./components/UndergraduateForm";
-
-function isOtherAdmissionType(admissionType: string): boolean {
-  return admissionType.startsWith("Other");
-}
+import UndergraduateForm, {
+  OTHER_ADMISSION_DOCUMENT_LABELS,
+} from "./components/UndergraduateForm";
 
 function addSchoolFeesKycIssues(
   data: {
@@ -73,96 +76,77 @@ function addSchoolFeesKycIssues(
   );
 }
 
-const uploadDocumentsSchema = z
-  .object({
-    admissionType: z.string().min(1, "Admission type is required"),
-    formAId: formAIdSchema,
-    evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
-    schoolInvoiceFile: z.custom<FileWithPath | null>().optional(),
-    ninNumber: z.string().optional(),
-    passportFile: z.custom<FileWithPath | null>().optional(),
-    passportDocumentNumber: z.string().optional(),
-    passportIssueDate: z.string().optional(),
-    passportExpiryDate: z.string().optional(),
-    statementOfResultFile: z.custom<FileWithPath | null>().optional(),
-    firstDegreeCertificateFile: z.custom<FileWithPath | null>().optional(),
-    transactionFile: z.custom<FileWithPath | null>().optional(),
-    transactionDescription: z.string().max(1000, "Transaction Description is too long").optional(),
-  })
-  .superRefine((data, ctx) => {
-    const requireFile = (
-      path:
-        | "evidenceOfAdmissionFile"
-        | "schoolInvoiceFile"
-        | "passportFile"
-        | "statementOfResultFile"
-        | "firstDegreeCertificateFile"
-        | "transactionFile",
-      message: string
-    ) => {
-      const value = data[path] as FileWithPath | null | undefined;
-      if (!value) {
-        ctx.addIssue({ code: "custom", path: [path], message });
-      }
-    };
+function requireUndergraduateStyleFiles(
+  data: z.infer<typeof uploadDocumentsBaseSchema>,
+  ctx: z.RefinementCtx,
+  options?: { enrollmentLabel?: string }
+) {
+  const enrollmentMessage =
+    options?.enrollmentLabel ?? "Evidence of Admission is required";
 
-    const requireText = (path: "transactionDescription", message: string) => {
-      const value = (data[path] ?? "").toString().trim();
-      if (!value) {
-        ctx.addIssue({ code: "custom", path: [path], message });
-      }
-    };
-
-    const needsKyc =
-      data.admissionType === "Undergraduate" ||
-      data.admissionType === "Postgraduate" ||
-      isOtherAdmissionType(data.admissionType);
-
-    if (needsKyc) {
-      addSchoolFeesKycIssues(data, ctx);
+  const requireFile = (
+    path: "evidenceOfAdmissionFile" | "schoolInvoiceFile" | "passportFile",
+    message: string
+  ) => {
+    const value = data[path] as FileWithPath | null | undefined;
+    if (!value) {
+      ctx.addIssue({ code: "custom", path: [path], message });
     }
+  };
 
-    if (data.admissionType === "Undergraduate") {
-      requireFile("evidenceOfAdmissionFile", "Evidence of Admission is required");
-      requireFile("schoolInvoiceFile", "School Invoice is required");
-      requireFile("passportFile", "International Passport file is required");
-      return;
-    }
+  requireFile("evidenceOfAdmissionFile", enrollmentMessage);
+  requireFile("schoolInvoiceFile", "School Invoice is required");
+  requireFile("passportFile", "International Passport file is required");
+}
 
-    if (data.admissionType === "Postgraduate") {
-      requireFile("evidenceOfAdmissionFile", "Evidence of Admission is required");
-      requireFile("schoolInvoiceFile", "School Invoice is required");
-      requireFile("firstDegreeCertificateFile", "First Degree Certificate is required");
-      requireFile("statementOfResultFile", "Statement of Result is required");
-      requireFile("passportFile", "International Passport file is required");
-      return;
-    }
+const uploadDocumentsBaseSchema = z.object({
+  admissionType: z.string().min(1, "Admission type is required"),
+  formAId: formAIdSchema,
+  evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
+  schoolInvoiceFile: z.custom<FileWithPath | null>().optional(),
+  ninNumber: z.string().optional(),
+  passportFile: z.custom<FileWithPath | null>().optional(),
+  passportDocumentNumber: z.string().optional(),
+  passportIssueDate: z.string().optional(),
+  passportExpiryDate: z.string().optional(),
+  statementOfResultFile: z.custom<FileWithPath | null>().optional(),
+  firstDegreeCertificateFile: z.custom<FileWithPath | null>().optional(),
+});
 
-    if (isOtherAdmissionType(data.admissionType)) {
-      requireFile("transactionFile", "Transaction Document is required");
-      requireText("transactionDescription", "Transaction Description is required");
+const uploadDocumentsSchema = uploadDocumentsBaseSchema.superRefine((data, ctx) => {
+  const requireFile = (
+    path: "evidenceOfAdmissionFile" | "schoolInvoiceFile" | "passportFile" | "statementOfResultFile" | "firstDegreeCertificateFile",
+    message: string
+  ) => {
+    const value = data[path] as FileWithPath | null | undefined;
+    if (!value) {
+      ctx.addIssue({ code: "custom", path: [path], message });
     }
-  });
+  };
+
+  addSchoolFeesKycIssues(data, ctx);
+
+  if (requiresUndergraduateStyleDocuments(data.admissionType)) {
+    requireUndergraduateStyleFiles(data, ctx, {
+      enrollmentLabel: isOtherAdmissionType(data.admissionType)
+        ? "Evidence of Enrollment is required"
+        : undefined,
+    });
+    return;
+  }
+
+  if (data.admissionType === SCHOOL_FEES_ADMISSION_UI.POSTGRADUATE) {
+    requireFile("evidenceOfAdmissionFile", "Evidence of Admission is required");
+    requireFile("schoolInvoiceFile", "School Invoice is required");
+    requireFile("firstDegreeCertificateFile", "First Degree Certificate is required");
+    requireFile("statementOfResultFile", "Statement of Result is required");
+    requireFile("passportFile", "International Passport file is required");
+  }
+});
 
 export type SchoolFeesUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
-type SchoolFeesUploadDocumentsFormValues = {
-  admissionType: string;
-  formAId?: string;
-  evidenceOfAdmissionFile?: FileWithPath | null;
-  schoolInvoiceFile?: FileWithPath | null;
-  ninNumber?: string;
-  passportFile?: FileWithPath | null;
-  passportDocumentNumber?: string;
-  passportIssueDate?: string;
-  passportExpiryDate?: string;
-  statementOfResultFile?: FileWithPath | null;
-  firstDegreeCertificateFile?: FileWithPath | null;
-  transactionFile?: FileWithPath | null;
-  transactionDescription?: string;
-};
-
-const ADMISSION_TYPES = ["Undergraduate", "Postgraduate", "Other (high school, pre-school etc)"];
+type SchoolFeesUploadDocumentsFormValues = z.infer<typeof uploadDocumentsBaseSchema>;
 
 interface SchoolFeesUploadDocumentsStepProps {
   initialValues?: Partial<SchoolFeesUploadDocumentsFormValues>;
@@ -170,8 +154,6 @@ interface SchoolFeesUploadDocumentsStepProps {
   onBack?: () => void;
   lockKycPrefill?: boolean;
 }
-
-type FormValues = SchoolFeesUploadDocumentsFormValues;
 
 export default function SchoolFeesUploadDocumentsStep({
   initialValues,
@@ -188,7 +170,7 @@ export default function SchoolFeesUploadDocumentsStep({
   );
   const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
 
-  const form = useForm<FormValues>({
+  const form = useForm<SchoolFeesUploadDocumentsFormValues>({
     mode: "controlled",
     initialValues: {
       formAId: initialValues?.formAId || "",
@@ -202,8 +184,6 @@ export default function SchoolFeesUploadDocumentsStep({
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       statementOfResultFile: initialValues?.statementOfResultFile ?? null,
       firstDegreeCertificateFile: initialValues?.firstDegreeCertificateFile ?? null,
-      transactionFile: initialValues?.transactionFile ?? null,
-      transactionDescription: initialValues?.transactionDescription || "",
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -220,10 +200,21 @@ export default function SchoolFeesUploadDocumentsStep({
     onSubmit(values as SchoolFeesUploadDocumentsFormData);
   });
 
-  const isUndergraduate = admissionType === "Undergraduate";
-  const isPostgraduate = admissionType === "Postgraduate";
+  const isPostgraduate = admissionType === SCHOOL_FEES_ADMISSION_UI.POSTGRADUATE;
+  const isUndergraduateStyle = requiresUndergraduateStyleDocuments(admissionType);
   const isOther = isOtherAdmissionType(admissionType);
-  const showKycFields = isUndergraduate || isPostgraduate || isOther;
+  const showKycFields = Boolean(admissionType);
+
+  const handleAdmissionTypeChange = (value: string | null) => {
+    const selectedValue = value || "";
+    setAdmissionType(selectedValue);
+    form.setFieldValue("admissionType", selectedValue);
+
+    if (requiresUndergraduateStyleDocuments(selectedValue)) {
+      form.setFieldValue("statementOfResultFile", null);
+      form.setFieldValue("firstDegreeCertificateFile", null);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -237,19 +228,10 @@ export default function SchoolFeesUploadDocumentsStep({
         </p>
       </div>
 
-      <Alert
-        icon={<Info size={14} />}
-        title=""
-        className="bg-white! border-gray-300!"
-      >
+      <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
         <p className="text-body-text-200">
-          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
-          Please note the maximum you can
-          transact is <strong>$10,000 per year</strong>.
+          Please note the maximum you can transact is <strong>$10,000 per year</strong>.
         </p>
-        {/* <p className="text-body-text-200 mt-2">
-          {REVIEW_TIMELINE_MESSAGE}
-        </p> */}
       </Alert>
 
       <TextInput
@@ -266,15 +248,11 @@ export default function SchoolFeesUploadDocumentsStep({
         label="Admission Type"
         required
         placeholder="Select an Option"
-        data={ADMISSION_TYPES}
+        data={SCHOOL_FEES_ADMISSION_OPTIONS}
         size="md"
         rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
         value={admissionType}
-        onChange={(value) => {
-          const selectedValue = value || "";
-          setAdmissionType(selectedValue);
-          form.setFieldValue("admissionType", selectedValue);
-        }}
+        onChange={handleAdmissionTypeChange}
         error={form.errors.admissionType}
       />
 
@@ -299,8 +277,9 @@ export default function SchoolFeesUploadDocumentsStep({
         />
       )}
 
-      {isUndergraduate && (
+      {isUndergraduateStyle && (
         <UndergraduateForm
+          labels={isOther ? OTHER_ADMISSION_DOCUMENT_LABELS : undefined}
           evidenceOfAdmissionFile={form.values.evidenceOfAdmissionFile ?? null}
           schoolInvoiceFile={form.values.schoolInvoiceFile ?? null}
           passportFile={form.values.passportFile ?? null}
@@ -336,17 +315,6 @@ export default function SchoolFeesUploadDocumentsStep({
           statementOfResultError={form.errors.statementOfResultFile as string}
           firstDegreeCertificateError={form.errors.firstDegreeCertificateFile as string}
           passportError={form.errors.passportFile as string}
-        />
-      )}
-
-      {isOther && (
-        <OtherForm
-          transactionFile={(form.values as FormValues).transactionFile ?? null}
-          transactionDescription={(form.values as FormValues).transactionDescription || ""}
-          onTransactionFileChange={(file) => form.setFieldValue("transactionFile", file)}
-          onTransactionDescriptionChange={(value) => form.setFieldValue("transactionDescription", value)}
-          transactionFileError={form.errors.transactionFile as string}
-          transactionDescriptionError={form.errors.transactionDescription as string}
         />
       )}
 
