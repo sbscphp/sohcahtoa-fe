@@ -28,6 +28,7 @@ import {
   TransactionSettlementSection,
   CashPickupDetailsSection,
   BeneficiaryDetailsSection,
+  TransactionBankAccountsSection,
   type TransactionDetailsData,
   type RequiredDocumentsData,
   type PaymentDetailsData,
@@ -117,6 +118,7 @@ export default function TransactionDetailPage() {
     paymentAmountNgn > 0;
   const cashPickup = apiData?.cashPickup ?? null;
   const beneficiaryDetails = apiData?.beneficiaryDetails;
+  const bankAccounts = apiData?.bankAccounts ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -252,6 +254,9 @@ export default function TransactionDetailPage() {
       <div className="flex flex-col gap-4 pb-8">
         <TransactionDetailsSection data={payload.transactionDetails} />
         {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
+        {bankAccounts.length > 0 ? (
+          <TransactionBankAccountsSection accounts={bankAccounts} />
+        ) : null}
         {beneficiaryDetails ? (
           <BeneficiaryDetailsSection data={beneficiaryDetails} />
         ) : null}

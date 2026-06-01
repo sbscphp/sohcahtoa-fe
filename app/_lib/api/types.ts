@@ -826,6 +826,15 @@ export interface TransactionDetailStep {
   createdAt: string;
 }
 
+export interface TransactionDetailBankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  isDefault?: boolean;
+  isVerified?: boolean;
+}
+
 export interface TransactionDetailCashPickup {
   id: string;
   transactionId: string;
@@ -915,6 +924,7 @@ export interface TransactionDetailData {
     admissionType: string | null;
   } | null;
   beneficiaryDetails?: Record<string, unknown> | null;
+  bankAccounts?: TransactionDetailBankAccount[] | null;
   rejection: string | null;
   requiredDocuments: TransactionDetailRequiredDoc[];
   cashPickup: TransactionDetailCashPickup | null;

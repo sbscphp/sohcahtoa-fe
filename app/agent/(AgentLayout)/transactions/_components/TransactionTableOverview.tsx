@@ -19,6 +19,10 @@ import type {
 import { Transaction } from "../types";
 
 
+import {
+  TRANSACTION_GROUP_FILTER_OPTIONS,
+} from "@/app/(customer)/_lib/transaction-group-tabs";
+
 interface TransactionTableOverviewProps {
   activeType: string;
   onTypeChange: (type: string) => void;
@@ -35,13 +39,9 @@ interface TransactionTableOverviewProps {
   onRowClick?: (transaction: Transaction) => void;
   isLoading?: boolean;
   skeletonRowCount?: number;
+  /** Defaults to All + Buy/Sell/Receive FX tabs. */
+  filterOptions?: FilterTabOption[];
 }
-
-const FILTER_OPTIONS: FilterTabOption[] = [
-  { value: "Buy FX", label: "Buy FX" },
-  { value: "Sell FX", label: "Sell FX" },
-  { value: "Receive FX", label: "Receive FX" },
-];
 
 export default function TransactionTableOverview({
   activeType,
@@ -59,7 +59,8 @@ export default function TransactionTableOverview({
   onRowClick,
   isLoading = false,
   skeletonRowCount = 4,
-}: TransactionTableOverviewProps) {
+  filterOptions = TRANSACTION_GROUP_FILTER_OPTIONS,
+}: Readonly<TransactionTableOverviewProps>) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return {
@@ -156,7 +157,7 @@ export default function TransactionTableOverview({
   return (
     <TableWrapper
       title="All Transactions"
-      filterOptions={FILTER_OPTIONS}
+      filterOptions={filterOptions}
       activeFilter={activeType}
       onFilterChange={onTypeChange}
       onFilterClick={onFilterClick}

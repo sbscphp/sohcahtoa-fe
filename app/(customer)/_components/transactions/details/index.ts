@@ -12,3 +12,4 @@ export { default as TransactionSettlementSection } from "./TransactionSettlement
 export type { TransactionSettlementData } from "./TransactionSettlementSection";
 export { default as CashPickupDetailsSection } from "./CashPickupDetailsSection";
 export { default as BeneficiaryDetailsSection } from "./BeneficiaryDetailsSection";
+export { default as TransactionBankAccountsSection } from "./TransactionBankAccountsSection";

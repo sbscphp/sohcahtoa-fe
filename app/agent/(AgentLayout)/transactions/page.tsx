@@ -17,19 +17,18 @@ import { mapListItemToTransaction } from "./helper";
 import { agentApi } from "../../_services/agent-api";
 import { Transaction } from './types';
 import type { TransactionListParams } from "@/app/_lib/api/types";
-
-const TAB_TO_GROUP = {
-  "Buy FX": "BUY" as const,
-  "Sell FX": "SELL" as const,
-  "Receive FX": "REMITTANCE" as const,
-};
+import {
+  resolveTransactionListGroup,
+  TRANSACTION_GROUP_FILTER_OPTIONS,
+  TRANSACTION_GROUP_TAB_ALL,
+} from "@/app/(customer)/_lib/transaction-group-tabs";
 
 const PAGE_SIZE = 10;
 
 export default function AgentTransactionsPage() {
   const router = useRouter();
-  const [activeType, setActiveType] = useState<string>("Buy FX");
-  const group = TAB_TO_GROUP[activeType as keyof typeof TAB_TO_GROUP] ?? undefined;
+  const [activeType, setActiveType] = useState<string>(TRANSACTION_GROUP_TAB_ALL);
+  const group = resolveTransactionListGroup(activeType);
 
   type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
 
@@ -158,6 +157,7 @@ export default function AgentTransactionsPage() {
       <div className="bg-white rounded-2xl p-4">
         <TransactionTableOverview
           activeType={activeType}
+          filterOptions={TRANSACTION_GROUP_FILTER_OPTIONS}
           onTypeChange={(type) => {
             setActiveType(type);
             table.setPage(1);

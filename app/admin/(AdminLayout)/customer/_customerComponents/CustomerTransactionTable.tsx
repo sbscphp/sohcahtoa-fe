@@ -82,6 +82,18 @@ interface CustomerTransactionsTableProps {
 }
 
 const PAGE_SIZE = 5;
+
+const customerTxTabToApiType: Record<string, string | undefined> = {
+  all: undefined,
+  buyfx: "buyfx",
+  sellfx: "sellfx",
+  receivefx: "receivefx",
+};
+
+function resolveCustomerTransactionListType(tab: string): string | undefined {
+  return customerTxTabToApiType[tab];
+}
+
 const STATUS_OPTIONS = [
   { value: "Filter By", label: "Filter By" },
   { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
@@ -152,7 +164,7 @@ export default function CustomerTransactionsTable({
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [status, setStatus] = useState("Filter By");
-  const [activeTab, setActiveTab] = useState<string>("buyfx");
+  const [activeTab, setActiveTab] = useState<string>("all");
   const router = useRouter();
 
   const statusParam = status === "Filter By" ? undefined : status;
@@ -164,7 +176,7 @@ export default function CustomerTransactionsTable({
             page,
             limit: PAGE_SIZE,
             status: statusParam,
-            type: activeTab,
+            type: resolveCustomerTransactionListType(activeTab),
             search: debouncedSearch || undefined,
           }),
         ]
@@ -174,7 +186,7 @@ export default function CustomerTransactionsTable({
         page,
         limit: PAGE_SIZE,
         status: statusParam,
-        type: activeTab,
+        type: resolveCustomerTransactionListType(activeTab),
         search: debouncedSearch || undefined,
       }) as unknown as Promise<CustomerTransactionsResponse>,
     !!customerId
@@ -188,7 +200,7 @@ export default function CustomerTransactionsTable({
     () =>
       adminApi.customers.exportTransactions(customerId, {
         status: statusParam,
-        type: activeTab,
+        type: resolveCustomerTransactionListType(activeTab),
         search: debouncedSearch || undefined,
       }),
     {
@@ -315,11 +327,12 @@ export default function CustomerTransactionsTable({
         color="orange"
         value={activeTab}
         onChange={(value) => {
-          setActiveTab(value || "buyfx");
+          setActiveTab(value || "all");
           setPage(1);
         }}
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
+          <AdminTabButton value="all">All</AdminTabButton>
           <AdminTabButton value="buyfx">Buy FX</AdminTabButton>
           <AdminTabButton value="sellfx">Sell FX</AdminTabButton>
           <AdminTabButton value="receivefx">Receive FX</AdminTabButton>
