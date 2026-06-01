@@ -245,7 +245,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
                   <button
                     type="button"
                     aria-label={userManagementAccordion.label}
-                    className={`flex w-full items-center justify-center rounded-lg px-3 py-2.5 transition-colors ${linkClassName(isUserManagementChildActive)}`}
+                    className={`flex w-full cursor-pointer! items-center justify-center rounded-lg px-3 py-2.5 transition-colors ${linkClassName(isUserManagementChildActive)}`}
                   >
                     <AccordionIcon className="h-5 w-5 shrink-0" />
                   </button>

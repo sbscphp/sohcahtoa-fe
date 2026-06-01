@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, LogOut, Menu } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getBreadcrumbs } from "@/lib/adminBreadcrumbs";
+import { adminRoutes } from "@/lib/adminRoutes";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { adminApi } from "@/app/admin/_services/admin-api";
 import { useHeaderContent } from "../../_contexts/HeaderContentContext";
 import { useAdminLogout } from "../../login/hooks/useAdminLogout";
 import { ConfirmationModal } from "../ConfirmationModal";
@@ -29,6 +33,12 @@ export default function Header({
   const breadcrumbs = getBreadcrumbs(pathname);
   const { content } = useHeaderContent();
   const { logout, redirectToLogin, isLoggingOut } = useAdminLogout();
+
+  const { data: unreadResponse } = useFetchData(
+    [...adminKeys.notifications.unread({ limit: 100 })],
+    () => adminApi.notifications.getUnreadNotifications({ limit: 100 })
+  );
+  const unreadCount = unreadResponse?.data?.length ?? 0;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -115,13 +125,27 @@ export default function Header({
           )}
         </div>
 
-        <button
-          onClick={() => setConfirmOpen(true)}
-          className="rounded-full cursor-pointer w-9 h-9 flex items-center justify-center hover:bg-primary-25 transition-colors"
-          aria-label="Log out"
-        >
-          <LogOut size={20} className="text-primary-400" />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href={adminRoutes.adminSettingsNotifications()}
+            className="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-50 transition-colors hover:bg-gray-50"
+            aria-label="Notifications"
+          >
+            <Bell size={16} className="text-body-text-300" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={() => setConfirmOpen(true)}
+            className="rounded-full cursor-pointer w-9 h-9 flex items-center justify-center hover:bg-primary-25 transition-colors"
+            aria-label="Log out"
+          >
+            <LogOut size={20} className="text-primary-400" />
+          </button>
+        </div>
       </header>
 
       <ConfirmationModal
