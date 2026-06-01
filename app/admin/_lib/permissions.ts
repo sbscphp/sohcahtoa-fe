@@ -29,6 +29,7 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
  * unauthorized page).  Dashboard is always first because it has no module
  * requirement and is the natural home screen.
  */
+/** Includes agent/customer for users whose only view permission is those modules. */
 export const ORDERED_NAV_ROUTES = [
   "/admin/dashboard",
   "/admin/transactions",
