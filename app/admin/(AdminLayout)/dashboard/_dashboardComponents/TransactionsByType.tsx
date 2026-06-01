@@ -35,7 +35,7 @@ export function TransactionsByType({
   return (
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="md">
-        <Text fw={500}>Transactions by Type</Text>
+        <Text fw={500}>Transactions Type</Text>
 
         {loading ? (
           <Skeleton height={28} width={120} radius="lg" />

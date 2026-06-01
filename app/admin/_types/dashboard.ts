@@ -8,6 +8,8 @@ export type TransactionStatus =
 export interface Transaction {
   id: string;
   referenceNumber?: string;
+  customerName?: string;
+  transactionType: string;
   date: string;
   time: string;
   /** Display label for StatusBadge (human-readable) */
