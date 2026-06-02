@@ -19,10 +19,7 @@ export function TaskAndNotificationList({
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="sm">
         <Text fw={500}>Task List & Notification</Text>
-        <Link href={{
-          pathname: adminRoutes.adminSettings(),
-          query: { tab: "notifications" },
-        }} className="flex items-center">
+        <Link href={adminRoutes.adminSettingsNotifications()} className="flex items-center">
           <Text size="sm" c="orange">
             View all
           </Text>

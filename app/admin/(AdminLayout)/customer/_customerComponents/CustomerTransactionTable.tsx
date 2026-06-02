@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
@@ -145,7 +145,7 @@ function mapTransaction(item: ApiTransactionItem): Transaction {
     stage: humanize(item.transactionStage ?? item.stage),
     workflow: humanize(item.workflowStage ?? item.workflow),
     amount: parseAmount(item.amount ?? item.transactionValue),
-    status: humanize(item.status),
+    status: item.status ?? "",
   };
 }
 
@@ -270,7 +270,7 @@ export default function CustomerTransactionsTable({
     <Text key="amount" size="sm">
       {formatCurrency(item.amount)}
     </Text>,
-    <StatusBadge key="status" status={item.status} defaultColor="orange" />,
+    <TransactionStatusBadge key="status" status={item.status} />,
     <RowActionIcon
       key="action"
       onClick={() => router.push(adminRoutes.adminTransactionDetails(item.id))}

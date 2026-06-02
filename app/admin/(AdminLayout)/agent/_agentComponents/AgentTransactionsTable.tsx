@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Button, Group, Select, Text, TextInput } from "@mantine/core";
 import { Search } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
@@ -17,8 +16,7 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
-
-type TransactionStatus = "Posted" | "Pending" | "Rejected";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 
 interface AgentTransaction {
   id: string;
@@ -28,7 +26,7 @@ interface AgentTransaction {
   transactionValue: number;
   transactionCurrency?: string;
   referenceNumber?: string;
-  status: TransactionStatus;
+  status: string;
 }
 
 interface AgentTransactionsTableProps {
@@ -81,16 +79,6 @@ function parseNumber(value: unknown): number {
   return 0;
 }
 
-function mapApiStatusToUi(value?: string): TransactionStatus {
-  const normalized = (value ?? "").toUpperCase().trim();
-  if (normalized === "REJECTED") return "Rejected";
-  if (normalized === "AWAITING_VERIFICATION") return "Pending";
-  if (normalized === "SETTLED") return "Posted";
-  if (normalized === "POSTED") return "Posted";
-  // Fallback: treat unknown statuses as pending.
-  return "Pending";
-}
-
 function formatDate(value?: string): string {
   if (!value) return "—";
   const d = new Date(value);
@@ -122,7 +110,7 @@ function mapTransaction(item: ApiTransactionItem): AgentTransaction {
     transactionValue: parseNumber(item.value),
     transactionCurrency: item.currency,
     referenceNumber: item.referenceNumber,
-    status: mapApiStatusToUi(item.status),
+    status: item.status ?? "",
   };
 }
 
@@ -139,7 +127,7 @@ export default function AgentTransactionsTable({
     const uiStatus =
       !statusFilter || statusFilter === "All"
         ? undefined
-        : (statusFilter as TransactionStatus);
+        : (statusFilter as string);
 
     const status =
       uiStatus === "Pending"
@@ -241,7 +229,7 @@ export default function AgentTransactionsTable({
     <Text key="transactionValue" size="sm" fw={500}>
       {formatCurrency(tx.transactionValue)}
     </Text>,
-    <StatusBadge key="actionEffect" status={tx.status} />,
+    <TransactionStatusBadge key="status" status={tx.status} />,
     <RowActionIcon
       key="action"
       onClick={() => {

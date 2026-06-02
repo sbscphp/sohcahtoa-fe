@@ -125,6 +125,15 @@ export const adminKeys = {
     pendingApprovals: () => [...adminKeys.dashboard.all, "pending-approvals"] as const,
   },
 
+  notifications: {
+    all: ["admin", "notifications"] as const,
+    lists: () => [...adminKeys.notifications.all, "list"] as const,
+    list: (params?: { page?: number; limit?: number }) =>
+      [...adminKeys.notifications.lists(), params] as const,
+    unread: (params?: { page?: number; limit?: number }) =>
+      [...adminKeys.notifications.all, "unread", params] as const,
+  },
+
   auditTrail: {
     all: ["admin", "audit-trail"] as const,
     list: (params?: {

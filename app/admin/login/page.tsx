@@ -29,7 +29,9 @@ export default function LoginPage() {
   const verifyOtp = useVerifyOtp({
     onSuccess: () => {
       setOtpModalOpened(false);
-      setSuccessOpened(true);
+      router.push(
+        getFirstAccessibleRoute(adminUser?.userPermissions ?? [])
+      );
     },
   });
 

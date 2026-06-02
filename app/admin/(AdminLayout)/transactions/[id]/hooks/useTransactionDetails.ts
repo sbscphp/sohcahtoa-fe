@@ -252,6 +252,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const beneficiary = asRecord(
     raw.beneficiary ||
       raw.beneficiaryDetails ||
+      (raw?.steps as any[])?.[0]?.data?.beneficiaryDetails ||
       asRecord(firstStepDataRaw).beneficiaryDetails
   );
   const stepData = asRecord(asRecord(firstStepDataRaw));
@@ -314,10 +315,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     fields: commonFields.filter((item) => item.value !== "--"),
   };
 
-  const needsBeneficiarySection =
-    transactionType === "SCHOOL_FEES" ||
-    transactionType === "MEDICAL" ||
-    transactionType === "PROFESSIONAL_BODY";
+  const needsBeneficiarySection = true;
 
   const beneficiarySection: OverviewSection = {
     title:
@@ -332,6 +330,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
         label: "Account Name",
         value: pickString(
           beneficiary.accountName,
+          beneficiary.bankAccountName,
           receipt.accountName,
           raw.accountName,
           raw.beneficiaryName
@@ -339,9 +338,10 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
       },
       {
         label: "Account Number",
-        value: pickString(beneficiary.accountNumber, receipt.accountNumber, raw.accountNumber),
+        value: pickString(beneficiary.accountNumber, beneficiary.bankAccountNumber, receipt.accountNumber, raw.accountNumber),
       },
-      { label: "IBAN Number", value: pickString(beneficiary.ibanNumber, receipt.ibanNumber, raw.ibanNumber) },
+      { label: "IBAN Number", value: pickString(beneficiary.ibanNumber, beneficiary.bankAccountIban, receipt.ibanNumber, raw.ibanNumber) },
+      { label: "Swift Code", value: pickString(beneficiary.swiftCode, beneficiary.bankAccountSwiftCode, receipt.swiftCode, raw.swiftCode) },
     ].filter((item) => item.value !== "--"),
   };
 

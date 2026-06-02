@@ -30,6 +30,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { CURRENCIES } from "@/app/admin/_lib/constants";
+import { buildApiDateTimeIso } from "@/app/utils/helper/formatLocalDate";
 
 const SECTION_TITLE_CLASS = "text-lg! font-semibold! text-orange-500!";
 const SECTION_DESC_CLASS = "text-base! text-body-text-100! mb-4!";
@@ -53,56 +54,13 @@ function parseRateValue(value: string): number | null {
   return parsed;
 }
 
-function buildDateTimeIso(date: string | null, time: string): string | null {
-  if (!date || !time.trim()) return null;
-
-  const trimmed = time.trim();
-  let hours = 0;
-  let minutes = 0;
-  let seconds = 0;
-
-  const amPmMatch = trimmed.match(
-    /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])$/,
-  );
-  const twentyFourHourMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-
-  if (amPmMatch) {
-    const h = Number(amPmMatch[1]);
-    const m = Number(amPmMatch[2]);
-    const s = Number(amPmMatch[3] ?? "0");
-    const meridiem = amPmMatch[4].toUpperCase();
-
-    if (h < 1 || h > 12 || m > 59 || s > 59) return null;
-    hours = h % 12;
-    if (meridiem === "PM") hours += 12;
-    minutes = m;
-    seconds = s;
-  } else if (twentyFourHourMatch) {
-    const h = Number(twentyFourHourMatch[1]);
-    const m = Number(twentyFourHourMatch[2]);
-    const s = Number(twentyFourHourMatch[3] ?? "0");
-
-    if (h > 23 || m > 59 || s > 59) return null;
-    hours = h;
-    minutes = m;
-    seconds = s;
-  } else {
-    return null;
-  }
-
-  const dateTime = new Date(date);
-  dateTime.setHours(hours, minutes, seconds, 0);
-
-  return Number.isNaN(dateTime.getTime()) ? null : dateTime.toISOString();
-}
-
 function buildCreateRatePayload(
   values: RateFormValues,
 ): CreateRatePayload | null {
   const buyRate = parseRateValue(values.buyRateInput);
   const sellRate = parseRateValue(values.sellRateInput);
-  const validFrom = buildDateTimeIso(values.startDate, values.startTime);
-  const validUntil = buildDateTimeIso(values.endDate, values.endTime);
+  const validFrom = buildApiDateTimeIso(values.startDate, values.startTime);
+  const validUntil = buildApiDateTimeIso(values.endDate, values.endTime);
 
   if (
     !values.buyCurrency ||
@@ -162,20 +120,38 @@ export default function CreateRatePage() {
         parseRateValue(value) !== null
           ? null
           : "Enter a valid sell rate greater than 0",
-      startDate: (value) => (value ? null : "Effective start date is required"),
+      startDate: (value) => {
+        if (!value) return "Effective start date is required";
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selected = new Date(value);
+        selected.setHours(0, 0, 0, 0);
+        if (selected < today) return "Start date cannot be before today";
+        return null;
+      },
       startTime: (value, values) => {
         if (!value.trim()) return "Effective start time is required";
-        return buildDateTimeIso(values.startDate, value)
+        return buildApiDateTimeIso(values.startDate, value)
           ? null
           : "Enter a valid start time";
       },
-      endDate: (value) => (value ? null : "Effective end date is required"),
+      endDate: (value, values) => {
+        if (!value) return "Effective end date is required";
+        if (values.startDate) {
+          const start = new Date(values.startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(value);
+          end.setHours(0, 0, 0, 0);
+          if (end < start) return "End date cannot be before start date";
+        }
+        return null;
+      },
       endTime: (value, values) => {
         if (!value.trim()) return "Effective end time is required";
-        const validUntil = buildDateTimeIso(values.endDate, value);
+        const validUntil = buildApiDateTimeIso(values.endDate, value);
         if (!validUntil) return "Enter a valid end time";
 
-        const validFrom = buildDateTimeIso(values.startDate, values.startTime);
+        const validFrom = buildApiDateTimeIso(values.startDate, values.startTime);
         if (
           validFrom &&
           new Date(validUntil).getTime() <= new Date(validFrom).getTime()
@@ -455,6 +431,7 @@ export default function CreateRatePage() {
                   value={form.values.startDate}
                   onChange={(value) => form.setFieldValue("startDate", value)}
                   error={form.errors.startDate}
+                  minDate={new Date()}
                   radius="md"
                   rightSection={<Calendar size={16} />}
                 />
@@ -492,6 +469,11 @@ export default function CreateRatePage() {
                   value={form.values.endDate}
                   onChange={(value) => form.setFieldValue("endDate", value)}
                   error={form.errors.endDate}
+                  minDate={
+                    form.values.startDate
+                      ? new Date(form.values.startDate)
+                      : new Date()
+                  }
                   radius="md"
                   rightSection={<Calendar size={16} />}
                 />

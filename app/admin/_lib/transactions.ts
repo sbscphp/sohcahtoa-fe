@@ -1,0 +1,18 @@
+export const TRANSACTION_STATUS_LABELS = {
+  DRAFT: "Draft",
+  AWAITING_VERIFICATION: "Awaiting verification",
+  VERIFICATION_IN_PROGRESS: "Verification in progress",
+  VERIFICATION_COMPLETED: "Verification completed",
+  AWAITING_DEPOSIT: "Awaiting deposit",
+  DEPOSIT_PENDING: "Deposit pending",
+  DEPOSIT_CONFIRMED: "Deposit confirmed",
+  COMPLIANCE_REVIEW: "Compliance review",
+  ADMIN_APPROVAL_PENDING: "Admin approval pending",
+  APPROVED: "Approved",
+  DISBURSEMENT_IN_PROGRESS: "Disbursement in progress",
+  PENDING_RECORD_VALIDATION: "Pending record validation",
+  COMPLETED: "Completed",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+  AWAITING_DISBURSEMENT: "Awaiting disbursement",
+} as const;

@@ -19,6 +19,7 @@ interface DynamicTableSectionProps<T> {
   data: T[];
   loading?: boolean;
   renderItems: (item: T, headers: Header[]) => React.ReactNode[];
+  onRowClick?: (item: T) => void;
   emptyMessage?: string;
   emptyTitle?: string;
   pagination?: TablePaginatorProps;
@@ -33,6 +34,7 @@ export default function DynamicTableSection<T>({
   data,
   loading = false,
   renderItems,
+  onRowClick,
   emptyMessage = "No records found",
   emptyTitle = "No Records Found",
   pagination,
@@ -79,7 +81,11 @@ export default function DynamicTableSection<T>({
             {data.map((item, index) => {
               const cells = renderItems(item, headers);
               return (
-                <Table.Tr key={index}>
+                <Table.Tr
+                  key={index}
+                  onClick={onRowClick ? () => onRowClick(item) : undefined}
+                  className={onRowClick ? "cursor-pointer" : undefined}
+                >
                   {cells.map((cell, ci) => (
                     <Table.Td key={headers[ci]?.key ?? ci}>{cell}</Table.Td>
                   ))}
@@ -95,7 +101,11 @@ export default function DynamicTableSection<T>({
         {data.map((item, i) => {
           const cells = renderItems(item, headers);
           return (
-            <div key={i} className="border border-gray-200 rounded-lg p-4 shadow-sm bg-white space-y-3">
+            <div
+              key={i}
+              onClick={onRowClick ? () => onRowClick(item) : undefined}
+              className={`border border-gray-200 rounded-lg p-4 shadow-sm bg-white space-y-3${onRowClick ? " cursor-pointer" : ""}`}
+            >
               {headers.map((header, ci) => (
                 <div key={header.key}>
                   <Text fw={600} size="sm" c="dimmed">{header.label}</Text>

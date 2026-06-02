@@ -5,7 +5,6 @@ import { Group, Text, TextInput, Select, Button } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { ListFilter, Search, Upload } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
@@ -16,6 +15,7 @@ import type { BranchTransactionListItem } from "../../hooks/useBranchTransaction
 import { useBranchTransactions } from "../../hooks/useBranchTransactions";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 
 const PAGE_SIZE = 6;
 
@@ -128,7 +128,7 @@ export function BranchTransactionsTable({ branchId }: { branchId: string }) {
     <Text key="value" size="sm">
       {formatCurrency(item.transactionValue)}
     </Text>,
-    <StatusBadge key="status" status={item.status} />,
+    <TransactionStatusBadge key="status" status={item.status} />,
     <RowActionIcon
       key="action"
       onClick={() => router.push(adminRoutes.adminOutletBranchTransactionDetail(branchId, item.id))}
