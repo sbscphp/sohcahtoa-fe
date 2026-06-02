@@ -11,6 +11,7 @@ import NotificationSettingsTab from "./NotificationSettingsTab";
 import { adminRoutes } from "@/lib/adminRoutes";
 import PickUpStations from "./PickUpStations";
 import RateManagementTab from "./RateManagementTab";
+import WorkflowConfigurationTab from "./WorkflowConfigurationTab";
 import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
 import { hasModuleAccess } from "@/app/admin/_lib/permissions";
 import type { UserPermission } from "@/app/admin/_lib/atoms/admin-auth-atom";
@@ -23,8 +24,15 @@ const BASE_SETTING_TABS = [
 ] as const;
 
 const RATE_TAB = { value: "rates", label: "Rate Management" } as const;
+const WORKFLOW_CONFIGURATION_TAB = {
+  value: "workflow-configuration",
+  label: "Workflow Configuration",
+} as const;
 
-export type TabId = (typeof BASE_SETTING_TABS)[number]["value"] | "rates";
+export type TabId =
+  | (typeof BASE_SETTING_TABS)[number]["value"]
+  | "rates"
+  | "workflow-configuration";
 
 const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
 
@@ -40,10 +48,15 @@ export default function SettingsPage() {
 
   const userPermissions = adminUser?.userPermissions ?? EMPTY_USER_PERMISSIONS;
   const hasRateAccess = hasModuleAccess(userPermissions, "RATE");
+  const hasWorkflowAccess = hasModuleAccess(userPermissions, "WORKFLOW");
 
   const visibleTabs = useMemo(
-    () => (hasRateAccess ? [...BASE_SETTING_TABS, RATE_TAB] : [...BASE_SETTING_TABS]),
-    [hasRateAccess]
+    () => [
+      ...BASE_SETTING_TABS,
+      ...(hasRateAccess ? [RATE_TAB] : []),
+      ...(hasWorkflowAccess ? [WORKFLOW_CONFIGURATION_TAB] : []),
+    ],
+    [hasRateAccess, hasWorkflowAccess]
   );
 
   const validTabValues = useMemo(
@@ -60,7 +73,7 @@ export default function SettingsPage() {
     const tabParam = searchParams.get("tab");
 
     if (tabParam === "workflow") {
-      router.replace(adminRoutes.adminWorkflowDetails("item.id"));
+      router.replace(adminRoutes.adminSettingsWorkflowConfiguration());
       return;
     }
 
@@ -105,6 +118,9 @@ export default function SettingsPage() {
       {activeTab === "notifications" && <NotificationSettingsTab />}
       {activeTab === "pickup-stations" && <PickUpStations />}
       {activeTab === "rates" && hasRateAccess && <RateManagementTab />}
+      {activeTab === "workflow-configuration" && hasWorkflowAccess && (
+        <WorkflowConfigurationTab />
+      )}
     </div>
   );
 }

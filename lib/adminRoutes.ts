@@ -78,6 +78,12 @@ const adminSettingsPickupStationDetails = (
 const adminSettingsRates = () => `${adminSettings()}?tab=rates`;
 const adminSettingsRateCreate = () => `${adminSettings()}/rate/create`;
 const adminSettingsRateDetails = (id: string | number = ':id') => `${adminSettings()}/rate/${id}`;
+const adminSettingsWorkflowConfiguration = () => `${adminSettings()}?tab=workflow-configuration`;
+const adminSettingsWorkflowCreate = () => `${adminSettings()}/workflow/create`;
+const adminSettingsWorkflowDetails = (id: string | number = ':id') =>
+  `${adminSettings()}/workflow/${id}`;
+const adminSettingsWorkflowEdit = (id: string | number = ':id') =>
+  `${adminSettingsWorkflowDetails(id)}/edit`;
 
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;
@@ -157,6 +163,10 @@ export const adminRoutes = {
   adminSettingsRates,
   adminSettingsRateCreate,
   adminSettingsRateDetails,
+  adminSettingsWorkflowConfiguration,
+  adminSettingsWorkflowCreate,
+  adminSettingsWorkflowDetails,
+  adminSettingsWorkflowEdit,
 
   // Settlement
   adminSettlement,

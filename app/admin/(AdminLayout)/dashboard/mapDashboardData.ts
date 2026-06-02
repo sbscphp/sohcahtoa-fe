@@ -101,6 +101,7 @@ export function mapRecentTransactions(
       date,
       time,
       status: adminTransactionStatusLabel(row.status),
+      customerName: row.customerName,
     };
   });
 }

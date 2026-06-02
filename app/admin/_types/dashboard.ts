@@ -80,6 +80,7 @@ export interface AdminDashboardTransactionsByType {
 export interface AdminDashboardRecentTransaction {
   id: string;
   referenceNumber: string;
+  customerName: string;
   createdAt: string;
   status: string;
 }

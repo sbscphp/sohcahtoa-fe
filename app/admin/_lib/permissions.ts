@@ -20,6 +20,7 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
   "/admin/report": "REPORTS",
   "/admin/audit-trail": "AUDIT_TRAIL",
   "/admin/settings/rate": "RATE",
+  "/admin/settings/workflow": "WORKFLOW",
   "/admin/settings": null,
 };
 

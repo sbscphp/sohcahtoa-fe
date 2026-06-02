@@ -72,6 +72,8 @@ export default function AdminHeaderProfileMenu() {
         shadow="md"
         withArrow
         opened={popoverOpen}
+        closeOnClickOutside
+        closeOnEscape
         onClose={() => setPopoverOpen(false)}
       >
         <Popover.Target>
@@ -82,7 +84,7 @@ export default function AdminHeaderProfileMenu() {
             aria-label="Profile menu"
             aria-expanded={popoverOpen}
           >
-            <Avatar name={displayName} color="initials" size={32} radius="xl" />
+            <Avatar name={displayName} className="cursor-pointer" color="initials" size={32} radius="xl" />
           </button>
         </Popover.Target>
 

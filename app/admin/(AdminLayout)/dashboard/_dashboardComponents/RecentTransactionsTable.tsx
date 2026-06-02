@@ -45,7 +45,7 @@ export function RecentTransactionsTable({
 
         <Text fw={500} size="lg">
 
-          Recent Transactions
+          Transaction History
 
         </Text>
 
@@ -75,6 +75,8 @@ export function RecentTransactionsTable({
 
         headers={[
           { label: "Customer Name", key: "customer" },
+
+          { label: "Transaction ID", key: "reference" },
           
 
           { label: "Transaction Type", key: "type" },
@@ -108,13 +110,12 @@ export function RecentTransactionsTable({
 
               </Text>
 
-              <Text size="xs" c="dimmed">
-
-                {displayId}
-
-              </Text>
 
             </div>,
+
+            <Text key="reference" size="sm">
+              {displayId}
+            </Text>,
 
             <Text key="type" size="sm">
               {toSentenceCase(transaction.transactionType)}
