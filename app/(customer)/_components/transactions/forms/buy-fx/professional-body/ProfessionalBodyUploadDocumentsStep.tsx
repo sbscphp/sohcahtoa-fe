@@ -40,7 +40,6 @@ const uploadDocumentsSchema = z
     invoiceFromProfessionalBodyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
       message: "Invoice from Professional Body is required",
     }),
-    invoiceFromProfessionalBodyNumber: z.string().min(1, "Invoice from Professional Body Number is required").max(50, "Invoice from Professional Body Number is too long"),
   })
   .superRefine(validatePassportDates);
 
@@ -60,7 +59,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
   onSubmit,
   onBack,
   lockKycPrefill = false,
-}: ProfessionalBodyUploadDocumentsStepProps) {
+}: Readonly<ProfessionalBodyUploadDocumentsStepProps>) {
   const kyc = useCustomerProfileBvnNin();
   const bvnLocked = shouldLockKycPrefill(
     kyc.hasBvnFromProfile,
@@ -87,7 +86,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
       evidenceOfMembershipFile: initialValues?.evidenceOfMembershipFile ?? null,
       evidenceOfMembershipNumber: initialValues?.evidenceOfMembershipNumber || "",
       invoiceFromProfessionalBodyFile: initialValues?.invoiceFromProfessionalBodyFile ?? null,
-      invoiceFromProfessionalBodyNumber: initialValues?.invoiceFromProfessionalBodyNumber || "",
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -105,8 +103,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
           Fill in all required information
         </h2>
         <p className="text-body-text-200 text-base max-w-md">
-          Create a new professional fee transaction and get access to foreign
-          exchange for international membership and professional body fees.
+        Create a new professional fee transaction and get access to foreign exchange for professional examination/subscription fees
         </p>
       </div>
 
@@ -118,13 +115,13 @@ export default function ProfessionalBodyUploadDocumentsStep({
         <p className="text-body-text-200">
           {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE}  */}
           Please note the maximum you can
-          transact is <strong>$4,000 per quarter</strong>.
+          transact is <strong>$2,000</strong>.
         </p>
         {/* <p className="text-body-text-200 mt-2">
           {REVIEW_TIMELINE_MESSAGE}
         </p> */}
       </Alert>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <TextInput
         label="BVN"
         required
@@ -142,7 +139,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
         disabled={bvnLocked || forceBvnLock}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
           label="NIN"
           required
@@ -159,6 +155,10 @@ export default function ProfessionalBodyUploadDocumentsStep({
           }}
           disabled={ninLocked || forceNinLock}
         />
+
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
           label="Form A ID"
           required
@@ -168,7 +168,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
           autoComplete="off"
           {...form.getInputProps("formAId")}
         />
-      </div>
 
       <TextInput
         label="International Passport Number"
@@ -179,6 +178,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
         autoComplete="off"
         {...form.getInputProps("passportDocumentNumber")}
       />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DateInput
@@ -219,7 +219,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
       </div>
 
       <TransactionFileUploadInput
-        label="Evidence of Membership"
+        label="Evidence of Membership or Registration"
         required
         value={form.values.evidenceOfMembershipFile}
         onChange={(file) => form.setFieldValue("evidenceOfMembershipFile", file)}
@@ -227,7 +227,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
       />
 
       <TextInput
-        label="Evidence of Membership Number"
+        label="Evidence of Membership or Registration"
         required
         size="md"
         placeholder="Enter Number"
@@ -242,16 +242,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
         value={form.values.invoiceFromProfessionalBodyFile}
         onChange={(file) => form.setFieldValue("invoiceFromProfessionalBodyFile", file)}
         error={form.errors.invoiceFromProfessionalBodyFile as string}
-      />
-
-      <TextInput
-        label="Invoice from Professional Body"
-        required
-        size="md"
-        placeholder="Enter Invoice Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("invoiceFromProfessionalBodyNumber")}
       />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

@@ -16,9 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAtomValue } from "jotai";
-import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
-import { getDisplayNameFromProfile } from "@/app/_lib/utils/account-format";
+import { useHydratedProfileDisplay } from "@/app/_lib/hooks/use-hydrated-profile-display";
 
 type AgentSidebarProps = {
   collapsed: boolean;
@@ -39,13 +37,8 @@ const menuItems = [
 export default function AgentSidebar({ collapsed, onCollapse, onNavigate }: AgentSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const userProfile = useAtomValue(userProfileAtom);
-
-  const display = userProfile ? getDisplayNameFromProfile(userProfile) : null;
-  const displayName = display?.displayName ?? "Agent";
-  const initials = display?.initials ?? "A";
-  const email = userProfile?.email ?? "";
-  const avatarUrl = userProfile?.profile?.avatar || undefined;
+  const { hydrated: profileHydrated, displayName, displayEmail, avatarUrl } =
+    useHydratedProfileDisplay({ fallbackName: "Agent" });
 
   return (
     <aside className="h-full bg-bg-card flex flex-col transition-all duration-300">
@@ -136,18 +129,23 @@ export default function AgentSidebar({ collapsed, onCollapse, onNavigate }: Agen
             }}
           >
             <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full border border-gray-50 bg-gray-100">
-              <Avatar
-                src={avatarUrl}
-                name={displayName}
-                color="initials"
-              />
+              {profileHydrated ? (
+                <Avatar src={avatarUrl} name={displayName} color="initials" />
+              ) : (
+                <div
+                  className="flex h-full w-full items-center justify-center bg-gray-200 text-[10px] font-medium text-gray-500"
+                  aria-hidden
+                >
+                  …
+                </div>
+              )}
             </div>
             <div className="min-w-0 flex-1 overflow-hidden text-left">
               <p className="truncate text-xs font-medium text-body-heading-300">
                 {displayName}
               </p>
               <p className="truncate text-xs text-body-text-100">
-                {email}
+                {displayEmail}
               </p>
             </div>
           </UnstyledButton>

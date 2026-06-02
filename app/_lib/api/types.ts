@@ -78,10 +78,37 @@ export interface SendOtpRequestTourist {
 export interface SendOtpRequest {
   bvn?: string;
   passportNumber?: string;
-  verificationType: "phone" | "email";
+  verificationType?: "phone" | "email";
   phoneNumber?: string;
   email?: string;
+  purpose?: AuthOtpPurpose;
 }
+
+export type AuthOtpPurpose =
+  | "REGISTRATION"
+  | "CHANGE_PASSWORD"
+  | "PASSWORD_RESET";
+
+export interface AuthOtpSendRequest {
+  phoneNumber?: string;
+  email?: string;
+  purpose: AuthOtpPurpose;
+}
+
+export interface AuthOtpValidateRequest {
+  otp: string;
+  purpose: AuthOtpPurpose;
+  email?: string;
+  phoneNumber?: string;
+}
+
+export interface AuthOtpValidateResponseData {
+  valid: boolean;
+  message: string;
+}
+
+export type AuthOtpValidateResponse =
+  ApiResponseWrapper<AuthOtpValidateResponseData>;
 
 export interface SendOtpResponseData {
   message: string;
@@ -203,6 +230,12 @@ export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
   newPasswordConfirm: string;
+}
+
+/** Customer authenticated change password (POST /api/auth/change-password) */
+export interface CustomerChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
 }
 
 export interface ChangePasswordResponseData {
@@ -360,7 +393,9 @@ export type AgentDashboardCashStatsPeriod =
 export interface AgentDashboardCashStatsData {
   currency: string;
   currencyName: string;
-  period: {
+  /** Snapshot date (some API versions). */
+  date?: string;
+  period?: {
     preset: string;
     start: string;
     end: string;
@@ -372,6 +407,23 @@ export interface AgentDashboardCashStatsData {
 
 export type AgentDashboardCashStatsResponse =
   ApiResponseWrapper<AgentDashboardCashStatsData>;
+
+export interface AgentDashboardBalanceData {
+  currency: string;
+  currencyName: string;
+  period: {
+    preset: string;
+    start: string;
+    end: string;
+  };
+  openingBalance: number;
+  totalReceived: number;
+  totalDisbursed: number;
+  currentBalance: number;
+}
+
+export type AgentDashboardBalanceResponse =
+  ApiResponseWrapper<AgentDashboardBalanceData>;
 
 export type AgentPaymentMovementType =
   | "cash_disbursed"
@@ -564,6 +616,8 @@ export interface TransactionDocument {
   fileSize: number;
 }
 
+export type DisbursementOption = "ELECTRONIC_TRANSFER" | "CARD" | "CARD_AND_CASH";
+
 export interface PickupLocation {
   id: string;
   name: string;
@@ -583,6 +637,7 @@ export interface CreateTransactionRequest {
   amount: number;
   purpose: string;
   destinationCountry: string;
+  studentName?: string;
   /** Optional: when an agent creates a transaction on behalf of a customer. */
   customerId?: string;
   bvn?: string;
@@ -597,6 +652,7 @@ export interface CreateTransactionRequest {
   workPermitNumber?: string;
   utilityBillNumber?: string;
   admissionType?: AdmissionType;
+  disbursementOption?: DisbursementOption;
   beneficiaryDetails?: Record<string, unknown>;
   pickupLocation?: PickupLocation;
   documents?: TransactionDocument[];
@@ -742,6 +798,7 @@ export interface TransactionDetailRequiredDocUploaded {
 
 export interface TransactionDetailRequiredDoc {
   type: string;
+  required?: boolean;
   uploaded: TransactionDetailRequiredDocUploaded | null;
 }
 
@@ -768,6 +825,15 @@ export interface TransactionDetailStep {
   data: TransactionDetailStepData;
   completedAt: string;
   createdAt: string;
+}
+
+export interface TransactionDetailBankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  isDefault?: boolean;
+  isVerified?: boolean;
 }
 
 export interface TransactionDetailCashPickup {
@@ -850,6 +916,7 @@ export interface TransactionDetailData {
   nairaEquivalent: string | null;
   exchangeRate: string | null;
   disbursementMethod: string | null;
+  disbursementOption?: DisbursementOption | null;
   formAId?: string | null;
   taxClearanceNumber?: string | null;
   personalInfo?: {
@@ -858,6 +925,7 @@ export interface TransactionDetailData {
     admissionType: string | null;
   } | null;
   beneficiaryDetails?: Record<string, unknown> | null;
+  bankAccounts?: TransactionDetailBankAccount[] | null;
   rejection: string | null;
   requiredDocuments: TransactionDetailRequiredDoc[];
   cashPickup: TransactionDetailCashPickup | null;
@@ -1053,10 +1121,14 @@ export interface TransactionRate {
 
 export type TransactionRatesListResponse = ApiResponseWrapper<TransactionRate[]>;
 
+export type TransactionRateMode = "buy" | "sell";
+
 export interface CalculateTransactionRateRequest {
   fromCurrency: string;
   toCurrency: string;
   amount: number;
+  /** Which side of the spread applies (drives `convertedAmount` on the server). */
+  mode?: TransactionRateMode;
 }
 
 export interface CalculateTransactionRateData {
@@ -1071,6 +1143,53 @@ export interface CalculateTransactionRateData {
 
 export type CalculateTransactionRateResponse =
   ApiResponseWrapper<CalculateTransactionRateData>;
+
+export interface NigerianBankOption {
+  code: string;
+  name: string;
+}
+
+export type NigerianBanksListResponse = ApiResponseWrapper<NigerianBankOption[]>;
+
+export interface BankAccountLookupData {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  simulated?: boolean;
+}
+
+export type BankAccountLookupResponse = ApiResponseWrapper<BankAccountLookupData>;
+
+export interface CustomerBankAccount {
+  id: string;
+  userId: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  isVerified: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomerBankAccountsListResponse =
+  ApiResponseWrapper<CustomerBankAccount[]>;
+
+export interface CreateCustomerBankAccountRequest {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+export type CreateCustomerBankAccountResponse =
+  ApiResponseWrapper<CustomerBankAccount>;
+
+export interface AttachBankAccountsToTransactionRequest {
+  bankAccountIds: string[];
+}
+
+export type AttachBankAccountsToTransactionResponse =
+  ApiResponseWrapper<CustomerBankAccount[]>;
 
 /** Item from GET .../pickup-locations/terminals (`data.terminals`). */
 export interface PickupTerminal {
@@ -1198,12 +1317,39 @@ export interface TransactionListParams extends PaginationParams {
   status?: string;
   type?: string;
   group?: "BUY" | "SELL" | "REMITTANCE";
+  /** Used with `type` on list endpoints (same semantics as transactions page). */
+  mode?: "BUY" | "SELL" | "REMITTANCE";
   currency?: string;
   stage?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+}
+
+export interface CustomerTransientHistoryListParams extends PaginationParams {
+  q?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface CustomerTransientHistoryApiItem {
+  id: string;
+  transaction_id?: string | number | null;
+  transaction_date?: string | null;
+  created_at?: string | null;
+  total_debit?: number | null;
+  total_credit?: number | null;
+  total_debits?: number | null;
+  total_credits?: number | null;
+  balance?: number | null;
+}
+
+export interface CustomerTransientHistoryListResponse
+  extends ApiResponseWrapper<CustomerTransientHistoryApiItem[]> {
+  pagination: PaginationMetadata;
 }
 
 export interface ApiResponse<T> {

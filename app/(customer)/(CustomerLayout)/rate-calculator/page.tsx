@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { SegmentedControl } from "@mantine/core";
 import CurrencyAmountInput from "@/app/(customer)/_components/forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -12,7 +13,7 @@ import {
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { customerKeys } from "@/app/_lib/api/query-keys";
-import type { TransactionRate } from "@/app/_lib/api/types";
+import type { TransactionRate, TransactionRateMode } from "@/app/_lib/api/types";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { Loader2 } from "lucide-react";
 import { notifications } from "@mantine/notifications";
@@ -59,8 +60,10 @@ export default function RateCalculatorPage() {
   const [receiveCurrency, setReceiveCurrency] = useState("USD");
   const [sendCurrency, setSendCurrency] = useState("NGN");
   const [sendAmount, setSendAmount] = useState("");
+  const [rateMode, setRateMode] = useState<TransactionRateMode>("buy");
 
   const { displayRate, recalculate, isCalculating } = useTransactionRateCalculator({
+    mode: rateMode,
     getValues: () => ({
       receiveAmount,
       receiveCurrency,
@@ -71,6 +74,15 @@ export default function RateCalculatorPage() {
     defaultLabel: "USD1 - NGN1500",
   });
 
+  const handleRateModeChange = useCallback(
+    (value: string) => {
+      const next = value as TransactionRateMode;
+      setRateMode(next);
+      recalculate(receiveAmount, undefined, undefined, next);
+    },
+    [receiveAmount, recalculate],
+  );
+
   const handleSwap = () => {
     const nextReceiveAmount = sendAmount;
     const nextReceiveCurrency = sendCurrency;
@@ -79,7 +91,6 @@ export default function RateCalculatorPage() {
     setReceiveAmount(nextReceiveAmount);
     setReceiveCurrency(nextReceiveCurrency);
     setSendCurrency(nextSendCurrency);
-    // Recalculate after swapping using new values
     recalculate(nextReceiveAmount, nextReceiveCurrency, nextSendCurrency);
   };
 
@@ -113,6 +124,16 @@ export default function RateCalculatorPage() {
     <div className="space-y-8">
       {/* Rate calculator block */}
       <div className="bg-white rounded-2xl md:p-8 p-2 w-full md:max-w-[800px] mx-auto space-y-4">
+        <SegmentedControl
+          value={rateMode}
+          onChange={handleRateModeChange}
+          data={[
+            { label: "Buy FX", value: "buy" },
+            { label: "Sell FX", value: "sell" },
+          ]}
+          radius="xl"
+          className="max-w-xs"
+        />
      <div>
      <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
           <CurrencyAmountInput
@@ -140,7 +161,7 @@ export default function RateCalculatorPage() {
             onClick={() => {
               notifications.show({
                 title: "Swap currencies",
-                message: "Swap currencies not supported for this transaction",
+                message: "Swap currencies not supported",
                 color: "blue",
               });
             }}
@@ -157,21 +178,31 @@ export default function RateCalculatorPage() {
 
         <div className="flex flex-col w-full">
           <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
-            <CurrencyAmountInput
-              label="Converted to"
-              value={sendAmount}
-              onChange={(v) => setSendAmount(v)}
-              currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
-              currencies={CURRENCIES}
-              onCurrencyChange={(c) => {
-                const code = c?.code ?? CURRENCIES[0].code;
-                setSendCurrency(code);
-                recalculate(undefined, undefined, code);
-              }}
-              placeholder="0"
-              disabled
-              showDropdown={false}
-            />
+            <div className="relative w-full max-w-[688px]">
+              <CurrencyAmountInput
+                label="Converted to"
+                value={sendAmount}
+                onChange={(v) => setSendAmount(v)}
+                currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
+                currencies={CURRENCIES}
+                onCurrencyChange={(c) => {
+                  const code = c?.code ?? CURRENCIES[0].code;
+                  setSendCurrency(code);
+                  recalculate(receiveAmount, undefined, code);
+                }}
+                placeholder="0"
+                readOnly
+                showDropdown={false}
+              />
+              {isCalculating ? (
+                <div
+                  className="pointer-events-none absolute inset-0 top-10 flex items-center justify-center rounded-lg bg-[#F9F9F9]/80"
+                  aria-hidden
+                >
+                  {/* <Loader2 className="size-6 animate-spin text-[#4D4B4B]" /> */}
+                </div>
+              ) : null}
+            </div>
           </div>
           <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full min-h-[56px] bg-black rounded-b-3xl">
             <span className="font-normal text-base leading-6 text-white">

@@ -95,6 +95,11 @@ export default function ChatSupportForm() {
     form.setFieldValue("attachment", file);
   };
 
+  const handleCancel = () => {
+    form.reset();
+    router.back();
+  };
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 w-full max-w-[640px] mx-auto">
@@ -149,7 +154,7 @@ export default function ChatSupportForm() {
               variant="outline"
               radius="xl"
               className="min-h-[44px] px-6 border-text-50 text-[#4D4B4B] hover:bg-gray-50"
-              onClick={() => form.reset()}
+              onClick={handleCancel}
             >
               Cancel
             </Button>

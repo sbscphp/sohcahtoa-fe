@@ -68,6 +68,7 @@ export default function BTATransactionAmountStep({
   });
 
   const { displayRate, recalculate } = useTransactionRateCalculator({
+    mode: "buy",
     getValues: () => form.values,
     setSendAmount: (value) => form.setFieldValue("sendAmount", value),
     setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),

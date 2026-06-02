@@ -5,7 +5,7 @@ import { Button, Modal, PasswordInput } from "@mantine/core";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import { useDisclosure } from "@mantine/hooks";
 import FxTransactionTypeCard from "@/app/(customer)/_components/FxTransactionTypeCard";
-import { User, KeyRound, Trash2, CircleAlert } from "lucide-react";
+import { User, KeyRound, Trash2, CircleAlert, Landmark } from "lucide-react";
 
 const SETTINGS_OPTIONS_WITH_LINKS = [
   {
@@ -13,6 +13,12 @@ const SETTINGS_OPTIONS_WITH_LINKS = [
     title: "Account Information",
     description: "Manage your personal details and account details",
     href: "/settings/account-information",
+  },
+  {
+    icon: Landmark,
+    title: "Bank Accounts",
+    description: "Save and manage accounts for electronic transfer payouts",
+    href: "/settings/bank-accounts",
   },
   {
     icon: KeyRound,

@@ -10,10 +10,10 @@ import {
   type BeneficiaryBankRegion,
   type InternationalBankDetailsFormValues,
 } from "@/app/(customer)/_lib/international-bank-details-schema";
+import BankDetailsFormSection from "./BankDetailsFormSection";
 
 interface InternationalBankDetailsFieldsProps {
   form: UseFormReturnType<InternationalBankDetailsFormValues>;
-  /** Optional fields rendered after bank rows (e.g. school fees invoice upload). */
   trailingFields?: ReactNode;
 }
 
@@ -26,11 +26,13 @@ function clearFieldsForRegionChange(
   form.setFieldValue("ifscNumber", "");
   form.setFieldValue("purposeCode", "");
   form.setFieldValue("bsbCode", "");
+  form.setFieldValue("paymentReference", "");
   form.clearFieldError("iban");
   form.clearFieldError("routingNumber");
   form.clearFieldError("ifscNumber");
   form.clearFieldError("purposeCode");
   form.clearFieldError("bsbCode");
+  form.clearFieldError("paymentReference");
 
   if (nextRegion !== "OTHER") {
     form.setFieldValue("otherInformation", "");
@@ -40,10 +42,17 @@ function clearFieldsForRegionChange(
 
 function setSwiftFromInput(
   form: UseFormReturnType<InternationalBankDetailsFormValues>,
+  field: "swiftCode" | "correspondenceBankSwiftCode",
   raw: string
 ) {
   const cleaned = raw.replaceAll(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 11);
-  form.setFieldValue("swiftCode", cleaned);
+  form.setFieldValue(field, cleaned);
+}
+
+/** True when the region-specific block below has at least one input to show. */
+function hasPaymentIdentifierFields(region: BeneficiaryBankRegion): boolean {
+  if (region === "NG") return false;
+  return true;
 }
 
 export default function InternationalBankDetailsFields({
@@ -53,32 +62,11 @@ export default function InternationalBankDetailsFields({
   const v = form.values;
   const region = v.beneficiaryCountryRegion as BeneficiaryBankRegion;
 
-  const swiftProps = {
-    label: "SWIFT / BIC",
-    size: "md" as const,
-    placeholder: "e.g. ABCDUS33XXX",
-    maxLength: 11,
-    ...form.getInputProps("swiftCode"),
-    onChange: (e: { currentTarget: { value: string } }) => setSwiftFromInput(form, e.currentTarget.value),
-  };
-
-  const swiftPaymentRow = (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <TextInput {...swiftProps} />
-      <TextInput
-        label="Payment reference / ID"
-        required
-        size="md"
-        placeholder="Enter"
-        {...form.getInputProps("paymentReference")}
-      />
-    </div>
-  );
-
   return (
     <div className="space-y-4">
       <Select
-        label="Country / region"
+        label="Bank account country / region"
+        description="Used to show the correct routing fields (IBAN, BSB, routing number, etc.)"
         required
         placeholder="Select"
         size="md"
@@ -93,61 +81,83 @@ export default function InternationalBankDetailsFields({
         rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
       />
 
-      <TextInput
-        label="Beneficiary name"
-        required
-        size="md"
-        placeholder="As it appears on the account"
-        {...form.getInputProps("beneficiaryName")}
-      />
-
-      <Textarea
-        label="Beneficiary address"
-        required
-        minRows={2}
-        placeholder="Street, state, city, postal code, country"
-        {...form.getInputProps("beneficiaryAddress")}
-      />
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <BankDetailsFormSection title="Beneficiary details">
         <TextInput
-          label="Bank name"
+          label="Name of organization"
           required
           size="md"
-          placeholder="Enter"
-          {...form.getInputProps("bankName")}
+          placeholder="As on invoice or registration"
+          {...form.getInputProps("organizationName")}
         />
-        <TextInput
-          label="Account number"
-          required
-          size="md"
-          placeholder="Enter"
-          maxLength={18}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          {...form.getInputProps("accountNumber")}
-          onChange={(e) => {
-            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 18);
-            e.currentTarget.value = raw;
-            form.setFieldValue("accountNumber", raw);
-          }}
-        />
-      </div>
-
-      <Textarea
-        label="Bank address"
-        required
-        minRows={2}
-        placeholder="Branch or head office address"
-        {...form.getInputProps("bankAddress")}
-      />
-
-      {region === "UK" ? (
-        <>
-          {swiftPaymentRow}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextInput
-            label="IBAN"
+            label="Phone number"
             required
+            size="md"
+            placeholder="Enter"
+            inputMode="tel"
+            {...form.getInputProps("beneficiaryPhone")}
+          />
+          <TextInput
+            label="Email"
+            required
+            size="md"
+            placeholder="Enter"
+            type="email"
+            {...form.getInputProps("beneficiaryEmail")}
+          />
+        </div>
+        <TextInput
+          label="Address"
+          required
+          size="md"
+          placeholder="Street address"
+          {...form.getInputProps("beneficiaryAddress")}
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <TextInput
+            label="City"
+            required
+            size="md"
+            placeholder="Enter"
+            {...form.getInputProps("beneficiaryCity")}
+          />
+          <TextInput
+            label="State"
+            required
+            size="md"
+            placeholder="Enter"
+            {...form.getInputProps("beneficiaryState")}
+          />
+          <TextInput
+            label="Country"
+            required
+            size="md"
+            placeholder="Enter"
+            {...form.getInputProps("beneficiaryCountry")}
+          />
+        </div>
+      </BankDetailsFormSection>
+
+      <BankDetailsFormSection title="Beneficiary bank details">
+        <TextInput
+          label="Bank account name"
+          required
+          size="md"
+          placeholder="Name on the account"
+          {...form.getInputProps("bankAccountName")}
+        />
+        <Textarea
+          label="Bank account address"
+          required
+          minRows={2}
+          size="md"
+          placeholder="Branch or head office address"
+          {...form.getInputProps("bankAddress")}
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextInput
+            label="Bank account IBAN"
             size="md"
             placeholder="e.g. GB29 NWBK 6016 1331 9268 19"
             {...form.getInputProps("iban")}
@@ -155,31 +165,88 @@ export default function InternationalBankDetailsFields({
               const raw = e.currentTarget.value.replaceAll(/\s/g, "").toUpperCase();
               form.setFieldValue("iban", raw);
             }}
+            error={form.errors.iban as string | undefined}
           />
-        </>
-      ) : null}
-
-      {region === "US_CA" ? (
-        <>
-          {swiftPaymentRow}
           <TextInput
-            label="Routing number (ABA)"
+            label="Bank account SWIFT / BIC"
+            size="md"
+            placeholder="e.g. ABCDUS33XXX"
+            maxLength={11}
+            {...form.getInputProps("swiftCode")}
+            onChange={(e) => setSwiftFromInput(form, "swiftCode", e.currentTarget.value)}
+            error={form.errors.swiftCode as string | undefined}
+          />
+        </div>
+        <TextInput
+          label="Bank account number"
+          required
+          size="md"
+          placeholder="Enter"
+          maxLength={34}
+          {...form.getInputProps("accountNumber")}
+        />
+        <TextInput
+          label="Correspondence bank name"
+          size="md"
+          placeholder="Optional"
+          {...form.getInputProps("correspondenceBankName")}
+        />
+        <Textarea
+          label="Correspondence bank address"
+          minRows={2}
+          size="md"
+          placeholder="Optional"
+          {...form.getInputProps("correspondenceBankAddress")}
+        />
+        <TextInput
+          label="Correspondence bank SWIFT / BIC"
+          size="md"
+          placeholder="Optional"
+          maxLength={11}
+          {...form.getInputProps("correspondenceBankSwiftCode")}
+          onChange={(e) =>
+            setSwiftFromInput(form, "correspondenceBankSwiftCode", e.currentTarget.value)
+          }
+          error={form.errors.correspondenceBankSwiftCode as string | undefined}
+        />
+      </BankDetailsFormSection>
+
+      {hasPaymentIdentifierFields(region) ? (
+        <BankDetailsFormSection title="Payment identifiers (by bank country / region)">
+          {region !== "UK" ? (
+          <p className="text-sm text-body-text-200 -mt-1">
+            Fields below depend on the bank account country / region selected above.
+          </p>
+          ) : null}
+
+          {region !== "NG" ? (
+            <TextInput
+              label="Payment reference / ID"
+            required
+            size="md"
+            placeholder="Enter"
+              {...form.getInputProps("paymentReference")}
+            />
+          ) : null}
+
+          {region === "US_CA" ? (
+            <TextInput
+              label="Routing number"
             required
             size="md"
             placeholder="e.g. 026009593"
             maxLength={9}
+            inputMode="numeric"
             {...form.getInputProps("routingNumber")}
             onChange={(e) => {
               const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 9);
               form.setFieldValue("routingNumber", raw);
             }}
+            error={form.errors.routingNumber as string | undefined}
           />
-        </>
-      ) : null}
+        ) : null}
 
-      {region === "IN" ? (
-        <>
-          {swiftPaymentRow}
+        {region === "IN" ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <TextInput
               label="IFSC number"
@@ -192,6 +259,7 @@ export default function InternationalBankDetailsFields({
                 const raw = e.currentTarget.value.replaceAll(/[^A-Za-z0-9]/g, "").toUpperCase();
                 form.setFieldValue("ifscNumber", raw.slice(0, 11));
               }}
+              error={form.errors.ifscNumber as string | undefined}
             />
             <TextInput
               label="Purpose code"
@@ -201,12 +269,9 @@ export default function InternationalBankDetailsFields({
               {...form.getInputProps("purposeCode")}
             />
           </div>
-        </>
-      ) : null}
+        ) : null}
 
-      {region === "AU" ? (
-        <>
-          {swiftPaymentRow}
+        {region === "AU" ? (
           <TextInput
             label="BSB code"
             required
@@ -214,14 +279,9 @@ export default function InternationalBankDetailsFields({
             placeholder="e.g. 123-456"
             {...form.getInputProps("bsbCode")}
           />
-        </>
-      ) : null}
+        ) : null}
 
-      {region === "NG" ? swiftPaymentRow : null}
-
-      {region === "OTHER" ? (
-        <>
-          {swiftPaymentRow}
+        {region === "OTHER" ? (
           <Textarea
             label="Other bank details"
             description="Any extra identifiers or instructions for this country (clearing codes, intermediary bank, etc.)."
@@ -231,7 +291,8 @@ export default function InternationalBankDetailsFields({
             placeholder="Enter any additional information we should know for this transfer"
             {...form.getInputProps("otherInformation")}
           />
-        </>
+          ) : null}
+        </BankDetailsFormSection>
       ) : null}
 
       {trailingFields}

@@ -6,6 +6,9 @@ import {
   RequiredDocumentsSection,
   TransactionDetailsSection,
   TransactionSettlementSection,
+  CashPickupDetailsSection,
+  BeneficiaryDetailsSection,
+  TransactionBankAccountsSection,
 } from "@/app/(customer)/_components/transactions/details";
 import PaymentDetailsSection from "@/app/agent/_components/transactions/details/PaymentDetailsSection";
 import LabelText, {
@@ -112,6 +115,9 @@ export default function AgentTransactionDetailPage() {
   const foreignAmount = apiData?.foreignAmount
     ? Number(apiData.foreignAmount)
     : 0;
+  const cashPickup = apiData?.cashPickup ?? null;
+  const beneficiaryDetails = apiData?.beneficiaryDetails;
+  const bankAccounts = apiData?.bankAccounts ?? [];
   const isReceivedPaymentStep =
     (apiData?.status ?? "").toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
   const isAwaitingDisbursement = statusKey === "AWAITING_DISBURSEMENT";
@@ -275,7 +281,8 @@ export default function AgentTransactionDetailPage() {
               </div>
             )
           }
-          documents={payload.documentsForSheet as TransactionDocumentItem[]}
+          documents={payload.documentsForSheet}
+          allowMissingDocumentUpload={payload.allowMissingDocumentUpload}
           onOpenDocument={(doc) => {
             if (doc.url) {
               setDocumentViewer({
@@ -335,6 +342,13 @@ export default function AgentTransactionDetailPage() {
             </SectionBlock>
           )}
           <TransactionDetailsSection data={payload.transactionDetails} />
+          {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
+          {bankAccounts.length > 0 ? (
+            <TransactionBankAccountsSection accounts={bankAccounts} />
+          ) : null}
+          {beneficiaryDetails ? (
+            <BeneficiaryDetailsSection data={beneficiaryDetails} />
+          ) : null}
           <RequiredDocumentsSection
             data={payload.requiredDocuments}
             onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}

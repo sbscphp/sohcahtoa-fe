@@ -19,6 +19,7 @@ describe("Transactions page", () => {
 
   it("renders transaction type tabs", () => {
     render(<TransactionPage />);
+    expect(screen.getByRole("tab", { name: /^All$/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Buy FX/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Sell FX/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Receive FX/i })).toBeInTheDocument();

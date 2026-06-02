@@ -98,6 +98,21 @@ export default function OverviewDetail({
     s === "ADMIN_APPROVAL_PENDING" ||
     s === "PENDING_RECORD_VALIDATION"
   ) {
+    if (comments.length > 0) {
+      return (
+        <div className="px-4 pb-8 space-y-4">
+          <OverviewMetaHeader
+            title={timelineTitle}
+            transactionId={transactionId}
+            date={date}
+            time={time}
+            tone="muted"
+          />
+          {timeline}
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center px-4 pt-6 pb-8">
         <div className="w-full max-w-[335px] flex flex-col items-center gap-2">
@@ -107,14 +122,8 @@ export default function OverviewDetail({
             description="Your document is currently undergoing approval. You will receive a mail notification once your documents is approved."
             className="gap-2 [&_h3]:text-xl [&_h3]:leading-7 [&_h3]:text-[#4D4B4B] [&_p]:text-base [&_p]:leading-6 [&_p]:text-[#8F8B8B] [&_p]:text-center"
           />
-          </div>
-          {/* {adminMessage ? (
-            <div className="w-full mt-2 flex flex-row justify-center items-center gap-2 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
-              <p className="w-full text-xs leading-4 text-[#4D4B4B]">{adminMessage}</p>
-            </div>
-          ) : null} */}
-          {comments.length > 0 ? <div className="w-full mt-4">{timeline}</div> : null}
         </div>
+      </div>
     );
   }
 

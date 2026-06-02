@@ -1,10 +1,12 @@
 import type {
   CreateTransactionRequest,
+  DisbursementOption,
   TransactionDocument,
   TransactionTypeAPI,
   PickupLocation,
 } from "@/app/_lib/api/types";
 import type { TransactionType } from "./transaction-document-requirements";
+import { mapUiAdmissionTypeToApi } from "./school-fees-admission";
 
 export interface TransactionFormDataBag {
   uploadDocumentsData: Record<string, unknown> | null;
@@ -34,20 +36,36 @@ export function beneficiaryDetailsFromBankForm(
   bank: Record<string, unknown> | null | undefined
 ): Record<string, unknown> | undefined {
   if (!bank) return undefined;
-  const displayName = (bank.beneficiaryName ?? bank.accountName) as string | undefined;
+  const organizationName = (
+    (bank.organizationName as string | undefined) ??
+    (bank.beneficiaryName as string | undefined) ??
+    (bank.accountName as string | undefined)
+  )?.trim();
+  const bankAccountName = (
+    (bank.bankAccountName as string | undefined) ??
+    (bank.accountName as string | undefined) ??
+    organizationName
+  )?.trim();
   const region = bank.beneficiaryCountryRegion;
   const otherInformation =
     typeof bank.otherInformation === "string" ? bank.otherInformation.trim() : "";
 
   const details: Record<string, unknown> = {
-    name: displayName,
-    beneficiaryName: bank.beneficiaryName ?? bank.accountName,
+    name: organizationName,
+    organizationName,
+    beneficiaryName: organizationName,
+    beneficiaryPhone: bank.beneficiaryPhone,
+    beneficiaryEmail: bank.beneficiaryEmail,
     beneficiaryAddress: bank.beneficiaryAddress,
+    beneficiaryCity: bank.beneficiaryCity,
+    beneficiaryState: bank.beneficiaryState,
+    beneficiaryCountry: bank.beneficiaryCountry,
     beneficiaryCountryRegion: bank.beneficiaryCountryRegion,
+    bankAccountName,
+    accountName: bankAccountName,
     bankName: bank.bankName,
     bankAddress: bank.bankAddress,
     accountNumber: bank.accountNumber,
-    accountName: bank.accountName ?? bank.beneficiaryName,
     swiftCode: bank.swiftCode,
     paymentReference: bank.paymentReference,
     iban: bank.iban,
@@ -55,6 +73,9 @@ export function beneficiaryDetailsFromBankForm(
     ifscNumber: bank.ifscNumber,
     purposeCode: bank.purposeCode,
     bsbCode: bank.bsbCode,
+    correspondenceBankName: bank.correspondenceBankName,
+    correspondenceBankAddress: bank.correspondenceBankAddress,
+    correspondenceBankSwiftCode: bank.correspondenceBankSwiftCode,
   };
 
   if (region === "OTHER") {
@@ -108,11 +129,59 @@ function getCurrency(data: Record<string, unknown> | null): string {
   return typeof raw === "string" && raw.trim() ? raw : "USD";
 }
 
+/** UI payout radio values from PickupPointStep → API `disbursementOption`. */
+export function mapUiPayoutMethodToDisbursementOption(
+  payoutMethod: string,
+): DisbursementOption | undefined {
+  switch (payoutMethod) {
+    case "electronic_transfer_100":
+      return "ELECTRONIC_TRANSFER";
+    case "card_100":
+      return "CARD";
+    case "card_75_cash_25":
+      return "CARD_AND_CASH";
+    default:
+      return undefined;
+  }
+}
+
+function disbursementOptionFromSelection(
+  data: Record<string, unknown> | null | undefined,
+): Pick<CreateTransactionRequest, "disbursementOption"> {
+  const payoutMethod =
+    typeof data?.payoutMethod === "string" && data.payoutMethod.trim()
+      ? data.payoutMethod
+      : undefined;
+
+  if (!payoutMethod) return {};
+
+  const disbursementOption = mapUiPayoutMethodToDisbursementOption(payoutMethod);
+  if (!disbursementOption) return {};
+
+  return { disbursementOption };
+}
+
+function beneficiaryDetailsFromPayoutSelection(
+  data: Record<string, unknown> | null | undefined
+): Record<string, unknown> | undefined {
+  if (data?.payoutMethod !== "electronic_transfer_100") return undefined;
+  const bankAccount = data.bankAccount as Record<string, unknown> | undefined;
+  if (!bankAccount) return undefined;
+
+  return {
+    bankName: bankAccount.bankName,
+    accountNumber: bankAccount.accountNumber,
+    accountName: bankAccount.accountName,
+  };
+}
+
 /** Set by the buy vs sell route / agent flow — not inferred from currency fields. */
 export type TransactionPayloadMode = "BUY" | "SELL";
 
 function buildPickupLocation(data: Record<string, unknown> | null): PickupLocation | undefined {
-  if (!data || typeof data.locationId !== "string") return undefined;
+  if (!data || typeof data.locationId !== "string" || !data.locationId.trim()) {
+    return undefined;
+  }
   return {
     id: data.locationId,
     name: (data as { name?: string }).name ?? "",
@@ -133,6 +202,7 @@ function buildPTAPayload(
   const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+  const payout = disbursementOptionFromSelection(pickup);
 
   return {
     type: "PTA",
@@ -150,6 +220,8 @@ function buildPTAPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
+    ...payout,
+    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -161,6 +233,7 @@ function buildBTAPayload(
   const upload = bag.uploadDocumentsData as Record<string, unknown> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+  const payout = disbursementOptionFromSelection(pickup);
 
   return {
     type: "BTA",
@@ -177,6 +250,8 @@ function buildBTAPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
+    ...payout,
+    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -188,6 +263,7 @@ function buildTouristPayload(
   const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+  const payout = disbursementOptionFromSelection(pickup);
 
   return {
     type: "TOURIST_FX",
@@ -195,14 +271,14 @@ function buildTouristPayload(
     amount: getAmount(amount),
     purpose: "Tourist travel",
     destinationCountry: "United States",
-    bvn: upload?.bvn ?? undefined,
-    nin: upload?.ninNumber ?? undefined,
     formAId: upload?.formAId ?? undefined,
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     passportIssueDate: upload?.passportIssueDate ?? undefined,
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
     returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
-    documents, 
+    documents,
+    ...payout,
+    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -221,8 +297,12 @@ function buildSchoolFeesPayload(
     amount: getAmount(amount),
     purpose: "School fees",
     destinationCountry: "United Kingdom",
+    studentName: typeof upload?.studentName === "string" ? upload.studentName : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
-    admissionType: (upload?.admissionType as "UNDERGRADUATE" | "POSTGRADUATE" | "OTHER") ?? undefined,
+    admissionType: mapUiAdmissionTypeToApi(
+      typeof upload?.admissionType === "string" ? upload.admissionType : undefined,
+    ),
+    nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
     passportDocumentNumber:
       typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
     passportIssueDate:

@@ -75,6 +75,27 @@ export const customerKeys = {
       [...customerKeys.documents.all, "transaction", transactionId] as const,
   },
   
+  bankAccounts: {
+    all: ["customer", "bank-accounts"] as const,
+    list: () => [...customerKeys.bankAccounts.all, "list"] as const,
+    banks: (q?: string) => [...customerKeys.bankAccounts.all, "banks", q ?? ""] as const,
+    forTransaction: (transactionId: string) =>
+      [...customerKeys.bankAccounts.all, "transaction", transactionId] as const,
+  },
+
+  wallet: {
+    all: ["customer", "wallet"] as const,
+    transientHistory: (params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      startDate?: string;
+      endDate?: string;
+      sortBy?: string;
+      sortOrder?: string;
+    }) => [...customerKeys.wallet.all, "transient-history", params] as const,
+  },
+
   support: {
     all: ["customer", "support"] as const,
     tickets: {
@@ -482,8 +503,10 @@ export const agentKeys = {
 
   dashboard: {
     all: ["agent", "dashboard"] as const,
-    cashStats: (period?: string) =>
-      [...agentKeys.dashboard.all, "cash-stats", period] as const,
+    cashStats: (period?: string, currency?: string) =>
+      [...agentKeys.dashboard.all, "cash-stats", period, currency] as const,
+    balance: (period?: string, currency?: string) =>
+      [...agentKeys.dashboard.all, "balance", period, currency] as const,
   },
 
   customers: {

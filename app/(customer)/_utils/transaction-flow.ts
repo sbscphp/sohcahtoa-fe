@@ -22,12 +22,12 @@ export interface BreadcrumbItem {
 
 /** Step order by transaction type (last step varies: pickup-point vs bank-details) */
 const STEPS_BY_TYPE: Record<TransactionType, TransactionStep[]> = {
-  pta: ["upload-documents", "amount", "pickup-point"],
-  business: ["upload-documents", "amount", "pickup-point"],
+  pta: ["upload-documents", "amount", "pickup-point", "bank-details"],
+  business: ["upload-documents", "amount", "pickup-point", "bank-details"],
   "school-fees": ["upload-documents", "amount", "bank-details"],
   medical: ["upload-documents", "amount", "bank-details"],
   "professional-body": ["upload-documents", "amount", "bank-details"],
-  tourist: ["upload-documents", "amount", "pickup-point"],
+  tourist: ["upload-documents", "amount", "pickup-point", "bank-details"],
   resident: ["upload-documents", "amount", "pickup-point"],
   "touring-nigeria": ["upload-documents", "amount", "pickup-point"],
   expatriate: ["upload-documents", "amount", "pickup-point"],
@@ -50,7 +50,7 @@ export function getChooseOptionsBreadcrumbs(): BreadcrumbItem[] {
 export const STEP_LABELS: Record<TransactionStep, string> = {
   "upload-documents": "Upload Required Document",
   amount: "Enter Amount",
-  "pickup-point": "Pick Up Point",
+  "pickup-point": "Payout Method",
   "bank-details": "Bank Details",
 };
 

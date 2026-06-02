@@ -6,6 +6,12 @@ import { Tabs } from "@mantine/core";
 import { IconWallet, IconWalletAdd, IconRecieve } from "@/components/icons";
 import { formatCurrency } from "../../_lib/formatCurrency";
 import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
+import {
+  FX_DASHBOARD_TAB_CONFIG,
+  FX_DASHBOARD_TABS,
+  type FxDashboardTab,
+} from "../../_lib/fx-dashboard-tabs";
+import { useFxDashboardTab } from "../../_lib/fx-dashboard-tab-atom";
 import SectionCard from "./SectionCard";
 import CurrencySelector from "./CurrencySelector";
 import FxActionButton from "./FxActionButton";
@@ -21,12 +27,6 @@ import type {
 } from "@/app/_lib/api/types";
 import type { Currency } from "../../_lib/constants";
 
-const FX_TABS = [
-  { value: "bought", label: "FX bought" },
-  { value: "sold", label: "FX sold" },
-  { value: "others", label: "Others" },
-] as const;
-
 type FxOverviewPanelContentProps = {
   tabValue: string;
   amountVisible: boolean;
@@ -41,7 +41,7 @@ function FxOverviewPanelContent({
   summary,
 }: Readonly<FxOverviewPanelContentProps>) {
   const currencyCode = useSelectedCurrencyCode();
-  const title = tabValue === "bought" ? "FX bought" : tabValue === "sold" ? "FX sold" : "Others";
+  const title = FX_DASHBOARD_TAB_CONFIG[tabValue as FxDashboardTab]?.overviewTitle ?? "FX";
   const amount = summary?.totalAmount ?? 0;
   const { symbol, value } = formatCurrency(amount, currencyCode);
   const displayValue = amountVisible ? value.split(".")[0] : "••••••••";
@@ -66,25 +66,39 @@ function FxOverviewPanelContent({
           </span>
           <span className="text-3xl font-bold leading-[120%] text-gray-900">
             {displayValue}
-          <span className="text-sm font-semibold leading-[120%] text-gray-900">
-            .{value.split(".")[1]}
-          </span>
+            <span className="text-sm font-semibold leading-[120%] text-gray-900">
+              .{value.split(".")[1]}
+            </span>
           </span>
         </div>
       </div>
       <div className="flex flex-wrap gap-5">
-        <FxActionButton icon={<IconWallet className="size-5 text-gray-900" />} label="Buy FX"  onClick={() => router.push("/transactions/new/buy")}/>
-        <FxActionButton icon={<IconWalletAdd className="size-5 text-gray-900" />} label="Sell FX"  onClick={() => router.push("/transactions/new/sell")}/>
-        <FxActionButton icon={<IconRecieve className="size-5 text-gray-900" />} label="Receive money"  onClick={() => router.push("/transactions/receive/imto")}/>
+        <FxActionButton
+          icon={<IconWallet className="size-5 text-gray-900" />}
+          label="Buy FX"
+          onClick={() => router.push("/transactions/new/buy")}
+        />
+        <FxActionButton
+          icon={<IconWalletAdd className="size-5 text-gray-900" />}
+          label="Sell FX"
+          onClick={() => router.push("/transactions/new/sell")}
+        />
+        <FxActionButton
+          icon={<IconRecieve className="size-5 text-gray-900" />}
+          label="Receive money"
+          onClick={() => router.push("/transactions/receive/imto")}
+        />
       </div>
     </div>
   );
 }
 
 export default function FxOverviewCard() {
-  const [activeTab, setActiveTab] = useState("bought");
+  const [activeTab, setActiveTab] = useFxDashboardTab();
   const [amountVisible, setAmountVisible] = useState(true);
-  const [overrideOverview, setOverrideOverview] = useState<TransactionOverviewData | undefined>(undefined);
+  const [overrideOverview, setOverrideOverview] = useState<TransactionOverviewData | undefined>(
+    undefined
+  );
 
   const { data: overviewResponse } = useFetchData<TransactionOverviewData>(
     [...customerKeys.transactions.overview()],
@@ -128,17 +142,17 @@ export default function FxOverviewCard() {
       <Tabs
         value={activeTab}
         onChange={(v) => {
-          if (v != null) setActiveTab(v);
+          if (v != null) setActiveTab(v as typeof activeTab);
         }}
         variant="pills"
       >
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-5">
-            <FilterTabs items={FX_TABS} value={activeTab} />
+            <FilterTabs items={FX_DASHBOARD_TABS} value={activeTab} />
             <CurrencySelector onChange={handleCurrencyChange} />
           </div>
 
-          {FX_TABS.map((tab) => (
+          {FX_DASHBOARD_TABS.map((tab) => (
             <Tabs.Panel key={tab.value} value={tab.value}>
               <FxOverviewPanelContent
                 tabValue={tab.value}

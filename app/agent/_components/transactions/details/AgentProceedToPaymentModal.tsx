@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Button, Modal, Textarea } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { FileWithPath } from "@mantine/dropzone";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
@@ -12,12 +12,13 @@ import { agentApi } from "@/app/agent/_services/agent-api";
 import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import {
-  getInstructionsText,
+  getInstructionsParagraphs,
   getStringField,
   getVirtualAccountRemainingSeconds,
 } from "@/app/(customer)/_utils/transaction-payment";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { AgentDepositConfirmingModal } from "@/app/agent/_components/transactions/details/AgentDepositConfirmingModal";
+import { PaymentInstructionsCallout } from "@/app/(customer)/_components/transactions/details/PaymentInstructionsCallout";
 import { AgentVirtualAccountBankPaymentSection } from "@/app/agent/_components/transactions/details/AgentVirtualAccountBankPaymentSection";
 import { useAgentDepositConfirmationPoll } from "@/app/agent/_components/transactions/details/useAgentDepositConfirmationPoll";
 import { getVirtualAccountBankStepUiState } from "@/app/agent/_utils/virtualAccountBankStepUi";
@@ -180,9 +181,13 @@ export default function AgentProceedToPaymentModal({
   const accountNumber = getStringField(accountData, ["accountNumber"]) ?? "—";
   const bankName = getStringField(accountData, ["bankName"]) ?? "—";
   const accountName = getStringField(accountData, ["accountName"]) ?? "—";
-  const instructionsText =
-    getInstructionsText(instructionsQuery.data?.data) ??
-    "Once approved, 75% of your funds will be sent to customer bank account or prepaid card, while the remaining 25% will be available for cash pickup.";
+  const instructionsParagraphs = useMemo(() => {
+    const fromApi = getInstructionsParagraphs(instructionsQuery.data?.data);
+    if (fromApi?.length) return fromApi;
+    return [
+      "Once approved, 75% of your funds will be sent to customer bank account or prepaid card, while the remaining 25% will be available for cash pickup.",
+    ];
+  }, [instructionsQuery.data?.data]);
   const formattedAmount = useMemo(
     () =>
       Number(amountNgn || 0).toLocaleString("en-NG", {
@@ -312,10 +317,7 @@ export default function AgentProceedToPaymentModal({
       ) : null}
 
       {showInstructionsCallout ? (
-        <div className="flex gap-2 rounded-lg border border-[#B2AFAF] p-3">
-          <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#DD4F05]" />
-          <p className="min-w-0 text-sm leading-snug text-[#6C6969] sm:text-base">{instructionsText}</p>
-        </div>
+        <PaymentInstructionsCallout paragraphs={instructionsParagraphs} />
       ) : null}
     </div>
   );

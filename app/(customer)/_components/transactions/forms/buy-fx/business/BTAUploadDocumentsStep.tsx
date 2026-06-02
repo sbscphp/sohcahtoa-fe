@@ -9,6 +9,7 @@ import { Info } from "lucide-react";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import VisaDocumentUploadInput from '../../../../forms/VisaDocumentUploadInput';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
@@ -273,9 +274,7 @@ export default function BTAUploadDocumentsStep({
             error={form.errors.tinCertificateFile as string}
           /> */}
         <div className="space-y-2">
-          <TransactionFileUploadInput
-            label="Valid Visa"
-            required
+          <VisaDocumentUploadInput
             value={form.values.visaFile}
             onChange={(file) => form.setFieldValue("visaFile", file)}
             error={form.errors.visaFile as string}

@@ -56,11 +56,7 @@ export default function CashPickupDetailsSection({ data }: CashPickupDetailsSect
       />
       <LabelText
         label="Scheduled time"
-        text={
-          data.scheduledPickupTime
-            ? formatShortTime(data.scheduledPickupTime)
-            : "—"
-        }
+        text={formatOptional(data.scheduledPickupTime)}
       />
       <LabelText label="Expires" text={formatIsoDate(data.expiryDate)} />
       {/* <LabelText label="Recipient name" text={formatOptional(data.recipientName)} />

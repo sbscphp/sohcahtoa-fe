@@ -17,17 +17,18 @@ import { mapListItemToTransaction } from "./helper";
 import { agentApi } from "../../_services/agent-api";
 import { Transaction } from './types';
 import type { TransactionListParams } from "@/app/_lib/api/types";
+import {
+  resolveTransactionListGroup,
+  TRANSACTION_GROUP_FILTER_OPTIONS,
+  TRANSACTION_GROUP_TAB_ALL,
+} from "@/app/(customer)/_lib/transaction-group-tabs";
 
-const TAB_TO_GROUP = {
-  "Buy FX": "BUY" as const,
-  "Sell FX": "SELL" as const,
-  "Receive FX": "REMITTANCE" as const,
-};
+const PAGE_SIZE = 10;
 
 export default function AgentTransactionsPage() {
   const router = useRouter();
-  const [activeType, setActiveType] = useState<string>("Buy FX");
-  const group = TAB_TO_GROUP[activeType as keyof typeof TAB_TO_GROUP] ?? undefined;
+  const [activeType, setActiveType] = useState<string>(TRANSACTION_GROUP_TAB_ALL);
+  const group = resolveTransactionListGroup(activeType);
 
   type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
 
@@ -38,6 +39,7 @@ export default function AgentTransactionsPage() {
       dateRange: null,
       sortBy: "createdAt",
       sortOrder: "desc",
+      limit: PAGE_SIZE,
     }
   });
 
@@ -60,7 +62,7 @@ export default function AgentTransactionsPage() {
       sortBy: table.sortBy,
       sortOrder: table.sortOrder,
       page: table.page ?? 1,
-      limit: table.limit ?? 20,
+      limit: table.limit ?? PAGE_SIZE,
     };
   }, [
     group,
@@ -106,6 +108,7 @@ export default function AgentTransactionsPage() {
   );
 
   const tableRows = tableRowsRaw;
+  const totalPages = Math.max(1, apiResponse?.pagination?.totalPages ?? 1);
 
   const stats = (transactionStats as unknown as { data?: { total?: number; pending?: number; settled?: number; rejected?: number } })?.data;
   const totalTransactions = stats?.total ?? apiResponse?.pagination?.total ?? 0;
@@ -154,16 +157,24 @@ export default function AgentTransactionsPage() {
       <div className="bg-white rounded-2xl p-4">
         <TransactionTableOverview
           activeType={activeType}
-          onTypeChange={setActiveType}
+          filterOptions={TRANSACTION_GROUP_FILTER_OPTIONS}
+          onTypeChange={(type) => {
+            setActiveType(type);
+            table.setPage(1);
+          }}
           filters={TX_FILTER_OPTIONS}
           filterValues={{ selections: table.selections, dateRange: table.dateRange }}
           onFiltersApply={(next: TableFilterValues) => {
             table.setSelections(next.selections ?? {});
             table.setDateRange(next.dateRange ?? null);
+            table.setPage(1);
           }}
           onExportClick={handleExportClick}
           transactions={tableRows}
-          pageSize={10}
+          page={table.page ?? 1}
+          pageSize={PAGE_SIZE}
+          totalPages={totalPages}
+          onPageChange={table.setPage}
           onRowClick={handleRowClick}
           isLoading={isLoading}
         />

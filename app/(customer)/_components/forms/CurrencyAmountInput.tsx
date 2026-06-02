@@ -41,6 +41,7 @@ interface CurrencyAmountInputProps {
   error?: string;
   placeholder?: string;
   disabled?: boolean;
+  readOnly?: boolean;
   showDropdown?: boolean;
 }
 
@@ -54,6 +55,7 @@ export default function CurrencyAmountInput({
   error,
   placeholder = "0",
   disabled = false,
+  readOnly = false,
   showDropdown = true,
 }: CurrencyAmountInputProps) {
   const symbol = getCurrencySymbol(currency.code ?? CURRENCIES[0].code);
@@ -141,6 +143,7 @@ export default function CurrencyAmountInput({
         leftSectionWidth={36}
         placeholder={placeholder}
         disabled={disabled}
+        readOnly={readOnly}
         error={error}
         decimalScale={2}
         thousandSeparator=","

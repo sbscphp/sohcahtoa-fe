@@ -28,6 +28,7 @@ interface TransactionRequestSheetProps {
   ) => Promise<void>;
   /** Documents for Documentation tab (name, size, status, re-upload). */
   documents?: TransactionDocumentItem[];
+  allowMissingDocumentUpload?: boolean;
   onViewTransaction?: () => void;
   onOpenDocument?: (doc: TransactionDocumentItem) => void;
 }
@@ -46,6 +47,7 @@ export default function TransactionRequestSheet({
   comments,
   onResubmitDocuments,
   documents,
+  allowMissingDocumentUpload,
   onViewTransaction,
   onOpenDocument,
 }: Readonly<TransactionRequestSheetProps>) {
@@ -131,6 +133,7 @@ export default function TransactionRequestSheet({
             <DocumentDetail
               transactionTypeLabel={transactionTypeLabel}
               documents={documents}
+              allowMissingDocumentUpload={allowMissingDocumentUpload}
               onResubmitDocuments={onResubmitDocuments}
               onOpenDocument={onOpenDocument}
               onViewTransaction={onViewTransaction ?? onClose}

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@/test-utils";
 import Home from "./page";
 
 const mockRedirect = vi.fn();
@@ -7,18 +6,19 @@ const mockRedirect = vi.fn();
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
     mockRedirect(path);
+    throw new Error("NEXT_REDIRECT");
   },
 }));
 
 describe("Home Page", () => {
-  it("renders the welcome message", () => {
-    render(<Home />);
+  it("redirects to login", () => {
+    expect(() => Home()).toThrow("NEXT_REDIRECT");
     expect(mockRedirect).toHaveBeenCalledWith("/auth/login");
   });
 
-  it("has the correct styling classes", () => {
+  it("always redirects to the same path", () => {
     mockRedirect.mockClear();
-    render(<Home />);
+    expect(() => Home()).toThrow("NEXT_REDIRECT");
     expect(mockRedirect).toHaveBeenCalledWith("/auth/login");
   });
 });

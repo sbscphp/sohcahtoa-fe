@@ -7,8 +7,8 @@ import { Alert, Button, TextInput } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
-import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import VisaDocumentUploadInput from '../../../../forms/VisaDocumentUploadInput';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
@@ -17,17 +17,9 @@ import {
   requiredIsoDateSchema,
   validatePassportDates,
 } from "@/app/(customer)/_utils/input-validation";
-import {
-  shouldLockKycPrefill,
-  useCustomerProfileBvnNin,
-  useKycProfilePrefillEffect,
-} from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { formAIdSchema } from "@/app/(customer)/_lib/form-a-id-schema";
-import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
 
 const uploadDocumentsSchema = z.object({
-  bvn: kycBvnSchema,
-  ninNumber: kycNinRequiredSchema,
   formAId: formAIdSchema,
   passportDocumentNumber: passportNumberSchema,
   passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
@@ -54,34 +46,16 @@ interface TouristUploadDocumentsStepProps {
   initialValues?: Partial<TouristUploadDocumentsFormValues>;
   onSubmit: (data: TouristUploadDocumentsFormData) => void;
   onBack?: () => void;
-  lockKycPrefill?: boolean;
 }
 
 export default function TouristUploadDocumentsStep({
   initialValues,
   onSubmit,
   onBack,
-  lockKycPrefill = false,
 }: Readonly<TouristUploadDocumentsStepProps>) {
-  const kyc = useCustomerProfileBvnNin();
-  const bvnLocked = shouldLockKycPrefill(
-    kyc.hasBvnFromProfile,
-    initialValues?.bvn,
-    kyc.defaultBvn
-  );
-  const ninLocked = shouldLockKycPrefill(
-    kyc.hasNinFromProfile,
-    initialValues?.ninNumber,
-    kyc.defaultNin
-  );
-  const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
-  const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
-
   const form = useForm<TouristUploadDocumentsFormValues>({
     mode: "uncontrolled",
     initialValues: {
-      bvn: initialValues?.bvn || kyc.defaultBvn || "",
-      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       formAId: initialValues?.formAId || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
@@ -93,8 +67,6 @@ export default function TouristUploadDocumentsStep({
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
-
-  useKycProfilePrefillEffect(form, initialValues, kyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as TouristUploadDocumentsFormData);
@@ -118,48 +90,12 @@ export default function TouristUploadDocumentsStep({
         className="bg-white! border-gray-300!"
       >
         <p className="text-body-text-200">
-          {/* {APPROVAL_BEFORE_PAYMENT_MESSAGE} */}
           Please note the maximum you can
           transact is <strong>$10,000 per transaction</strong>.
         </p>
-        {/* <p className="text-body-text-200 mt-2">
-          {REVIEW_TIMELINE_MESSAGE}
-        </p> */}
       </Alert>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TextInput
-          label="BVN"
-          required
-          size="md"
-          placeholder="BVN"
-          maxLength={11}
-          inputMode="numeric"
-          autoComplete="off"
-          {...form.getInputProps("bvn")}
-          onChange={(e) => {
-            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
-            e.currentTarget.value = raw;
-            form.setFieldValue("bvn", raw);
-          }}
-          disabled={bvnLocked || forceBvnLock}
-        />
-        <TextInput
-          label="NIN"
-          required
-          size="md"
-          placeholder="NIN"
-          maxLength={11}
-          inputMode="numeric"
-          autoComplete="off"
-          {...form.getInputProps("ninNumber")}
-          onChange={(e) => {
-            const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
-            e.currentTarget.value = raw;
-            form.setFieldValue("ninNumber", raw);
-          }}
-          disabled={ninLocked || forceNinLock}
-        />
         <TextInput
           label="Form A ID"
           required
@@ -226,9 +162,7 @@ export default function TouristUploadDocumentsStep({
         />
       </div>
 
-      <TransactionFileUploadInput
-        label="Valid Visa"
-        required
+      <VisaDocumentUploadInput
         value={form.values.visaFile}
         onChange={(file) => form.setFieldValue("visaFile", file)}
         error={form.errors.visaFile as string}

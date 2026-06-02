@@ -28,6 +28,7 @@ import {
   TransactionSettlementSection,
   CashPickupDetailsSection,
   BeneficiaryDetailsSection,
+  TransactionBankAccountsSection,
   type TransactionDetailsData,
   type RequiredDocumentsData,
   type PaymentDetailsData,
@@ -51,7 +52,8 @@ export interface TransactionDetailPayload {
   requiredDocuments: RequiredDocumentsData;
   paymentDetails?: PaymentDetailsData;
   settlement?: TransactionSettlementData;
-  documentsForSheet?: unknown;
+  documentsForSheet?: TransactionDocumentItem[];
+  allowMissingDocumentUpload?: boolean;
 }
 
 export default function TransactionDetailPage() {
@@ -116,6 +118,7 @@ export default function TransactionDetailPage() {
     paymentAmountNgn > 0;
   const cashPickup = apiData?.cashPickup ?? null;
   const beneficiaryDetails = apiData?.beneficiaryDetails;
+  const bankAccounts = apiData?.bankAccounts ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -228,7 +231,8 @@ export default function TransactionDetailPage() {
           setUpdatesSheetOpen(false);
           setProceedToPaymentOpen(true);
         }}
-        documents={payload.documentsForSheet as unknown as TransactionDocumentItem[]}
+        documents={payload.documentsForSheet}
+        allowMissingDocumentUpload={payload.allowMissingDocumentUpload}
         onOpenDocument={(doc) => {
           if (doc.url) {
             setDocumentViewer({
@@ -250,6 +254,9 @@ export default function TransactionDetailPage() {
       <div className="flex flex-col gap-4 pb-8">
         <TransactionDetailsSection data={payload.transactionDetails} />
         {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
+        {bankAccounts.length > 0 ? (
+          <TransactionBankAccountsSection accounts={bankAccounts} />
+        ) : null}
         {beneficiaryDetails ? (
           <BeneficiaryDetailsSection data={beneficiaryDetails} />
         ) : null}

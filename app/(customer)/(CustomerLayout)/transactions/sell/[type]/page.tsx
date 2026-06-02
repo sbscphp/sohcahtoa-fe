@@ -25,6 +25,11 @@ import {
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
+import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
+import {
+  getCreatedTransactionId,
+  getPickupBankAccountId,
+} from "@/app/(customer)/_utils/customer-bank-accounts";
 import ResidentUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import ResidentTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
 import ResidentPickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
@@ -89,6 +94,7 @@ export default function SellTransactionCreationPage() {
   const userProfile = useAtomValue(userProfileAtom);
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(customerApi.transactions.create);
+  const { attachToTransaction } = useCustomerBankAccounts();
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -181,9 +187,29 @@ export default function SellTransactionCreationPage() {
       // console.log("payload", payload);
  
       const created = await createTransaction.mutateAsync(payload);
+      const transactionId = getCreatedTransactionId(created);
+      const bankAccountId = getPickupBankAccountId(
+        pickupPointData as Record<string, unknown> | null,
+      );
+      if (transactionId && bankAccountId) {
+        try {
+          await attachToTransaction(transactionId, [bankAccountId]);
+        } catch (attachError) {
+          handleApiError(attachError);
+          notifications.show({
+            title: "Transaction created",
+            message:
+              "Your request was submitted, but linking the bank account failed. You can retry from transaction details.",
+            color: "orange",
+          });
+        }
+      }
       setConfirmationOpened(false);
-      // console.log("created", created);
-      router.push(`/transactions/detail/${(created as unknown as { data: { transactionId: string } }).data?.transactionId}`);
+      if (transactionId) {
+        router.push(`/transactions/detail/${transactionId}`);
+      } else {
+        router.push("/transactions");
+      }
     } catch (error) {
       handleApiError(error);
       setConfirmationOpened(false);

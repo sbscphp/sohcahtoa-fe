@@ -36,6 +36,7 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   resubmit_document: { bg: "#F4E8FF", textColor: "#7C3AED" },
   request_more_info: { bg: "#F4E8FF", textColor: "#7C3AED" },
   requires_manual_review: { bg: "#F4E8FF", textColor: "#7C3AED" },
+  not_uploaded: { bg: "#FEF3C7", textColor: "#B45309" },
 };
 
 export function normalizeStatus(status: string): string {

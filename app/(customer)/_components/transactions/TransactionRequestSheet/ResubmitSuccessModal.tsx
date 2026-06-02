@@ -54,7 +54,7 @@ export default function ResubmitSuccessModal({
         </h2>
 
         <p className="text-[#6C6969] text-base leading-6">
-          You have successfully resubmitted your {shortLabel}. Your documents
+          You have successfully resubmitted your {shortLabel} Application. Your documents
           have been received and currently awaiting approval.
         </p>
 

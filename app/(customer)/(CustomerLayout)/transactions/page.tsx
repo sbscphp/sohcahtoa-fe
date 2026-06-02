@@ -14,18 +14,18 @@ import { useMemo, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { FILTER_OPTIONS, TX_FILTER_OPTIONS } from "./constant";
 import { mapListItemToTransaction } from "./helper";
+import {
+  resolveTransactionListGroup,
+  TRANSACTION_GROUP_TAB_ALL,
+} from "@/app/(customer)/_lib/transaction-group-tabs";
 
-const TAB_TO_GROUP = {
-  "Buy FX": "BUY" as const,
-  "Sell FX": "SELL" as const,
-  "Receive FX": "REMITTANCE" as const,
-};
+const PAGE_SIZE = 10;
 
 
 export default function TransactionsPage() {
   const router = useRouter();
-  const [activeType, setActiveType] = useState<string>("Buy FX");
-  const group = TAB_TO_GROUP[activeType as keyof typeof TAB_TO_GROUP] ?? undefined;
+  const [activeType, setActiveType] = useState<string>(TRANSACTION_GROUP_TAB_ALL);
+  const group = resolveTransactionListGroup(activeType);
 
   type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
 
@@ -58,7 +58,7 @@ export default function TransactionsPage() {
       sortBy: table.sortBy,
       sortOrder: table.sortOrder,
       page: table.page ?? 1,
-      limit: table.limit ?? 20,
+      limit: table.limit ?? PAGE_SIZE,
     };
   }, [
     group,
@@ -99,6 +99,7 @@ export default function TransactionsPage() {
   const tableRows: Transaction[] = tableRowsRaw;
 
   const totalTransactions = apiResponse?.pagination?.total ?? 0;
+  const totalPages = Math.max(1, apiResponse?.pagination?.totalPages ?? 1);
   const completed = tableRows.filter(
     (t) => t.status === "COMPLETED" || t.status === "APPROVED"
   ).length;
@@ -151,17 +152,24 @@ export default function TransactionsPage() {
       <div className="bg-white rounded-2xl p-4">
         <TransactionTableOverview
           activeType={activeType}
-          onTypeChange={setActiveType}
+          onTypeChange={(type) => {
+            setActiveType(type);
+            table.setPage(1);
+          }}
           filterOptions={FILTER_OPTIONS}
           filters={TX_FILTER_OPTIONS}
           filterValues={{ selections: table.selections, dateRange: table.dateRange }}
           onFiltersApply={(next: TableFilterValues) => {
             table.setSelections(next.selections ?? {});
             table.setDateRange(next.dateRange ?? null);
+            table.setPage(1);
           }}
           onExportClick={handleExportClick}
           transactions={tableRows}
-          pageSize={10}
+          page={table.page ?? 1}
+          pageSize={PAGE_SIZE}
+          totalPages={totalPages}
+          onPageChange={table.setPage}
           onRowClick={handleRowClick}
           isLoading={isLoading}
         />

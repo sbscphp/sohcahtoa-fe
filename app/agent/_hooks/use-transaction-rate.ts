@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCreateData } from "@/app/_lib/api/hooks";
+import type { TransactionRateMode } from "@/app/_lib/api/types";
 import { agentApi } from "@/app/agent/_services/agent-api";
+import {
+  formatExchangeRateLabel,
+  getActiveRate,
+} from "@/app/(customer)/_lib/transaction-rate";
 
 export interface AgentTransactionRateFormSlice {
   receiveAmount: string;
@@ -15,6 +20,7 @@ const DEFAULT_RATE_FROM_CURRENCY = "USD";
 const DEFAULT_RATE_TO_CURRENCY = "NGN";
 
 interface UseAgentTransactionRateCalculatorOptions {
+  mode: TransactionRateMode;
   getValues: () => AgentTransactionRateFormSlice;
   setSendAmount: (value: string) => void;
   setExchangeRateLabel?: (label: string) => void;
@@ -31,10 +37,10 @@ function parseAmountInput(raw: string | undefined): number {
 }
 
 /**
- * Matches customer `useTransactionRateCalculator`: fetch rate with `amount: 1` when the user
- * has not entered a positive amount yet, so the exchange-rate label is live—not the static default.
+ * Matches customer `useTransactionRateCalculator`: server `mode` drives rate + convertedAmount.
  */
 export function useAgentTransactionRateCalculator({
+  mode,
   getValues,
   setSendAmount,
   setExchangeRateLabel,
@@ -47,20 +53,26 @@ export function useAgentTransactionRateCalculator({
   const getValuesRef = useRef(getValues);
   const setSendAmountRef = useRef(setSendAmount);
   const setExchangeRateLabelRef = useRef(setExchangeRateLabel);
+  const modeRef = useRef(mode);
+  const requestSeqRef = useRef(0);
 
   useLayoutEffect(() => {
     getValuesRef.current = getValues;
     setSendAmountRef.current = setSendAmount;
     setExchangeRateLabelRef.current = setExchangeRateLabel;
-  }, [getValues, setSendAmount, setExchangeRateLabel]);
+    modeRef.current = mode;
+  }, [getValues, setSendAmount, setExchangeRateLabel, mode]);
 
   const recalculate = useCallback(
     async (
       overrideAmount?: string,
       overrideFromCurrency?: string,
-      overrideToCurrency?: string
+      overrideToCurrency?: string,
+      overrideMode?: TransactionRateMode
     ) => {
+      const requestSeq = ++requestSeqRef.current;
       const { receiveAmount, receiveCurrency, sendCurrency } = getValuesRef.current();
+      const rateMode = overrideMode ?? modeRef.current;
 
       const fromCurrency =
         (overrideFromCurrency ?? receiveCurrency ?? "").trim() || DEFAULT_RATE_FROM_CURRENCY;
@@ -81,20 +93,25 @@ export function useAgentTransactionRateCalculator({
           fromCurrency,
           toCurrency,
           amount: amountForApi,
+          mode: rateMode,
         });
+
+        if (requestSeq !== requestSeqRef.current) return;
 
         const data = response.data;
         if (!data) return;
 
         const converted = Number(data.convertedAmount);
-        const sellRate = Number(data.sellRate);
+        const activeRate = getActiveRate(data, rateMode);
 
         if (hasValidAmount && Number.isFinite(converted)) {
-          setSendAmountRef.current(converted.toString());
+          setSendAmountRef.current(String(converted));
+        } else if (!hasValidAmount) {
+          setSendAmountRef.current("");
         }
 
-        if (Number.isFinite(sellRate)) {
-          const label = `${fromCurrency}1 - ${sellRate} ${toCurrency}`;
+        if (Number.isFinite(activeRate)) {
+          const label = formatExchangeRateLabel(fromCurrency, toCurrency, activeRate);
           setDisplayRate(label);
           setExchangeRateLabelRef.current?.(label);
         }
@@ -105,14 +122,12 @@ export function useAgentTransactionRateCalculator({
     [mutateAsync]
   );
 
-  const didBootstrap = useRef(false);
+  const didInitialFetch = useRef(false);
   useEffect(() => {
-    if (skipInitialFetch || didBootstrap.current) return;
-    didBootstrap.current = true;
-    queueMicrotask(() => {
-      void recalculate();
-    });
-  }, [skipInitialFetch, recalculate]);
+    if (skipInitialFetch || didInitialFetch.current) return;
+    didInitialFetch.current = true;
+    recalculate(undefined, undefined, undefined, mode).catch(() => {});
+  }, [skipInitialFetch, mode, recalculate]);
 
   return {
     displayRate,

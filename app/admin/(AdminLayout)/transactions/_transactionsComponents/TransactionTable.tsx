@@ -24,10 +24,17 @@ import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 const pageSize = 10;
 
 const typeByTab = {
+  all: undefined,
   "buy-fx": "buyfx",
   "sell-fx": "sellfx",
   "receive-fx": "receivefx",
 } as const;
+
+type TransactionTab = keyof typeof typeByTab;
+
+function resolveAdminListType(tab: TransactionTab): string | undefined {
+  return typeByTab[tab];
+}
 
 const statusOptions = [
   { value: "All", label: "Filter By" },
@@ -45,7 +52,7 @@ export default function TransactionsTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [activeTab, setActiveTab] = useState<keyof typeof typeByTab>("buy-fx");
+  const [activeTab, setActiveTab] = useState<TransactionTab>("all");
   const [debouncedSearch] = useDebouncedValue(search, 350);
   const router = useRouter();
 
@@ -53,7 +60,7 @@ export default function TransactionsTable() {
   const exportParams = useMemo(() => ({
   search: debouncedSearch.trim() || undefined,
   status: statusFilter !== "All" ? statusFilter : undefined,
-  type: typeByTab[activeTab],
+  type: resolveAdminListType(activeTab),
 }), [activeTab, debouncedSearch, statusFilter]);
 
   const { transactions, isLoading, isFetching, totalPages } = useTransactions({
@@ -61,7 +68,7 @@ export default function TransactionsTable() {
     limit: pageSize,
     search: debouncedSearch || undefined,
     status: statusFilter !== "All" ? statusFilter : undefined,
-    type: typeByTab[activeTab],
+    type: resolveAdminListType(activeTab),
   });
 
   const safeTotalPages = Math.max(1, totalPages);
@@ -202,12 +209,13 @@ export default function TransactionsTable() {
         color="orange"
         value={activeTab}
         onChange={(value) => {
-          const nextTab = (value ?? "buy-fx") as keyof typeof typeByTab;
+          const nextTab = (value ?? "all") as TransactionTab;
           setActiveTab(nextTab);
           setPage(1);
         }}
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
+          <AdminTabButton value="all">All</AdminTabButton>
           <AdminTabButton value="buy-fx">Buy FX</AdminTabButton>
           <AdminTabButton value="sell-fx">Sell FX</AdminTabButton>
           <AdminTabButton value="receive-fx">Receive FX</AdminTabButton>

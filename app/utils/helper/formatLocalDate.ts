@@ -1,4 +1,12 @@
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
+
+const TIME_ONLY_RE = /^\d{1,2}:\d{2}(\s*(AM|PM))?$/i;
+const ISO_DATE_PREFIX_RE = /^\d{4}-\d{2}-\d{2}/;
+
+function safeFormatDate(date: Date, formatString: string): string {
+  if (!isValid(date)) return "";
+  return format(date, formatString);
+}
 
 function pad2(value: number): string {
   return String(value).padStart(2, "0");
@@ -117,19 +125,62 @@ export function buildApiDateTimeIso(date: string | null, time: string): string |
  */
 export function formatLocalDate(
   date: string | Date | null | undefined,
-  formatString = ''
+  formatString = ""
 ): string {
   if (!date) return "";
-
-  const localDate = parseApiDateTimeAsLocal(date);
-  if (!localDate) return "";
 
   const safeFormat =
     typeof formatString === "string" && formatString.trim().length > 0
       ? formatString
       : "d MMM yyyy";
 
-  return format(localDate, safeFormat);
+  if (date instanceof Date) {
+    return safeFormatDate(date, safeFormat);
+  }
+
+  const dateString = String(date).trim();
+  if (!dateString) return "";
+
+  // Pickup / API time labels (e.g. "10:00 AM") — not a calendar instant
+  if (TIME_ONLY_RE.test(dateString)) {
+    return dateString;
+  }
+
+  // Parse API datetime strings as local wall-clock values to avoid timezone drift.
+  const parsedLocalDate = parseApiDateTimeAsLocal(dateString);
+  if (parsedLocalDate) {
+    return safeFormatDate(parsedLocalDate, safeFormat);
+  }
+
+  const parsedMs = Date.parse(dateString);
+  if (Number.isFinite(parsedMs) && ISO_DATE_PREFIX_RE.test(dateString)) {
+    return safeFormatDate(new Date(parsedMs), safeFormat);
+  }
+
+  const cleanedDate = dateString.replace(/[TZ]/g, " ").trim();
+  const [datePart, timePart] = cleanedDate.split(" ");
+
+  if (!datePart || !ISO_DATE_PREFIX_RE.test(datePart)) {
+    return "";
+  }
+
+  const [year, month, day] = datePart.split("-").map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return "";
+  }
+
+  let hours = 0;
+  let minutes = 0;
+  let seconds = 0;
+  if (timePart) {
+    const timeComponents = timePart.split(":");
+    hours = Number(timeComponents[0]) || 0;
+    minutes = Number(timeComponents[1]) || 0;
+    seconds = Number(timeComponents[2]?.split(".")[0]) || 0;
+  }
+
+  const fallbackLocalDate = new Date(year, month - 1, day, hours, minutes, seconds);
+  return safeFormatDate(fallbackLocalDate, safeFormat);
 }
 
 /** Date + time for headers (e.g. "23 Feb 2026 | 11:46 am"). Uses date-fns. */

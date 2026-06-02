@@ -15,14 +15,35 @@ import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundMod
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-  proofOfFundsFiles: z.custom<File[]>().optional(),
-});
+const MAX_MEDICAL_AMOUNT = 5000;
+
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_MEDICAL_AMOUNT;
+}
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+    proofOfFundsFiles: z.custom<File[]>().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (receiveAmountOverMax(data.receiveAmount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: receiveAmountExceedsMaxMessage(MAX_MEDICAL_AMOUNT),
+      });
+    }
+  });
 
 export type MedicalTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -57,11 +78,17 @@ export default function MedicalTransactionAmountStep({
   });
 
   const { displayRate, recalculate } = useTransactionRateCalculator({
+    mode: "buy",
     getValues: () => form.values,
     setSendAmount: (value) => form.setFieldValue("sendAmount", value),
     setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
     defaultLabel: exchangeRate,
   });
+
+  const nextDisabled =
+    !form.values.receiveAmount?.trim() ||
+    !form.values.sendAmount?.trim() ||
+    receiveAmountOverMax(form.values.receiveAmount);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit({
@@ -97,6 +124,14 @@ export default function MedicalTransactionAmountStep({
             value={form.values.receiveAmount}
             onChange={(value) => {
               form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError(
+                  "receiveAmount",
+                  receiveAmountExceedsMaxMessage(MAX_MEDICAL_AMOUNT)
+                );
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
               recalculate(value);
             }}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}
@@ -108,7 +143,7 @@ export default function MedicalTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <div className="w-full">
+          {/* <div className="w-full">
             <ProofOfFundPrompt
               show={isAmountOverRequiredAmount(
                 form.values.receiveAmount,
@@ -118,17 +153,17 @@ export default function MedicalTransactionAmountStep({
               )}
               onUploadClick={() => setProofModalOpen(true)}
             />
-          </div>
+          </div> */}
         </div>
 
-        <ProofOfFundModal
+        {/* <ProofOfFundModal
           opened={proofModalOpen}
           onClose={() => setProofModalOpen(false)}
           onAttach={(files: File[]) => {
             setProofOfFundsFiles(files);
             setProofModalOpen(false);
           }}
-        />
+        /> */}
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
@@ -187,6 +222,7 @@ export default function MedicalTransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

@@ -57,6 +57,7 @@ export default function LandingSupport() {
           description="Want to know more about our services? Read the terms."
           ctaText="Read Terms"
           href={CUSTOMER_TERMS_URL}
+          openInNewTab
         />
       </div>
     </div>
