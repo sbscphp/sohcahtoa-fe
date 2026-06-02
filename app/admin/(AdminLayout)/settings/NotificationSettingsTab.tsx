@@ -3,15 +3,17 @@
 import { useEffect, useMemo, useState } from "react"
 import { Calendar, Clock, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Divider } from "@mantine/core"
+import { Button, Divider } from "@mantine/core"
 import { useCreateData, useFetchData } from "@/app/_lib/api/hooks"
 import { adminKeys } from "@/app/_lib/api/query-keys"
+import { useRouter } from "next/navigation"
 import {
   adminApi,
   type AdminNotificationItem,
 } from "@/app/admin/_services/admin-api"
 import type { ApiResponse } from "@/app/_lib/api/client"
-import { CustomButton } from "../../_components/CustomButton"
+import TablePaginator from "@/app/admin/_components/TablePaginator"
+import { adminRoutes } from "@/lib/adminRoutes"
 
 // --- Types ---
 type Notification = {
@@ -22,7 +24,15 @@ type Notification = {
   updatedDate?: string
   time: string
   status: "unread" | "read"
+  transactionId?: string
 }
+
+type PaginationMetadata = {
+  page: number
+  totalPages: number
+}
+
+const PAGE_SIZE = 20
 
 function formatDate(value: string) {
   const parsed = new Date(value)
@@ -45,6 +55,29 @@ function formatTime(value: string) {
   })
 }
 
+function getTransactionId(data: AdminNotificationItem["data"]): string | undefined {
+  if (!data || typeof data !== "object") return undefined
+
+  const transactionId = (data as { transactionId?: unknown }).transactionId
+  return typeof transactionId === "string" && transactionId.length > 0
+    ? transactionId
+    : undefined
+}
+
+function getPaginationMetadata(
+  response?: ApiResponse<AdminNotificationItem[]>
+): PaginationMetadata {
+  const metadata = response?.metadata as { pagination?: unknown } | null | undefined
+  const pagination = metadata?.pagination as
+    | { page?: unknown; totalPages?: unknown }
+    | undefined
+
+  return {
+    page: typeof pagination?.page === "number" ? pagination.page : 1,
+    totalPages: typeof pagination?.totalPages === "number" ? pagination.totalPages : 1,
+  }
+}
+
 function mapNotification(item: AdminNotificationItem): Notification {
   return {
     id: item.id,
@@ -57,6 +90,7 @@ function mapNotification(item: AdminNotificationItem): Notification {
         : undefined,
     time: formatTime(item.createdAt),
     status: item.isRead ? "read" : "unread",
+    transactionId: getTransactionId(item.data),
   }
 }
 
@@ -118,16 +152,38 @@ function groupByDate(notifications: Notification[]) {
 function NotificationCard({
   notification,
   onMarkRead,
+  onNavigate,
   isMarkingRead,
 }: {
   notification: Notification
   onMarkRead: (id: string) => void
+  onNavigate: (id: string) => void
   isMarkingRead: boolean
 }) {
   const isUnread = notification.status === "unread"
+  const isClickable = Boolean(notification.transactionId)
+  const handleClick = () => {
+    if (!notification.transactionId) return
+    onNavigate(notification.transactionId)
+  }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border-x-[1.5px] border-gray-100  bg-card px-5 py-4 transition-colors hover:bg-muted/30">
+    <div
+      className={cn(
+        "flex items-center justify-between rounded-lg border-x-[1.5px] border-gray-100 bg-card px-5 py-4 transition-colors hover:bg-muted/30",
+        isClickable && "cursor-pointer"
+      )}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={handleClick}
+      onKeyDown={(event) => {
+        if (!isClickable) return
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          handleClick()
+        }
+      }}
+    >
       <div className="flex flex-col gap-1.5">
         <h4 className="text-sm font-semibold text-foreground">
           {notification.title}
@@ -148,22 +204,25 @@ function NotificationCard({
             <Clock className="h-3.5 w-3.5" />
             {notification.time}
           </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        {isUnread && (
-          <CustomButton
-            buttonType="tertiary"
+        </div>{isUnread && (
+          <Button
+            variant="light"
             loading={isMarkingRead}
             disabled={isMarkingRead}
             size="sm"
-            onClick={() => onMarkRead(notification.id)}
+            onClick={(event) => {
+              event.stopPropagation()
+              onMarkRead(notification.id)
+            }}
             className="rounded-md border border-[#E8533F]/30 px-2.5 py-1 text-xs font-medium text-[#E8533F] transition-colors hover:bg-[#E8533F]/5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isMarkingRead ? "Marking..." : "Mark read"}
-          </CustomButton>
+            {isMarkingRead ? "Marking..." : "Mark as read"}
+          </Button>
         )}
+      </div>
+
+      <div className="flex items-center gap-3">
+
         <ChevronRight className="h-4 w-4 text-foreground/30" />
       </div>
     </div>
@@ -175,11 +234,13 @@ function DateGroup({
   label,
   notifications,
   onMarkRead,
+  onNavigate,
   markingId,
 }: {
   label: string
   notifications: Notification[]
   onMarkRead: (id: string) => void
+  onNavigate: (id: string) => void
   markingId: string | null
 }) {
   return (
@@ -199,6 +260,7 @@ function DateGroup({
             key={n.id}
             notification={n}
             onMarkRead={onMarkRead}
+            onNavigate={onNavigate}
             isMarkingRead={markingId === n.id}
           />
         ))}
@@ -209,34 +271,44 @@ function DateGroup({
 
 // --- Main Component ---
 export default function NotificationSettingsTab() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<NotificationTabValue>("all")
+  const [allPage, setAllPage] = useState(1)
+  const [unreadPage, setUnreadPage] = useState(1)
+  const [allTotalPages, setAllTotalPages] = useState(1)
+  const [unreadTotalPages, setUnreadTotalPages] = useState(1)
   const [allNotifications, setAllNotifications] = useState<Notification[]>([])
   const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([])
   const [markingId, setMarkingId] = useState<string | null>(null)
+  const activePage = activeTab === "all" ? allPage : unreadPage
+  const activeTotalPages = activeTab === "all" ? allTotalPages : unreadTotalPages
 
   const allQuery = useFetchData<ApiResponse<AdminNotificationItem[]>>(
-    [...adminKeys.all, "notifications", "all", { page: 1, limit: 20 }],
-    () => adminApi.notifications.getAllNotifications({ page: 1, limit: 20 }),
+    [...adminKeys.all, "notifications", "all", { page: allPage, limit: PAGE_SIZE }],
+    () => adminApi.notifications.getAllNotifications({ page: allPage, limit: PAGE_SIZE }),
     true
   )
 
   const unreadQuery = useFetchData<ApiResponse<AdminNotificationItem[]>>(
-    [...adminKeys.all, "notifications", "unread", { page: 1, limit: 20 }],
-    () => adminApi.notifications.getUnreadNotifications({ page: 1, limit: 20 }),
+    [...adminKeys.all, "notifications", "unread", { page: unreadPage, limit: PAGE_SIZE }],
+    () =>
+      adminApi.notifications.getUnreadNotifications({ page: unreadPage, limit: PAGE_SIZE }),
     true
   )
 
   useEffect(() => {
     if (allQuery.data?.data) {
       setAllNotifications(allQuery.data.data.map(mapNotification))
+      setAllTotalPages(getPaginationMetadata(allQuery.data).totalPages)
     }
-  }, [allQuery.data?.data])
+  }, [allQuery.data])
 
   useEffect(() => {
     if (unreadQuery.data?.data) {
       setUnreadNotifications(unreadQuery.data.data.map(mapNotification))
+      setUnreadTotalPages(getPaginationMetadata(unreadQuery.data).totalPages)
     }
-  }, [unreadQuery.data?.data])
+  }, [unreadQuery.data])
 
   const markReadMutation = useCreateData((id: string) =>
     adminApi.notifications.markNotificationAsRead(id)
@@ -253,6 +325,10 @@ export default function NotificationSettingsTab() {
     } finally {
       setMarkingId(null)
     }
+  }
+
+  const handleNavigate = (transactionId: string) => {
+    router.push(adminRoutes.adminTransactionDetails(transactionId))
   }
 
   const isLoading =
@@ -345,6 +421,7 @@ export default function NotificationSettingsTab() {
                 label={group.label}
                 notifications={group.items}
                 onMarkRead={handleMarkRead}
+                onNavigate={handleNavigate}
                 markingId={markingId}
               />
             ))
@@ -359,6 +436,33 @@ export default function NotificationSettingsTab() {
             </div>
           )}
         </div>
+        {!isLoading && !hasError && activeTotalPages > 1 && (
+          <TablePaginator
+            page={activePage}
+            totalPages={activeTotalPages}
+            onNext={() => {
+              if (activeTab === "all") {
+                setAllPage((current) => Math.min(current + 1, allTotalPages))
+                return
+              }
+              setUnreadPage((current) => Math.min(current + 1, unreadTotalPages))
+            }}
+            onPrevious={() => {
+              if (activeTab === "all") {
+                setAllPage((current) => Math.max(current - 1, 1))
+                return
+              }
+              setUnreadPage((current) => Math.max(current - 1, 1))
+            }}
+            onPageChange={(page) => {
+              if (activeTab === "all") {
+                setAllPage(page)
+                return
+              }
+              setUnreadPage(page)
+            }}
+          />
+        )}
       </div>
     </>
   )
