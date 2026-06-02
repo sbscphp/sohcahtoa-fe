@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAtomValue } from "jotai";
 import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../_components/HeaderTabs";
 import PasswordTab from "./PasswordTab";
@@ -9,59 +10,72 @@ import AccountInformationTab from "./AccountInformationTab";
 import NotificationSettingsTab from "./NotificationSettingsTab";
 import { adminRoutes } from "@/lib/adminRoutes";
 import PickUpStations from "./PickUpStations";
+import RateManagementTab from "./RateManagementTab";
+import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import { hasModuleAccess } from "@/app/admin/_lib/permissions";
+import type { UserPermission } from "@/app/admin/_lib/atoms/admin-auth-atom";
 
-const SETTING_TABS = [
+const BASE_SETTING_TABS = [
   { value: "account", label: "Account Information" },
   { value: "password", label: "Password" },
   { value: "notifications", label: "Notifications" },
   { value: "pickup-stations", label: "Pick-Up Stations" },
 ] as const;
 
-export type TabId = (typeof SETTING_TABS)[number]["value"];
+const RATE_TAB = { value: "rates", label: "Rate Management" } as const;
 
-const VALID_TAB_VALUES = SETTING_TABS.map((t) => t.value) as string[];
+export type TabId = (typeof BASE_SETTING_TABS)[number]["value"] | "rates";
 
-function resolveTab(param: string | null): TabId {
-  if (param && VALID_TAB_VALUES.includes(param)) return param as TabId;
+const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
+
+function resolveTab(param: string | null, validValues: string[]): TabId {
+  if (param && validValues.includes(param)) return param as TabId;
   return "account";
 }
 
 export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const adminUser = useAtomValue(adminUserAtom);
 
-  // Derive the active tab directly from the URL — single source of truth.
-  const activeTab = resolveTab(searchParams.get("tab"));
+  const userPermissions = adminUser?.userPermissions ?? EMPTY_USER_PERMISSIONS;
+  const hasRateAccess = hasModuleAccess(userPermissions, "RATE");
 
-  // Track the last tab we pushed to the URL ourselves so we can
-  // skip the redundant URL update when the effect re-runs after our own push.
+  const visibleTabs = useMemo(
+    () => (hasRateAccess ? [...BASE_SETTING_TABS, RATE_TAB] : [...BASE_SETTING_TABS]),
+    [hasRateAccess]
+  );
+
+  const validTabValues = useMemo(
+    () => visibleTabs.map((t) => t.value) as string[],
+    [visibleTabs]
+  );
+
+  const activeTab = resolveTab(searchParams.get("tab"), validTabValues);
+
   const lastPushedTab = useRef<string | null>(null);
 
   /* ── Sync URL → tab (handles external navigation / back-forward) ────── */
   useEffect(() => {
     const tabParam = searchParams.get("tab");
 
-    // Special-case: redirect legacy "workflow" param.
     if (tabParam === "workflow") {
       router.replace(adminRoutes.adminWorkflowDetails("item.id"));
       return;
     }
 
-    const resolved = resolveTab(tabParam);
+    const resolved = resolveTab(tabParam, validTabValues);
 
-    // If the URL has no tab param yet, initialise it (replace so it doesn't
-    // create an extra history entry).
     if (!tabParam) {
       router.replace(`?tab=${resolved}`);
       lastPushedTab.current = resolved;
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, validTabValues]);
 
   /* ── Tab click handler: tab → URL ──────────────────────────────────── */
   const handleTabChange = (value: string) => {
     const tab = value as TabId;
 
-    // Skip if we're already on this tab (prevents redundant history entries).
     if (tab === activeTab) return;
 
     lastPushedTab.current = tab;
@@ -74,11 +88,11 @@ export default function SettingsPage() {
       <HeaderTabs
         value={activeTab}
         onChange={handleTabChange}
-        tabs={[...SETTING_TABS]}
+        tabs={visibleTabs}
       />
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeTab]
+    [activeTab, visibleTabs]
   );
 
   useSetHeaderContent(headerContent);
@@ -90,6 +104,7 @@ export default function SettingsPage() {
       {activeTab === "password" && <PasswordTab />}
       {activeTab === "notifications" && <NotificationSettingsTab />}
       {activeTab === "pickup-stations" && <PickUpStations />}
+      {activeTab === "rates" && hasRateAccess && <RateManagementTab />}
     </div>
   );
 }

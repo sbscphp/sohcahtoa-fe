@@ -117,7 +117,7 @@ export default function RateTableSection() {
       key="action"
       onClick={() => {
         if (!item.id) return;
-        router.push(adminRoutes.adminRateDetails(item.id));
+        router.push(adminRoutes.adminSettingsRateDetails(item.id));
       }}
     />,
   ];
@@ -156,7 +156,7 @@ export default function RateTableSection() {
 
           <CustomButton
             buttonType="primary"
-            onClick={() => router.push(adminRoutes.adminRateCreate())}
+            onClick={() => router.push(adminRoutes.adminSettingsRateCreate())}
             rightSection={<Plus size={16} />}
           >
             Add New Rate
@@ -175,8 +175,6 @@ export default function RateTableSection() {
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
           <AdminTabButton value="active">Active</AdminTabButton>
-          {/* <AdminTabButton value="deactivated">Deactivated</AdminTabButton>
-          <AdminTabButton value="expired">Expired</AdminTabButton> */}
           <AdminTabButton value="scheduled">Scheduled</AdminTabButton>
         </Tabs.List>
 

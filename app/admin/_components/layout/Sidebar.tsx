@@ -12,7 +12,6 @@ import {
   Users,
   UserRoundCog,
   Ticket,
-  Coins,
   UserStar,
   ChevronDown,
   ChevronUp,
@@ -52,7 +51,6 @@ const menuItems: FlatMenuItem[] = [
   { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
   { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow", module: "WORKFLOW" },
   { icon: Ticket, label: "Tickets", href: "/admin/tickets", module: "INCIDENCE" },
-  { icon: Coins, label: "Rate Management", href: "/admin/rate", module: "RATE" },
 ];
 
 const userManagementAccordion = {

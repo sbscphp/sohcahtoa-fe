@@ -75,6 +75,9 @@ const adminSettingsPickupStations = () => `${adminSettings()}?tab=pickup-station
 const adminSettingsPickupStationDetails = (
   id: string | number = ':id'
 ) => `${adminSettings()}/pickup-stations/${id}`;
+const adminSettingsRates = () => `${adminSettings()}?tab=rates`;
+const adminSettingsRateCreate = () => `${adminSettings()}/rate/create`;
+const adminSettingsRateDetails = (id: string | number = ':id') => `${adminSettings()}/rate/${id}`;
 
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;
@@ -151,6 +154,9 @@ export const adminRoutes = {
   adminSettingsPassword,
   adminSettingsAccountInformation,
   adminSettingsNotifications,
+  adminSettingsRates,
+  adminSettingsRateCreate,
+  adminSettingsRateDetails,
 
   // Settlement
   adminSettlement,

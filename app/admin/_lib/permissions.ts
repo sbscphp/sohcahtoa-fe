@@ -15,11 +15,11 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
   "/admin/customer": "CUSTOMER",
   "/admin/workflow": "WORKFLOW",
   "/admin/tickets": "INCIDENCE",
-  "/admin/rate": "RATE",
   "/admin/user-management": "USER_MANAGEMENT",
   "/admin/regulatory": "REGULATORY",
   "/admin/report": "REPORTS",
   "/admin/audit-trail": "AUDIT_TRAIL",
+  "/admin/settings/rate": "RATE",
   "/admin/settings": null,
 };
 
@@ -38,7 +38,6 @@ export const ORDERED_NAV_ROUTES = [
   "/admin/outlet",
   "/admin/workflow",
   "/admin/tickets",
-  "/admin/rate",
   "/admin/user-management",
   "/admin/regulatory",
   "/admin/report",

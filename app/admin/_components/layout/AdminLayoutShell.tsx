@@ -36,7 +36,7 @@ function AdminLayoutShellContent({
     if (pathname?.startsWith('/admin/customer')) return 'Customer Management';
     if (pathname?.startsWith('/admin/workflow')) return 'Workflow';
     if (pathname?.startsWith('/admin/tickets')) return 'Tickets';
-    if (pathname?.startsWith('/admin/rate')) return 'Rate Management';
+    if (pathname?.startsWith('/admin/settings/rate')) return 'Rate Management';
     if (pathname?.startsWith('/admin/user-management')) return 'User Management';
     if (pathname?.startsWith('/admin/regulatory')) return 'Regulatory & Compliance';
     if (pathname?.startsWith('/admin/report')) return 'Report and Analytics';
