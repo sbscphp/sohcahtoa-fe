@@ -100,6 +100,7 @@ function requireUndergraduateStyleFiles(
 }
 
 const uploadDocumentsBaseSchema = z.object({
+  studentName: z.string().trim().min(1, "Student name is required"),
   admissionType: z.string().min(1, "Admission type is required"),
   formAId: formAIdSchema,
   evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
@@ -173,6 +174,7 @@ export default function SchoolFeesUploadDocumentsStep({
   const form = useForm<SchoolFeesUploadDocumentsFormValues>({
     mode: "controlled",
     initialValues: {
+      studentName: initialValues?.studentName || "",
       formAId: initialValues?.formAId || "",
       admissionType: initialValues?.admissionType || "",
       ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
@@ -233,6 +235,15 @@ export default function SchoolFeesUploadDocumentsStep({
           Please note the maximum you can transact is <strong>$10,000 per year</strong>.
         </p>
       </Alert>
+
+      <TextInput
+        label="Student Name"
+        required
+        size="md"
+        placeholder="Enter student name"
+        autoComplete="off"
+        {...form.getInputProps("studentName")}
+      />
 
       <TextInput
         label="Form A ID"

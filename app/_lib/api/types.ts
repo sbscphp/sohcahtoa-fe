@@ -637,6 +637,7 @@ export interface CreateTransactionRequest {
   amount: number;
   purpose: string;
   destinationCountry: string;
+  studentName?: string;
   /** Optional: when an agent creates a transaction on behalf of a customer. */
   customerId?: string;
   bvn?: string;

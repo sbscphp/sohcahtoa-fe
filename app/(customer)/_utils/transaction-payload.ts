@@ -297,6 +297,7 @@ function buildSchoolFeesPayload(
     amount: getAmount(amount),
     purpose: "School fees",
     destinationCountry: "United Kingdom",
+    studentName: typeof upload?.studentName === "string" ? upload.studentName : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
     admissionType: mapUiAdmissionTypeToApi(
       typeof upload?.admissionType === "string" ? upload.admissionType : undefined,
