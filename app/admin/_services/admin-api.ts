@@ -1091,13 +1091,19 @@ export interface SettlementDashboardStats {
 
 export interface AdminNotificationItem {
   id: string;
+  userId: string;
+  notificationId: string;
   title: string;
-  description: string;
-  date: string;
-  updatedDate?: string;
-  time: string;
-  status: "unread" | "read";
-  category: "all" | "transactions";
+  body: string;
+  icon: string | null;
+  actionUrl: string | null;
+  data: Record<string, unknown> | null;
+  isRead: boolean;
+  readAt: string | null;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type AdminNotificationsListParams = Record<

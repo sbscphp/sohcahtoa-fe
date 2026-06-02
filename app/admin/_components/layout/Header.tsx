@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, ChevronLeft, ChevronRight, LogOut, Menu } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, LogOut, Menu, Settings } from "lucide-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -126,6 +126,13 @@ export default function Header({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href={adminRoutes.adminSettingsPassword()}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-50 transition-colors hover:bg-gray-50"
+            aria-label="Settings"
+          >
+            <Settings size={16} className="text-body-text-300" />
+          </Link>
           <Link
             href={adminRoutes.adminSettingsNotifications()}
             className="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-50 transition-colors hover:bg-gray-50"

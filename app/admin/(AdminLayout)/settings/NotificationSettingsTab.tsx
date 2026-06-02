@@ -11,9 +11,54 @@ import {
   type AdminNotificationItem,
 } from "@/app/admin/_services/admin-api"
 import type { ApiResponse } from "@/app/_lib/api/client"
+import { CustomButton } from "../../_components/CustomButton"
 
 // --- Types ---
-type Notification = AdminNotificationItem
+type Notification = {
+  id: string
+  title: string
+  description: string
+  date: string
+  updatedDate?: string
+  time: string
+  status: "unread" | "read"
+}
+
+function formatDate(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+
+  return parsed.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+function formatTime(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return "--:--"
+
+  return parsed.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
+
+function mapNotification(item: AdminNotificationItem): Notification {
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.body,
+    date: formatDate(item.createdAt),
+    updatedDate:
+      item.updatedAt && item.updatedAt !== item.createdAt
+        ? formatDate(item.updatedAt)
+        : undefined,
+    time: formatTime(item.createdAt),
+    status: item.isRead ? "read" : "unread",
+  }
+}
 
 // --- Tab definitions ---
 const NOTIFICATION_TABS = [
@@ -108,23 +153,17 @@ function NotificationCard({
 
       <div className="flex items-center gap-3">
         {isUnread && (
-          <button
-            type="button"
-            onClick={() => onMarkRead(notification.id)}
+          <CustomButton
+            buttonType="tertiary"
+            loading={isMarkingRead}
             disabled={isMarkingRead}
+            size="sm"
+            onClick={() => onMarkRead(notification.id)}
             className="rounded-md border border-[#E8533F]/30 px-2.5 py-1 text-xs font-medium text-[#E8533F] transition-colors hover:bg-[#E8533F]/5 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isMarkingRead ? "Marking..." : "Mark read"}
-          </button>
+          </CustomButton>
         )}
-        <span
-          className={cn(
-            "text-sm font-medium",
-            isUnread ? "text-[#E8533F]" : "text-foreground/40"
-          )}
-        >
-          {isUnread ? "Unread" : "Read"}
-        </span>
         <ChevronRight className="h-4 w-4 text-foreground/30" />
       </div>
     </div>
@@ -175,13 +214,13 @@ export default function NotificationSettingsTab() {
   const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([])
   const [markingId, setMarkingId] = useState<string | null>(null)
 
-  const allQuery = useFetchData<ApiResponse<Notification[]>>(
+  const allQuery = useFetchData<ApiResponse<AdminNotificationItem[]>>(
     [...adminKeys.all, "notifications", "all", { page: 1, limit: 20 }],
     () => adminApi.notifications.getAllNotifications({ page: 1, limit: 20 }),
     true
   )
 
-  const unreadQuery = useFetchData<ApiResponse<Notification[]>>(
+  const unreadQuery = useFetchData<ApiResponse<AdminNotificationItem[]>>(
     [...adminKeys.all, "notifications", "unread", { page: 1, limit: 20 }],
     () => adminApi.notifications.getUnreadNotifications({ page: 1, limit: 20 }),
     true
@@ -189,13 +228,13 @@ export default function NotificationSettingsTab() {
 
   useEffect(() => {
     if (allQuery.data?.data) {
-      setAllNotifications(allQuery.data.data)
+      setAllNotifications(allQuery.data.data.map(mapNotification))
     }
   }, [allQuery.data?.data])
 
   useEffect(() => {
     if (unreadQuery.data?.data) {
-      setUnreadNotifications(unreadQuery.data.data)
+      setUnreadNotifications(unreadQuery.data.data.map(mapNotification))
     }
   }, [unreadQuery.data?.data])
 
@@ -239,7 +278,7 @@ export default function NotificationSettingsTab() {
 
   return (
     <>
-    <nav className="mb-8 flex items-center gap-0 ">
+      <nav className="mb-8 flex items-center gap-0 ">
         {NOTIFICATION_TABS.map((tab) => {
           const isActive = activeTab === tab.value
           let countBadge: number | null = null
@@ -278,49 +317,49 @@ export default function NotificationSettingsTab() {
           )
         })}
       </nav>
-    <div className="mx-auto w-full max-w-3xl bg-white rounded-lg p-6">
-      {/* Tab Bar */}
-      
+      <div className="mx-auto w-full max-w-3xl bg-white rounded-lg p-6">
+        {/* Tab Bar */}
 
-      {/* Notification Groups */}
-      <div className="flex flex-col gap-8">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm font-medium text-foreground/50">
-              Loading notifications...
-            </p>
-          </div>
-        ) : hasError ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm font-medium text-foreground/50">
-              Unable to load notifications
-            </p>
-            <p className="mt-1 text-xs text-foreground/30">
-              Please refresh and try again
-            </p>
-          </div>
-        ) : groups.length > 0 ? (
-          groups.map((group) => (
-            <DateGroup
-              key={`${group.label}-${group.sortDate.getTime()}`}
-              label={group.label}
-              notifications={group.items}
-              onMarkRead={handleMarkRead}
-              markingId={markingId}
-            />
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm font-medium text-foreground/50">
-              No notifications
-            </p>
-            <p className="mt-1 text-xs text-foreground/30">
-              You have no notifications in this category
-            </p>
-          </div>
-        )}
+
+        {/* Notification Groups */}
+        <div className="flex flex-col gap-8">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-sm font-medium text-foreground/50">
+                Loading notifications...
+              </p>
+            </div>
+          ) : hasError ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-sm font-medium text-foreground/50">
+                Unable to load notifications
+              </p>
+              <p className="mt-1 text-xs text-foreground/30">
+                Please refresh and try again
+              </p>
+            </div>
+          ) : groups.length > 0 ? (
+            groups.map((group) => (
+              <DateGroup
+                key={`${group.label}-${group.sortDate.getTime()}`}
+                label={group.label}
+                notifications={group.items}
+                onMarkRead={handleMarkRead}
+                markingId={markingId}
+              />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-sm font-medium text-foreground/50">
+                No notifications
+              </p>
+              <p className="mt-1 text-xs text-foreground/30">
+                You have no notifications in this category
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   )
 }
