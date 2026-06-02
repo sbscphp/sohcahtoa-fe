@@ -48,7 +48,7 @@ const menuItems: FlatMenuItem[] = [
   { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions", module: "TRANSACTION" },
   { icon: Database, label: "Settlement", href: "/admin/settlement", module: "SETTLEMENT" },
   { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
-  { icon: Ticket, label: "Tickets", href: "/admin/tickets", module: "INCIDENCE" },
+  { icon: Ticket, label: "Customer Support", href: "/admin/tickets", module: "INCIDENCE" },
 ];
 
 const userManagementAccordion = {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Skeleton } from "@mantine/core";
 import Image from "next/image";
 import StatCard from "../../_components/StatCard";
 import gold from "../../_components/assets/icons/Goldmoneys.png";
@@ -29,7 +30,8 @@ function resolveTab(param: string | null): TransactionTabId {
 }
 
 function TransactionsTabContent() {
-  const { stats } = useTransactionStats();
+  const { stats, isLoading: isStatsLoading } = useTransactionStats();
+  const isStatsEmpty = !isStatsLoading && !stats;
   const Icon1 = (
     <div>
       <Image src={gold} alt="icon" />
@@ -55,30 +57,42 @@ function TransactionsTabContent() {
     <>
       <div className="w-full rounded-xl bg-white p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Under Review"
-            value={stats?.underReview ?? 0}
-            icon={Icon1}
-            iconBg="bg-orange-100"
-          />
-          <StatCard
-            title="Rejected"
-            value={stats?.rejected ?? 0}
-            icon={Icon2}
-            iconBg="bg-[#FFE4E8]"
-          />
-          <StatCard
-            title="Request Information"
-            value={stats?.requestInformation ?? 0}
-            icon={Icon3}
-            iconBg="bg-[#EBE9FE]"
-          />
-          <StatCard
-            title="Approved"
-            value={stats?.approved ?? 0}
-            icon={Icon4}
-            iconBg="bg-[#D1FADF]"
-          />
+          {isStatsLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} height={90} radius="md" />
+            ))
+          ) : (
+            <>
+              <StatCard
+                title="Under Review"
+                value={stats?.underReview ?? 0}
+                icon={Icon1}
+                iconBg="bg-orange-100"
+                isEmpty={isStatsEmpty}
+              />
+              <StatCard
+                title="Rejected"
+                value={stats?.rejected ?? 0}
+                icon={Icon2}
+                iconBg="bg-[#FFE4E8]"
+                isEmpty={isStatsEmpty}
+              />
+              <StatCard
+                title="Request Information"
+                value={stats?.requestInformation ?? 0}
+                icon={Icon3}
+                iconBg="bg-[#EBE9FE]"
+                isEmpty={isStatsEmpty}
+              />
+              <StatCard
+                title="Approved"
+                value={stats?.approved ?? 0}
+                icon={Icon4}
+                iconBg="bg-[#D1FADF]"
+                isEmpty={isStatsEmpty}
+              />
+            </>
+          )}
         </div>
       </div>
 
