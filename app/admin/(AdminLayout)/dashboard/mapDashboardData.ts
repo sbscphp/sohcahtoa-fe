@@ -92,9 +92,12 @@ export function mapRecentTransactions(
 ): Transaction[] {
   return rows.map((row) => {
     const { date, time } = formatDateTime(row.createdAt);
+    const rowWithType = row as { transactionType?: string; type?: string };
+    const rawType = rowWithType.transactionType ?? rowWithType.type ?? "";
     return {
       id: row.id,
       referenceNumber: row.referenceNumber,
+      transactionType: rawType ? TYPE_DISPLAY[rawType] ?? rawType.replaceAll("_", " ") : "Unknown",
       date,
       time,
       status: adminTransactionStatusLabel(row.status),
