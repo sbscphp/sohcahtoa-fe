@@ -18,6 +18,7 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 type FilterTab = "all" | "pending" | "completed" | "rejected";
 
@@ -115,7 +116,7 @@ export default function WorkflowActionTable() {
       {item.workflowAction}
     </Text>,
     <Text key="actionNeeded" size="sm">
-      {item.actionNeeded}
+      {toSentenceCase(item.actionNeeded)}
     </Text>,
     <StatusBadge key="status" status={item.status} />,
     <RowActionIcon
