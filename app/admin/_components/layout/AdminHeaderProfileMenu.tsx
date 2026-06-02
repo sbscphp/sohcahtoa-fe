@@ -72,9 +72,10 @@ export default function AdminHeaderProfileMenu() {
         shadow="md"
         withArrow
         opened={popoverOpen}
+        onDismiss={() => setPopoverOpen(false)}
         closeOnClickOutside
         closeOnEscape
-        onClose={() => setPopoverOpen(false)}
+        withinPortal
       >
         <Popover.Target>
           <button

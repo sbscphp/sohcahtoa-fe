@@ -10,7 +10,6 @@ import {
   Database,
   Store,
   Users,
-  UserRoundCog,
   Ticket,
   UserStar,
   ChevronDown,
@@ -49,7 +48,6 @@ const menuItems: FlatMenuItem[] = [
   { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions", module: "TRANSACTION" },
   { icon: Database, label: "Settlement", href: "/admin/settlement", module: "SETTLEMENT" },
   { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
-  { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow", module: "WORKFLOW" },
   { icon: Ticket, label: "Tickets", href: "/admin/tickets", module: "INCIDENCE" },
 ];
 
@@ -276,7 +274,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
                   className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${linkClassName(isUserManagementChildActive)}`}
                 >
                   <AccordionIcon className="h-5 w-5 shrink-0" />
-                  <span className="flex-1 whitespace-nowrap text-left">
+                  <span className="flex-1 whitespace-nowrap text-left cursor-pointer! font-medium text-sm">
                     {userManagementAccordion.label}
                   </span>
                   {isUserManagementAccordionOpen ? (

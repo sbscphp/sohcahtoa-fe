@@ -29,6 +29,8 @@ const adminRateDetails = (id: string | number = ':id') => `${adminRate()}/${id}`
 
 // Transaction routes
 const adminTransactions = () => `${admin()}/transactions`;
+const adminTransactionsWorkflows = () =>
+  `${adminTransactions()}?tab=transaction-workflows`;
 const adminTransactionDetails = (id: string | number = ':id') => `${adminTransactions()}/${id}`;
 
 // Report routes
@@ -118,6 +120,7 @@ export const adminRoutes = {
   
   // Transactions
   adminTransactions,
+  adminTransactionsWorkflows,
   adminTransactionDetails,
   
   // Reports
