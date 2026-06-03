@@ -28,6 +28,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/audit-trail',
     '/admin/outlet',
     '/admin/tickets',
+    '/admin/transient-wallets',
     '/admin/login',
   ];
 
@@ -212,6 +213,30 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     return [
       { label: 'Transaction Workflows', url: adminRoutes.adminTransactionsWorkflows() },
       { label: 'Workflow Details' },
+    ];
+  }
+
+  // Transient Wallet Details: /admin/transient-wallets/:walletId
+  if (
+    /^\/admin\/transient-wallets\/[^/]+$/.test(pathname) &&
+    !pathname.includes('/entries/')
+  ) {
+    return [
+      { label: 'Transient Wallet', url: adminRoutes.adminTransientWallets() },
+      { label: 'View Wallet' },
+    ];
+  }
+
+  // Transient Wallet Entry Details: /admin/transient-wallets/:walletId/entries/:entryId
+  if (/^\/admin\/transient-wallets\/[^/]+\/entries\/[^/]+$/.test(pathname)) {
+    const walletId = pathname.split('/')[3];
+    return [
+      { label: 'Transient Wallet', url: adminRoutes.adminTransientWallets() },
+      {
+        label: 'View Wallet',
+        url: adminRoutes.adminTransientWalletDetails(walletId),
+      },
+      { label: 'View Entry' },
     ];
   }
 

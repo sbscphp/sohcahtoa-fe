@@ -12,6 +12,7 @@ import {
   Users,
   Ticket,
   UserStar,
+  Wallet,
   ChevronDown,
   ChevronUp,
   type LucideIcon,
@@ -46,6 +47,7 @@ const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
 const menuItems: FlatMenuItem[] = [
   { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard", module: null },
   { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions", module: "TRANSACTION" },
+  { icon: Wallet, label: "Transient Wallets", href: adminRoutes.adminTransientWallets(), module: null },
   { icon: Database, label: "Settlement", href: "/admin/settlement", module: "SETTLEMENT" },
   { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
   { icon: Ticket, label: "Customer Support", href: "/admin/tickets", module: "INCIDENCE" },

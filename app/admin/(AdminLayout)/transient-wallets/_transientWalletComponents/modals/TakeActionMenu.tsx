@@ -1,0 +1,40 @@
+"use client";
+
+import { Button, Menu } from "@mantine/core";
+
+export type TakeActionType =
+  | "link"
+  | "flag"
+  | "refund"
+  | "disburse";
+
+interface TakeActionMenuProps {
+  onAction: (action: TakeActionType) => void;
+}
+
+export default function TakeActionMenu({ onAction }: TakeActionMenuProps) {
+  return (
+    <Menu position="bottom-end" shadow="md" width={200}>
+      <Menu.Target>
+        <Button radius="xl" size="md" color="#DD4F05">
+          Take Action
+        </Button>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item onClick={() => onAction("link")}>
+          Link transaction
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item onClick={() => onAction("flag")}>
+          Mark as flagged
+        </Menu.Item>
+        <Menu.Item onClick={() => onAction("refund")}>
+          Initiate refund
+        </Menu.Item>
+        <Menu.Item onClick={() => onAction("disburse")}>
+          Confirm disbursement
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
+}

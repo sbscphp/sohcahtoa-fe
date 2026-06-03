@@ -30,6 +30,13 @@ function AdminLayoutShellContent({
   const getPageTitle = () => {
     if (pathname === '/admin/dashboard') return 'Dashboard';
     if (pathname?.startsWith('/admin/transactions')) return 'Transactions';
+    if (pathname?.match(/^\/admin\/transient-wallets\/[^/]+\/entries\/[^/]+$/)) {
+      return 'View Ledger Entry Details';
+    }
+    if (pathname?.match(/^\/admin\/transient-wallets\/[^/]+$/)) {
+      return 'View Wallet Details';
+    }
+    if (pathname?.startsWith('/admin/transient-wallets')) return 'Transient Wallets';
     if (pathname?.startsWith('/admin/settlement')) return 'Settlement';
     if (pathname?.startsWith('/admin/agent')) return 'Agent';
     if (pathname?.startsWith('/admin/outlet')) return 'Outlet';

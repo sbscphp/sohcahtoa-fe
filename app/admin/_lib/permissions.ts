@@ -9,6 +9,7 @@ import type { UserPermission } from "@/app/admin/_lib/atoms/admin-auth-atom";
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
   "/admin/dashboard": null,
   "/admin/transactions": "TRANSACTION",
+  "/admin/transient-wallets": null,
   "/admin/settlement": "SETTLEMENT",
   "/admin/agent": null,
   "/admin/outlet": "OUTLET",
@@ -33,6 +34,7 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
 export const ORDERED_NAV_ROUTES = [
   "/admin/dashboard",
   "/admin/transactions",
+  "/admin/transient-wallets",
   "/admin/settlement",
   "/admin/customer",
   "/admin/outlet",
