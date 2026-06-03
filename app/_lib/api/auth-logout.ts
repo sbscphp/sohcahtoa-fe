@@ -1,9 +1,10 @@
 import { getDefaultStore } from 'jotai';
 import { authTokensAtom, userProfileAtom } from '@/app/_lib/atoms/auth-atom';
+import { adminUserAtom } from '@/app/admin/_lib/atoms/admin-auth-atom';
 import { clearAuthSessionStorage, clearTemporaryAuthData } from '@/app/(customer)/_utils/auth-flow';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
-export type AuthUserType = 'customer' | 'agent';
+export type AuthUserType = 'customer' | 'agent' | 'admin';
 
 const RETURN_PATH_KEY_CUSTOMER = 'auth.returnPath.customer';
 const RETURN_PATH_KEY_AGENT = 'auth.returnPath.agent';
@@ -22,7 +23,9 @@ export function getAuthUserType(): AuthUserType | null {
 
 function inferUserTypeFromLocation(): AuthUserType {
   if (globalThis.window === undefined) return 'customer';
-  return globalThis.window.location.pathname.startsWith('/agent') ? 'agent' : 'customer';
+  const path = globalThis.window.location.pathname;
+  if (path.startsWith('/admin')) return 'admin';
+  return path.startsWith('/agent') ? 'agent' : 'customer';
 }
 
 function getReturnPathKey(type: AuthUserType) {
@@ -55,6 +58,19 @@ export const performLogout = (router?: AppRouterInstance, type?: AuthUserType) =
   if (globalThis.window === undefined) return;
 
   const effectiveType = type ?? getAuthUserType() ?? inferUserTypeFromLocation();
+
+  if (effectiveType === 'admin') {
+    const store = getDefaultStore();
+    store.set(adminUserAtom, null);
+    const loginPath = '/admin/login';
+    if (router) {
+      router.push(loginPath);
+    } else {
+      globalThis.window.location.href = loginPath;
+    }
+    return;
+  }
+
   saveReturnPath(effectiveType);
 
   const store = getDefaultStore();

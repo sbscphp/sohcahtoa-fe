@@ -36,8 +36,6 @@ import {
   buildApiDateTimeIso,
   splitApiDateTimeForInput,
 } from "@/app/utils/helper/formatLocalDate";
-// import Image from "next/image";
-// import Cbn from "@/app/assets/svg/cbn-logo.svg"
 
 const SECTION_TITLE_CLASS = "text-lg! font-semibold! text-orange-500!";
 const SECTION_DESC_CLASS = "text-base! text-body-text-100! mb-4!";
@@ -224,7 +222,7 @@ export default function RateDetailPage() {
   };
 
   const handleCancel = () => {
-    router.push(adminRoutes.adminRate());
+    router.push(adminRoutes.adminSettingsRates());
   };
 
   const handleSaveClick = () => {
@@ -255,7 +253,7 @@ export default function RateDetailPage() {
 
   const handleSuccessManageRate = () => {
     setIsSuccessOpen(false);
-    router.push(adminRoutes.adminRate());
+    router.push(adminRoutes.adminSettingsRates());
   };
 
   if (!rateId) {
@@ -264,7 +262,7 @@ export default function RateDetailPage() {
         <Text c="red" mb="md">
           Invalid rate id. Please select a valid rate.
         </Text>
-        <CustomButton buttonType="secondary" onClick={() => router.push(adminRoutes.adminRate())}>
+        <CustomButton buttonType="secondary" onClick={() => router.push(adminRoutes.adminSettingsRates())}>
           Back to Rates
         </CustomButton>
       </div>
@@ -289,7 +287,7 @@ export default function RateDetailPage() {
           {errorMessage}
         </Text>
         <Group>
-          <CustomButton buttonType="secondary" onClick={() => router.push(adminRoutes.adminRate())}>
+          <CustomButton buttonType="secondary" onClick={() => router.push(adminRoutes.adminSettingsRates())}>
             Back to Rates
           </CustomButton>
           <CustomButton buttonType="primary" onClick={() => rateDetailQuery.refetch()}>
@@ -375,16 +373,6 @@ export default function RateDetailPage() {
                 </Text>
               )}
             </div>
-            {/* <div className="flex justify-between border border-[#EEA782] bg-[#FFF6F1] rounded-2xl px-3 py-4">
-              <div className="flex items-center ">
-                <Image src={Cbn} alt="CBN Rate" className=" w-12" />
-                <div>
-                  <h4 className="text-[#DD4F05] font-medium">API: CBN Rate (€)</h4>
-                  <p className="text-[#4D4B4B] text-sm font-medium italic"><span className="text-[#F63D68] font-normal">Kindly note:</span> Your buy rate can exceed 2.0% of CBN recommended rate</p>
-                </div>
-              </div>
-              <h2 className="font-bold text-[#131212] text-base">₦ 1 = € 0.0018 </h2>
-            </div> */}
 
             <div className="p-4 rounded-xl! bg-gray-25">
               <Text size="sm" fw={500} mb={6} className="text-body-text-100!">
@@ -449,16 +437,6 @@ export default function RateDetailPage() {
                 </Text>
               )}
             </div>
-            {/* <div className="flex justify-between border border-[#EEA782] bg-[#FFF6F1] rounded-2xl px-3 py-4">
-              <div className="flex items-center ">
-                <Image src={Cbn} alt="CBN Rate" className=" w-12" />
-                <div>
-                  <h4 className="text-[#DD4F05] font-medium">API: CBN Rate (€)</h4>
-                  <p className="text-[#4D4B4B] text-sm font-medium italic"><span className="text-[#F63D68] font-normal">Kindly note:</span> Your buy rate can exceed 2.0% of CBN recommended rate</p>
-                </div>
-              </div>
-              <h2 className="font-bold text-[#131212] text-base">₦ 1 = € 0.0018 </h2>
-            </div> */}
           </Stack>
         </section>
 

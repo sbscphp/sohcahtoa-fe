@@ -219,7 +219,7 @@ export default function CreateRatePage() {
   };
 
   const handleCancel = () => {
-    router.push(adminRoutes.adminRate());
+    router.push(adminRoutes.adminSettingsRates());
   };
 
   const handleSaveClick = () => {
@@ -251,7 +251,7 @@ export default function CreateRatePage() {
 
   const handleSuccessManageRate = () => {
     setIsSuccessOpen(false);
-    router.push(adminRoutes.adminRate());
+    router.push(adminRoutes.adminSettingsRates());
   };
 
   return (

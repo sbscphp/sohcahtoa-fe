@@ -39,10 +39,10 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   // Returns false on the server, true on the client — no setState needed.
   const hydrated = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
-  // Keep the apiClient token in sync with the admin session at all times.
-  useEffect(() => {
-    apiClient.setAuthTokenGetter(() => accessToken);
-  }, [accessToken]);
+  // Set the token getter synchronously during render so that any child query
+  // fired in the same commit already has the correct token available.
+  // The captured `accessToken` variable is stable for this render cycle.
+  apiClient.setAuthTokenGetter(() => accessToken);
 
   // Watch token expiry: shows a warning notification and clears the session
   // when the access token expires.

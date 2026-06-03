@@ -29,6 +29,8 @@ const adminRateDetails = (id: string | number = ':id') => `${adminRate()}/${id}`
 
 // Transaction routes
 const adminTransactions = () => `${admin()}/transactions`;
+const adminTransactionsWorkflows = () =>
+  `${adminTransactions()}?tab=transaction-workflows`;
 const adminTransactionDetails = (id: string | number = ':id') => `${adminTransactions()}/${id}`;
 
 // Report routes
@@ -75,10 +77,28 @@ const adminSettingsPickupStations = () => `${adminSettings()}?tab=pickup-station
 const adminSettingsPickupStationDetails = (
   id: string | number = ':id'
 ) => `${adminSettings()}/pickup-stations/${id}`;
+const adminSettingsRates = () => `${adminSettings()}?tab=rates`;
+const adminSettingsRateCreate = () => `${adminSettings()}/rate/create`;
+const adminSettingsRateDetails = (id: string | number = ':id') => `${adminSettings()}/rate/${id}`;
+const adminSettingsWorkflowConfiguration = () => `${adminSettings()}?tab=workflow-configuration`;
+const adminSettingsWorkflowCreate = () => `${adminSettings()}/workflow/create`;
+const adminSettingsWorkflowDetails = (id: string | number = ':id') =>
+  `${adminSettings()}/workflow/${id}`;
+const adminSettingsWorkflowEdit = (id: string | number = ':id') =>
+  `${adminSettingsWorkflowDetails(id)}/edit`;
 
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;
 const adminSettlementRegisterEscrow = () => `${adminSettlement()}/register-escrow`;
+
+// Transient wallet routes
+const adminTransientWallets = () => `${admin()}/transient-wallets`;
+const adminTransientWalletDetails = (walletId: string | number = ':walletId') =>
+  `${adminTransientWallets()}/${walletId}`;
+const adminTransientWalletEntryDetails = (
+  walletId: string | number = ':walletId',
+  entryId: string | number = ':entryId'
+) => `${adminTransientWalletDetails(walletId)}/entries/${entryId}`;
 
 
 export const adminRoutes = {
@@ -109,6 +129,7 @@ export const adminRoutes = {
   
   // Transactions
   adminTransactions,
+  adminTransactionsWorkflows,
   adminTransactionDetails,
   
   // Reports
@@ -151,8 +172,20 @@ export const adminRoutes = {
   adminSettingsPassword,
   adminSettingsAccountInformation,
   adminSettingsNotifications,
+  adminSettingsRates,
+  adminSettingsRateCreate,
+  adminSettingsRateDetails,
+  adminSettingsWorkflowConfiguration,
+  adminSettingsWorkflowCreate,
+  adminSettingsWorkflowDetails,
+  adminSettingsWorkflowEdit,
 
   // Settlement
   adminSettlement,
   adminSettlementRegisterEscrow,
+
+  // Transient Wallets
+  adminTransientWallets,
+  adminTransientWalletDetails,
+  adminTransientWalletEntryDetails,
 };

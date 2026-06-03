@@ -28,7 +28,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/audit-trail',
     '/admin/outlet',
     '/admin/tickets',
-    '/admin/workflow',
+    '/admin/transient-wallets',
     '/admin/login',
   ];
 
@@ -193,7 +193,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   // Workflow Create: /admin/workflow/create
   if (pathname === '/admin/workflow/create') {
     return [
-      { label: 'Workflow', url: adminRoutes.adminWorkflow() },
+      { label: 'Transaction Workflows', url: adminRoutes.adminTransactionsWorkflows() },
       { label: 'Create Workflow' },
     ];
   }
@@ -202,7 +202,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   if (/^\/admin\/workflow\/[^/]+\/edit$/.test(pathname)) {
     const workflowId = pathname.split('/')[3];
     return [
-      { label: 'Workflow', url: adminRoutes.adminWorkflow() },
+      { label: 'Transaction Workflows', url: adminRoutes.adminTransactionsWorkflows() },
       { label: 'Workflow Details', url: adminRoutes.adminWorkflowDetails(workflowId) },
       { label: 'Edit Workflow' },
     ];
@@ -211,8 +211,32 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   // Workflow Details: /admin/workflow/:id
   if (/^\/admin\/workflow\/[^/]+$/.test(pathname)) {
     return [
-      { label: 'Workflow', url: adminRoutes.adminWorkflow() },
+      { label: 'Transaction Workflows', url: adminRoutes.adminTransactionsWorkflows() },
       { label: 'Workflow Details' },
+    ];
+  }
+
+  // Transient Wallet Details: /admin/transient-wallets/:walletId
+  if (
+    /^\/admin\/transient-wallets\/[^/]+$/.test(pathname) &&
+    !pathname.includes('/entries/')
+  ) {
+    return [
+      { label: 'Transient Wallet', url: adminRoutes.adminTransientWallets() },
+      { label: 'View Wallet' },
+    ];
+  }
+
+  // Transient Wallet Entry Details: /admin/transient-wallets/:walletId/entries/:entryId
+  if (/^\/admin\/transient-wallets\/[^/]+\/entries\/[^/]+$/.test(pathname)) {
+    const walletId = pathname.split('/')[3];
+    return [
+      { label: 'Transient Wallet', url: adminRoutes.adminTransientWallets() },
+      {
+        label: 'View Wallet',
+        url: adminRoutes.adminTransientWalletDetails(walletId),
+      },
+      { label: 'View Entry' },
     ];
   }
 

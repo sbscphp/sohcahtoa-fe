@@ -22,6 +22,8 @@ interface ConfirmationModalProps {
   icon?: React.ReactNode;
   /** When true, disables buttons and shows loading state on the primary button. */
   loading?: boolean;
+  /** Mantine color for the primary button. Defaults to "orange". */
+  primaryColor?: string;
 }
 
 export function ConfirmationModal({
@@ -35,6 +37,7 @@ export function ConfirmationModal({
   onSecondary,
   icon,
   loading = false,
+  primaryColor = "orange",
 }: ConfirmationModalProps) {
   const handlePrimary = () => {
     if (loading) return;
@@ -93,7 +96,7 @@ export function ConfirmationModal({
             fullWidth
             radius="xl"
             size="md"
-            color="orange"
+            color={primaryColor}
             onClick={handlePrimary}
             loading={loading}
             className="font-medium! text-sm!"

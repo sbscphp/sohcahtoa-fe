@@ -10,10 +10,9 @@ import {
   Database,
   Store,
   Users,
-  UserRoundCog,
   Ticket,
-  Coins,
   UserStar,
+  Wallet,
   ChevronDown,
   ChevronUp,
   type LucideIcon,
@@ -48,11 +47,10 @@ const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
 const menuItems: FlatMenuItem[] = [
   { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard", module: null },
   { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions", module: "TRANSACTION" },
+  { icon: Wallet, label: "Transient Wallets", href: adminRoutes.adminTransientWallets(), module: null },
   { icon: Database, label: "Settlement", href: "/admin/settlement", module: "SETTLEMENT" },
   { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
-  { icon: UserRoundCog, label: "Workflow", href: "/admin/workflow", module: "WORKFLOW" },
-  { icon: Ticket, label: "Tickets", href: "/admin/tickets", module: "INCIDENCE" },
-  { icon: Coins, label: "Rate Management", href: "/admin/rate", module: "RATE" },
+  { icon: Ticket, label: "Customer Support", href: "/admin/tickets", module: "INCIDENCE" },
 ];
 
 const userManagementAccordion = {
@@ -278,7 +276,7 @@ export default function Sidebar({ collapsed, closeMobile }: SidebarProps) {
                   className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${linkClassName(isUserManagementChildActive)}`}
                 >
                   <AccordionIcon className="h-5 w-5 shrink-0" />
-                  <span className="flex-1 whitespace-nowrap text-left">
+                  <span className="flex-1 whitespace-nowrap text-left cursor-pointer! font-medium text-sm">
                     {userManagementAccordion.label}
                   </span>
                   {isUserManagementAccordionOpen ? (

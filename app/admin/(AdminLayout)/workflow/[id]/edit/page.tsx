@@ -267,7 +267,7 @@ export default function EditWorkflowPage() {
 
   const handleBack = () => {
     if (step === 1) {
-      router.push(adminRoutes.adminWorkflowDetails(id));
+      router.push(adminRoutes.adminSettingsWorkflowDetails(id));
     } else {
       setStep(1);
     }
@@ -435,7 +435,7 @@ export default function EditWorkflowPage() {
   };
 
   const handleManageWorkflow = () => {
-    router.push(adminRoutes.adminWorkflow());
+    router.push(adminRoutes.adminSettingsWorkflowConfiguration());
   };
 
   if (templateLoading || optionsLoading) {
@@ -460,7 +460,7 @@ export default function EditWorkflowPage() {
         <CustomButton
           buttonType="primary"
           size="md"
-          onClick={() => router.push(adminRoutes.adminWorkflow())}
+          onClick={() => router.push(adminRoutes.adminSettingsWorkflowConfiguration())}
         >
           Back to Workflows
         </CustomButton>

@@ -27,6 +27,8 @@ const statusColorMap: Record<string, string> = {
   "In-progress": "#B54708",
   Closed: "#6B7280",
   "Re-opened": "#2563EB",
+  Matched: "#027A48",
+  Unmatched: "#B54708",
 };
 
 interface StatusBadgeProps {
