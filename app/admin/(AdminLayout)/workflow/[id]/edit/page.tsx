@@ -813,7 +813,7 @@ export default function EditWorkflowPage() {
       />
 
       <EscalationProtocolModal
-        key={escalationModalSession}
+        key={`escalation-${escalationModalSession}`}
         opened={isEscalationModalOpen}
         onClose={() => setIsEscalationModalOpen(false)}
         onSave={handleEscalationSave}
@@ -823,7 +823,7 @@ export default function EditWorkflowPage() {
       />
 
       <AssignToModal
-        key={assignModalSession}
+        key={`assign-${assignModalSession}`}
         opened={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         onConfirm={handleAssignConfirm}
