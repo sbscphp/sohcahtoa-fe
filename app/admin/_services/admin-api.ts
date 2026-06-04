@@ -876,6 +876,7 @@ export interface WorkflowTemplateStage {
   name: string;
   type: string;
   escalationMinutes: number;
+  escalationAdminId?: string | null;
   order: number;
   assignees: WorkflowTemplateStageAssignee[];
 }
@@ -885,6 +886,9 @@ export interface WorkflowTemplateDetailsData {
   name: string;
   description: string;
   type: string;
+  approvalType?: string | null;
+  minAmount?: string | number | null;
+  maxAmount?: string | number | null;
   processType: string;
   action: string;
   status: string;
@@ -904,10 +908,12 @@ export interface WorkflowTemplateUpdateStageAssigneePayload {
 }
 
 export interface WorkflowTemplateUpdateStagePayload {
+  id?: string;
   name: string;
   type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
   order: number;
   escalationMinutes: number;
+  escalationAdminId?: string | null;
   assignees: WorkflowTemplateUpdateStageAssigneePayload[];
 }
 
@@ -915,6 +921,9 @@ export interface WorkflowTemplateUpdatePayload {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
+  approvalType?: "TRANSACTION" | "REFUND" | "RATE";
+  minAmount?: number | null;
+  maxAmount?: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
   action: string;
   branchId: string;

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Select, Avatar, Text, TextInput, ScrollArea, ActionIcon } from "@mantine/core";
 import { ChevronDown, ChevronUp, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { AssignableUser, AssignableRole } from "./AssignToModal";
@@ -50,7 +51,7 @@ const ROLE_PILL_COLORS: Record<string, string> = {
   "Chief Financial Officer": "bg-green-100 text-green-700",
 };
 
-export default function WorkflowLineItem({
+function WorkflowLineItem({
   line,
   index,
   totalLines,
@@ -273,3 +274,5 @@ export default function WorkflowLineItem({
     </div>
   );
 }
+
+export default memo(WorkflowLineItem);

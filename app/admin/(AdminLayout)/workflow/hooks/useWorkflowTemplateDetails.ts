@@ -40,6 +40,7 @@ export interface WorkflowTemplateEditStage {
   type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
   order: number;
   escalationMinutes: number;
+  escalationAdminId: string | null;
   assignees: WorkflowTemplateEditAssignee[];
 }
 
@@ -48,6 +49,9 @@ export interface WorkflowTemplateEditData {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
+  approvalType: "TRANSACTION" | "REFUND" | "RATE" | "";
+  minAmount: number | null;
+  maxAmount: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
   action: string;
   status: "ACTIVE" | "DEACTIVATED" | "DRAFT";
@@ -150,6 +154,7 @@ function mapStageForEdit(stage: WorkflowTemplateStage): WorkflowTemplateEditStag
         : "REVIEW",
     order: Number.isFinite(stage.order) ? stage.order : 0,
     escalationMinutes: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
+    escalationAdminId: stage.escalationAdminId ?? null,
     assignees: (stage.assignees ?? [])
       .map((assignee) => ({
         id: asString(assignee.adminId),
@@ -203,6 +208,13 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
       name: asString(data.name),
       description: asString(data.description),
       type: normalizedType === "APPROVAL" ? "APPROVAL" : "REVIEW",
+      approvalType: ((): "TRANSACTION" | "REFUND" | "RATE" | "" => {
+        const v = asString(data.approvalType ?? "").toUpperCase();
+        if (v === "TRANSACTION" || v === "REFUND" || v === "RATE") return v;
+        return "";
+      })(),
+      minAmount: data.minAmount != null ? (Number.isFinite(Number(data.minAmount)) ? Number(data.minAmount) : null) : null,
+      maxAmount: data.maxAmount != null ? (Number.isFinite(Number(data.maxAmount)) ? Number(data.maxAmount) : null) : null,
       processType: normalizedProcessType === "FLEXIBLE" ? "FLEXIBLE" : "RIGID_LINEAR",
       action: asString(data.action),
       status:
