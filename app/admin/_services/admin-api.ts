@@ -130,6 +130,10 @@ export interface UpdateAgentStatusPayload {
   isActive: boolean;
 }
 
+export interface UpdateCustomerStatusPayload {
+  isActive: boolean;
+}
+
 export interface AgentTransactionAgentDetails {
   agentId?: string | null;
   agentName?: string | null;
@@ -1401,8 +1405,11 @@ export const adminApi = {
     deactivate: (userId: string) =>
       apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.deactivate(userId)),
 
-    toggleStatus: (userId: string) =>
-      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.toggleStatus(userId)),
+    toggleStatus: (userId: string, data: UpdateCustomerStatusPayload) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.customers.toggleStatus(userId),
+        data
+      ),
 
     transactions: (
       userId: string,
