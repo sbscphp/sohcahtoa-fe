@@ -53,7 +53,7 @@ export default function UserManagement() {
                 iconBg="bg-[#FFE4E8]"
               />
               <StatCard
-                title="Deactivated Users"
+                title="Inactive Users"
                 value={stats?.inactiveUsers ?? 0}
                 icon={Icon3}
                 iconBg="bg-[#EBE9FE]"
