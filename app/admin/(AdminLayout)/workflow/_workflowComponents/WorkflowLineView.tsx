@@ -69,8 +69,11 @@ export default function WorkflowLineView({
             </span>
           </div>
           <Text size="sm" c="dimmed" mt={2}>
-            Escalation Protocol: <span className="font-semibold text-gray-900">{line.escalationPeriod} mins</span>
-            {/* | {line.escalateToName} */}
+            Escalation Protocol:{" "}
+            <span className="font-semibold text-gray-900">{line.escalationPeriod} mins</span>
+            {line.escalateToName && line.escalateToName !== "--" && (
+              <> · Escalation Officer: <span className="font-semibold text-gray-900">{line.escalateToName}</span></>
+            )}
           </Text>
         </div>
 

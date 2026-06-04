@@ -23,6 +23,9 @@ export interface WorkflowTemplateDetailsViewModel {
   branch: string;
   department: string;
   workflowType: string;
+  approvalType: "TRANSACTION" | "REFUND" | "RATE" | "";
+  minAmount: number | null;
+  maxAmount: number | null;
   personnelProcesses: ViewWorkflowLine[];
   editTemplate: WorkflowTemplateEditData;
 }
@@ -133,7 +136,7 @@ function mapStageToViewLine(stage: WorkflowTemplateStage): ViewWorkflowLine {
     id: stage.id,
     workflowType: toTitleCase(asString(stage.type, "Review")),
     escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
-    escalateToName: "--",
+    escalateToName: stage.escalationAdmin?.fullName ?? "--",
     users: (stage.assignees ?? []).map((assignee) =>
       mapAssigneeToUser(assignee.adminId, stage.type, assignee.adminName, assignee.roleName, assignee.adminEmail)
     ),
@@ -179,6 +182,12 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
   const normalizedProcessType = asString(data.processType, "RIGID_LINEAR").toUpperCase();
   const normalizedStatus = asString(data.status, "ACTIVE").toUpperCase();
 
+  const approvalTypeNormalized = ((): "TRANSACTION" | "REFUND" | "RATE" | "" => {
+    const v = asString(data.approvalType ?? "").toUpperCase();
+    if (v === "TRANSACTION" || v === "REFUND" || v === "RATE") return v;
+    return "";
+  })();
+
   return {
     id: asString(data.id),
     name: asString(data.name, "--"),
@@ -187,6 +196,9 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
     status: mapStatus(data.status),
     workflowAction: asString(data.action, "--"),
     description: asString(data.description, "--"),
+    approvalType: approvalTypeNormalized,
+    minAmount: data.minAmount != null ? (Number.isFinite(Number(data.minAmount)) ? Number(data.minAmount) : null) : null,
+    maxAmount: data.maxAmount != null ? (Number.isFinite(Number(data.maxAmount)) ? Number(data.maxAmount) : null) : null,
     branch: asString(
       // Prefer human-readable branch name when available
       (data as WorkflowTemplateDetailsData).branchName ??
@@ -208,11 +220,7 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
       name: asString(data.name),
       description: asString(data.description),
       type: normalizedType === "APPROVAL" ? "APPROVAL" : "REVIEW",
-      approvalType: ((): "TRANSACTION" | "REFUND" | "RATE" | "" => {
-        const v = asString(data.approvalType ?? "").toUpperCase();
-        if (v === "TRANSACTION" || v === "REFUND" || v === "RATE") return v;
-        return "";
-      })(),
+      approvalType: approvalTypeNormalized,
       minAmount: data.minAmount != null ? (Number.isFinite(Number(data.minAmount)) ? Number(data.minAmount) : null) : null,
       maxAmount: data.maxAmount != null ? (Number.isFinite(Number(data.maxAmount)) ? Number(data.maxAmount) : null) : null,
       processType: normalizedProcessType === "FLEXIBLE" ? "FLEXIBLE" : "RIGID_LINEAR",

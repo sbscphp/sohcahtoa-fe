@@ -871,12 +871,19 @@ export interface WorkflowTemplateStageAssignee {
   adminEmail?: string;
 }
 
+export interface WorkflowTemplateStageEscalationAdmin {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
 export interface WorkflowTemplateStage {
   id: string;
   name: string;
   type: string;
   escalationMinutes: number;
   escalationAdminId?: string | null;
+  escalationAdmin?: WorkflowTemplateStageEscalationAdmin | null;
   order: number;
   assignees: WorkflowTemplateStageAssignee[];
 }
