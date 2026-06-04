@@ -2284,6 +2284,12 @@ export const adminApi = {
         `/api/admin/workflow/templates/${id}`
       ),
 
+    createTemplate: (data: WorkflowTemplateUpdatePayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        "/api/admin/workflow/templates",
+        data
+      ),
+
     updateTemplate: (id: string, data: WorkflowTemplateUpdatePayload) =>
       apiClient.patch<ApiResponse<unknown>>(
         `/api/admin/workflow/templates/${id}`,

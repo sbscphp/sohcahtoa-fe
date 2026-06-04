@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { Group, TextInput, Select, Text } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { ListFilter, Search } from "lucide-react";
@@ -94,6 +95,13 @@ export default function WorkflowManagementTable() {
           />
         </div>
         <Group>
+          <CustomButton
+            buttonType="primary"
+            size="sm"
+            onClick={() => router.push(adminRoutes.adminSettingsWorkflowCreate())}
+          >
+            Create Workflow
+          </CustomButton>
           <Select
             value={filter}
             onChange={(value) => {
