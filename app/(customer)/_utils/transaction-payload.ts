@@ -190,8 +190,8 @@ function buildPickupLocation(data: Record<string, unknown> | null): PickupLocati
     recipientPhone: (data as { recipientPhone?: string }).recipientPhone ?? "",
     state: (data as { state?: string }).state,
     city: (data as { city?: string }).city,
-    pickupDate: (data as { pickupDate?: string }).pickupDate,
-    pickupTime: (data as { pickupTime?: string }).pickupTime,
+    scheduledPickupDate: (data as { pickupDate?: string }).pickupDate,
+    scheduledPickupTime: (data as { pickupTime?: string }).pickupTime,
   };
 }
 

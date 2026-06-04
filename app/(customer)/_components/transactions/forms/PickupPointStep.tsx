@@ -38,10 +38,7 @@ function toHHmm(value: unknown): string | undefined {
   return `${m[1]!.padStart(2, "0")}:${m[2]}`;
 }
 
-/**
- * Convert a 24h "HH:mm" / "HH:mm:ss" string to 12h "hh:mm AM/PM"
- * (the format the API expects for pickupTime).
- */
+
 function toAmPmTime(value: unknown): string | undefined {
   const hhmm = toHHmm(value);
   if (!hhmm) return undefined;

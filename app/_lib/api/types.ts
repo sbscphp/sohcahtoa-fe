@@ -626,8 +626,8 @@ export interface PickupLocation {
   recipientPhone: string;
   state?: string;
   city?: string;
-  pickupDate?: string;
-  pickupTime?: string;
+  scheduledPickupDate?: string;
+  scheduledPickupTime?: string;
 }
 
 export interface CreateTransactionRequest {
