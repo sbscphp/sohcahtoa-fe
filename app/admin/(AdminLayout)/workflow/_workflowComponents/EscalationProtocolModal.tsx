@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Select, Button, Text, Checkbox, TextInput, Group } from "@mantine/core";
+import { Modal, Select, Button, Text, Checkbox, NumberInput, Group } from "@mantine/core";
 import { X } from "lucide-react";
 
 interface EscalationProtocolModalProps {
@@ -9,6 +9,8 @@ interface EscalationProtocolModalProps {
   onClose: () => void;
   onSave: (escalateToId: string, escalateToName: string, minutes: number) => void;
   users: Array<{ id: string; name: string }>;
+  initialEscalateToId?: string | null;
+  initialMinutes?: number;
 }
 
 const TIME_OPTIONS = [
@@ -19,20 +21,34 @@ const TIME_OPTIONS = [
   { value: 60, label: "1 Hour" },
 ];
 
+const CHIP_VALUES = TIME_OPTIONS.map((o) => o.value);
+
+function deriveInitialTime(mins: number | undefined): {
+  selectedTime: number | null;
+  customTime: number | "";
+} {
+  if (!mins || mins <= 0) return { selectedTime: null, customTime: "" };
+  if (CHIP_VALUES.includes(mins)) return { selectedTime: mins, customTime: "" };
+  return { selectedTime: null, customTime: mins };
+}
+
 export default function EscalationProtocolModal({
   opened,
   onClose,
   onSave,
   users,
+  initialEscalateToId,
+  initialMinutes,
 }: EscalationProtocolModalProps) {
-  const [escalateToId, setEscalateToId] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<number | null>(null);
-  const [customTime, setCustomTime] = useState("");
+  const { selectedTime: initSelected, customTime: initCustom } = deriveInitialTime(initialMinutes);
+
+  const [escalateToId, setEscalateToId] = useState<string | null>(initialEscalateToId ?? null);
+  const [selectedTime, setSelectedTime] = useState<number | null>(initSelected);
+  const [customTime, setCustomTime] = useState<number | "">(initCustom);
 
   const handleSave = () => {
     if (!escalateToId) return;
-
-    const minutes = customTime ? parseCustomTime(customTime) : selectedTime || 0;
+    const minutes = customTime !== "" ? Number(customTime) : selectedTime ?? 0;
     const userName = users.find((u) => u.id === escalateToId)?.name || "";
 
     if (minutes > 0) {
@@ -42,21 +58,12 @@ export default function EscalationProtocolModal({
   };
 
   const handleClose = () => {
-    setEscalateToId(null);
-    setSelectedTime(null);
-    setCustomTime("");
     onClose();
   };
 
-  const parseCustomTime = (time: string): number => {
-    const parts = time.split(":");
-    const hours = parseInt(parts[0] || "0", 10);
-    const minutes = parseInt(parts[1] || "0", 10);
-    const seconds = parseInt(parts[2] || "0", 10);
-    return hours * 60 + minutes + Math.floor(seconds / 60);
-  };
-
   const userOptions = users.map((u) => ({ value: u.id, label: u.name }));
+  const isSaveDisabled =
+    !escalateToId || (selectedTime === null && (customTime === "" || Number(customTime) <= 0));
 
   return (
     <Modal
@@ -104,53 +111,58 @@ export default function EscalationProtocolModal({
         {/* Time Selection */}
         <div>
           <Text size="sm" fw={500} className="text-gray-900 mb-3">
-            How many minutes before action get escalated ? <span className="text-red-500">*</span>
+            How many minutes before action gets escalated?{" "}
+            <span className="text-red-500">*</span>
           </Text>
-          
+
           <div className="space-y-4">
             {/* Chip Options */}
             <div className="flex flex-wrap gap-2">
-              {TIME_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setSelectedTime(option.value);
-                    setCustomTime("");
-                  }}
-                  className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ${
-                    selectedTime === option.value && !customTime
-                      ? "border-orange-500 bg-orange-500 text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-orange-300"
-                  }`}
-                >
-                  <Checkbox
-                    checked={selectedTime === option.value && !customTime}
-                    onChange={() => {}}
-                    color="white"
-                    size="xs"
-                    classNames={{
-                      input: selectedTime === option.value && !customTime ? "!bg-white !border-white" : "",
+              {TIME_OPTIONS.map((option) => {
+                const isActive = selectedTime === option.value && customTime === "";
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTime(option.value);
+                      setCustomTime("");
                     }}
-                    readOnly
-                  />
-                  {option.label}
-                </button>
-              ))}
+                    className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      isActive
+                        ? "border-orange-500 bg-orange-500 text-white"
+                        : "border-gray-300 bg-white text-gray-700 hover:border-orange-300"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isActive}
+                      onChange={() => {}}
+                      color="white"
+                      size="xs"
+                      classNames={{
+                        input: isActive ? "!bg-white !border-white" : "",
+                      }}
+                      readOnly
+                    />
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Custom Time Input */}
+            {/* Custom Minutes Input */}
             <div>
               <Text size="sm" c="dimmed" mb={8}>
-                Or Enter Custom
+                Or enter custom minutes
               </Text>
-              <TextInput
-                placeholder="Hour:Minutes:Seconds"
+              <NumberInput
+                placeholder="e.g. 45"
                 value={customTime}
-                onChange={(e) => {
-                  setCustomTime(e.currentTarget.value);
+                onChange={(val) => {
+                  setCustomTime(typeof val === "number" ? val : "");
                   setSelectedTime(null);
                 }}
+                min={1}
                 radius="md"
               />
             </div>
@@ -159,19 +171,14 @@ export default function EscalationProtocolModal({
 
         {/* Actions */}
         <Group justify="flex-end" gap="sm" mt="xl">
-          <Button
-            variant="outline"
-            color="gray"
-            radius="xl"
-            onClick={handleClose}
-          >
+          <Button variant="outline" color="gray" radius="xl" onClick={handleClose}>
             No, Close
           </Button>
           <Button
             color="#DD4F05"
             radius="xl"
             onClick={handleSave}
-            disabled={!escalateToId || (!selectedTime && !customTime)}
+            disabled={isSaveDisabled}
           >
             Yes, Set Protocol
           </Button>
