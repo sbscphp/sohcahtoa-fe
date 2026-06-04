@@ -196,6 +196,11 @@ export default function EditWorkflowPage() {
   // Modals
   const [isApprovalTypeModalOpen, setIsApprovalTypeModalOpen] = useState(false);
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
+  const [escalationModalSession, setEscalationModalSession] = useState(0);
+  const [escalationInitialData, setEscalationInitialData] = useState<{
+    escalateToId: string | null;
+    minutes: number;
+  }>({ escalateToId: null, minutes: 0 });
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   // Incremented on every open so AssignToModal remounts fresh each time, regardless
@@ -744,7 +749,13 @@ export default function EditWorkflowPage() {
                   totalLines={form.values.workflowLines.length}
                   onUpdateWorkflowType={handleUpdateWorkflowType}
                   onOpenEscalationModal={(lineId) => {
+                    const line = workflowLinesRef.current.find((l) => l.id === lineId);
+                    setEscalationInitialData({
+                      escalateToId: line?.escalateToUser?.id ?? null,
+                      minutes: line?.escalationPeriod ?? 0,
+                    });
                     setActiveLineId(lineId);
+                    setEscalationModalSession((s) => s + 1);
                     setIsEscalationModalOpen(true);
                   }}
                   onOpenAssignModal={(lineId) => {
@@ -802,10 +813,13 @@ export default function EditWorkflowPage() {
       />
 
       <EscalationProtocolModal
+        key={escalationModalSession}
         opened={isEscalationModalOpen}
         onClose={() => setIsEscalationModalOpen(false)}
         onSave={handleEscalationSave}
         users={escalationUsers}
+        initialEscalateToId={escalationInitialData.escalateToId}
+        initialMinutes={escalationInitialData.minutes}
       />
 
       <AssignToModal
