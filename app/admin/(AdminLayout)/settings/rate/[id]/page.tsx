@@ -173,7 +173,7 @@ export default function RateDetailPage() {
     }
     form.setValues(prefillFromDetail(rateDetailQuery.data.data));
     hasPrefilledRef.current = true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rateDetailQuery.data]);
 
   const updateRateMutation = usePutData(
@@ -331,12 +331,12 @@ export default function RateDetailPage() {
         <Menu shadow="md" width={220} position="bottom-end" withinPortal>
           <Menu.Target>
             <Button
-              variant="outline"
-              color="dark"
               radius="xl"
+              size="md"
+              className="!text-body-text-100!"
               rightSection={<ChevronDown size={16} />}
             >
-              Actions
+              Take Action
             </Button>
           </Menu.Target>
 
