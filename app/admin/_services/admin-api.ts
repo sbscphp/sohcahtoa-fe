@@ -39,6 +39,7 @@ export type LookupQuery = "role" | "department" | "branch";
 
 export interface AdminProfileData {
   id: string;
+  sequenceId: string;
   email: string;
   fullName: string;
   phoneNumber: string;
@@ -958,15 +959,21 @@ export interface AdminTransactionApprovalStageAssignee {
   id?: string;
   adminId?: string;
   userId?: string;
+  adminName?: string;
+  roleName?: string;
 }
 
 export interface AdminTransactionApprovalWorkflowStage {
+  stageId?: string;
+  name?: string;
+  order?: number;
   isCurrent?: boolean;
   assignees?: AdminTransactionApprovalStageAssignee[] | null;
 }
 
 export interface AdminTransactionApprovalProcess {
   workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
+  pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;
   approvalState?: string;
 }
@@ -1069,12 +1076,12 @@ export type RateListParams = Record<
   page?: number;
   limit?: number;
   search?: string;
-  status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+  status?: "" | "active" | "deactivated" | "expired" | "scheduled" | "pending_approval";
 };
 
 export type RateExportParams = {
   search?: string;
-  status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+  status?: "" | "active" | "deactivated" | "expired" | "scheduled" | "pending_approval";
 };
 
 export interface CreateRatePayload {
@@ -1101,6 +1108,11 @@ export interface RateDetailsData {
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;
+  status?: string | null;
+  isApproved?: boolean;
+  workflowTemplateId?: string | null;
+  currentWorkflowStageId?: string | null;
+  approvalProcess?: AdminTransactionApprovalProcess | null;
 }
 
 export interface SettlementDashboardStats {
@@ -1575,6 +1587,12 @@ export const adminApi = {
 
     update: (id: string, data: CreateRatePayload) =>
       apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.update(id), data),
+
+    approve: (id: string, data: { notes: string }) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.approve(id), data),
+
+    reject: (id: string, data: { reason: string }) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.reject(id), data),
 
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),

@@ -232,7 +232,7 @@ export const adminKeys = {
       page?: number;
       limit?: number;
       search?: string;
-      status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+      status?: "" | "active" | "deactivated" | "expired" | "scheduled" | "pending_approval";
     }) => [...adminKeys.rate.all, "list", params] as const,
   },
 

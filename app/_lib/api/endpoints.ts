@@ -167,6 +167,8 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/rate/${id}`,
       update: (id: string) => `/api/admin/rate/${id}`,
       stats: "/api/admin/rate/stats",
+      approve: (id: string) => `/api/admin/rate/${id}/approve`,
+      reject: (id: string) => `/api/admin/rate/${id}/reject`,
     },
     outlet: {
       pickupStations: {
