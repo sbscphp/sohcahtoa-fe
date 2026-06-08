@@ -194,9 +194,6 @@ export function getSellOver10kDocumentUploadSpec(
   if (signature.mode === "upload" && signature.file) {
     spec.files.push(signature.file);
     spec.documentTypes.push("DIGITAL_SIGNATURE");
-  } else if (signature.mode === "initials" && signature.initials) {
-    spec.files.push(toTextFile("digital-signature.txt", signature.initials));
-    spec.documentTypes.push("DIGITAL_SIGNATURE");
   }
 
   if (spec.files.length === 0) return null;

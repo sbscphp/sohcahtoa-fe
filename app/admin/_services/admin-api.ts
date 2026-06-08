@@ -570,6 +570,7 @@ export type AdminTransactionListParams = Record<
   status?: string;
   step?: string;
   type?: string;
+  group?: "BUY" | "SELL" | "REMITTANCE";
   dateFrom?: string;
   dateTo?: string;
   sortBy?: string;
@@ -1395,6 +1396,7 @@ export const adminApi = {
         limit?: number;
         status?: string;
         type?: string;
+        group?: "BUY" | "SELL" | "REMITTANCE";
         search?: string;
       }
     ) =>
@@ -1408,6 +1410,7 @@ export const adminApi = {
       params?: {
         status?: string;
         type?: string;
+        group?: "BUY" | "SELL" | "REMITTANCE";
         search?: string;
       }
     ) => {

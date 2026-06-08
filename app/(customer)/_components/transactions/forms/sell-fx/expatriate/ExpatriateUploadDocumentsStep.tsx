@@ -28,7 +28,6 @@ const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
   ninNumber: kycNinRequiredSchema,
   passportDocumentNumber: passportNumberSchema,
-  workPermitNumber: z.string().min(1, "Work Permit Number is required").max(50, "Work Permit Number is too long"),
   internationalPassportFile: z
     .custom<FileWithPath | null>()
     .refine((file) => file !== null, {
@@ -42,7 +41,6 @@ const uploadDocumentsSchema = z.object({
   utilityBillFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "Utility Bill is required",
   }),
-  utilityBillNumber: z.string().min(1, "Utility Bill Number is required").max(50, "Utility Bill Number is too long"),
 }).superRefine(validatePassportDates);
 
 export type ExpatriateUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
@@ -92,13 +90,11 @@ export default function ExpatriateUploadDocumentsStep({
       ninNumber:
         initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
-      workPermitNumber: initialValues?.workPermitNumber || "",
       internationalPassportFile: initialValues?.internationalPassportFile ?? null,
       workPermitFile: initialValues?.workPermitFile ?? null,
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       utilityBillFile: initialValues?.utilityBillFile ?? null,
-      utilityBillNumber: initialValues?.utilityBillNumber || "",
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -177,15 +173,6 @@ export default function ExpatriateUploadDocumentsStep({
           autoComplete="off"
           {...form.getInputProps("passportDocumentNumber")}
         />
-        <TextInput
-          label="Work Permit"
-          required
-          size="md"
-          placeholder="Enter Number"
-          maxLength={50}
-          autoComplete="off"
-          {...form.getInputProps("workPermitNumber")}
-        />
       </div>
 
       <TransactionFileUploadInput
@@ -238,16 +225,6 @@ export default function ExpatriateUploadDocumentsStep({
         value={form.values.utilityBillFile}
         onChange={(file) => form.setFieldValue("utilityBillFile", file)}
         error={form.errors.utilityBillFile as string}
-      />
-
-      <TextInput
-        label="Utility Bill"
-        required
-        size="md"
-        placeholder="Enter Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("utilityBillNumber")}
       />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

@@ -83,18 +83,7 @@ interface CustomerTransactionsTableProps {
 
 const PAGE_SIZE = 5;
 
-const customerTxTabToApiType: Record<string, string | undefined> = {
-  all: undefined,
-  buyfx: "buyfx",
-  sellfx: "sellfx",
-  receivefx: "receivefx",
-};
-
-function resolveCustomerTransactionListType(tab: string): string | undefined {
-  return customerTxTabToApiType[tab];
-}
-
-const STATUS_OPTIONS = [
+import { resolveAdminTransactionListGroup } from "@/app/(customer)/_lib/transaction-list-params";
   { value: "Filter By", label: "Filter By" },
   { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
   { value: "COMPLIANCE_REVIEW", label: "Compliance Review" },
@@ -176,7 +165,7 @@ export default function CustomerTransactionsTable({
             page,
             limit: PAGE_SIZE,
             status: statusParam,
-            type: resolveCustomerTransactionListType(activeTab),
+            group: resolveAdminTransactionListGroup(activeTab),
             search: debouncedSearch || undefined,
           }),
         ]
@@ -186,7 +175,7 @@ export default function CustomerTransactionsTable({
         page,
         limit: PAGE_SIZE,
         status: statusParam,
-        type: resolveCustomerTransactionListType(activeTab),
+        group: resolveAdminTransactionListGroup(activeTab),
         search: debouncedSearch || undefined,
       }) as unknown as Promise<CustomerTransactionsResponse>,
     !!customerId
@@ -200,7 +189,7 @@ export default function CustomerTransactionsTable({
     () =>
       adminApi.customers.exportTransactions(customerId, {
         status: statusParam,
-        type: resolveCustomerTransactionListType(activeTab),
+        group: resolveAdminTransactionListGroup(activeTab),
         search: debouncedSearch || undefined,
       }),
     {

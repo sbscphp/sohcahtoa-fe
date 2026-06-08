@@ -14,12 +14,14 @@ type NotificationsPanelProps = {
   items?: NotificationItemProps[];
   viewAllHref?: string;
   onViewAllClick?: () => void;
+  onNavigate?: () => void;
 };
 
 export default function NotificationsPanel({
   items: propItems,
   viewAllHref = "/notifications",
   onViewAllClick,
+  onNavigate,
 }: NotificationsPanelProps) {
   // Fetch notifications from API
   const { data: notificationsResponse, isLoading } = useFetchData(
@@ -65,7 +67,10 @@ export default function NotificationsPanel({
               time={item.time}
               status={item.status}
               href={item.href}
-              onClick={item.onClick}
+              onClick={() => {
+                onNavigate?.();
+                item.onClick?.();
+              }}
             />
           ))
         )}

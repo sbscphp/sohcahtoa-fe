@@ -12,7 +12,7 @@ export interface UploadedDocumentInfo {
 /** Matches POST /api/documents/upload and /upload/multiple (OpenAPI). */
 export const MAX_DOCUMENT_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_DOCUMENT_FILE_MB = 10;
-export const MAX_DOCUMENTS_PER_REQUEST = 5;
+export const MAX_DOCUMENTS_PER_REQUEST = 10;
 
 export class DocumentUploadError extends Error {
   readonly code: "validation" | "upload";

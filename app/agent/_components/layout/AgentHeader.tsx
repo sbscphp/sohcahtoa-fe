@@ -110,6 +110,7 @@ export default function AgentHeader({
             <NotificationsPanel
               viewAllHref="/agent/settings/notifications"
               onViewAllClick={() => setNotificationsOpen(false)}
+              onNavigate={() => setNotificationsOpen(false)}
             />
           </Popover.Dropdown>
         </Popover>

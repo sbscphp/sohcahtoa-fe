@@ -413,10 +413,8 @@ function buildExpatriateFxPayload(
     bvn: upload?.bvn ?? undefined,
     nin: upload?.ninNumber ?? undefined,
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
-    workPermitNumber: upload?.workPermitNumber ?? undefined,
     passportIssueDate: upload?.passportIssueDate ?? undefined,
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
-    utilityBillNumber: upload?.utilityBillNumber ?? undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
   };

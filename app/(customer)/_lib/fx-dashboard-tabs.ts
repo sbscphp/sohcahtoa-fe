@@ -152,8 +152,7 @@ export function buildDashboardTransactionListParams(
     limit: base?.limit ?? 6,
     sortBy: base?.sortBy ?? "createdAt",
     sortOrder: base?.sortOrder ?? "desc",
-    mode: apiGroup,
-    group: apiType ? undefined : apiGroup,
+    group: apiGroup,
     type: apiType,
   };
 }

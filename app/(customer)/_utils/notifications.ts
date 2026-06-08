@@ -7,6 +7,31 @@ import type { Notification } from "@/app/_lib/api/types";
 import type { NotificationItemProps } from "@/app/(customer)/_components/notifications/NotificationItem";
 
 /**
+ * Ensures in-app notification links are absolute paths so Next.js Link does not
+ * resolve them relative to the current route (e.g. /dashboard + transactions/1).
+ */
+export function normalizeNotificationHref(href?: string | null): string | undefined {
+  if (!href?.trim()) return undefined;
+
+  const trimmed = href.trim();
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+
+  return `/${trimmed.replace(/^\.?\//, "")}`;
+}
+
+export function resolveNotificationHref(notification: Notification): string | undefined {
+  const raw = notification.actionUrl ?? notification.data?.actionUrl ?? undefined;
+  return normalizeNotificationHref(raw);
+}
+
+/**
  * Format date to "Nov 18 2025" format
  */
 export function formatNotificationDate(dateString: string): string {
@@ -38,7 +63,7 @@ export function transformNotificationToItem(
 ): NotificationItemProps {
   const context = notification.message ?? notification.body ?? "";
   const status = (notification.read ?? notification.isRead ?? false) ? "read" : "unread";
-  const href = notification.actionUrl ?? notification.data?.actionUrl ?? undefined;
+  const href = resolveNotificationHref(notification);
 
   return {
     title: notification.title,
@@ -46,7 +71,7 @@ export function transformNotificationToItem(
     date: formatNotificationDate(notification.createdAt),
     time: formatNotificationTime(notification.createdAt),
     status,
-    href: href || undefined,
+    href,
   };
 }
 

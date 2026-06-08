@@ -21,20 +21,11 @@ import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
+import { resolveAdminTransactionListGroup } from "@/app/(customer)/_lib/transaction-list-params";
+
 const pageSize = 10;
 
-const typeByTab = {
-  all: undefined,
-  "buy-fx": "buyfx",
-  "sell-fx": "sellfx",
-  "receive-fx": "receivefx",
-} as const;
-
-type TransactionTab = keyof typeof typeByTab;
-
-function resolveAdminListType(tab: TransactionTab): string | undefined {
-  return typeByTab[tab];
-}
+type TransactionTab = "all" | "buy-fx" | "sell-fx" | "receive-fx";
 
 const statusOptions = [
   { value: "All", label: "Filter By" },
@@ -60,7 +51,7 @@ export default function TransactionsTable() {
   const exportParams = useMemo(() => ({
   search: debouncedSearch.trim() || undefined,
   status: statusFilter !== "All" ? statusFilter : undefined,
-  type: resolveAdminListType(activeTab),
+  group: resolveAdminTransactionListGroup(activeTab),
 }), [activeTab, debouncedSearch, statusFilter]);
 
   const { transactions, isLoading, isFetching, totalPages } = useTransactions({
@@ -68,7 +59,7 @@ export default function TransactionsTable() {
     limit: pageSize,
     search: debouncedSearch || undefined,
     status: statusFilter !== "All" ? statusFilter : undefined,
-    type: resolveAdminListType(activeTab),
+    group: resolveAdminTransactionListGroup(activeTab),
   });
 
   const safeTotalPages = Math.max(1, totalPages);

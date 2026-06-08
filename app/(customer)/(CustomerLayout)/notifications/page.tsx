@@ -9,6 +9,7 @@ import NotificationItem from "@/app/(customer)/_components/notifications/Notific
 import {
   formatNotificationDate,
   formatNotificationTime,
+  resolveNotificationHref,
 } from "@/app/(customer)/_utils/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NotificationsListResponse, UnreadCountResponse } from "@/app/_lib/api/types";
@@ -79,7 +80,7 @@ export default function NotificationsPage() {
     return notifications.map((n) => {
       const isRead = n.read ?? n.isRead ?? false;
       const body = n.message ?? n.body ?? "";
-      const actionUrl = n.actionUrl ?? n.data?.actionUrl ?? undefined;
+      const href = resolveNotificationHref(n);
 
       return {
         id: n.id,
@@ -89,7 +90,7 @@ export default function NotificationsPage() {
         time: formatNotificationTime(n.createdAt),
         status: isRead ? ("read" as const) : ("unread" as const),
         type: n.type,
-        href: actionUrl || undefined,
+        href,
       };
     });
   }, [notificationsResponse?.data?.notifications]);

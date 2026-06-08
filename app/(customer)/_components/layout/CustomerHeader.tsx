@@ -103,6 +103,7 @@ export default function CustomerHeader({
             <NotificationsPanel
               viewAllHref="/notifications"
               onViewAllClick={() => setNotificationsOpen(false)}
+              onNavigate={() => setNotificationsOpen(false)}
             />
           </Popover.Dropdown>
         </Popover>

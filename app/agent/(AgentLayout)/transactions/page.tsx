@@ -18,17 +18,16 @@ import { agentApi } from "../../_services/agent-api";
 import { Transaction } from './types';
 import type { TransactionListParams } from "@/app/_lib/api/types";
 import {
-  resolveTransactionListGroup,
   TRANSACTION_GROUP_FILTER_OPTIONS,
   TRANSACTION_GROUP_TAB_ALL,
 } from "@/app/(customer)/_lib/transaction-group-tabs";
+import { buildTransactionListQueryParams } from "@/app/(customer)/_lib/transaction-list-params";
 
 const PAGE_SIZE = 10;
 
 export default function AgentTransactionsPage() {
   const router = useRouter();
   const [activeType, setActiveType] = useState<string>(TRANSACTION_GROUP_TAB_ALL);
-  const group = resolveTransactionListGroup(activeType);
 
   type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
 
@@ -45,16 +44,16 @@ export default function AgentTransactionsPage() {
 
   const listParams = useMemo(() => {
     const status = toCsvParam(table.selections.status);
-    const type = toCsvParam(table.selections.transactionType);
+    const transactionTypeFilter = toCsvParam(table.selections.transactionType);
     const currency = toCsvParam(table.selections.currency);
     const stage = toCsvParam(table.selections.stage);
     const { startDate, endDate } = toDateRangeParams(table.dateRange);
 
-    return {
+    return buildTransactionListQueryParams({
+      activeGroupTab: activeType,
+      transactionTypeFilter,
       q: table.searchValue || undefined,
       status,
-      type,
-      group: type ? undefined : group,
       currency,
       stage,
       startDate,
@@ -63,9 +62,9 @@ export default function AgentTransactionsPage() {
       sortOrder: table.sortOrder,
       page: table.page ?? 1,
       limit: table.limit ?? PAGE_SIZE,
-    };
+    });
   }, [
-    group,
+    activeType,
     table.dateRange,
     table.limit,
     table.page,
