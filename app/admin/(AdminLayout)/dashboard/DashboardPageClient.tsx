@@ -100,6 +100,8 @@ export default function DashboardPageClient() {
         <SimpleGrid cols={{ base: 1, lg: 2 }}>
           <TransactionSummary
             year={transactionSummary?.year ?? null}
+            month={transactionSummary?.month ?? null}
+            rangePreset={transactionSummary?.rangePreset ?? null}
             chartData={barChartData}
             loading={isLoading}
           />

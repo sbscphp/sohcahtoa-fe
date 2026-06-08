@@ -57,7 +57,9 @@ export interface AdminDashboardCounters {
 }
 
 export interface AdminDashboardTransactionSummary {
-  year: number;
+  year: number | null;
+  month: number | null;
+  rangePreset: string | null;
   labels: string[];
   series: {
     completed: number[];

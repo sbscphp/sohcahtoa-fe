@@ -33,7 +33,7 @@ export default function StatCard({
         {isEmpty ? (
           <p className="text-sm text-gray-400 italic">0</p>
         ) : (
-          <p className="text-lg font-semibold text-gray-900">{value}</p>
+          <p className="text-lg font-semibold text-gray-900 break-all">{value}</p>
         )}
       </div>
     </div>

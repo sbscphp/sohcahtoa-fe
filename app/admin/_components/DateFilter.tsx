@@ -139,9 +139,9 @@ export default function DateFilter({ onChange }: DateFilterProps) {
         className={[
           "inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-[15px] font-medium cursor-pointer transition-all whitespace-nowrap",
           active
-            ? "border-primary-400 bg-primary-500 text-white"
+            ? "border-gray-200 bg-white text-gray-900"
             : "border-gray-200 bg-white text-gray-700",
-          open ? "shadow-[0_0_0_3px_rgba(221,79,5,0.15)]" : "",
+          open ? "shadow-[0_0_0_3px_rgba(0,0,0,0.10)]" : "",
         ].join(" ")}
         aria-haspopup="dialog"
         aria-expanded={open}
