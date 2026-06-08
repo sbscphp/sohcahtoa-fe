@@ -12,10 +12,16 @@ import {
   mergeDashboardFeedSorted,
 } from "../mapDashboardData";
 
-export function useAdminDashboard() {
+type DashboardFilter = { year?: string; month?: string; range?: string };
+
+export function useAdminDashboard(filter?: DashboardFilter) {
+  const params = filter?.year || filter?.month || filter?.range
+    ? { year: filter.year || undefined, month: filter.month || undefined, range: filter.range || undefined }
+    : undefined;
+
   const query = useFetchData<ApiResponse<AdminDashboardData>>(
-    [...adminKeys.dashboard.stats()],
-    () => adminApi.dashboard.getStats(),
+    [...adminKeys.dashboard.stats(params)],
+    () => adminApi.dashboard.getStats(params),
     true
   );
 

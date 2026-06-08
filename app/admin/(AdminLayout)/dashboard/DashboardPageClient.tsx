@@ -1,18 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import StatCard from "@/app/admin/_components/StatCard";
 import { Database } from "lucide-react";
 import { HiMiniUserGroup } from "react-icons/hi2";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
-import { SimpleGrid, Skeleton, Alert } from "@mantine/core";
+import { SimpleGrid, Skeleton, Alert, Flex, Text } from "@mantine/core";
 import { TransactionSummary } from "./_dashboardComponents/TransactionSummary";
 import { TransactionsByType } from "./_dashboardComponents/TransactionsByType";
 import { RecentTransactionsTable } from "./_dashboardComponents/RecentTransactionsTable";
 import { TaskAndNotificationList } from "./_dashboardComponents/TaskAndNotificationList";
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import DateFilter, { type DateFilterValue } from "@/app/admin/_components/DateFilter";
 
 export default function DashboardPageClient() {
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ year: "", month: "", range: "" });
+
   const {
     counters,
     transactionSummary,
@@ -24,7 +28,7 @@ export default function DashboardPageClient() {
     isLoading,
     isError,
     error,
-  } = useAdminDashboard();
+  } = useAdminDashboard(dateFilter);
 
   const showStats = !isLoading && counters != null;
   const settlementLabel =
@@ -39,6 +43,14 @@ export default function DashboardPageClient() {
           {error?.message ?? "Something went wrong. Try refreshing the page."}
         </Alert>
       )}
+
+
+      <Flex justify="space-between" align="center" gap="md" mb="md">
+        <Text className="text-lg font-bold!">
+          Analytics Summary
+        </Text>
+        <DateFilter onChange={setDateFilter} />
+      </Flex>
 
       <div className="w-full rounded-xl bg-white p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

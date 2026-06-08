@@ -18,8 +18,8 @@ export function TaskAndNotificationList({
   return (
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="sm">
-        <Text fw={500}>Task List & Notification</Text>
-        <Link href={adminRoutes.adminSettingsNotifications()} className="flex items-center">
+        <Text fw={500}>Pending Workflow</Text>
+        <Link href={adminRoutes.adminTransactionsWorkflows()} className="flex items-center">
           <Text size="sm" c="orange">
             View all
           </Text>
@@ -36,8 +36,8 @@ export function TaskAndNotificationList({
       ) : data.length === 0 ? (
         <EmptySection
           format="secondary"
-          title="No tasks or notifications yet."
-          description="There are currently no tasks or notifications to display."
+          title="No pending workflows yet."
+          description="There are currently no pending workflows to display."
         />
       ) : (
         <Stack gap="md">

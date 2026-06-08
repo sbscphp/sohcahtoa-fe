@@ -1202,9 +1202,10 @@ export const adminApi = {
 
   // ==================== Dashboard ====================
   dashboard: {
-    getStats: () =>
+    getStats: (params?: { year?: string; month?: string; range?: string }) =>
       apiClient.get<ApiResponse<AdminDashboardData>>(
-        API_ENDPOINTS.admin.dashboard
+        API_ENDPOINTS.admin.dashboard,
+        { params }
       ),
 
     getPendingApprovals: () =>

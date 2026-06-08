@@ -121,7 +121,8 @@ export const adminKeys = {
   
   dashboard: {
     all: ["admin", "dashboard"] as const,
-    stats: () => [...adminKeys.dashboard.all, "stats"] as const,
+    stats: (params?: { year?: string; month?: string; range?: string }) =>
+      [...adminKeys.dashboard.all, "stats", params ?? {}] as const,
     pendingApprovals: () => [...adminKeys.dashboard.all, "pending-approvals"] as const,
   },
 

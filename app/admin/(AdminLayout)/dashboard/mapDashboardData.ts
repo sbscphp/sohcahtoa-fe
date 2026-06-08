@@ -63,28 +63,52 @@ export function mapTransactionSummaryChartData(
 
 const TYPE_DISPLAY: Record<string, string> = {
   PTA: "PTA",
-  SCHOOL_FEES: "School fees",
+  BTA: "BTA",
+  SCHOOL_FEES: "School Fees",
+  MEDICAL: "Medical",
+  PROFESSIONAL_BODY: "Professional Body",
+  TOURIST_FX: "Tourist FX",
   RESIDENT_FX: "Resident FX",
   EXPATRIATE_FX: "Expatriate FX",
+  IMTO_REMITTANCE: "IMTO Remittance",
+  CASH_REMITTANCE: "Cash Remittance",
 };
 
+// Warm spectrum from primary token palette (globals.css) — no two types share the same hue
 const TYPE_COLORS: Record<string, string> = {
-  PTA: "orange.7",
-  SCHOOL_FEES: "orange.5",
-  RESIDENT_FX: "orange.3",
-  EXPATRIATE_FX: "orange.9",
+  PTA: "#dd4f05",           // primary-400  — signature orange
+  BTA: "#e88a58",           // primary-200  — light orange
+  SCHOOL_FEES: "#fdb022",   // warning-400  — amber
+  MEDICAL: "#b84204",       // primary-500  — dark orange
+  PROFESSIONAL_BODY: "#f79009", // warning-500 — orange-amber
+  TOURIST_FX: "#fec84b",    // warning-300  — golden yellow
+  RESIDENT_FX: "#6f2803",   // primary-700  — deep brown-orange
+  EXPATRIATE_FX: "#e36c2f", // primary-300  — mid orange
+  IMTO_REMITTANCE: "#933503", // primary-600 — burnt orange
+  CASH_REMITTANCE: "#eea782", // primary-100 — peach
 };
+
+// Fallback palette cycles through warm tones for any unknown future types
+const FALLBACK_COLORS = [
+  "#dd4f05", "#e88a58", "#fdb022", "#b84204", "#f79009",
+  "#fec84b", "#6f2803", "#e36c2f", "#933503", "#eea782",
+];
 
 export type DonutSegment = { name: string; value: number; color: string };
 
 export function mapTransactionsByTypeDonut(
   block: AdminDashboardData["transactionsByType"]
 ): DonutSegment[] {
-  return block.items.map((item) => ({
-    name: TYPE_DISPLAY[item.type] ?? item.type.replaceAll("_", " "),
-    value: item.amount,
-    color: TYPE_COLORS[item.type] ?? "gray.5",
-  }));
+  let fallbackIndex = 0;
+  return block.items.map((item) => {
+    const color =
+      TYPE_COLORS[item.type] ?? FALLBACK_COLORS[fallbackIndex++ % FALLBACK_COLORS.length];
+    return {
+      name: TYPE_DISPLAY[item.type] ?? item.type.replaceAll("_", " "),
+      value: item.amount,
+      color,
+    };
+  });
 }
 
 export function mapRecentTransactions(
