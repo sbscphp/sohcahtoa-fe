@@ -366,6 +366,28 @@ export const adminKeys = {
     detail: (id: string) => [...adminKeys.transactions.details(), id] as const,
   },
 
+  wallet: {
+    all: ["admin", "wallet"] as const,
+    lists: () => [...adminKeys.wallet.all, "list"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      sortOrder?: "asc" | "desc";
+    }) => [...adminKeys.wallet.lists(), params ?? {}] as const,
+    detail: (id: string) => [...adminKeys.wallet.all, "detail", id] as const,
+    ledger: (
+      id: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        type?: "" | "DEBIT" | "CREDIT";
+        status?: string;
+        search?: string;
+      }
+    ) => [...adminKeys.wallet.all, "ledger", id, params ?? {}] as const,
+  },
+
   reports: {
     all: ["admin", "reports"] as const,
     modules: () => [...adminKeys.reports.all, "modules"] as const,

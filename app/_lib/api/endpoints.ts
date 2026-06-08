@@ -233,6 +233,13 @@ export const API_ENDPOINTS = {
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
     },
+    wallet: {
+      list: "/api/admin/wallet",
+      export: "/api/admin/wallet/export",
+      getById: (id: string) => `/api/admin/wallet/${id}`,
+      ledger: (id: string) => `/api/admin/wallet/${id}/ledger`,
+      ledgerExport: (id: string) => `/api/admin/wallet/${id}/ledger/export`,
+    },
     reports: {
       modules: "/api/admin/reports/modules",
       generate: "/api/admin/reports/generate",

@@ -1,15 +1,57 @@
 "use client";
 
 import { useMemo } from "react";
-import { getWalletDetail } from "./mockData";
+import { useFetchData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import {
+  adminApi,
+  type AdminWalletDetail,
+} from "@/app/admin/_services/admin-api";
+import { formatCreatedAt } from "./walletUtils";
+
+export interface TransientWalletDetail {
+  id: string;
+  walletId: string;
+  customerId: string;
+  customerName: string;
+  totalDebit: number;
+  totalCredit: number;
+  dateCreated: string;
+  timeCreated: string;
+}
+
+function mapWalletDetail(item: AdminWalletDetail): TransientWalletDetail {
+  const { dateCreated, timeCreated } = formatCreatedAt(item.createdAt);
+  return {
+    id: item.id,
+    walletId: item.walletId,
+    customerId: item.customerId ?? item.userId,
+    customerName: item.customerName,
+    totalDebit: item.totalDebits,
+    totalCredit: item.totalCredits,
+    dateCreated,
+    timeCreated,
+  };
+}
 
 export function useTransientWalletDetails(walletId: string) {
-  const wallet = useMemo(() => getWalletDetail(walletId), [walletId]);
+  const query = useFetchData(
+    [...adminKeys.wallet.detail(walletId)],
+    () => adminApi.wallet.getById(walletId),
+    Boolean(walletId)
+  );
+
+  const wallet = useMemo(() => {
+    const data = query.data?.data;
+    if (!data) return null;
+    return mapWalletDetail(data);
+  }, [query.data?.data]);
 
   return {
     wallet,
-    isLoading: false,
-    isFetching: false,
-    isError: !wallet,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError || (!query.isLoading && !wallet),
+    error: query.error,
   };
 }

@@ -1,77 +1,92 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Text, Group, TextInput, Select, Button } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
+import { notifications } from "@mantine/notifications";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import {
   useTransientWallets,
-  type WalletFilterStatus,
+  type TransientWalletListItem,
 } from "../hooks/useTransientWallets";
-import type { TransientWalletListItem } from "../hooks/mockData";
-import { MOCK_WALLETS } from "../hooks/mockData";
 
 const pageSize = 10;
 
+const sortOptions = [
+  { value: "desc", label: "Newest first" },
+  { value: "asc", label: "Oldest first" },
+];
+
 const walletHeaders = [
   { label: "Wallet ID", key: "walletId" },
-  { label: "Customer ID", key: "customerId" },
-  { label: "Customer Name", key: "customerName" },
+  { label: "Customer", key: "customer" },
   { label: "Total Debit", key: "totalDebit" },
   { label: "Total Credit", key: "totalCredit" },
   { label: "Date Created", key: "dateCreated" },
   { label: "Action", key: "action" },
 ];
 
-function exportWalletsCsv(wallets: TransientWalletListItem[]) {
-  const headers = [
-    "Wallet ID",
-    "Customer ID",
-    "Customer Name",
-    "Total Debit",
-    "Total Credit",
-    "Date Created",
-  ];
-  const rows = wallets.map((w) =>
-    [
-      w.walletId,
-      w.customerId,
-      w.customerName,
-      w.totalDebit,
-      w.totalCredit,
-      `${w.dateCreated} ${w.timeCreated}`,
-    ].join(",")
-  );
-  const csv = [headers.join(","), ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `transient-wallets-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 export default function TransientWalletsTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<WalletFilterStatus>("All");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const { wallets, isLoading, isFetching, totalPages } = useTransientWallets({
+  const { wallets, isLoading, isFetching, isError, totalPages } = useTransientWallets({
     page,
     limit: pageSize,
     search: debouncedSearch.trim() || undefined,
-    status: statusFilter,
+    sortOrder,
   });
+
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      sortOrder,
+    }),
+    [debouncedSearch, sortOrder]
+  );
+
+  const exportWalletsMutation = useGetExportData(
+    () => adminApi.wallet.export(exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `transient-wallets-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as
+          | ApiResponse
+          | undefined;
+
+        notifications.show({
+          title: "Export Wallets Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export transient wallets at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const safeTotalPages = Math.max(1, totalPages);
 
@@ -79,12 +94,14 @@ export default function TransientWalletsTable() {
     <Text key="walletId" size="sm" fw={500}>
       {item.walletId}
     </Text>,
-    <Text key="customerId" size="sm">
-      {item.customerId}
-    </Text>,
-    <Text key="customerName" size="sm">
-      {item.customerName}
-    </Text>,
+    <div key="customer">
+      <Text fw={500} size="sm">
+        {item.customerName}
+      </Text>
+      <Text size="xs" c="dimmed">
+        ID:{item.customerId || "--"}
+      </Text>
+    </div>,
     <Text key="totalDebit" size="sm" className="text-red-600">
       -{formatCurrency(item.totalDebit)}
     </Text>,
@@ -104,10 +121,6 @@ export default function TransientWalletsTable() {
       }
     />,
   ];
-
-  const handleExport = () => {
-    exportWalletsCsv(MOCK_WALLETS);
-  };
 
   return (
     <div className="my-5 rounded-lg bg-white p-5">
@@ -130,14 +143,14 @@ export default function TransientWalletsTable() {
         </div>
         <Group>
           <Select
-            value={statusFilter}
+            value={sortOrder}
             onChange={(value) => {
-              setStatusFilter((value as WalletFilterStatus) ?? "All");
+              setSortOrder((value as "asc" | "desc") ?? "desc");
               setPage(1);
             }}
-            data={["All", "Matched", "Unmatched"]}
+            data={sortOptions}
             radius="xl"
-            w={120}
+            w={140}
             rightSection={<ListFilter size={16} />}
           />
           <Button
@@ -145,7 +158,9 @@ export default function TransientWalletsTable() {
             color="#E36C2F"
             radius="xl"
             rightSection={<Upload size={16} />}
-            onClick={handleExport}
+            onClick={() => exportWalletsMutation.mutate()}
+            loading={exportWalletsMutation.isPending}
+            disabled={exportWalletsMutation.isPending}
           >
             Export
           </Button>
@@ -167,6 +182,11 @@ export default function TransientWalletsTable() {
           onPageChange: setPage,
         }}
       />
+      {isError ? (
+        <Text c="red" size="sm" mt="sm">
+          Unable to load transient wallets right now. Please try again.
+        </Text>
+      ) : null}
     </div>
   );
 }

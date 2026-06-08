@@ -581,6 +581,67 @@ export type AdminTransactionListParams = Record<
   sortOrder?: "asc" | "desc";
 };
 
+export type AdminWalletListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export interface AdminWalletListItem {
+  id: string;
+  walletId: string;
+  userId: string;
+  customerName: string;
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  totalDebits: number;
+  totalCredits: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminWalletDetail {
+  id: string;
+  walletId: string;
+  customerId: string;
+  userId: string;
+  customerName: string;
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  totalDebits: number;
+  totalDebitCount: number;
+  totalCredits: number;
+  totalCreditCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminWalletLedgerParams = {
+  page?: number;
+  limit?: number;
+  type?: "" | "DEBIT" | "CREDIT";
+  status?: string;
+  search?: string;
+};
+
+export interface AdminWalletLedgerEntry {
+  id: string;
+  type: "DEBIT" | "CREDIT";
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description: string;
+  status: string;
+  transactionRef: string;
+  matchStatus: string | null;
+  transactionId: string;
+  sessionId: string | null;
+  createdAt: string;
+}
+
 export type AdminComplianceReportsListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -2099,6 +2160,55 @@ export const adminApi = {
       const blob = await response.blob();
 
       return { blob, fileName };
+    },
+  },
+
+  // ==================== Wallet ====================
+  wallet: {
+    list: (params?: AdminWalletListParams) =>
+      apiClient.get<ApiResponse<AdminWalletListItem[]>>(
+        API_ENDPOINTS.admin.wallet.list,
+        { params }
+      ),
+
+    export: async (params?: Omit<AdminWalletListParams, "page" | "limit">) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.wallet.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<AdminWalletDetail>>(
+        API_ENDPOINTS.admin.wallet.getById(id)
+      ),
+
+    ledger: (id: string, params?: AdminWalletLedgerParams) =>
+      apiClient.get<ApiResponse<AdminWalletLedgerEntry[]>>(
+        API_ENDPOINTS.admin.wallet.ledger(id),
+        { params }
+      ),
+
+    ledgerExport: async (
+      id: string,
+      params?: Omit<AdminWalletLedgerParams, "page" | "limit">
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.wallet.ledgerExport(id),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
     },
   },
 

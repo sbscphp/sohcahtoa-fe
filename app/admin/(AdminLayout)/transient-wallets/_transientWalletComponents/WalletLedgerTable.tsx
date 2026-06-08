@@ -1,20 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
-import { Text, Group, TextInput, Select, Button } from "@mantine/core";
+import { Text, Group, TextInput, Select, Button, Alert } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
+import { notifications } from "@mantine/notifications";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
-import { useTransientWalletLedger } from "../hooks/useTransientWalletLedger";
-import type { TransientLedgerEntry, LedgerEntryStatus } from "../hooks/mockData";
-import { MOCK_LEDGER_ENTRIES } from "../hooks/mockData";
+import { useGetExportData } from "@/app/_lib/api/hooks";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import {
+  useTransientWalletLedger,
+  type TransientLedgerEntry,
+} from "../hooks/useTransientWalletLedger";
 
-const pageSize = 10;
+const pageSize = 20;
+
+const TYPE_FILTER_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "DEBIT", label: "Debit" },
+  { value: "CREDIT", label: "Credit" },
+];
 
 const ledgerHeaders = [
   { label: "Entry ID", key: "entryId" },
@@ -26,33 +37,6 @@ const ledgerHeaders = [
   { label: "Action", key: "action" },
 ];
 
-function exportLedgerCsv(entries: TransientLedgerEntry[]) {
-  const headers = [
-    "Entry ID",
-    "Date",
-    "Time",
-    "Session ID",
-    "Type",
-    "Amount",
-    "Status",
-  ];
-  const rows = entries.map((e) =>
-    [e.entryId, e.date, e.time, e.sessionId, e.type, e.amount, e.status].join(
-      ","
-    )
-  );
-  const csv = [headers.join(","), ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `wallet-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 interface WalletLedgerTableProps {
   walletId: string;
 }
@@ -61,25 +45,63 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<LedgerEntryStatus | "All">(
-    "All"
-  );
+  const [typeFilter, setTypeFilter] = useState<"" | "DEBIT" | "CREDIT">("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const { entries, isLoading, isFetching, totalPages } =
+  const { entries, isLoading, isFetching, isError, totalPages } =
     useTransientWalletLedger({
       walletId,
       page,
       limit: pageSize,
       search: debouncedSearch.trim() || undefined,
-      status: statusFilter,
+      type: typeFilter,
     });
+
+  const exportParams = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      type: typeFilter || undefined,
+    }),
+    [debouncedSearch, typeFilter]
+  );
+
+  const exportLedgerMutation = useGetExportData(
+    () => adminApi.wallet.ledgerExport(walletId, exportParams),
+    {
+      onSuccess: (csvBlob) => {
+        const objectUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = objectUrl;
+        link.download = `wallet-ledger-${walletId}-${dateStamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as
+          | ApiResponse
+          | undefined;
+
+        notifications.show({
+          title: "Export Ledger Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to export wallet ledger at the moment. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const safeTotalPages = Math.max(1, totalPages);
 
   const renderRow = (item: TransientLedgerEntry) => [
     <div key="entryId">
-      <Text size="sm" fw={500}>
+      <Text size="sm" fw={500} className="max-w-[200px] truncate">
         ID:{item.entryId}
       </Text>
     </div>,
@@ -101,6 +123,7 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
       {item.type}
     </Text>,
     <Text key="amount" size="sm">
+      {item.type === "Credit" ? "+" : "-"}
       {formatCurrency(item.amount)}
     </Text>,
     <StatusBadge key="status" status={item.status} />,
@@ -113,13 +136,6 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
       }
     />,
   ];
-
-  const handleExport = () => {
-    const walletEntries = MOCK_LEDGER_ENTRIES.filter(
-      (e) => e.walletId === walletId
-    );
-    exportLedgerCsv(walletEntries);
-  };
 
   return (
     <div className="rounded-lg bg-white p-5 shadow-sm">
@@ -140,12 +156,12 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
         </div>
         <Group>
           <Select
-            value={statusFilter}
+            value={typeFilter}
             onChange={(value) => {
-              setStatusFilter((value as LedgerEntryStatus | "All") ?? "All");
+              setTypeFilter((value as "" | "DEBIT" | "CREDIT") ?? "");
               setPage(1);
             }}
-            data={["All", "Matched", "Unmatched"]}
+            data={TYPE_FILTER_OPTIONS}
             radius="xl"
             w={120}
             rightSection={<ListFilter size={16} />}
@@ -155,12 +171,19 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
             color="#E36C2F"
             radius="xl"
             rightSection={<Upload size={16} />}
-            onClick={handleExport}
+            loading={exportLedgerMutation.isPending}
+            onClick={() => exportLedgerMutation.mutate()}
           >
             Export
           </Button>
         </Group>
       </Group>
+
+      {isError ? (
+        <Alert color="red" title="Unable to load ledger entries" mb="md">
+          Please try again or refresh the page.
+        </Alert>
+      ) : null}
 
       <DynamicTableSection
         headers={ledgerHeaders}
