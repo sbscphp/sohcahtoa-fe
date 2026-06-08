@@ -2,23 +2,65 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stack, Text, TextInput, Select, Textarea, Radio, Group } from "@mantine/core";
+import { Stack, Text, TextInput, NumberInput, Select, Textarea, Radio, Group } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Check } from "lucide-react";
 import { notifications } from "@mantine/notifications";
+import { useQueryClient } from "@tanstack/react-query";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminRoutes } from "@/lib/adminRoutes";
-import WorkflowActionModal from "../_workflowComponents/WorkflowActionModal";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import {
+  adminApi,
+  type WorkflowTemplateUpdatePayload,
+} from "@/app/admin/_services/admin-api";
+import ApprovalTypeModal, {
+  type ApprovalTypeValue,
+  approvalTypeLabel,
+} from "../../workflow/_workflowComponents/ApprovalTypeModal";
 import EscalationProtocolModal from "../_workflowComponents/EscalationProtocolModal";
-import AssignToModal, { AssignableUser, AssignableRole } from "../_workflowComponents/AssignToModal";
-import WorkflowLineItem, { WorkflowLine } from "../_workflowComponents/WorkflowLineItem";
+import AssignToModal, {
+  type AssignableUser,
+  type AssignableRole,
+} from "../_workflowComponents/AssignToModal";
+import WorkflowLineItem, { type WorkflowLine } from "../_workflowComponents/WorkflowLineItem";
 import { useWorkflowEditOptions } from "../hooks/useWorkflowEditOptions";
+
+type WorkflowMode = "rigid" | "flexible";
+type WorkflowTemplateType = "REVIEW" | "APPROVAL";
+
+interface CreateWorkflowFormValues {
+  workflowName: string;
+  workflowDescription: string;
+  approvalType: ApprovalTypeValue | "";
+  workflowAction: string;
+  branchApplicable: string;
+  departmentApplicable: string;
+  minAmount: number | "";
+  maxAmount: number | "";
+  workflowType: WorkflowMode;
+  workflowTemplateType: WorkflowTemplateType;
+  templateEscalationMinutes: number;
+  hasPtaRequest: boolean;
+  workflowLines: WorkflowLine[];
+}
+
+function toStageType(value: string): WorkflowTemplateUpdatePayload["stages"][number]["type"] {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "APPROVAL") return "APPROVAL";
+  if (normalized === "DOCUMENTATION") return "DOCUMENTATION";
+  if (normalized === "VERIFICATION") return "VERIFICATION";
+  return "REVIEW";
+}
 
 export default function CreateWorkflowPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
+
   const {
     branchOptions,
     departmentOptions,
@@ -28,14 +70,20 @@ export default function CreateWorkflowPage() {
     isLoading: optionsLoading,
   } = useWorkflowEditOptions();
 
-  const form = useForm({
+  const form = useForm<CreateWorkflowFormValues>({
     initialValues: {
       workflowName: "",
       workflowDescription: "",
+      approvalType: "",
       workflowAction: "",
       branchApplicable: "",
       departmentApplicable: "",
-      workflowType: "rigid" as "rigid" | "flexible",
+      minAmount: "",
+      maxAmount: "",
+      workflowType: "rigid",
+      workflowTemplateType: "APPROVAL",
+      templateEscalationMinutes: 0,
+      hasPtaRequest: false,
       workflowLines: [
         {
           id: "line-1",
@@ -44,9 +92,9 @@ export default function CreateWorkflowPage() {
           escalateToUser: undefined,
           selectedUsers: [],
           selectedRoles: [],
-          expanded: false,
+          expanded: true,
         },
-      ] as WorkflowLine[],
+      ],
     },
     validate: {
       workflowName: (value) => (value.trim() ? null : "Workflow name is required"),
@@ -56,184 +104,67 @@ export default function CreateWorkflowPage() {
         if (wordCount > 24) return "Description must not exceed 24 words";
         return null;
       },
-      workflowAction: (value) => (value ? null : "Workflow action is required"),
       branchApplicable: (value) => (value ? null : "Branch is required"),
       departmentApplicable: (value) => (value ? null : "Department is required"),
+      maxAmount: (value, values) => {
+        if (values.approvalType === "RATE") return null;
+        if (value === "" || values.minAmount === "") return null;
+        if (
+          typeof value === "number" &&
+          typeof values.minAmount === "number" &&
+          value < values.minAmount
+        ) {
+          return "Maximum amount must be greater than or equal to minimum amount";
+        }
+        return null;
+      },
     },
   });
 
-  const [isWorkflowActionModalOpen, setIsWorkflowActionModalOpen] = useState(false);
+  // Modals
+  const [isApprovalTypeModalOpen, setIsApprovalTypeModalOpen] = useState(false);
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
+  const [escalationModalSession, setEscalationModalSession] = useState(0);
+  const [escalationInitialData, setEscalationInitialData] = useState<{
+    escalateToId: string | null;
+    minutes: number;
+  }>({ escalateToId: null, minutes: 0 });
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const [assignModalSession, setAssignModalSession] = useState(0);
-  const [isDraftConfirmOpen, setIsDraftConfirmOpen] = useState(false);
-  const [isPublishConfirmOpen, setIsPublishConfirmOpen] = useState(false);
-  const [isDraftSuccessOpen, setIsDraftSuccessOpen] = useState(false);
-  const [isPublishSuccessOpen, setIsPublishSuccessOpen] = useState(false);
+  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false);
+  const [isCreateSuccessOpen, setIsCreateSuccessOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleCancel = () => {
-    router.push(adminRoutes.adminSettingsWorkflowConfiguration());
-  };
-
-  const handleNext = () => {
-    const basicValidation = form.validate();
-    if (basicValidation.hasErrors) {
-      return;
-    }
-    setStep(2);
-  };
-
-  const handleBack = () => {
-    setStep(1);
-  };
-
-  const handleWorkflowActionSelect = (action: string) => {
-    form.setFieldValue("workflowAction", action);
-  };
-
-  const handleEscalationSave = (escalateToId: string, escalateToName: string, minutes: number) => {
-    if (!activeLineId) return;
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === activeLineId
-        ? {
-            ...line,
-            escalationPeriod: minutes,
-            escalateToUser: { id: escalateToId, name: escalateToName },
-          }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
-
-  const activeLineIdRef = useRef(activeLineId);
-  activeLineIdRef.current = activeLineId;
-
-  const handleAssignConfirm = useCallback(
-    (users: AssignableUser[], roles: AssignableRole[]) => {
-      const lineId = activeLineIdRef.current;
-      if (!lineId) return;
-      form.setFieldValue(
-        "workflowLines",
-        form.values.workflowLines.map((line) =>
-          line.id === lineId ? { ...line, selectedUsers: users, selectedRoles: roles } : line
-        )
-      );
+  const createWorkflowMutation = useCreateData<
+    ApiResponse<unknown>,
+    WorkflowTemplateUpdatePayload
+  >((payload) => adminApi.workflow.createTemplate(payload), {
+    onSuccess: async () => {
+      notifications.show({
+        title: "Workflow Created",
+        message: "New workflow template has been created successfully.",
+        color: "green",
+      });
+      setIsSaving(false);
+      setIsCreateConfirmOpen(false);
+      setIsCreateSuccessOpen(true);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "workflow", "management"] });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form.values.workflowLines]
-  );
-
-  const handleUpdateWorkflowType = (id: string, type: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === id ? { ...line, workflowType: type } : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
-
-  const handleToggleExpanded = (id: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === id ? { ...line, expanded: !line.expanded } : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
-
-  const handleRemoveUser = (lineId: string, userId: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === lineId
-        ? { ...line, selectedUsers: line.selectedUsers.filter((u) => u.id !== userId) }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
-
-  const handleRemoveRole = (lineId: string, roleId: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === lineId
-        ? { ...line, selectedRoles: line.selectedRoles.filter((r) => r.id !== roleId) }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
-
-  const handleAddWorkflowLine = () => {
-    const newLine: WorkflowLine = {
-      id: `line-${Date.now()}`,
-      workflowType: "",
-      escalationPeriod: 0,
-      escalateToUser: undefined,
-      selectedUsers: [],
-      selectedRoles: [],
-      expanded: false,
-    };
-    form.setFieldValue("workflowLines", [...form.values.workflowLines, newLine]);
-  };
-
-  const handleMoveUp = (id: string) => {
-    const index = form.values.workflowLines.findIndex((line) => line.id === id);
-    if (index > 0) {
-      const newLines = [...form.values.workflowLines];
-      [newLines[index - 1], newLines[index]] = [newLines[index], newLines[index - 1]];
-      form.setFieldValue("workflowLines", newLines);
-    }
-  };
-
-  const handleMoveDown = (id: string) => {
-    const index = form.values.workflowLines.findIndex((line) => line.id === id);
-    if (index < form.values.workflowLines.length - 1) {
-      const newLines = [...form.values.workflowLines];
-      [newLines[index], newLines[index + 1]] = [newLines[index + 1], newLines[index]];
-      form.setFieldValue("workflowLines", newLines);
-    }
-  };
-
-  const handleDeleteLine = (id: string) => {
-    if (form.values.workflowLines.length > 1) {
-      form.setFieldValue(
-        "workflowLines",
-        form.values.workflowLines.filter((line) => line.id !== id)
-      );
-    }
-  };
-
-  const handleSaveAsDraft = async () => {
-    const lineValidationError = validateStepTwo();
-    if (lineValidationError) {
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse;
       notifications.show({
-        title: "Validation Error",
-        message: lineValidationError,
+        title: "Create Workflow Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create workflow template at the moment.",
         color: "red",
       });
-      return;
-    }
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setIsDraftConfirmOpen(false);
-    setIsDraftSuccessOpen(true);
-  };
-
-  const handlePublish = async () => {
-    const lineValidationError = validateStepTwo();
-    if (lineValidationError) {
-      notifications.show({
-        title: "Validation Error",
-        message: lineValidationError,
-        color: "red",
-      });
-      return;
-    }
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setIsPublishConfirmOpen(false);
-    setIsPublishSuccessOpen(true);
-  };
-
-  const handleManageWorkflow = () => {
-    router.push(adminRoutes.adminSettingsWorkflowConfiguration());
-  };
+      setIsSaving(false);
+      setIsCreateConfirmOpen(false);
+    },
+  });
 
   const branchLabelOptions = useMemo(() => branchOptions, [branchOptions]);
   const departmentLabelOptions = useMemo(() => departmentOptions, [departmentOptions]);
@@ -246,7 +177,6 @@ export default function CreateWorkflowPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [assignModalSession]
   );
-
   const assignModalInitialRoleIds = useMemo(
     () =>
       form.values.workflowLines
@@ -256,11 +186,20 @@ export default function CreateWorkflowPage() {
     [assignModalSession]
   );
 
+  // Refs for stable callbacks
+  const activeLineIdRef = useRef(activeLineId);
+  activeLineIdRef.current = activeLineId;
+
+  const workflowLinesRef = useRef(form.values.workflowLines);
+  workflowLinesRef.current = form.values.workflowLines;
+
+  const formRef = useRef(form);
+  formRef.current = form;
+
   const validateStepTwo = () => {
     if (!form.values.workflowLines.length) {
       return "At least one workflow line is required.";
     }
-
     for (const [index, line] of form.values.workflowLines.entries()) {
       const lineNumber = index + 1;
       if (!line.workflowType.trim()) {
@@ -273,8 +212,186 @@ export default function CreateWorkflowPage() {
         return `Please assign at least one user or role for line ${lineNumber}.`;
       }
     }
-
     return null;
+  };
+
+  const handleBack = () => {
+    setStep(1);
+  };
+
+  const handleNext = () => {
+    const basicValidation = form.validate();
+    if (basicValidation.hasErrors) return;
+    setStep(2);
+  };
+
+  const handleApprovalTypeSelect = (value: ApprovalTypeValue) => {
+    form.setFieldValue("approvalType", value);
+  };
+
+  const handleEscalationSave = useCallback(
+    (escalateToId: string, escalateToName: string, minutes: number) => {
+      const lineId = activeLineIdRef.current;
+      if (!lineId) return;
+      formRef.current.setFieldValue(
+        "workflowLines",
+        workflowLinesRef.current.map((line) =>
+          line.id === lineId
+            ? { ...line, escalationPeriod: minutes, escalateToUser: { id: escalateToId, name: escalateToName } }
+            : line
+        )
+      );
+    },
+    []
+  );
+
+  const handleAssignConfirm = useCallback((users: AssignableUser[], roles: AssignableRole[]) => {
+    const lineId = activeLineIdRef.current;
+    if (!lineId) return;
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId ? { ...line, selectedUsers: users, selectedRoles: roles } : line
+      )
+    );
+  }, []);
+
+  const handleUpdateWorkflowType = useCallback((lineId: string, type: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId ? { ...line, workflowType: type } : line
+      )
+    );
+  }, []);
+
+  const handleToggleExpanded = useCallback((lineId: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId ? { ...line, expanded: !line.expanded } : line
+      )
+    );
+  }, []);
+
+  const handleRemoveUser = useCallback((lineId: string, userId: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId
+          ? { ...line, selectedUsers: line.selectedUsers.filter((u) => u.id !== userId) }
+          : line
+      )
+    );
+  }, []);
+
+  const handleRemoveRole = useCallback((lineId: string, roleId: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId
+          ? { ...line, selectedRoles: line.selectedRoles.filter((r) => r.id !== roleId) }
+          : line
+      )
+    );
+  }, []);
+
+  const handleAddWorkflowLine = useCallback(() => {
+    const newLine: WorkflowLine = {
+      id: `line-${Date.now()}`,
+      workflowType: "",
+      escalationPeriod: 0,
+      escalateToUser: undefined,
+      selectedUsers: [],
+      selectedRoles: [],
+      expanded: true,
+    };
+    formRef.current.setFieldValue("workflowLines", [...workflowLinesRef.current, newLine]);
+  }, []);
+
+  const handleMoveUp = useCallback((lineId: string) => {
+    const lines = workflowLinesRef.current;
+    const index = lines.findIndex((line) => line.id === lineId);
+    if (index > 0) {
+      const newLines = [...lines];
+      [newLines[index - 1], newLines[index]] = [newLines[index], newLines[index - 1]];
+      formRef.current.setFieldValue("workflowLines", newLines);
+    }
+  }, []);
+
+  const handleMoveDown = useCallback((lineId: string) => {
+    const lines = workflowLinesRef.current;
+    const index = lines.findIndex((line) => line.id === lineId);
+    if (index < lines.length - 1) {
+      const newLines = [...lines];
+      [newLines[index], newLines[index + 1]] = [newLines[index + 1], newLines[index]];
+      formRef.current.setFieldValue("workflowLines", newLines);
+    }
+  }, []);
+
+  const handleDeleteLine = useCallback((lineId: string) => {
+    const lines = workflowLinesRef.current;
+    if (lines.length > 1) {
+      formRef.current.setFieldValue(
+        "workflowLines",
+        lines.filter((line) => line.id !== lineId)
+      );
+    }
+  }, []);
+
+  const handleCreateWorkflow = async () => {
+    const lineValidationError = validateStepTwo();
+    if (lineValidationError) {
+      notifications.show({
+        title: "Validation Error",
+        message: lineValidationError,
+        color: "red",
+      });
+      return;
+    }
+
+    const payload: WorkflowTemplateUpdatePayload = {
+      name: form.values.workflowName.trim(),
+      description: form.values.workflowDescription.trim(),
+      type: form.values.workflowTemplateType,
+      ...(form.values.approvalType ? { approvalType: form.values.approvalType } : {}),
+      minAmount:
+        form.values.approvalType === "RATE"
+          ? null
+          : form.values.minAmount === ""
+            ? null
+            : form.values.minAmount,
+      maxAmount:
+        form.values.approvalType === "RATE"
+          ? null
+          : form.values.maxAmount === ""
+            ? null
+            : form.values.maxAmount,
+      processType: form.values.workflowType === "flexible" ? "FLEXIBLE" : "RIGID_LINEAR",
+      action: form.values.workflowAction.trim(),
+      branchId: form.values.branchApplicable,
+      departmentId: form.values.departmentApplicable,
+      escalationMinutes: form.values.templateEscalationMinutes,
+      hasPtaRequest: form.values.hasPtaRequest,
+      stages: form.values.workflowLines.map((line, index) => ({
+        name: line.workflowType.trim() || `Stage ${index + 1}`,
+        type: toStageType(line.workflowType),
+        order: index + 1,
+        escalationMinutes: line.escalationPeriod,
+        escalationAdminId: line.escalateToUser?.id ?? null,
+        assignees: line.selectedUsers.map((user, assigneeIndex) => ({
+          adminId: user.id,
+          order: assigneeIndex + 1,
+        })),
+      })),
+    };
+
+    setIsSaving(true);
+    createWorkflowMutation.mutate(payload);
+  };
+
+  const handleManageWorkflow = () => {
+    router.push(adminRoutes.adminSettingsWorkflowConfiguration());
   };
 
   if (optionsLoading) {
@@ -290,6 +407,7 @@ export default function CreateWorkflowPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="rounded-2xl bg-white shadow-sm p-6 md:p-8">
+        {/* Progress Tracker */}
         <div className="mb-8">
           <div className="relative flex items-center justify-between px-2">
             <div
@@ -322,6 +440,7 @@ export default function CreateWorkflowPage() {
           </div>
         </div>
 
+        {/* Step Content */}
         {step === 1 ? (
           <Stack gap="lg">
             <div className="text-center mb-4">
@@ -332,16 +451,16 @@ export default function CreateWorkflowPage() {
                 Fill out the basic information for this approval workflow process
               </Text>
             </div>
+
             <TextInput
               label="Workflow Name"
               placeholder="Enter Workflow Name"
               {...form.getInputProps("workflowName")}
               required
               radius="md"
-              classNames={{
-                label: "text-sm font-medium text-gray-900 mb-1",
-              }}
+              classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
             />
+
             <div>
               <Textarea
                 label="Workflow Description"
@@ -350,28 +469,35 @@ export default function CreateWorkflowPage() {
                 required
                 radius="md"
                 minRows={3}
-                classNames={{
-                  label: "text-sm font-medium text-gray-900 mb-1",
-                }}
+                classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
               />
               <Text size="xs" c="dimmed" mt={4}>
                 Not more than 24 words counts
               </Text>
             </div>
+
             <TextInput
-              label="Workflow Action"
+              label="Approval Type"
               placeholder="Select an Option"
-              value={form.values.workflowAction}
+              value={approvalTypeLabel(form.values.approvalType)}
               readOnly
-              required
               radius="md"
-              onClick={() => setIsWorkflowActionModalOpen(true)}
+              onClick={() => setIsApprovalTypeModalOpen(true)}
               classNames={{
                 label: "text-sm font-medium text-gray-900 mb-1",
                 input: "cursor-pointer",
               }}
-              error={form.errors.workflowAction}
+              error={form.errors.approvalType}
             />
+
+            <TextInput
+              label="Workflow Action"
+              placeholder="Enter workflow action"
+              {...form.getInputProps("workflowAction")}
+              radius="md"
+              classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
+            />
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Select
                 label="Branch Applicable"
@@ -381,9 +507,7 @@ export default function CreateWorkflowPage() {
                 required
                 searchable
                 radius="md"
-                classNames={{
-                  label: "text-sm font-medium text-gray-900 mb-1",
-                }}
+                classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
               />
               <div>
                 <Select
@@ -394,15 +518,42 @@ export default function CreateWorkflowPage() {
                   required
                   searchable
                   radius="md"
-                  classNames={{
-                    label: "text-sm font-medium text-gray-900 mb-1",
-                  }}
+                  classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
                 />
                 <Text size="xs" c="dimmed" mt={4}>
                   A corresponding department within a branch
                 </Text>
               </div>
             </div>
+
+            {form.values.approvalType !== "RATE" && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <NumberInput
+                  label="Minimum Amount"
+                  placeholder="Enter minimum amount"
+                  value={form.values.minAmount}
+                  onChange={(val) =>
+                    form.setFieldValue("minAmount", typeof val === "number" ? val : "")
+                  }
+                  min={0}
+                  radius="md"
+                  classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
+                />
+                <NumberInput
+                  label="Maximum Amount"
+                  placeholder="Enter maximum amount"
+                  value={form.values.maxAmount}
+                  onChange={(val) =>
+                    form.setFieldValue("maxAmount", typeof val === "number" ? val : "")
+                  }
+                  min={0}
+                  radius="md"
+                  classNames={{ label: "text-sm font-medium text-gray-900 mb-1" }}
+                  error={form.errors.maxAmount}
+                />
+              </div>
+            )}
+
             <div>
               <Text size="sm" fw={500} className="text-gray-900 mb-3">
                 Workflow Type
@@ -412,7 +563,9 @@ export default function CreateWorkflowPage() {
               </Text>
               <Radio.Group
                 value={form.values.workflowType}
-                onChange={(val) => form.setFieldValue("workflowType", val as "rigid" | "flexible")}
+                onChange={(val) =>
+                  form.setFieldValue("workflowType", val as WorkflowMode)
+                }
               >
                 <Stack gap="md">
                   <div className="rounded-lg border-2 border-gray-200 p-4 hover:border-orange-300 transition-colors">
@@ -442,8 +595,14 @@ export default function CreateWorkflowPage() {
                 </Stack>
               </Radio.Group>
             </div>
+
             <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
-              <CustomButton fullWidth size="md" buttonType="secondary" onClick={handleCancel}>
+              <CustomButton
+                fullWidth
+                size="md"
+                buttonType="secondary"
+                onClick={() => router.push(adminRoutes.adminSettingsWorkflowConfiguration())}
+              >
                 Back
               </CustomButton>
               <CustomButton fullWidth size="md" buttonType="primary" onClick={handleNext}>
@@ -461,6 +620,8 @@ export default function CreateWorkflowPage() {
                 Configure, and review the escalation process for specific action
               </Text>
             </div>
+
+            {/* Workflow Lines */}
             <div className="space-y-4">
               {form.values.workflowLines.map((line, index) => (
                 <WorkflowLineItem
@@ -469,12 +630,18 @@ export default function CreateWorkflowPage() {
                   index={index}
                   totalLines={form.values.workflowLines.length}
                   onUpdateWorkflowType={handleUpdateWorkflowType}
-                  onOpenEscalationModal={(id) => {
-                    setActiveLineId(id);
+                  onOpenEscalationModal={(lineId) => {
+                    const l = workflowLinesRef.current.find((wl) => wl.id === lineId);
+                    setEscalationInitialData({
+                      escalateToId: l?.escalateToUser?.id ?? null,
+                      minutes: l?.escalationPeriod ?? 0,
+                    });
+                    setActiveLineId(lineId);
+                    setEscalationModalSession((s) => s + 1);
                     setIsEscalationModalOpen(true);
                   }}
-                  onOpenAssignModal={(id) => {
-                    setActiveLineId(id);
+                  onOpenAssignModal={(lineId) => {
+                    setActiveLineId(lineId);
                     setAssignModalSession((s) => s + 1);
                     setIsAssignModalOpen(true);
                   }}
@@ -487,6 +654,7 @@ export default function CreateWorkflowPage() {
                 />
               ))}
             </div>
+
             <button
               type="button"
               onClick={handleAddWorkflowLine}
@@ -494,46 +662,44 @@ export default function CreateWorkflowPage() {
             >
               Add Workflow Line +
             </button>
-            <div className="space-y-3 mt-xl">
-              <Group justify="center" wrap="nowrap" gap="sm">
-                <CustomButton fullWidth size="md" buttonType="secondary" onClick={handleBack}>
-                  Back
-                </CustomButton>
-                <CustomButton
-                  fullWidth
-                  size="md"
-                  buttonType="primary"
-                  onClick={() => setIsPublishConfirmOpen(true)}
-                >
-                  Continue
-                </CustomButton>
-              </Group>
+
+            <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
+              <CustomButton fullWidth size="md" buttonType="secondary" onClick={handleBack}>
+                Back
+              </CustomButton>
               <CustomButton
                 fullWidth
                 size="md"
-                buttonType="tertiary"
-                onClick={() => setIsDraftConfirmOpen(true)}
+                buttonType="primary"
+                onClick={() => setIsCreateConfirmOpen(true)}
               >
-                Save as Draft
+                Create Workflow
               </CustomButton>
-            </div>
+            </Group>
           </Stack>
         )}
       </div>
 
-      <WorkflowActionModal
-        opened={isWorkflowActionModalOpen}
-        onClose={() => setIsWorkflowActionModalOpen(false)}
-        onSelect={handleWorkflowActionSelect}
+      {/* Modals */}
+      <ApprovalTypeModal
+        opened={isApprovalTypeModalOpen}
+        onClose={() => setIsApprovalTypeModalOpen(false)}
+        onSelect={handleApprovalTypeSelect}
+        value={form.values.approvalType}
       />
+
       <EscalationProtocolModal
+        key={`escalation-${escalationModalSession}`}
         opened={isEscalationModalOpen}
         onClose={() => setIsEscalationModalOpen(false)}
         onSave={handleEscalationSave}
         users={escalationUsers}
+        initialEscalateToId={escalationInitialData.escalateToId}
+        initialMinutes={escalationInitialData.minutes}
       />
+
       <AssignToModal
-        key={assignModalSession}
+        key={`assign-${assignModalSession}`}
         opened={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         onConfirm={handleAssignConfirm}
@@ -542,40 +708,23 @@ export default function CreateWorkflowPage() {
         initialSelectedUserIds={assignModalInitialUserIds}
         initialSelectedRoleIds={assignModalInitialRoleIds}
       />
+
       <ConfirmationModal
-        opened={isDraftConfirmOpen}
-        onClose={() => setIsDraftConfirmOpen(false)}
-        title="Save as Draft ?"
-        message="Are you sure you to save this workflow as Draft? Kindly note that this new creation won't be posted ojn the system not go through approval process but would only be saved on your own local"
-        primaryButtonText="Yes, Save as Draft"
-        secondaryButtonText="No, Close"
-        onPrimary={handleSaveAsDraft}
-        loading={isSaving}
-      />
-      <ConfirmationModal
-        opened={isPublishConfirmOpen}
-        onClose={() => setIsPublishConfirmOpen(false)}
-        title="Create New Workflow ?"
-        message="Are you sure you to create a new workflow ? Kindly note that this new workflow creation would override existing data provided it has the same workflow action"
+        opened={isCreateConfirmOpen}
+        onClose={() => setIsCreateConfirmOpen(false)}
+        title="Create New Workflow?"
+        message="Are you sure you want to create this workflow? Once created it will be active in the system."
         primaryButtonText="Yes, Create Workflow"
         secondaryButtonText="No, Close"
-        onPrimary={handlePublish}
-        loading={isSaving}
+        onPrimary={handleCreateWorkflow}
+        loading={isSaving || createWorkflowMutation.isPending}
       />
+
       <SuccessModal
-        opened={isDraftSuccessOpen}
-        onClose={() => setIsDraftSuccessOpen(false)}
-        title="Saved as Draft"
-        message="Workflow has been successfully Saved as Draft"
-        primaryButtonText="Manage Workflow"
-        onPrimaryClick={handleManageWorkflow}
-        secondaryButtonText="No, Close"
-      />
-      <SuccessModal
-        opened={isPublishSuccessOpen}
-        onClose={() => setIsPublishSuccessOpen(false)}
-        title="New Workflow Created"
-        message="New Workflow has been successfully Created"
+        opened={isCreateSuccessOpen}
+        onClose={() => setIsCreateSuccessOpen(false)}
+        title="Workflow Created"
+        message="New workflow has been successfully created"
         primaryButtonText="Manage Workflow"
         onPrimaryClick={handleManageWorkflow}
         secondaryButtonText="No, Close"

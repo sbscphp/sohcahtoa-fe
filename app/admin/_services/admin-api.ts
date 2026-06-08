@@ -130,6 +130,10 @@ export interface UpdateAgentStatusPayload {
   isActive: boolean;
 }
 
+export interface UpdateCustomerStatusPayload {
+  isActive: boolean;
+}
+
 export interface AgentTransactionAgentDetails {
   agentId?: string | null;
   agentName?: string | null;
@@ -872,11 +876,19 @@ export interface WorkflowTemplateStageAssignee {
   adminEmail?: string;
 }
 
+export interface WorkflowTemplateStageEscalationAdmin {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
 export interface WorkflowTemplateStage {
   id: string;
   name: string;
   type: string;
   escalationMinutes: number;
+  escalationAdminId?: string | null;
+  escalationAdmin?: WorkflowTemplateStageEscalationAdmin | null;
   order: number;
   assignees: WorkflowTemplateStageAssignee[];
 }
@@ -886,6 +898,9 @@ export interface WorkflowTemplateDetailsData {
   name: string;
   description: string;
   type: string;
+  approvalType?: string | null;
+  minAmount?: string | number | null;
+  maxAmount?: string | number | null;
   processType: string;
   action: string;
   status: string;
@@ -905,10 +920,12 @@ export interface WorkflowTemplateUpdateStageAssigneePayload {
 }
 
 export interface WorkflowTemplateUpdateStagePayload {
+  id?: string;
   name: string;
   type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
   order: number;
   escalationMinutes: number;
+  escalationAdminId?: string | null;
   assignees: WorkflowTemplateUpdateStageAssigneePayload[];
 }
 
@@ -916,6 +933,9 @@ export interface WorkflowTemplateUpdatePayload {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
+  approvalType?: "TRANSACTION" | "REFUND" | "RATE";
+  minAmount?: number | null;
+  maxAmount?: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
   action: string;
   branchId: string;
@@ -1386,8 +1406,11 @@ export const adminApi = {
     deactivate: (userId: string) =>
       apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.deactivate(userId)),
 
-    toggleStatus: (userId: string) =>
-      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.customers.toggleStatus(userId)),
+    toggleStatus: (userId: string, data: UpdateCustomerStatusPayload) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.customers.toggleStatus(userId),
+        data
+      ),
 
     transactions: (
       userId: string,
@@ -2276,6 +2299,12 @@ export const adminApi = {
     getTemplateById: (id: string) =>
       apiClient.get<ApiResponse<WorkflowTemplateDetailsData>>(
         `/api/admin/workflow/templates/${id}`
+      ),
+
+    createTemplate: (data: WorkflowTemplateUpdatePayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        "/api/admin/workflow/templates",
+        data
       ),
 
     updateTemplate: (id: string, data: WorkflowTemplateUpdatePayload) =>

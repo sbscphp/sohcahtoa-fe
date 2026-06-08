@@ -13,7 +13,10 @@ import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { useCustomerDetails } from "../hooks/useCustomerDetails";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { usePatchData } from "@/app/_lib/api/hooks";
-import { adminApi } from "@/app/admin/_services/admin-api";
+import {
+  adminApi,
+  type UpdateCustomerStatusPayload,
+} from "@/app/admin/_services/admin-api";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import CustomerTransactionsTable from "../_customerComponents/CustomerTransactionTable";
@@ -64,10 +67,8 @@ export default function CustomerDetailsPage() {
   const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
 
   const toggleCustomerStatusMutation = usePatchData(
-    (payload: Record<string, never>) => {
-      void payload;
-      return adminApi.customers.toggleStatus(customerId);
-    },
+    (payload: UpdateCustomerStatusPayload) =>
+      adminApi.customers.toggleStatus(customerId, payload),
     {
       onSuccess: async () => {
         const nextStatus: CustomerStatus = isCurrentlyActive ? "Deactivated" : "Active";
@@ -112,7 +113,9 @@ export default function CustomerDetailsPage() {
 
   const handleConfirm = () => {
     if (!customerId || toggleCustomerStatusMutation.isPending) return;
-    toggleCustomerStatusMutation.mutate({});
+    toggleCustomerStatusMutation.mutate({
+      isActive: !isCurrentlyActive,
+    });
   };
 
   const handleViewAllCustomers = () => {

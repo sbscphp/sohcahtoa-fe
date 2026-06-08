@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Stack, Text, TextInput, Select, Textarea, Radio, Group } from "@mantine/core";
+import { Stack, Text, TextInput, NumberInput, Select, Textarea, Radio, Group } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Check } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
@@ -17,7 +17,7 @@ import {
   adminApi,
   type WorkflowTemplateUpdatePayload,
 } from "@/app/admin/_services/admin-api";
-import WorkflowActionModal from "../../_workflowComponents/WorkflowActionModal";
+import ApprovalTypeModal, { type ApprovalTypeValue, approvalTypeLabel } from "../../_workflowComponents/ApprovalTypeModal";
 import EscalationProtocolModal from "../../_workflowComponents/EscalationProtocolModal";
 import AssignToModal, { AssignableUser, AssignableRole } from "../../_workflowComponents/AssignToModal";
 import WorkflowLineItem, { WorkflowLine } from "../../_workflowComponents/WorkflowLineItem";
@@ -33,9 +33,12 @@ type WorkflowTemplateType = "REVIEW" | "APPROVAL";
 interface EditWorkflowFormValues {
   workflowName: string;
   workflowDescription: string;
+  approvalType: ApprovalTypeValue | "";
   workflowAction: string;
   branchApplicable: string;
   departmentApplicable: string;
+  minAmount: number | "";
+  maxAmount: number | "";
   workflowType: WorkflowMode;
   workflowTemplateType: WorkflowTemplateType;
   templateEscalationMinutes: number;
@@ -122,9 +125,12 @@ export default function EditWorkflowPage() {
     initialValues: {
       workflowName: "",
       workflowDescription: "",
+      approvalType: "",
       workflowAction: "",
       branchApplicable: "",
       departmentApplicable: "",
+      minAmount: "",
+      maxAmount: "",
       workflowType: "rigid",
       workflowTemplateType: "APPROVAL",
       templateEscalationMinutes: 0,
@@ -149,9 +155,16 @@ export default function EditWorkflowPage() {
         if (wordCount > 24) return "Description must not exceed 24 words";
         return null;
       },
-      workflowAction: (value) => (value ? null : "Workflow action is required"),
       branchApplicable: (value) => (value ? null : "Branch is required"),
       departmentApplicable: (value) => (value ? null : "Department is required"),
+      maxAmount: (value, values) => {
+        if (values.approvalType === "RATE") return null;
+        if (value === "" || values.minAmount === "") return null;
+        if (typeof value === "number" && typeof values.minAmount === "number" && value < values.minAmount) {
+          return "Maximum amount must be greater than or equal to minimum amount";
+        }
+        return null;
+      },
     },
   });
 
@@ -165,9 +178,12 @@ export default function EditWorkflowPage() {
     form.setValues({
       workflowName: template.editTemplate.name,
       workflowDescription: template.editTemplate.description,
+      approvalType: template.editTemplate.approvalType,
       workflowAction: template.editTemplate.action,
       branchApplicable: template.editTemplate.branchId,
       departmentApplicable: template.editTemplate.departmentId,
+      minAmount: template.editTemplate.minAmount ?? "",
+      maxAmount: template.editTemplate.maxAmount ?? "",
       workflowType: processType,
       workflowTemplateType: template.editTemplate.type,
       templateEscalationMinutes: template.editTemplate.escalationMinutes,
@@ -178,8 +194,13 @@ export default function EditWorkflowPage() {
   }, [template?.editTemplate]);
 
   // Modals
-  const [isWorkflowActionModalOpen, setIsWorkflowActionModalOpen] = useState(false);
+  const [isApprovalTypeModalOpen, setIsApprovalTypeModalOpen] = useState(false);
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
+  const [escalationModalSession, setEscalationModalSession] = useState(0);
+  const [escalationInitialData, setEscalationInitialData] = useState<{
+    escalateToId: string | null;
+    minutes: number;
+  }>({ escalateToId: null, minutes: 0 });
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   // Incremented on every open so AssignToModal remounts fresh each time, regardless
@@ -281,83 +302,87 @@ export default function EditWorkflowPage() {
     setStep(2);
   };
 
-  const handleWorkflowActionSelect = (action: string) => {
-    form.setFieldValue("workflowAction", action);
+  const handleApprovalTypeSelect = (value: ApprovalTypeValue) => {
+    form.setFieldValue("approvalType", value);
   };
 
-  const handleEscalationSave = (escalateToId: string, escalateToName: string, minutes: number) => {
-    if (!activeLineId) return;
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === activeLineId
-        ? {
-            ...line,
-            escalationPeriod: minutes,
-            escalateToUser: { id: escalateToId, name: escalateToName },
-          }
-        : line
-    );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
-
-  // Use a ref so the callback always reads the latest activeLineId without
-  // needing to be recreated when it changes.
+  // Refs to always read the latest values in stable callbacks without re-creating them.
   const activeLineIdRef = useRef(activeLineId);
   activeLineIdRef.current = activeLineId;
 
-  const handleAssignConfirm = useCallback(
-    (users: AssignableUser[], roles: AssignableRole[]) => {
-      const lineId = activeLineIdRef.current;
-      if (!lineId) return;
-      // Single atomic write — avoids the stale-closure double-write bug where
-      // two sequential setFieldValue calls each read the old form state.
-      form.setFieldValue(
-        "workflowLines",
-        form.values.workflowLines.map((line) =>
-          line.id === lineId
-            ? { ...line, selectedUsers: users, selectedRoles: roles }
-            : line
-        )
-      );
-    },
-    // form.values.workflowLines is a stable dep here since we only need the latest
-    // snapshot at call time — the ref covers activeLineId.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form.values.workflowLines]
-  );
+  const workflowLinesRef = useRef(form.values.workflowLines);
+  workflowLinesRef.current = form.values.workflowLines;
 
-  const handleUpdateWorkflowType = (lineId: string, type: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === lineId ? { ...line, workflowType: type } : line
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const handleEscalationSave = useCallback((escalateToId: string, escalateToName: string, minutes: number) => {
+    const lineId = activeLineIdRef.current;
+    if (!lineId) return;
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId
+          ? { ...line, escalationPeriod: minutes, escalateToUser: { id: escalateToId, name: escalateToName } }
+          : line
+      )
     );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  }, []);
 
-  const handleToggleExpanded = (lineId: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === lineId ? { ...line, expanded: !line.expanded } : line
+  const handleAssignConfirm = useCallback((users: AssignableUser[], roles: AssignableRole[]) => {
+    const lineId = activeLineIdRef.current;
+    if (!lineId) return;
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId
+          ? { ...line, selectedUsers: users, selectedRoles: roles }
+          : line
+      )
     );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  }, []);
 
-  const handleRemoveUser = (lineId: string, userId: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === lineId
-        ? { ...line, selectedUsers: line.selectedUsers.filter((u) => u.id !== userId) }
-        : line
+  const handleUpdateWorkflowType = useCallback((lineId: string, type: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId ? { ...line, workflowType: type } : line
+      )
     );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  }, []);
 
-  const handleRemoveRole = (lineId: string, roleId: string) => {
-    const updatedLines = form.values.workflowLines.map((line) =>
-      line.id === lineId
-        ? { ...line, selectedRoles: line.selectedRoles.filter((r) => r.id !== roleId) }
-        : line
+  const handleToggleExpanded = useCallback((lineId: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId ? { ...line, expanded: !line.expanded } : line
+      )
     );
-    form.setFieldValue("workflowLines", updatedLines);
-  };
+  }, []);
 
-  const handleAddWorkflowLine = () => {
+  const handleRemoveUser = useCallback((lineId: string, userId: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId
+          ? { ...line, selectedUsers: line.selectedUsers.filter((u) => u.id !== userId) }
+          : line
+      )
+    );
+  }, []);
+
+  const handleRemoveRole = useCallback((lineId: string, roleId: string) => {
+    formRef.current.setFieldValue(
+      "workflowLines",
+      workflowLinesRef.current.map((line) =>
+        line.id === lineId
+          ? { ...line, selectedRoles: line.selectedRoles.filter((r) => r.id !== roleId) }
+          : line
+      )
+    );
+  }, []);
+
+  const handleAddWorkflowLine = useCallback(() => {
     const newLine: WorkflowLine = {
       id: `line-${Date.now()}`,
       workflowType: "",
@@ -367,35 +392,38 @@ export default function EditWorkflowPage() {
       selectedRoles: [],
       expanded: true,
     };
-    form.setFieldValue("workflowLines", [...form.values.workflowLines, newLine]);
-  };
+    formRef.current.setFieldValue("workflowLines", [...workflowLinesRef.current, newLine]);
+  }, []);
 
-  const handleMoveUp = (lineId: string) => {
-    const index = form.values.workflowLines.findIndex((line) => line.id === lineId);
+  const handleMoveUp = useCallback((lineId: string) => {
+    const lines = workflowLinesRef.current;
+    const index = lines.findIndex((line) => line.id === lineId);
     if (index > 0) {
-      const newLines = [...form.values.workflowLines];
+      const newLines = [...lines];
       [newLines[index - 1], newLines[index]] = [newLines[index], newLines[index - 1]];
-      form.setFieldValue("workflowLines", newLines);
+      formRef.current.setFieldValue("workflowLines", newLines);
     }
-  };
+  }, []);
 
-  const handleMoveDown = (lineId: string) => {
-    const index = form.values.workflowLines.findIndex((line) => line.id === lineId);
-    if (index < form.values.workflowLines.length - 1) {
-      const newLines = [...form.values.workflowLines];
+  const handleMoveDown = useCallback((lineId: string) => {
+    const lines = workflowLinesRef.current;
+    const index = lines.findIndex((line) => line.id === lineId);
+    if (index < lines.length - 1) {
+      const newLines = [...lines];
       [newLines[index], newLines[index + 1]] = [newLines[index + 1], newLines[index]];
-      form.setFieldValue("workflowLines", newLines);
+      formRef.current.setFieldValue("workflowLines", newLines);
     }
-  };
+  }, []);
 
-  const handleDeleteLine = (lineId: string) => {
-    if (form.values.workflowLines.length > 1) {
-      form.setFieldValue(
+  const handleDeleteLine = useCallback((lineId: string) => {
+    const lines = workflowLinesRef.current;
+    if (lines.length > 1) {
+      formRef.current.setFieldValue(
         "workflowLines",
-        form.values.workflowLines.filter((line) => line.id !== lineId)
+        lines.filter((line) => line.id !== lineId)
       );
     }
-  };
+  }, []);
 
   const handleSaveChanges = async () => {
     const lineValidationError = validateStepTwo();
@@ -412,6 +440,9 @@ export default function EditWorkflowPage() {
       name: form.values.workflowName.trim(),
       description: form.values.workflowDescription.trim(),
       type: form.values.workflowTemplateType,
+      ...(form.values.approvalType ? { approvalType: form.values.approvalType } : {}),
+      minAmount: form.values.approvalType === "RATE" ? null : (form.values.minAmount === "" ? null : form.values.minAmount),
+      maxAmount: form.values.approvalType === "RATE" ? null : (form.values.maxAmount === "" ? null : form.values.maxAmount),
       processType: form.values.workflowType === "flexible" ? "FLEXIBLE" : "RIGID_LINEAR",
       action: form.values.workflowAction.trim(),
       branchId: form.values.branchApplicable,
@@ -419,10 +450,12 @@ export default function EditWorkflowPage() {
       escalationMinutes: form.values.templateEscalationMinutes,
       hasPtaRequest: form.values.hasPtaRequest,
       stages: form.values.workflowLines.map((line, index) => ({
+        id: line.id,
         name: line.workflowType.trim() || `Stage ${index + 1}`,
         type: toStageType(line.workflowType),
         order: index + 1,
         escalationMinutes: line.escalationPeriod,
+        escalationAdminId: line.escalateToUser?.id ?? null,
         assignees: line.selectedUsers.map((user, assigneeIndex) => ({
           adminId: user.id,
           order: assigneeIndex + 1,
@@ -552,18 +585,27 @@ export default function EditWorkflowPage() {
             </div>
 
             <TextInput
-              label="Workflow Action"
+              label="Approval Type"
               placeholder="Select an Option"
-              value={form.values.workflowAction}
+              value={approvalTypeLabel(form.values.approvalType)}
               readOnly
-              required
               radius="md"
-              onClick={() => setIsWorkflowActionModalOpen(true)}
+              onClick={() => setIsApprovalTypeModalOpen(true)}
               classNames={{
                 label: "text-sm font-medium text-gray-900 mb-1",
                 input: "cursor-pointer",
               }}
-              error={form.errors.workflowAction}
+              error={form.errors.approvalType}
+            />
+
+            <TextInput
+              label="Workflow Action"
+              placeholder="Enter workflow action"
+              {...form.getInputProps("workflowAction")}
+              radius="md"
+              classNames={{
+                label: "text-sm font-medium text-gray-900 mb-1",
+              }}
             />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -598,6 +640,34 @@ export default function EditWorkflowPage() {
                 </Text>
               </div>
             </div>
+
+            {form.values.approvalType !== "RATE" && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <NumberInput
+                  label="Minimum Amount"
+                  placeholder="Enter minimum amount"
+                  value={form.values.minAmount}
+                  onChange={(val) => form.setFieldValue("minAmount", typeof val === "number" ? val : "")}
+                  min={0}
+                  radius="md"
+                  classNames={{
+                    label: "text-sm font-medium text-gray-900 mb-1",
+                  }}
+                />
+                <NumberInput
+                  label="Maximum Amount"
+                  placeholder="Enter maximum amount"
+                  value={form.values.maxAmount}
+                  onChange={(val) => form.setFieldValue("maxAmount", typeof val === "number" ? val : "")}
+                  min={0}
+                  radius="md"
+                  classNames={{
+                    label: "text-sm font-medium text-gray-900 mb-1",
+                  }}
+                  error={form.errors.maxAmount}
+                />
+              </div>
+            )}
 
             <div>
               <Text size="sm" fw={500} className="text-gray-900 mb-3">
@@ -679,7 +749,13 @@ export default function EditWorkflowPage() {
                   totalLines={form.values.workflowLines.length}
                   onUpdateWorkflowType={handleUpdateWorkflowType}
                   onOpenEscalationModal={(lineId) => {
+                    const line = workflowLinesRef.current.find((l) => l.id === lineId);
+                    setEscalationInitialData({
+                      escalateToId: line?.escalateToUser?.id ?? null,
+                      minutes: line?.escalationPeriod ?? 0,
+                    });
                     setActiveLineId(lineId);
+                    setEscalationModalSession((s) => s + 1);
                     setIsEscalationModalOpen(true);
                   }}
                   onOpenAssignModal={(lineId) => {
@@ -729,21 +805,25 @@ export default function EditWorkflowPage() {
       </div>
 
       {/* Modals */}
-      <WorkflowActionModal
-        opened={isWorkflowActionModalOpen}
-        onClose={() => setIsWorkflowActionModalOpen(false)}
-        onSelect={handleWorkflowActionSelect}
+      <ApprovalTypeModal
+        opened={isApprovalTypeModalOpen}
+        onClose={() => setIsApprovalTypeModalOpen(false)}
+        onSelect={handleApprovalTypeSelect}
+        value={form.values.approvalType}
       />
 
       <EscalationProtocolModal
+        key={`escalation-${escalationModalSession}`}
         opened={isEscalationModalOpen}
         onClose={() => setIsEscalationModalOpen(false)}
         onSave={handleEscalationSave}
         users={escalationUsers}
+        initialEscalateToId={escalationInitialData.escalateToId}
+        initialMinutes={escalationInitialData.minutes}
       />
 
       <AssignToModal
-        key={assignModalSession}
+        key={`assign-${assignModalSession}`}
         opened={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         onConfirm={handleAssignConfirm}
