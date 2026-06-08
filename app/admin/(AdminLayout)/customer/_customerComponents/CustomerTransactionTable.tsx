@@ -17,6 +17,7 @@ import { adminRoutes } from "@/lib/adminRoutes";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import { resolveAdminTransactionListGroup } from "@/app/(customer)/_lib/transaction-list-params";
 
 /* --------------------------------------------
  Types
@@ -83,7 +84,7 @@ interface CustomerTransactionsTableProps {
 
 const PAGE_SIZE = 5;
 
-import { resolveAdminTransactionListGroup } from "@/app/(customer)/_lib/transaction-list-params";
+const STATUS_OPTIONS = [
   { value: "Filter By", label: "Filter By" },
   { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
   { value: "COMPLIANCE_REVIEW", label: "Compliance Review" },

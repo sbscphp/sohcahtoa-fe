@@ -198,6 +198,7 @@ export const adminKeys = {
         limit?: number;
         status?: string;
         type?: string;
+        group?: "BUY" | "SELL" | "REMITTANCE";
         search?: string;
       }
     ) => [...adminKeys.customers.detail(userId), "transactions", params] as const,
