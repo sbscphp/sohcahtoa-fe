@@ -65,7 +65,7 @@ export default function DashboardPageClient() {
             showStats && (
               <>
                 <StatCard
-                  title="Settlement Balance"
+                  title="Pending Settlement"
                   value={settlementLabel}
                   icon={<Database className="h-5 w-5 text-orange-600" />}
                   iconBg="bg-orange-100"
