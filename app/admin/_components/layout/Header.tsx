@@ -30,11 +30,11 @@ export default function Header({
   const breadcrumbs = getBreadcrumbs(pathname);
   const { content } = useHeaderContent();
 
-  const { data: unreadResponse } = useFetchData(
-    [...adminKeys.notifications.unread({ limit: 100 })],
-    () => adminApi.notifications.getUnreadNotifications({ limit: 100 })
+  const { data: unreadCountResponse } = useFetchData(
+    [...adminKeys.notifications.unreadCount()],
+    () => adminApi.notifications.getUnreadNotificationCount()
   );
-  const unreadCount = unreadResponse?.data?.length ?? 0;
+  const unreadCount = unreadCountResponse?.data?.count ?? 0;
 
   const displayTitle = breadcrumbs.length > 0
     ? breadcrumbs[breadcrumbs.length - 1].label

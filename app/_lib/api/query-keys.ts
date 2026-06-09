@@ -133,6 +133,7 @@ export const adminKeys = {
       [...adminKeys.notifications.lists(), params] as const,
     unread: (params?: { page?: number; limit?: number }) =>
       [...adminKeys.notifications.all, "unread", params] as const,
+    unreadCount: () => [...adminKeys.notifications.all, "unread-count"] as const,
   },
 
   auditTrail: {

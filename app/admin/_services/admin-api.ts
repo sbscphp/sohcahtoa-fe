@@ -1366,6 +1366,11 @@ export const adminApi = {
         { params }
       ),
 
+    getUnreadNotificationCount: () =>
+      apiClient.get<ApiResponse<{ count: number }>>(
+        API_ENDPOINTS.admin.notifications.unreadCount
+      ),
+
     markNotificationAsRead: (id: string) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.notifications.markRead(id)),
   },

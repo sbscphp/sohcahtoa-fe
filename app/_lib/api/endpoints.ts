@@ -110,6 +110,7 @@ export const API_ENDPOINTS = {
     notifications: {
       all: "/api/admin/notifications",
       unread: "/api/admin/notifications/unread",
+      unreadCount: "/api/admin/notifications/unread-count",
       markRead: (id: string) => `/api/admin/notifications/${id}/read`,
     },
     auditTrail: "/api/admin/audit/trail",
