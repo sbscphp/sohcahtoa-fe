@@ -25,17 +25,20 @@ export interface Notification {
   unread?: boolean;
 }
 
-/** GET /api/admin/dashboard — provisional task shape */
+/** GET /api/admin/dashboard — task shape from API */
 export interface DashboardTask {
   id: string;
   title?: string;
-  description?: string;
   status?: string;
   priority?: string;
-  dueAt?: string;
-  createdAt?: string;
-  link?: string;
-  actionUrl?: string;
+  assignedAt?: string;
+  taskId?: string;
+  module?: string;
+  workflowAction?: string;
+  actionNeeded?: string;
+  dateInitiated?: string;
+  escalationMinutes?: number;
+  entityTitle?: string;
 }
 
 /** GET /api/admin/dashboard — provisional notification shape */
@@ -83,6 +86,7 @@ export interface AdminDashboardRecentTransaction {
   id: string;
   referenceNumber: string;
   customerName: string;
+  type?: string;
   transactionType?: string;
   createdAt: string;
   status: string;

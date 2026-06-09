@@ -6,10 +6,10 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import type { AdminDashboardData } from "@/app/admin/_types/dashboard";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import {
+  mapDashboardTasks,
   mapRecentTransactions,
   mapTransactionSummaryChartData,
   mapTransactionsByTypeDonut,
-  mergeDashboardFeedSorted,
 } from "../mapDashboardData";
 
 type DashboardFilter = { year?: string; month?: string; range?: string; txnType?: string };
@@ -39,9 +39,7 @@ export function useAdminDashboard(filter?: DashboardFilter) {
     transactionSummary: raw?.transactionSummary ?? null,
     transactionsByType: raw?.transactionsByType ?? null,
     recentTransactions: raw ? mapRecentTransactions(raw.recentTransactions) : [],
-    taskNotificationFeed: raw
-      ? mergeDashboardFeedSorted(raw.tasks, raw.notifications)
-      : [],
+    tasks: raw ? mapDashboardTasks(raw.tasks) : [],
     barChartData: raw
       ? mapTransactionSummaryChartData(raw.transactionSummary)
       : [],

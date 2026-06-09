@@ -24,7 +24,7 @@ export default function DashboardPageClient() {
     transactionSummary,
     transactionsByType,
     recentTransactions,
-    taskNotificationFeed,
+    tasks,
     barChartData,
     donutData,
     isLoading,
@@ -131,7 +131,7 @@ export default function DashboardPageClient() {
           </div>
           <div className="lg:col-span-2">
             <TaskAndNotificationList
-              data={taskNotificationFeed}
+              data={tasks}
               loading={isLoading}
             />
           </div>

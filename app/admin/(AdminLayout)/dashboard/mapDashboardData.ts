@@ -1,8 +1,6 @@
 import type {
   AdminDashboardData,
-  DashboardNotification,
   DashboardTask,
-  Notification,
   Transaction,
 } from "@/app/admin/_types/dashboard";
 
@@ -121,7 +119,7 @@ export function mapRecentTransactions(
 ): Transaction[] {
   return rows.map((row) => {
     const { date, time } = formatDateTime(row.createdAt);
-    const rawType = row.transactionType ?? "";
+    const rawType = row.type ?? row.transactionType ?? "";
     return {
       id: row.id,
       referenceNumber: row.referenceNumber,
@@ -134,63 +132,36 @@ export function mapRecentTransactions(
   });
 }
 
-function taskTimestamp(t: DashboardTask): number {
-  const raw = t.dueAt ?? t.createdAt ?? "";
-  const n = new Date(raw).getTime();
-  return Number.isNaN(n) ? 0 : n;
+export interface DashboardTaskRow {
+  id: string;
+  title: string;
+  status: string;
+  module: string;
+  workflowAction: string;
+  actionNeeded: string;
+  dateInitiated: string;
+  timeInitiated: string;
+  escalationPeriod: string;
+  escalationMinutes: number;
+  entityTitle: string;
 }
 
-function notificationTimestamp(n: DashboardNotification): number {
-  const raw = n.createdAt ?? "";
-  const t = new Date(raw).getTime();
-  return Number.isNaN(t) ? 0 : t;
-}
-
-export function mergeDashboardFeedSorted(
-  tasks: DashboardTask[],
-  notifications: DashboardNotification[]
-): Notification[] {
-  type Entry = {
-    notification: Notification;
-    sortKey: number;
-  };
-
-  const entries: Entry[] = [
-    ...tasks.map((t) => {
-      const iso = t.dueAt ?? t.createdAt ?? "";
-      const { date, time } = formatDateTime(iso);
-      return {
-        sortKey: taskTimestamp(t),
-        notification: {
-          id: `task-${t.id}`,
-          title: t.title ?? "Task",
-          description: t.description ?? t.status ?? undefined,
-          date,
-          time,
-          unread: t.status
-            ? t.status !== "COMPLETED" && t.status !== "DONE"
-            : true,
-        },
-      };
-    }),
-    ...notifications.map((n) => {
-      const iso = n.createdAt ?? "";
-      const { date, time } = formatDateTime(iso);
-      return {
-        sortKey: notificationTimestamp(n),
-        notification: {
-          id: `notif-${n.id}`,
-          title: n.title ?? "Notification",
-          description: n.message ?? n.body ?? n.type,
-          date,
-          time,
-          unread: n.read === false,
-        },
-      };
-    }),
-  ];
-
-  return entries
-    .sort((a, b) => b.sortKey - a.sortKey)
-    .map((e) => e.notification);
+export function mapDashboardTasks(tasks: DashboardTask[]): DashboardTaskRow[] {
+  return tasks.map((t) => {
+    const { date, time } = formatDateTime(t.dateInitiated ?? t.assignedAt ?? "");
+    const escalationMinutes = Math.max(0, t.escalationMinutes ?? 0);
+    return {
+      id: t.id,
+      title: t.title ?? t.entityTitle ?? "Task",
+      status: t.status ?? "",
+      module: t.module ?? "--",
+      workflowAction: t.workflowAction ?? "--",
+      actionNeeded: t.actionNeeded ?? "--",
+      dateInitiated: date,
+      timeInitiated: time,
+      escalationPeriod: `${escalationMinutes.toLocaleString("en-US")} mins`,
+      escalationMinutes,
+      entityTitle: t.entityTitle ?? "",
+    };
+  });
 }
