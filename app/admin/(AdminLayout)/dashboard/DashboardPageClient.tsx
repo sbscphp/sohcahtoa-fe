@@ -13,6 +13,7 @@ import { TaskAndNotificationList } from "./_dashboardComponents/TaskAndNotificat
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import DateFilter, { type DateFilterValue } from "@/app/admin/_components/DateFilter";
+import { BalanceAndNopSection } from "./_dashboardComponents/BalanceAndNopSection";
 
 export default function DashboardPageClient() {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>({ year: "", month: "", range: "" });
@@ -94,6 +95,10 @@ export default function DashboardPageClient() {
             )
           )}
         </div>
+      </div>
+
+      <div className="my-5">
+        <BalanceAndNopSection />
       </div>
 
       <div className="my-5">
