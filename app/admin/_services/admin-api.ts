@@ -2305,7 +2305,7 @@ export const adminApi = {
     linkTransaction: (
       walletId: string,
       entryId: string,
-      body: { transactionId: string }
+      body: { transactionId: string; reason?: string }
     ) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.wallet.ledgerLinkTransaction(walletId, entryId),

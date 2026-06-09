@@ -99,8 +99,8 @@ export default function TransientWalletEntryDetailPage() {
   );
 
   const linkMutation = useCreateData(
-    (transactionId: string) =>
-      adminApi.wallet.linkTransaction(walletId, entryId, { transactionId }),
+    ({ transactionId, reason }: { transactionId: string; reason: string }) =>
+      adminApi.wallet.linkTransaction(walletId, entryId, { transactionId, reason }),
     {
       onSuccess: async () => {
         await invalidateEntry();
@@ -185,8 +185,8 @@ export default function TransientWalletEntryDetailPage() {
     addNoteMutation.mutate(note);
   };
 
-  const handleLinkConfirm = (transactionId: string) => {
-    linkMutation.mutate(transactionId);
+  const handleLinkConfirm = (transactionId: string, reason: string) => {
+    linkMutation.mutate({ transactionId, reason });
   };
 
   const handleFlagSubmit = (reason: string, description?: string) => {
