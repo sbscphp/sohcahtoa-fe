@@ -17,6 +17,7 @@ import { BalanceAndNopSection } from "./_dashboardComponents/BalanceAndNopSectio
 
 export default function DashboardPageClient() {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>({ year: "", month: "", range: "" });
+  const [txnType, setTxnType] = useState("");
 
   const {
     counters,
@@ -29,7 +30,7 @@ export default function DashboardPageClient() {
     isLoading,
     isError,
     error,
-  } = useAdminDashboard(dateFilter);
+  } = useAdminDashboard({ ...dateFilter, txnType: txnType || undefined });
 
   const showStats = !isLoading && counters != null;
   const settlementLabel =
@@ -124,6 +125,8 @@ export default function DashboardPageClient() {
             <RecentTransactionsTable
               data={recentTransactions}
               loading={isLoading}
+              txnType={txnType}
+              onTxnTypeChange={setTxnType}
             />
           </div>
           <div className="lg:col-span-2">

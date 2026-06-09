@@ -83,6 +83,7 @@ export interface AdminDashboardRecentTransaction {
   id: string;
   referenceNumber: string;
   customerName: string;
+  transactionType?: string;
   createdAt: string;
   status: string;
 }

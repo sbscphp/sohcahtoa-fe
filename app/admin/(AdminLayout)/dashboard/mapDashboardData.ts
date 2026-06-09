@@ -61,7 +61,7 @@ export function mapTransactionSummaryChartData(
   }));
 }
 
-const TYPE_DISPLAY: Record<string, string> = {
+export const TYPE_DISPLAY: Record<string, string> = {
   PTA: "PTA",
   BTA: "BTA",
   SCHOOL_FEES: "School Fees",
@@ -73,6 +73,11 @@ const TYPE_DISPLAY: Record<string, string> = {
   IMTO_REMITTANCE: "IMTO Remittance",
   CASH_REMITTANCE: "Cash Remittance",
 };
+
+export const TRANSACTION_TYPE_FILTER_OPTIONS = [
+  { value: "", label: "All Types" },
+  ...Object.entries(TYPE_DISPLAY).map(([value, label]) => ({ value, label })),
+];
 
 // Warm spectrum from primary token palette (globals.css) — no two types share the same hue
 const TYPE_COLORS: Record<string, string> = {
@@ -116,8 +121,7 @@ export function mapRecentTransactions(
 ): Transaction[] {
   return rows.map((row) => {
     const { date, time } = formatDateTime(row.createdAt);
-    const rowWithType = row as { transactionType?: string; type?: string };
-    const rawType = rowWithType.transactionType ?? rowWithType.type ?? "";
+    const rawType = row.transactionType ?? "";
     return {
       id: row.id,
       referenceNumber: row.referenceNumber,
