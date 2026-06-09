@@ -81,7 +81,7 @@ export default function AccountInformationTab() {
       {/* Info Grid */}
       <div>
         <div className="grid grid-cols-4 gap-y-8">
-          <InfoField label="User ID" value={profile.id} />
+          <InfoField label="User ID" value={profile.sequenceId} />
           <InfoField label="Email Address" value={profile.email} />
           <InfoField label="Phone Number" value={profile.phoneNumber} />
           <InfoField label="Date Joined" value={formatDate(profile.createdAt)} />

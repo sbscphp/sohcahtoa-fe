@@ -121,7 +121,8 @@ export const adminKeys = {
   
   dashboard: {
     all: ["admin", "dashboard"] as const,
-    stats: () => [...adminKeys.dashboard.all, "stats"] as const,
+    stats: (params?: { year?: string; month?: string; range?: string; txnType?: string }) =>
+      [...adminKeys.dashboard.all, "stats", params ?? {}] as const,
     pendingApprovals: () => [...adminKeys.dashboard.all, "pending-approvals"] as const,
   },
 
@@ -132,6 +133,7 @@ export const adminKeys = {
       [...adminKeys.notifications.lists(), params] as const,
     unread: (params?: { page?: number; limit?: number }) =>
       [...adminKeys.notifications.all, "unread", params] as const,
+    unreadCount: () => [...adminKeys.notifications.all, "unread-count"] as const,
   },
 
   auditTrail: {
@@ -233,7 +235,7 @@ export const adminKeys = {
       page?: number;
       limit?: number;
       search?: string;
-      status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+      status?: "" | "active" | "deactivated" | "expired" | "scheduled" | "pending_approval";
     }) => [...adminKeys.rate.all, "list", params] as const,
   },
 
@@ -364,6 +366,42 @@ export const adminKeys = {
       [...adminKeys.transactions.lists(), params] as const,
     details: () => [...adminKeys.transactions.all, "detail"] as const,
     detail: (id: string) => [...adminKeys.transactions.details(), id] as const,
+  },
+
+  wallet: {
+    all: ["admin", "wallet"] as const,
+    lists: () => [...adminKeys.wallet.all, "list"] as const,
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      sortOrder?: "asc" | "desc";
+    }) => [...adminKeys.wallet.lists(), params ?? {}] as const,
+    detail: (id: string) => [...adminKeys.wallet.all, "detail", id] as const,
+    ledger: (
+      id: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        type?: "" | "DEBIT" | "CREDIT";
+        status?: string;
+        search?: string;
+      }
+    ) => [...adminKeys.wallet.all, "ledger", id, params ?? {}] as const,
+    ledgerEntry: (walletId: string, entryId: string) =>
+      [...adminKeys.wallet.all, "ledger-entry", walletId, entryId] as const,
+    ledgerNotes: (
+      walletId: string,
+      entryId: string,
+      params?: { page?: number; limit?: number }
+    ) =>
+      [
+        ...adminKeys.wallet.all,
+        "ledger-notes",
+        walletId,
+        entryId,
+        params ?? {},
+      ] as const,
   },
 
   reports: {

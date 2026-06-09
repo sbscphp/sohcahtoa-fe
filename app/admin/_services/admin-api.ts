@@ -39,6 +39,7 @@ export type LookupQuery = "role" | "department" | "branch";
 
 export interface AdminProfileData {
   id: string;
+  sequenceId: string;
   email: string;
   fullName: string;
   phoneNumber: string;
@@ -581,6 +582,133 @@ export type AdminTransactionListParams = Record<
   sortOrder?: "asc" | "desc";
 };
 
+export type AdminWalletListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export interface AdminWalletListItem {
+  id: string;
+  walletId: string;
+  userId: string;
+  customerName: string;
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  totalDebits: number;
+  totalCredits: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminWalletDetail {
+  id: string;
+  walletId: string;
+  customerId: string;
+  userId: string;
+  customerName: string;
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  totalDebits: number;
+  totalDebitCount: number;
+  totalCredits: number;
+  totalCreditCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminWalletLedgerParams = {
+  page?: number;
+  limit?: number;
+  type?: "" | "DEBIT" | "CREDIT";
+  status?: string;
+  search?: string;
+};
+
+export interface AdminWalletLedgerEntry {
+  id: string;
+  type: "DEBIT" | "CREDIT";
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description: string;
+  status: string;
+  transactionRef: string;
+  matchStatus: string | null;
+  transactionId: string;
+  sessionId: string | null;
+  createdAt: string;
+}
+
+export interface AdminLedgerLinkedTransaction {
+  id: string;
+  referenceNumber: string;
+  type: string;
+  status: string;
+  foreignAmount: number;
+  nairaEquivalent: number;
+  currency: string;
+  createdAt: string;
+}
+
+export interface AdminLedgerApprovalProcess {
+  isApprovalOfficer: boolean;
+  approvalState: string | null;
+  pendingAssignees: unknown[];
+  workflowStages: unknown[];
+}
+
+export interface AdminLedgerEntryDetail extends AdminWalletLedgerEntry {
+  walletId: string;
+  linkedTransactionId: string | null;
+  linkedTransaction: AdminLedgerLinkedTransaction | null;
+  isFlagged: boolean;
+  flagReason: string | null;
+  flaggedBy: string | null;
+  flaggedAt: string | null;
+  refundStatus: string | null;
+  refundedBy: string | null;
+  refundedAt: string | null;
+  disbursementStatus: string | null;
+  disbursedBy: string | null;
+  disbursedAt: string | null;
+  updatedAt: string;
+  notes: unknown[];
+  approvalProcess: AdminLedgerApprovalProcess;
+}
+
+export interface AdminLedgerEntryNote {
+  id: string;
+  note: string;
+  adminId: string;
+  adminName: string;
+  createdAt: string;
+}
+
+export type AdminLedgerNotesParams = {
+  page?: number;
+  limit?: number;
+};
+
+export interface AdminTransactionSearchItem {
+  id: string;
+  customerName: string;
+  dateAndId: {
+    date: string;
+    reference: string;
+  };
+  transactionType: string;
+  transactionMode: string | null;
+  transactionStage: string;
+  workflowStage: string;
+  transactionValue: number;
+  currency: string;
+  status: string;
+}
+
 export type AdminComplianceReportsListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -959,15 +1087,21 @@ export interface AdminTransactionApprovalStageAssignee {
   id?: string;
   adminId?: string;
   userId?: string;
+  adminName?: string;
+  roleName?: string;
 }
 
 export interface AdminTransactionApprovalWorkflowStage {
+  stageId?: string;
+  name?: string;
+  order?: number;
   isCurrent?: boolean;
   assignees?: AdminTransactionApprovalStageAssignee[] | null;
 }
 
 export interface AdminTransactionApprovalProcess {
   workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
+  pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;
   approvalState?: string;
 }
@@ -1070,12 +1204,12 @@ export type RateListParams = Record<
   page?: number;
   limit?: number;
   search?: string;
-  status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+  status?: "" | "active" | "deactivated" | "expired" | "scheduled" | "pending_approval";
 };
 
 export type RateExportParams = {
   search?: string;
-  status?: "" | "active" | "deactivated" | "expired" | "scheduled";
+  status?: "" | "active" | "deactivated" | "expired" | "scheduled" | "pending_approval";
 };
 
 export interface CreateRatePayload {
@@ -1086,6 +1220,18 @@ export interface CreateRatePayload {
   validFrom: string;
   validUntil: string;
   note?: string;
+}
+
+export interface RateWorkflowLineItem {
+  id: string;
+  timestamp: string;
+  adminId?: string;
+  adminName?: string;
+  adminRole?: string;
+  title?: string;
+  outcome?: string;
+  comment?: string | null;
+  action?: string;
 }
 
 export interface RateDetailsData {
@@ -1102,6 +1248,12 @@ export interface RateDetailsData {
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;
+  status?: string | null;
+  isApproved?: boolean;
+  workflowTemplateId?: string | null;
+  currentWorkflowStageId?: string | null;
+  approvalProcess?: AdminTransactionApprovalProcess | null;
+  workflowLine?: RateWorkflowLineItem[] | null;
 }
 
 export interface SettlementDashboardStats {
@@ -1191,9 +1343,10 @@ export const adminApi = {
 
   // ==================== Dashboard ====================
   dashboard: {
-    getStats: () =>
+    getStats: (params?: { year?: string; month?: string; range?: string; txnType?: string }) =>
       apiClient.get<ApiResponse<AdminDashboardData>>(
-        API_ENDPOINTS.admin.dashboard
+        API_ENDPOINTS.admin.dashboard,
+        { params }
       ),
 
     getPendingApprovals: () =>
@@ -1212,6 +1365,11 @@ export const adminApi = {
       apiClient.get<ApiResponse<AdminNotificationItem[]>>(
         API_ENDPOINTS.admin.notifications.unread,
         { params }
+      ),
+
+    getUnreadNotificationCount: () =>
+      apiClient.get<ApiResponse<{ count: number }>>(
+        API_ENDPOINTS.admin.notifications.unreadCount
       ),
 
     markNotificationAsRead: (id: string) =>
@@ -1578,6 +1736,12 @@ export const adminApi = {
 
     update: (id: string, data: CreateRatePayload) =>
       apiClient.put<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.update(id), data),
+
+    approve: (id: string, data: { notes: string }) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.approve(id), data),
+
+    reject: (id: string, data: { reason: string }) =>
+      apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.reject(id), data),
 
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),
@@ -2084,6 +2248,117 @@ export const adminApi = {
 
       return { blob, fileName };
     },
+  },
+
+  // ==================== Wallet ====================
+  wallet: {
+    list: (params?: AdminWalletListParams) =>
+      apiClient.get<ApiResponse<AdminWalletListItem[]>>(
+        API_ENDPOINTS.admin.wallet.list,
+        { params }
+      ),
+
+    export: async (params?: Omit<AdminWalletListParams, "page" | "limit">) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.wallet.export,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getById: (id: string) =>
+      apiClient.get<ApiResponse<AdminWalletDetail>>(
+        API_ENDPOINTS.admin.wallet.getById(id)
+      ),
+
+    ledger: (id: string, params?: AdminWalletLedgerParams) =>
+      apiClient.get<ApiResponse<AdminWalletLedgerEntry[]>>(
+        API_ENDPOINTS.admin.wallet.ledger(id),
+        { params }
+      ),
+
+    ledgerExport: async (
+      id: string,
+      params?: Omit<AdminWalletLedgerParams, "page" | "limit">
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.wallet.ledgerExport(id),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getLedgerEntry: (walletId: string, entryId: string) =>
+      apiClient.get<ApiResponse<AdminLedgerEntryDetail>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntry(walletId, entryId)
+      ),
+
+    getLedgerNotes: (
+      walletId: string,
+      entryId: string,
+      params?: AdminLedgerNotesParams
+    ) =>
+      apiClient.get<ApiResponse<AdminLedgerEntryNote[]>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntryNotes(walletId, entryId),
+        { params }
+      ),
+
+    addLedgerNote: (
+      walletId: string,
+      entryId: string,
+      body: { note: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntryNotes(walletId, entryId),
+        body
+      ),
+
+    linkTransaction: (
+      walletId: string,
+      entryId: string,
+      body: { transactionId: string; reason?: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerLinkTransaction(walletId, entryId),
+        body
+      ),
+
+    unlinkTransaction: (walletId: string, entryId: string) =>
+      apiClient.delete<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerLinkTransaction(walletId, entryId)
+      ),
+
+    flagEntry: (
+      walletId: string,
+      entryId: string,
+      body: { reason: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerFlag(walletId, entryId),
+        body
+      ),
+
+    refundEntry: (walletId: string, entryId: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerRefund(walletId, entryId),
+        {}
+      ),
+
+    disburseEntry: (walletId: string, entryId: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerDisburse(walletId, entryId),
+        {}
+      ),
   },
 
   // ==================== Settlement ====================

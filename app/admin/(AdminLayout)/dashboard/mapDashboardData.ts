@@ -1,8 +1,6 @@
 import type {
   AdminDashboardData,
-  DashboardNotification,
   DashboardTask,
-  Notification,
   Transaction,
 } from "@/app/admin/_types/dashboard";
 
@@ -61,30 +59,59 @@ export function mapTransactionSummaryChartData(
   }));
 }
 
-const TYPE_DISPLAY: Record<string, string> = {
+export const TYPE_DISPLAY: Record<string, string> = {
   PTA: "PTA",
-  SCHOOL_FEES: "School fees",
+  BTA: "BTA",
+  SCHOOL_FEES: "School Fees",
+  MEDICAL: "Medical",
+  PROFESSIONAL_BODY: "Professional Body",
+  TOURIST_FX: "Tourist FX",
   RESIDENT_FX: "Resident FX",
   EXPATRIATE_FX: "Expatriate FX",
+  IMTO_REMITTANCE: "IMTO Remittance",
+  CASH_REMITTANCE: "Cash Remittance",
 };
 
+export const TRANSACTION_TYPE_FILTER_OPTIONS = [
+  { value: "", label: "Filter" },
+  ...Object.entries(TYPE_DISPLAY).map(([value, label]) => ({ value, label })),
+];
+
+// Warm spectrum from primary token palette (globals.css) — no two types share the same hue
 const TYPE_COLORS: Record<string, string> = {
-  PTA: "orange.7",
-  SCHOOL_FEES: "orange.5",
-  RESIDENT_FX: "orange.3",
-  EXPATRIATE_FX: "orange.9",
+  PTA: "#dd4f05",           // primary-400  — signature orange
+  BTA: "#e88a58",           // primary-200  — light orange
+  SCHOOL_FEES: "#fdb022",   // warning-400  — amber
+  MEDICAL: "#b84204",       // primary-500  — dark orange
+  PROFESSIONAL_BODY: "#f79009", // warning-500 — orange-amber
+  TOURIST_FX: "#fec84b",    // warning-300  — golden yellow
+  RESIDENT_FX: "#6f2803",   // primary-700  — deep brown-orange
+  EXPATRIATE_FX: "#e36c2f", // primary-300  — mid orange
+  IMTO_REMITTANCE: "#933503", // primary-600 — burnt orange
+  CASH_REMITTANCE: "#eea782", // primary-100 — peach
 };
+
+// Fallback palette cycles through warm tones for any unknown future types
+const FALLBACK_COLORS = [
+  "#dd4f05", "#e88a58", "#fdb022", "#b84204", "#f79009",
+  "#fec84b", "#6f2803", "#e36c2f", "#933503", "#eea782",
+];
 
 export type DonutSegment = { name: string; value: number; color: string };
 
 export function mapTransactionsByTypeDonut(
   block: AdminDashboardData["transactionsByType"]
 ): DonutSegment[] {
-  return block.items.map((item) => ({
-    name: TYPE_DISPLAY[item.type] ?? item.type.replaceAll("_", " "),
-    value: item.amount,
-    color: TYPE_COLORS[item.type] ?? "gray.5",
-  }));
+  let fallbackIndex = 0;
+  return block.items.map((item) => {
+    const color =
+      TYPE_COLORS[item.type] ?? FALLBACK_COLORS[fallbackIndex++ % FALLBACK_COLORS.length];
+    return {
+      name: TYPE_DISPLAY[item.type] ?? item.type.replaceAll("_", " "),
+      value: item.amount,
+      color,
+    };
+  });
 }
 
 export function mapRecentTransactions(
@@ -92,8 +119,7 @@ export function mapRecentTransactions(
 ): Transaction[] {
   return rows.map((row) => {
     const { date, time } = formatDateTime(row.createdAt);
-    const rowWithType = row as { transactionType?: string; type?: string };
-    const rawType = rowWithType.transactionType ?? rowWithType.type ?? "";
+    const rawType = row.type ?? row.transactionType ?? "";
     return {
       id: row.id,
       referenceNumber: row.referenceNumber,
@@ -106,63 +132,36 @@ export function mapRecentTransactions(
   });
 }
 
-function taskTimestamp(t: DashboardTask): number {
-  const raw = t.dueAt ?? t.createdAt ?? "";
-  const n = new Date(raw).getTime();
-  return Number.isNaN(n) ? 0 : n;
+export interface DashboardTaskRow {
+  id: string;
+  title: string;
+  status: string;
+  module: string;
+  workflowAction: string;
+  actionNeeded: string;
+  dateInitiated: string;
+  timeInitiated: string;
+  escalationPeriod: string;
+  escalationMinutes: number;
+  entityTitle: string;
 }
 
-function notificationTimestamp(n: DashboardNotification): number {
-  const raw = n.createdAt ?? "";
-  const t = new Date(raw).getTime();
-  return Number.isNaN(t) ? 0 : t;
-}
-
-export function mergeDashboardFeedSorted(
-  tasks: DashboardTask[],
-  notifications: DashboardNotification[]
-): Notification[] {
-  type Entry = {
-    notification: Notification;
-    sortKey: number;
-  };
-
-  const entries: Entry[] = [
-    ...tasks.map((t) => {
-      const iso = t.dueAt ?? t.createdAt ?? "";
-      const { date, time } = formatDateTime(iso);
-      return {
-        sortKey: taskTimestamp(t),
-        notification: {
-          id: `task-${t.id}`,
-          title: t.title ?? "Task",
-          description: t.description ?? t.status ?? undefined,
-          date,
-          time,
-          unread: t.status
-            ? t.status !== "COMPLETED" && t.status !== "DONE"
-            : true,
-        },
-      };
-    }),
-    ...notifications.map((n) => {
-      const iso = n.createdAt ?? "";
-      const { date, time } = formatDateTime(iso);
-      return {
-        sortKey: notificationTimestamp(n),
-        notification: {
-          id: `notif-${n.id}`,
-          title: n.title ?? "Notification",
-          description: n.message ?? n.body ?? n.type,
-          date,
-          time,
-          unread: n.read === false,
-        },
-      };
-    }),
-  ];
-
-  return entries
-    .sort((a, b) => b.sortKey - a.sortKey)
-    .map((e) => e.notification);
+export function mapDashboardTasks(tasks: DashboardTask[]): DashboardTaskRow[] {
+  return tasks.map((t) => {
+    const { date, time } = formatDateTime(t.dateInitiated ?? t.assignedAt ?? "");
+    const escalationMinutes = Math.max(0, t.escalationMinutes ?? 0);
+    return {
+      id: t.id,
+      title: t.title ?? t.entityTitle ?? "Task",
+      status: t.status ?? "",
+      module: t.module ?? "--",
+      workflowAction: t.workflowAction ?? "--",
+      actionNeeded: t.actionNeeded ?? "--",
+      dateInitiated: date,
+      timeInitiated: time,
+      escalationPeriod: `${escalationMinutes.toLocaleString("en-US")} mins`,
+      escalationMinutes,
+      entityTitle: t.entityTitle ?? "",
+    };
+  });
 }

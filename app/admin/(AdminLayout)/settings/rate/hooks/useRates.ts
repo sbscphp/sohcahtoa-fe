@@ -76,41 +76,37 @@ function formatDateTime(value: unknown): string {
 }
 
 function normalizeStatus(value: unknown): string {
-  const raw = asString(value).trim().toLowerCase();
-  if (raw === "schedule" || raw === "scheduled") return "Scheduled";
-  if (raw === "active") return "Active";
-  if (raw === "inactive" || raw === "deactivated") return "Deactivated";
-  return raw ? `${raw.charAt(0).toUpperCase()}${raw.slice(1)}` : "--";
-}
-
-function parseStatusFromValidityWindow(validFromRaw: unknown, validUntilRaw: unknown): string | null {
-  const validFrom = asString(validFromRaw).trim();
-  const validUntil = asString(validUntilRaw).trim();
-  if (!validFrom || !validUntil) return null;
-
-  const start = new Date(validFrom);
-  const end = new Date(validUntil);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-
-  const now = Date.now();
-  if (now < start.getTime()) return "Scheduled";
-  if (now > end.getTime()) return "Expired";
-  return "Active";
+  const raw = asString(value).trim().toUpperCase().replace(/[\s-]+/g, "_");
+  if (raw === "ACTIVE") return "ACTIVE";
+  if (raw === "EXPIRED") return "EXPIRED";
+  if (raw === "SCHEDULED") return "SCHEDULED";
+  if (raw === "PENDING_APPROVAL") return "PENDING_APPROVAL";
+  if (raw === "DEACTIVATED" || raw === "INACTIVE") return "Deactivated";
+  const lower = asString(value).trim().toLowerCase();
+  return lower ? `${lower.charAt(0).toUpperCase()}${lower.slice(1)}` : "--";
 }
 
 function parseStatus(raw: Record<string, unknown>): string {
+  const directStatus = asString(raw.status ?? raw.Status).trim();
+  if (directStatus) return normalizeStatus(directStatus);
+
   const isActive = raw.isActive ?? raw.is_active;
-  if (typeof isActive === "boolean") {
-    return isActive ? "Active" : "Deactivated";
+  if (typeof isActive === "boolean" && isActive) return "ACTIVE";
+
+  const validFrom = asString(raw.validFrom ?? raw.valid_from).trim();
+  const validUntil = asString(raw.validUntil ?? raw.valid_until).trim();
+  if (validFrom && validUntil) {
+    const start = new Date(validFrom);
+    const end = new Date(validUntil);
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      const now = Date.now();
+      if (now < start.getTime()) return "SCHEDULED";
+      if (now > end.getTime()) return "EXPIRED";
+      return "ACTIVE";
+    }
   }
 
-  const fromWindow = parseStatusFromValidityWindow(
-    raw.validFrom ?? raw.valid_from,
-    raw.validUntil ?? raw.valid_until
-  );
-  if (fromWindow) return fromWindow;
-
-  return normalizeStatus(raw.status);
+  return "--";
 }
 
 function getCurrencyPair(raw: Record<string, unknown>): string {

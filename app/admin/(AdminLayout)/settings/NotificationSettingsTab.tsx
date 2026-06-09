@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Calendar, Clock, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button, Divider } from "@mantine/core"
@@ -272,6 +273,7 @@ function DateGroup({
 // --- Main Component ---
 export default function NotificationSettingsTab() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<NotificationTabValue>("all")
   const [allPage, setAllPage] = useState(1)
   const [unreadPage, setUnreadPage] = useState(1)
@@ -322,6 +324,7 @@ export default function NotificationSettingsTab() {
       setAllNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, status: "read" } : n))
       )
+      await queryClient.invalidateQueries({ queryKey: adminKeys.notifications.unreadCount() })
     } finally {
       setMarkingId(null)
     }

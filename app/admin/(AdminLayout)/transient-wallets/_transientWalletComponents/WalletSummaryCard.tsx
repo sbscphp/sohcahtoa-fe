@@ -4,7 +4,7 @@ import { Group, Text, Divider } from "@mantine/core";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
-import type { TransientWalletDetail } from "../hooks/mockData";
+import type { TransientWalletDetail } from "../hooks/useTransientWalletDetails";
 
 interface WalletSummaryCardProps {
   wallet: TransientWalletDetail | null;
