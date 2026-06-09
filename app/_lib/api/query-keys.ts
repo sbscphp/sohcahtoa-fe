@@ -386,6 +386,20 @@ export const adminKeys = {
         search?: string;
       }
     ) => [...adminKeys.wallet.all, "ledger", id, params ?? {}] as const,
+    ledgerEntry: (walletId: string, entryId: string) =>
+      [...adminKeys.wallet.all, "ledger-entry", walletId, entryId] as const,
+    ledgerNotes: (
+      walletId: string,
+      entryId: string,
+      params?: { page?: number; limit?: number }
+    ) =>
+      [
+        ...adminKeys.wallet.all,
+        "ledger-notes",
+        walletId,
+        entryId,
+        params ?? {},
+      ] as const,
   },
 
   reports: {

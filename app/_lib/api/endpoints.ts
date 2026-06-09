@@ -239,6 +239,18 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/wallet/${id}`,
       ledger: (id: string) => `/api/admin/wallet/${id}/ledger`,
       ledgerExport: (id: string) => `/api/admin/wallet/${id}/ledger/export`,
+      ledgerEntry: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}`,
+      ledgerEntryNotes: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/notes`,
+      ledgerLinkTransaction: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/link-transaction`,
+      ledgerFlag: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/flag`,
+      ledgerRefund: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/refund`,
+      ledgerDisburse: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/disburse`,
     },
     reports: {
       modules: "/api/admin/reports/modules",

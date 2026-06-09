@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
 import { Group, Text, Divider, Tabs } from "@mantine/core";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -11,7 +13,12 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import { adminRoutes } from "@/lib/adminRoutes";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useTransientWalletEntryDetails } from "../../../hooks/useTransientWalletEntryDetails";
+import { normalizeMatchStatus } from "../../../hooks/walletUtils";
 import EntryAuditLogsTab from "../../../_transientWalletComponents/EntryAuditLogsTab";
 import EntryAdminNotesTab from "../../../_transientWalletComponents/EntryAdminNotesTab";
 import AddNoteToEntryModal from "../../../_transientWalletComponents/modals/AddNoteToEntryModal";
@@ -20,18 +27,31 @@ import FlagEntryModal from "../../../_transientWalletComponents/modals/FlagEntry
 import TakeActionMenu, {
   type TakeActionType,
 } from "../../../_transientWalletComponents/modals/TakeActionMenu";
-import type { LinkableTransaction } from "../../../hooks/mockData";
 
 type SuccessVariant =
   | "note"
   | "matched"
+  | "unmatched"
   | "flagged"
   | "refund"
   | "disbursement"
   | null;
 
+function showErrorToast(error: Error, defaultMessage: string) {
+  const apiResponse = (error as unknown as ApiError).data as
+    | ApiResponse
+    | undefined;
+  notifications.show({
+    color: "red",
+    title: "Action failed",
+    message:
+      apiResponse?.error?.message ?? error.message ?? defaultMessage,
+  });
+}
+
 export default function TransientWalletEntryDetailPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useParams<{ walletId: string; entryId: string }>();
   const walletId = params?.walletId ?? "";
   const entryId = params?.entryId ?? "";
@@ -41,7 +61,7 @@ export default function TransientWalletEntryDetailPage() {
     entryId
   );
 
-  const isUnmatched = entry?.status === "Unmatched";
+  const isMatched = normalizeMatchStatus(entry?.matchStatus ?? null) === "Matched";
 
   const [activeTab, setActiveTab] = useState<"audit" | "notes">("audit");
 
@@ -50,15 +70,104 @@ export default function TransientWalletEntryDetailPage() {
   const [flagModalOpen, setFlagModalOpen] = useState(false);
 
   const [confirmType, setConfirmType] = useState<
-    "flag" | "refund" | "disburse" | null
+    "unlink" | "refund" | "disburse" | null
   >(null);
   const [successVariant, setSuccessVariant] = useState<SuccessVariant>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+
+  const invalidateEntry = () =>
+    queryClient.invalidateQueries({
+      queryKey: adminKeys.wallet.ledgerEntry(walletId, entryId),
+    });
+
+  const invalidateNotes = () =>
+    queryClient.invalidateQueries({
+      queryKey: adminKeys.wallet.ledgerNotes(walletId, entryId),
+    });
+
+  // ==================== Mutations ====================
+
+  const addNoteMutation = useCreateData(
+    (note: string) => adminApi.wallet.addLedgerNote(walletId, entryId, { note }),
+    {
+      onSuccess: async () => {
+        await invalidateNotes();
+        setNoteModalOpen(false);
+        setSuccessVariant("note");
+      },
+      onError: (error) => showErrorToast(error, "Unable to add note."),
+    }
+  );
+
+  const linkMutation = useCreateData(
+    (transactionId: string) =>
+      adminApi.wallet.linkTransaction(walletId, entryId, { transactionId }),
+    {
+      onSuccess: async () => {
+        await invalidateEntry();
+        setLinkModalOpen(false);
+        setSuccessVariant("matched");
+      },
+      onError: (error) => showErrorToast(error, "Unable to link transaction."),
+    }
+  );
+
+  const unlinkMutation = useCreateData<unknown, void>(
+    () => adminApi.wallet.unlinkTransaction(walletId, entryId),
+    {
+      onSuccess: async () => {
+        await invalidateEntry();
+        setConfirmType(null);
+        setSuccessVariant("unmatched");
+      },
+      onError: (error) => showErrorToast(error, "Unable to unlink transaction."),
+    }
+  );
+
+  const flagMutation = useCreateData(
+    (reason: string) => adminApi.wallet.flagEntry(walletId, entryId, { reason }),
+    {
+      onSuccess: async () => {
+        await invalidateEntry();
+        setFlagModalOpen(false);
+        setSuccessVariant("flagged");
+      },
+      onError: (error) => showErrorToast(error, "Unable to flag entry."),
+    }
+  );
+
+  const refundMutation = useCreateData<unknown, void>(
+    () => adminApi.wallet.refundEntry(walletId, entryId),
+    {
+      onSuccess: async () => {
+        await invalidateEntry();
+        setConfirmType(null);
+        setSuccessVariant("refund");
+      },
+      onError: (error) => showErrorToast(error, "Unable to initiate refund."),
+    }
+  );
+
+  const disburseMutation = useCreateData<unknown, void>(
+    () => adminApi.wallet.disburseEntry(walletId, entryId),
+    {
+      onSuccess: async () => {
+        await invalidateEntry();
+        setConfirmType(null);
+        setSuccessVariant("disbursement");
+      },
+      onError: (error) => showErrorToast(error, "Unable to confirm disbursement."),
+    }
+  );
+
+  // ==================== Handlers ====================
 
   const handleTakeAction = (action: TakeActionType) => {
     switch (action) {
       case "link":
         setLinkModalOpen(true);
+        break;
+      case "unlink":
+        setConfirmType("unlink");
         break;
       case "flag":
         setFlagModalOpen(true);
@@ -72,35 +181,28 @@ export default function TransientWalletEntryDetailPage() {
     }
   };
 
-  const handleNoteSubmit = () => {
-    setNoteModalOpen(false);
-    setSuccessVariant("note");
+  const handleNoteSubmit = (note: string) => {
+    addNoteMutation.mutate(note);
   };
 
-  const handleLinkConfirm = (_tx: LinkableTransaction, _reason: string) => {
-    setLinkModalOpen(false);
-    setSuccessVariant("matched");
+  const handleLinkConfirm = (transactionId: string) => {
+    linkMutation.mutate(transactionId);
   };
 
-  const handleFlagSubmit = (_reason: string, _description: string) => {
-    setFlagModalOpen(false);
-    setConfirmType("flag");
+  const handleFlagSubmit = (reason: string, description?: string) => {
+    const fullReason = description?.trim()
+      ? `${reason}: ${description.trim()}`
+      : reason;
+    flagMutation.mutate(fullReason);
   };
 
-  const handleConfirm = async () => {
-    setActionLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setActionLoading(false);
-
-    if (confirmType === "flag") {
-      setConfirmType(null);
-      setSuccessVariant("flagged");
+  const handleConfirm = () => {
+    if (confirmType === "unlink") {
+      unlinkMutation.mutate(undefined);
     } else if (confirmType === "refund") {
-      setConfirmType(null);
-      setSuccessVariant("refund");
+      refundMutation.mutate(undefined);
     } else if (confirmType === "disburse") {
-      setConfirmType(null);
-      setSuccessVariant("disbursement");
+      disburseMutation.mutate(undefined);
     }
   };
 
@@ -114,18 +216,23 @@ export default function TransientWalletEntryDetailPage() {
     router.push(adminRoutes.adminDashboard());
   };
 
+  const isConfirmLoading =
+    unlinkMutation.isPending ||
+    refundMutation.isPending ||
+    disburseMutation.isPending;
+
   const getConfirmModalProps = () => {
     switch (confirmType) {
-      case "flag":
+      case "unlink":
         return {
-          title: "Flag Entry ?",
-          message: `Are you sure you want to flag entry ${entryId}? Flagged entries will be escalated immediately for further actions.`,
-          primaryButtonText: "Yes, Flag Entry",
+          title: "Unlink Transaction?",
+          message: `Are you sure you want to unlink this transaction from entry ${entryId.slice(0, 8).toUpperCase()}? The entry status will revert to UNMATCHED.`,
+          primaryButtonText: "Yes, Unlink",
           primaryColor: "red",
         };
       case "refund":
         return {
-          title: "Initiate Refund ?",
+          title: "Initiate Refund?",
           message:
             "Are you sure you want to initiate a refund for this transaction? A refund workflow will be triggered for this entry. Entry will be updated to REFUND PENDING status.",
           primaryButtonText: "Yes, Initiate Refund",
@@ -133,7 +240,7 @@ export default function TransientWalletEntryDetailPage() {
         };
       case "disburse":
         return {
-          title: "Confirm Disbursement ?",
+          title: "Confirm Disbursement?",
           message:
             "Are you sure you want to confirm disbursement for this transaction? This action can not be undone.",
           primaryButtonText: "Yes, Confirm Disbursement",
@@ -161,6 +268,14 @@ export default function TransientWalletEntryDetailPage() {
           title: "Transaction Matched",
           message:
             "This transaction has been successfully matched to an entry.",
+          primaryButtonText: "View All Entries",
+          secondaryButtonText: "No, Close",
+          onPrimary: handleViewAllEntries,
+        };
+      case "unmatched":
+        return {
+          title: "Transaction Unlinked",
+          message: "The transaction has been successfully unlinked from this entry.",
           primaryButtonText: "View All Entries",
           secondaryButtonText: "No, Close",
           onPrimary: handleViewAllEntries,
@@ -245,9 +360,10 @@ export default function TransientWalletEntryDetailPage() {
               >
                 Add Note
               </CustomButton>
-              {isUnmatched ? (
-                <TakeActionMenu onAction={handleTakeAction} />
-              ) : null}
+              <TakeActionMenu
+                onAction={handleTakeAction}
+                isMatched={isMatched}
+              />
             </Group>
           </div>
 
@@ -261,8 +377,8 @@ export default function TransientWalletEntryDetailPage() {
                 loading={isLoading}
               />
               <DetailItem
-                label="Virtual Account No."
-                value={entry?.virtualAccountNo ?? "—"}
+                label="Transaction Ref"
+                value={entry?.transactionRef ?? "—"}
                 loading={isLoading}
               />
               <DetailItem
@@ -289,7 +405,9 @@ export default function TransientWalletEntryDetailPage() {
         <Tabs
           color="orange"
           value={activeTab}
-          onChange={(value) => setActiveTab((value as "audit" | "notes") ?? "audit")}
+          onChange={(value) =>
+            setActiveTab((value as "audit" | "notes") ?? "audit")
+          }
         >
           <Tabs.List className="mb-4 border-0! before:content-none!">
             <AdminTabButton value="audit">Audit logs</AdminTabButton>
@@ -300,7 +418,7 @@ export default function TransientWalletEntryDetailPage() {
             <EntryAuditLogsTab entryId={entryId} />
           </Tabs.Panel>
           <Tabs.Panel value="notes">
-            <EntryAdminNotesTab entryId={entryId} />
+            <EntryAdminNotesTab walletId={walletId} entryId={entryId} />
           </Tabs.Panel>
         </Tabs>
       </div>
@@ -309,21 +427,23 @@ export default function TransientWalletEntryDetailPage() {
         opened={noteModalOpen}
         onClose={() => setNoteModalOpen(false)}
         onSubmit={handleNoteSubmit}
+        loading={addNoteMutation.isPending}
       />
 
       <LinkTransactionModal
         opened={linkModalOpen}
         onClose={() => setLinkModalOpen(false)}
+        walletId={walletId}
         entryId={entryId}
         onConfirmLink={handleLinkConfirm}
-        loading={actionLoading}
+        loading={linkMutation.isPending}
       />
 
       <FlagEntryModal
         opened={flagModalOpen}
         onClose={() => setFlagModalOpen(false)}
         onSubmit={handleFlagSubmit}
-        loading={actionLoading}
+        loading={flagMutation.isPending}
       />
 
       {confirmProps ? (
@@ -336,7 +456,7 @@ export default function TransientWalletEntryDetailPage() {
           primaryColor={confirmProps.primaryColor}
           secondaryButtonText="No, Close"
           onPrimary={handleConfirm}
-          loading={actionLoading}
+          loading={isConfirmLoading}
         />
       ) : null}
 

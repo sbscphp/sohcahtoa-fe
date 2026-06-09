@@ -642,6 +642,72 @@ export interface AdminWalletLedgerEntry {
   createdAt: string;
 }
 
+export interface AdminLedgerLinkedTransaction {
+  id: string;
+  referenceNumber: string;
+  type: string;
+  status: string;
+  foreignAmount: number;
+  nairaEquivalent: number;
+  currency: string;
+  createdAt: string;
+}
+
+export interface AdminLedgerApprovalProcess {
+  isApprovalOfficer: boolean;
+  approvalState: string | null;
+  pendingAssignees: unknown[];
+  workflowStages: unknown[];
+}
+
+export interface AdminLedgerEntryDetail extends AdminWalletLedgerEntry {
+  walletId: string;
+  linkedTransactionId: string | null;
+  linkedTransaction: AdminLedgerLinkedTransaction | null;
+  isFlagged: boolean;
+  flagReason: string | null;
+  flaggedBy: string | null;
+  flaggedAt: string | null;
+  refundStatus: string | null;
+  refundedBy: string | null;
+  refundedAt: string | null;
+  disbursementStatus: string | null;
+  disbursedBy: string | null;
+  disbursedAt: string | null;
+  updatedAt: string;
+  notes: unknown[];
+  approvalProcess: AdminLedgerApprovalProcess;
+}
+
+export interface AdminLedgerEntryNote {
+  id: string;
+  note: string;
+  adminId: string;
+  adminName: string;
+  createdAt: string;
+}
+
+export type AdminLedgerNotesParams = {
+  page?: number;
+  limit?: number;
+};
+
+export interface AdminTransactionSearchItem {
+  id: string;
+  customerName: string;
+  dateAndId: {
+    date: string;
+    reference: string;
+  };
+  transactionType: string;
+  transactionMode: string | null;
+  transactionStage: string;
+  workflowStage: string;
+  transactionValue: number;
+  currency: string;
+  status: string;
+}
+
 export type AdminComplianceReportsListParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -2210,6 +2276,68 @@ export const adminApi = {
 
       return new Blob([response], { type: "text/csv;charset=utf-8;" });
     },
+
+    getLedgerEntry: (walletId: string, entryId: string) =>
+      apiClient.get<ApiResponse<AdminLedgerEntryDetail>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntry(walletId, entryId)
+      ),
+
+    getLedgerNotes: (
+      walletId: string,
+      entryId: string,
+      params?: AdminLedgerNotesParams
+    ) =>
+      apiClient.get<ApiResponse<AdminLedgerEntryNote[]>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntryNotes(walletId, entryId),
+        { params }
+      ),
+
+    addLedgerNote: (
+      walletId: string,
+      entryId: string,
+      body: { note: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntryNotes(walletId, entryId),
+        body
+      ),
+
+    linkTransaction: (
+      walletId: string,
+      entryId: string,
+      body: { transactionId: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerLinkTransaction(walletId, entryId),
+        body
+      ),
+
+    unlinkTransaction: (walletId: string, entryId: string) =>
+      apiClient.delete<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerLinkTransaction(walletId, entryId)
+      ),
+
+    flagEntry: (
+      walletId: string,
+      entryId: string,
+      body: { reason: string }
+    ) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerFlag(walletId, entryId),
+        body
+      ),
+
+    refundEntry: (walletId: string, entryId: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerRefund(walletId, entryId),
+        {}
+      ),
+
+    disburseEntry: (walletId: string, entryId: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.wallet.ledgerDisburse(walletId, entryId),
+        {}
+      ),
   },
 
   // ==================== Settlement ====================
