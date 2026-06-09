@@ -1221,6 +1221,18 @@ export interface CreateRatePayload {
   note?: string;
 }
 
+export interface RateWorkflowLineItem {
+  id: string;
+  timestamp: string;
+  adminId?: string;
+  adminName?: string;
+  adminRole?: string;
+  title?: string;
+  outcome?: string;
+  comment?: string | null;
+  action?: string;
+}
+
 export interface RateDetailsData {
   id: string;
   fromCurrency: string;
@@ -1240,6 +1252,7 @@ export interface RateDetailsData {
   workflowTemplateId?: string | null;
   currentWorkflowStageId?: string | null;
   approvalProcess?: AdminTransactionApprovalProcess | null;
+  workflowLine?: RateWorkflowLineItem[] | null;
 }
 
 export interface SettlementDashboardStats {

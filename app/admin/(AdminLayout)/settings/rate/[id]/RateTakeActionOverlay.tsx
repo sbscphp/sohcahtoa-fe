@@ -1,7 +1,9 @@
 "use client";
 
+import React from "react";
 import { Drawer, Group, Text, Title, Button, Avatar, Flex } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import Image from "next/image";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
@@ -10,8 +12,10 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminApi } from "@/app/admin/_services/admin-api";
-import type { AdminTransactionApprovalWorkflowStage } from "@/app/admin/_services/admin-api";
+import type { RateWorkflowLineItem } from "@/app/admin/_services/admin-api";
+import Connector from "../../../../_components/assets/Connector.png";
 import { useState } from "react";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 interface RateTakeActionOverlayProps {
   opened: boolean;
@@ -20,7 +24,16 @@ interface RateTakeActionOverlayProps {
   rateStatus?: string;
   isApprovalOfficer?: boolean;
   approvalState?: string;
-  workflowStages?: AdminTransactionApprovalWorkflowStage[];
+  workflowLine?: RateWorkflowLineItem[];
+}
+
+function formatWorkflowDate(ts: string): { date: string; time: string } {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return { date: "--", time: "--" };
+  return {
+    date: d.toLocaleDateString("en-CA"),
+    time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+  };
 }
 
 export default function RateTakeActionOverlay({
@@ -30,7 +43,7 @@ export default function RateTakeActionOverlay({
   rateStatus,
   isApprovalOfficer = false,
   approvalState,
-  workflowStages = [],
+  workflowLine = [],
 }: RateTakeActionOverlayProps) {
   const queryClient = useQueryClient();
   const isPendingApproval = rateStatus === "PENDING_APPROVAL";
@@ -121,95 +134,97 @@ export default function RateTakeActionOverlay({
               Rate Review and Approval
             </Title>
             <Text size="sm" className="text-body-text-50!">
-              Review the approval workflow for this rate
+              Take action on this rate
             </Text>
           </div>
 
           {/* Workflow Line content */}
           <div className="flex-1 overflow-y-auto pb-4 pt-4">
             <Flex className="mb-4" align="center" gap="sm">
-              <StatusBadge status={rateStatus ?? "--"} size="lg" />
-              <Text size="sm" className="text-body-text-200">
-                {approvalState}
-              </Text>
+              <StatusBadge status={toSentenceCase(rateStatus ?? "--")} size="lg" />
+              <Text size="sm" className="text-body-text-200">{approvalState}</Text>
             </Flex>
 
-            {workflowStages.length === 0 ? (
+            {workflowLine.length === 0 ? (
               <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
                 <Text fw={600} className="text-body-heading-300">
-                  No workflow stages available
+                  No workflow history available
                 </Text>
                 <Text size="sm" className="text-body-text-200 mt-1">
-                  No workflow stages have been configured for this rate.
+                  No workflow actions have been recorded for this rate yet.
                 </Text>
               </div>
             ) : (
-              <div className="space-y-4">
-                {workflowStages.map((stage, index) => (
-                  <div
-                    key={stage.stageId ?? index}
-                    className={`rounded-lg p-5 space-y-4! ${stage.isCurrent ? "bg-[#FFF6F2] border border-primary-200" : "bg-[#F7F7F7]"}`}
-                  >
-                    {/* Stage header */}
-                    <Group justify="space-between" align="flex-start" wrap="nowrap">
-                      <div className="space-y-1">
-                        <Group gap="xs" align="center">
-                          <div
-                            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                              stage.isCurrent
-                                ? "bg-primary-400 text-white"
-                                : "bg-gray-300 text-gray-600"
-                            }`}
-                          >
-                            {stage.order ?? index + 1}
-                          </div>
-                          <Text fw={600} className="text-body-heading-300">
-                            {stage.name ?? `Stage ${stage.order ?? index + 1}`}
-                          </Text>
-                        </Group>
-                        {stage.isCurrent && (
-                          <Text size="xs" className="text-primary-400 font-medium! ml-7">
-                            Current Stage
-                          </Text>
-                        )}
-                      </div>
-                      {stage.isCurrent && (
-                        <StatusBadge status="PENDING_APPROVAL" size="xs" />
-                      )}
-                    </Group>
+              <div className="space-y-5">
+                {workflowLine.map((item, index) => {
+                  const { date, time } = formatWorkflowDate(item.timestamp);
+                  const actorLabel = item.adminName ?? "--";
+                  const actionLabel = item.title ?? "--";
+                  const statusLabel = item.outcome ?? "--";
+                  const comment = item.comment ?? "--";
 
-                    {/* Assignees */}
-                    {stage.assignees && stage.assignees.length > 0 && (
-                      <div className="space-y-2">
-                        <Text size="xs" c="dimmed" className="text-body-text-50! font-medium!">
-                          Assigned reviewers
-                        </Text>
-                        <div className="space-y-2">
-                          {stage.assignees.map((assignee, aIdx) => (
-                            <Group
-                              key={assignee.adminId ?? aIdx}
-                              gap="sm"
-                              align="center"
-                              className="bg-white border border-[#E1E0E0] rounded-lg px-3 py-2"
+                  return (
+                    <React.Fragment key={item.id}>
+                      <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+                        {/* Header Row */}
+                        <Group justify="space-between" align="flex-start" wrap="nowrap">
+                          <Group align="flex-start" gap="sm" wrap="nowrap">
+                            <Avatar radius="xl" size="md" color="#F5B89C">
+                              {actorLabel.slice(0, 2).toUpperCase()}
+                            </Avatar>
+
+                            <div className="min-w-0 space-y-1">
+                              <Text fw={500} className="text-body-heading-300 break-all">
+                                {actorLabel}
+                              </Text>
+                              <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                {actionLabel}
+                              </Text>
+
+                              {/* Date & Time */}
+                              <Group gap={6} mt={4}>
+                                <Text
+                                  size="xs"
+                                  c="dimmed"
+                                  className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+                                >
+                                  📅 {date}
+                                </Text>
+                                <Text size="xs" c="dimmed" className="text-body-text-200">
+                                  ⏰ {time}
+                                </Text>
+                              </Group>
+                            </div>
+                          </Group>
+
+                          {/* Status */}
+                          <div className="text-right shrink-0">
+                            <StatusBadge status={statusLabel} size="xs" />
+                            <Text
+                              size="xs"
+                              c="dimmed"
+                              className="text-body-text-50! block mt-1"
                             >
-                              <Avatar radius="xl" size="sm" color="#F5B89C">
-                                {(assignee.adminName ?? "??").slice(0, 2).toUpperCase()}
-                              </Avatar>
-                              <div className="min-w-0">
-                                <Text size="sm" fw={500} className="text-body-heading-300">
-                                  {assignee.adminName ?? "--"}
-                                </Text>
-                                <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                  {assignee.roleName ?? "--"}
-                                </Text>
-                              </div>
-                            </Group>
-                          ))}
+                              Action Taken
+                            </Text>
+                          </div>
+                        </Group>
+
+                        {/* Comment Box */}
+                        <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+                          <Text size="xs" className="text-body-text-200 leading-relaxed">
+                            {comment}
+                          </Text>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Connector */}
+                      {index < workflowLine.length - 1 && (
+                        <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </div>
             )}
           </div>

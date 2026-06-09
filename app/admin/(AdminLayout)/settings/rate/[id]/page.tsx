@@ -214,7 +214,7 @@ export default function RateDetailPage() {
   const isPendingApproval = rateStatus === "PENDING_APPROVAL";
   const isApprovalOfficer = rateDetail?.approvalProcess?.isApprovalOfficer ?? false;
   const approvalState = rateDetail?.approvalProcess?.approvalState;
-  const workflowStages = rateDetail?.approvalProcess?.workflowStages ?? [];
+  const workflowLine = rateDetail?.workflowLine ?? [];
 
   const showCompleteReview = isPendingApproval;
   const showViewUpdates = isApproved && !isPendingApproval;
@@ -680,7 +680,7 @@ export default function RateDetailPage() {
         rateStatus={rateStatus}
         isApprovalOfficer={isApprovalOfficer}
         approvalState={approvalState}
-        workflowStages={workflowStages}
+        workflowLine={workflowLine}
       />
     </div>
   );
