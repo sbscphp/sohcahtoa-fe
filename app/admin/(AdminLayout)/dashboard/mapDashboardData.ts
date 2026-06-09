@@ -75,7 +75,7 @@ export const TYPE_DISPLAY: Record<string, string> = {
 };
 
 export const TRANSACTION_TYPE_FILTER_OPTIONS = [
-  { value: "", label: "All Types" },
+  { value: "", label: "Filter" },
   ...Object.entries(TYPE_DISPLAY).map(([value, label]) => ({ value, label })),
 ];
 
