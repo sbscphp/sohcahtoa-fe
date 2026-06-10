@@ -18,7 +18,7 @@ export interface BranchTransactionListItem {
   transactionType: string;
   transactionStage: string;
   workflowStage: string;
-  transactionValue: string;
+  transactionValue: number;
   status: string;
 }
 
@@ -84,10 +84,7 @@ function parseTransaction(raw: UnknownRecord): BranchTransactionListItem {
   const createdAt =
     dateAndId?.date ?? raw.createdAt ?? raw.transactionDate ?? raw.date ?? raw.updatedAt;
   const { date, time } = formatDateAndTime(createdAt);
-  const transactionValue =
-    typeof raw.transactionValue === "number" || typeof raw.transactionValue === "string"
-      ? Number(raw.transactionValue).toLocaleString("en-US")
-      : "--";
+  const transactionValue = Number(raw.transactionValue);
 
   return {
     id: String(raw.id ?? raw.transactionId ?? ""),
