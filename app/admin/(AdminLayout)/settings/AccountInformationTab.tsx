@@ -88,7 +88,7 @@ export default function AccountInformationTab() {
           <InfoField label="Role" value={profile.roleName} />
           <InfoField label="Department" value={profile.departmentName} />
           <InfoField label="Branch" value={profile.branch ?? "--"} />
-          <InfoField label="Last Active" value={formatDate(profile.updatedAt)} />
+          <InfoField label="Last Active" value={formatDate(profile.lastActive)} />
         </div>
       </div>
     </div>

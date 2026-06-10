@@ -46,6 +46,7 @@ export interface AdminProfileData {
   altPhoneNumber: string | null;
   position: string | null;
   branch: string;
+  lastActive: string;
   roleName: string;
   departmentName: string;
   roleId: string;
@@ -804,7 +805,7 @@ export interface AdminRegulatoryAuditLogListItem {
   userOrSystem: string;
   actionPerformed: string;
   actionResult: string;
-  channel: string;
+  moduleSection: string;
   auditId: string;
 }
 
@@ -835,7 +836,7 @@ export interface AdminRegulatoryLogListItem {
   userOrSystem: string;
   actionPerformed: string;
   actionResult: string;
-  channel: string;
+  moduleSection: string;
   regulatoryId: string;
 }
 
@@ -847,7 +848,7 @@ export interface AdminRegulatoryLogDetailsData {
   response: string;
   result: string;
   regulatoryId: string;
-  channel: string;
+  moduleSection: string;
   fileUrl: string | null;
 }
 

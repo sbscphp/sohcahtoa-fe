@@ -35,7 +35,7 @@ export interface AuditLogRowItem {
   userOrSystem: string;
   actionPerformed: string;
   actionResult: string;
-  channel: string;
+  moduleSection: string;
   auditId: string;
 }
 
@@ -130,7 +130,7 @@ function normalizeListItem(
     userOrSystem: asString(record.userOrSystem, "--"),
     actionPerformed: asString(record.actionPerformed, "--"),
     actionResult: normalizeActionResult(record.actionResult),
-    channel: asString(record.channel, "--"),
+    moduleSection: asString(record.moduleSection, "--"),
     auditId: asString(record.auditId, "--"),
   };
 }
