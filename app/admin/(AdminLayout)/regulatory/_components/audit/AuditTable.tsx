@@ -78,7 +78,7 @@ export default function AuditLogTable() {
     { label: "Timestamp", key: "timestamp" },
     { label: "User / System", key: "userOrSystem" },
     { label: "Action Performed", key: "actionPerformed" },
-    { label: "Channel", key: "channel" },
+    { label: "Module", key: "moduleSection" },
     { label: "Audit ID", key: "auditId" },
     { label: "Severity", key: "actionResult" },
     { label: "Action", key: "action" },
@@ -104,8 +104,8 @@ export default function AuditLogTable() {
     <Text size="sm" key="actionPerformed">
       {item.actionPerformed}
     </Text>,
-    <Text size="sm" key="channel" c="dimmed">
-      {item.channel}
+    <Text size="sm" key="moduleSection" c="dimmed">
+      {item.moduleSection}
     </Text>,
     <Text size="sm" key="auditId">
       {item.auditId}

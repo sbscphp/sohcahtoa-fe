@@ -128,7 +128,7 @@ export default function CustomerSelectModal({
             radius="md"
             size="md"
           />
-          <ScrollArea h={320} type="scroll">
+          <ScrollArea h={320} type="always" offsetScrollbars>
             <div className="divide-y divide-gray-200">
               {isLoading ? (
                 <Text size="sm" c="dimmed" py="xl" ta="center">

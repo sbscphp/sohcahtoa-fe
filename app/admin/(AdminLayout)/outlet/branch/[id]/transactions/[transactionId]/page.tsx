@@ -2,10 +2,10 @@
 
 import { useParams } from "next/navigation";
 import { Text, Group, Skeleton } from "@mantine/core";
-import { FileText, Download } from "lucide-react";
+import { FileText } from "lucide-react";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { CustomButton } from "@/app/admin/_components/CustomButton";
+// import { CustomButton } from "@/app/admin/_components/CustomButton";
 import EmptySection from "@/app/admin/_components/EmptySection";
 import { useBranchTransactionDetail } from "./useBranchTransactionDetail";
 
@@ -139,14 +139,14 @@ export default function BranchTransactionDetailPage() {
           <Text className="text-xl! font-bold! text-text-500!">
             Transaction Details
           </Text>
-          <CustomButton
+          {/* <CustomButton
             leftSection={<Download size={16} />}
             onClick={() => {}}
             buttonType="secondary"
             size="md"
           >
             Export
-          </CustomButton>
+          </CustomButton> */}
         </Group>
 
         {isLoading ? (

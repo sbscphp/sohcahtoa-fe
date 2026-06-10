@@ -82,7 +82,7 @@ export default function RegulatoryLogTable() {
     { label: "User / System", key: "userOrSystem" },
     { label: "Action Performed", key: "actionPerformed" },
     { label: "Status", key: "actionResult" },
-    { label: "Channel", key: "channel" },
+    { label: "Module", key: "moduleSection" },
     { label: "Regulatory ID", key: "regulatoryId" },
     { label: "Action", key: "action" },
   ];
@@ -108,8 +108,8 @@ export default function RegulatoryLogTable() {
       {item.actionPerformed}
     </Text>,
     <StatusBadge key="actionResult" status={item.actionResult} />,
-    <Text size="sm" key="channel" c="dimmed">
-      {item.channel}
+    <Text size="sm" key="moduleSection" c="dimmed">
+      {item.moduleSection}
     </Text>,
     <Text size="sm" key="regulatoryId">
       {item.regulatoryId}
