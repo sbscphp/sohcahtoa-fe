@@ -37,7 +37,7 @@ export interface RegulatoryLogRowItem {
   userOrSystem: string;
   actionPerformed: string;
   actionResult: string;
-  channel: string;
+  moduleSection: string;
   regulatoryId: string;
 }
 
@@ -49,7 +49,7 @@ export interface RegulatoryLogDetailViewModel {
   response: string;
   result: string;
   regulatoryId: string;
-  channel: string;
+  moduleSection: string;
   fileUrl: string;
 }
 
@@ -114,7 +114,7 @@ function normalizeDetail(value: AdminRegulatoryLogDetailsData | null): Regulator
     response: normalizeActionResult(data.response),
     result: normalizeActionResult(data.result),
     regulatoryId: asString(data.regulatoryId, "--"),
-    channel: asString(data.channel, "--"),
+    moduleSection: asString(data.moduleSection, "--"),
     fileUrl: asString(data.fileUrl, ""),
   };
 }
@@ -127,7 +127,7 @@ function normalizeListItem(item: AdminRegulatoryLogListItem | UnknownRecord): Re
     userOrSystem: asString(record.userOrSystem, "--"),
     actionPerformed: asString(record.actionPerformed, "--"),
     actionResult: normalizeActionResult(record.actionResult),
-    channel: asString(record.channel, "--"),
+    moduleSection: asString(record.moduleSection, "--"),
     regulatoryId: asString(record.regulatoryId, "--"),
   };
 }

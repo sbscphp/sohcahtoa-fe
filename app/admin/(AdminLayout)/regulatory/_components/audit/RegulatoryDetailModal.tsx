@@ -101,7 +101,7 @@ export function RegulatoryDetailModal({
         <Divider />
         <DetailRow label="Regulatory ID" value={details.regulatoryId} />
         <Divider />
-        <DetailRow label="Channel" value={details.channel} />
+        <DetailRow label="Module" value={details.moduleSection} />
       </Stack>
     );
   };

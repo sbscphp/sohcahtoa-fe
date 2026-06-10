@@ -90,7 +90,7 @@ export default function AdminHeaderProfileMenu() {
         </Popover.Target>
 
         <Popover.Dropdown className="w-64 rounded-xl border border-gray-50 p-0">
-          <div className="flex items-center gap-3 border-b border-gray-50 px-4 py-3">
+          <div className="flex items-center gap-3 border-b border-gray-50 px-2 py-3">
             <Avatar name={displayName} color="initials" size={40} radius="xl" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-body-heading-300">
@@ -106,7 +106,7 @@ export default function AdminHeaderProfileMenu() {
                 key={item.value}
                 href={item.href()}
                 onClick={() => setPopoverOpen(false)}
-                className="block px-4 py-2.5 text-sm text-body-heading-300 transition-colors hover:bg-gray-50"
+                className="block px-2 py-2.5 text-sm text-body-heading-300 transition-colors hover:bg-gray-50"
               >
                 {item.label}
               </Link>
@@ -117,7 +117,7 @@ export default function AdminHeaderProfileMenu() {
             <button
               type="button"
               onClick={handleLogoutClick}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-primary-400 transition-colors hover:bg-gray-50"
+              className="flex w-full cursor-pointer items-center gap-2 px-2 py-2.5 text-sm text-primary-400 transition-colors hover:bg-gray-50"
             >
               <LogOut size={16} className="shrink-0" />
               Log out

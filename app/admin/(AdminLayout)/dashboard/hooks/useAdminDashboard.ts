@@ -6,16 +6,28 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import type { AdminDashboardData } from "@/app/admin/_types/dashboard";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import {
+  mapDashboardTasks,
   mapRecentTransactions,
   mapTransactionSummaryChartData,
   mapTransactionsByTypeDonut,
-  mergeDashboardFeedSorted,
 } from "../mapDashboardData";
 
-export function useAdminDashboard() {
+type DashboardFilter = { year?: string; month?: string; range?: string; txnType?: string };
+
+export function useAdminDashboard(filter?: DashboardFilter) {
+  const params =
+    filter?.year || filter?.month || filter?.range || filter?.txnType
+      ? {
+          year: filter.year || undefined,
+          month: filter.month || undefined,
+          range: filter.range || undefined,
+          txnType: filter.txnType || undefined,
+        }
+      : undefined;
+
   const query = useFetchData<ApiResponse<AdminDashboardData>>(
-    [...adminKeys.dashboard.stats()],
-    () => adminApi.dashboard.getStats(),
+    [...adminKeys.dashboard.stats(params)],
+    () => adminApi.dashboard.getStats(params),
     true
   );
 
@@ -27,9 +39,7 @@ export function useAdminDashboard() {
     transactionSummary: raw?.transactionSummary ?? null,
     transactionsByType: raw?.transactionsByType ?? null,
     recentTransactions: raw ? mapRecentTransactions(raw.recentTransactions) : [],
-    taskNotificationFeed: raw
-      ? mergeDashboardFeedSorted(raw.tasks, raw.notifications)
-      : [],
+    tasks: raw ? mapDashboardTasks(raw.tasks) : [],
     barChartData: raw
       ? mapTransactionSummaryChartData(raw.transactionSummary)
       : [],

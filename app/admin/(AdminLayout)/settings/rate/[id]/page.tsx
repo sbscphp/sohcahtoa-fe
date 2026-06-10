@@ -11,11 +11,13 @@ import {
   ActionIcon,
   Divider,
   Skeleton,
+  Menu,
+  Button,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { TimeInput } from "@mantine/dates";
 import { useForm } from "@mantine/form";
-import { Calendar, Clock, ArrowLeftRight } from "lucide-react";
+import { Calendar, Clock, ArrowLeftRight, ChevronDown, Pencil, CheckCheck, Eye } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import CurrencySelector from "@/app/admin/_components/CurrencySelector";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
@@ -36,6 +38,7 @@ import {
   buildApiDateTimeIso,
   splitApiDateTimeForInput,
 } from "@/app/utils/helper/formatLocalDate";
+import RateTakeActionOverlay from "./RateTakeActionOverlay";
 
 const SECTION_TITLE_CLASS = "text-lg! font-semibold! text-orange-500!";
 const SECTION_DESC_CLASS = "text-base! text-body-text-100! mb-4!";
@@ -86,6 +89,28 @@ function buildRatePayload(values: RateFormValues): CreateRatePayload | null {
   };
 }
 
+function prefillFromDetail(detail: RateDetailsData): RateFormValues {
+  const start = splitApiDateTimeForInput(detail.validFrom);
+  const end = splitApiDateTimeForInput(detail.validUntil);
+  const buyCurrency = CURRENCIES.some((c) => c.code === detail.fromCurrency)
+    ? (detail.fromCurrency as CurrencyCode)
+    : null;
+  const sellCurrency = CURRENCIES.some((c) => c.code === detail.toCurrency)
+    ? (detail.toCurrency as CurrencyCode)
+    : null;
+  return {
+    buyCurrency,
+    buyRateInput: String(detail.buyRate ?? ""),
+    sellCurrency,
+    sellRateInput: String(detail.sellRate ?? ""),
+    startDate: start.date,
+    startTime: start.time,
+    endDate: end.date,
+    endTime: end.time,
+    note: detail.note ?? "",
+  };
+}
+
 export default function RateDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -93,6 +118,8 @@ export default function RateDetailPage() {
   const rateId = params?.id ?? "";
   const hasPrefilledRef = useRef(false);
 
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isTakeActionOpen, setIsTakeActionOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
@@ -144,31 +171,9 @@ export default function RateDetailPage() {
     if (!rateDetailQuery.data?.data || hasPrefilledRef.current) {
       return;
     }
-
-    const detail = rateDetailQuery.data.data;
-    const start = splitApiDateTimeForInput(detail.validFrom);
-    const end = splitApiDateTimeForInput(detail.validUntil);
-
-    const buyCurrency = CURRENCIES.some((c) => c.code === detail.fromCurrency)
-      ? (detail.fromCurrency as CurrencyCode)
-      : null;
-    const sellCurrency = CURRENCIES.some((c) => c.code === detail.toCurrency)
-      ? (detail.toCurrency as CurrencyCode)
-      : null;
-
-    form.setValues({
-      buyCurrency,
-      buyRateInput: String(detail.buyRate ?? ""),
-      sellCurrency,
-      sellRateInput: String(detail.sellRate ?? ""),
-      startDate: start.date,
-      startTime: start.time,
-      endDate: end.date,
-      endTime: end.time,
-      note: detail.note ?? "",
-    });
+    form.setValues(prefillFromDetail(rateDetailQuery.data.data));
     hasPrefilledRef.current = true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rateDetailQuery.data]);
 
   const updateRateMutation = usePutData(
@@ -203,6 +208,17 @@ export default function RateDetailPage() {
     }
   );
 
+  const rateDetail = rateDetailQuery.data?.data;
+  const rateStatus = rateDetail?.status ?? undefined;
+  const isApproved = rateDetail?.isApproved ?? false;
+  const isPendingApproval = rateStatus === "PENDING_APPROVAL";
+  const isApprovalOfficer = rateDetail?.approvalProcess?.isApprovalOfficer ?? false;
+  const approvalState = rateDetail?.approvalProcess?.approvalState;
+  const workflowLine = rateDetail?.workflowLine ?? [];
+
+  const showCompleteReview = isPendingApproval;
+  const showViewUpdates = isApproved && !isPendingApproval;
+
   const isLoading = rateDetailQuery.isLoading;
   const hasError = rateDetailQuery.isError || (!isLoading && !rateDetailQuery.data?.data);
   const errorMessage = rateDetailQuery.error?.message ?? "Rate details could not be loaded.";
@@ -221,8 +237,18 @@ export default function RateDetailPage() {
     });
   };
 
+  const handleEditClick = () => {
+    setIsEditMode(true);
+  };
+
   const handleCancel = () => {
-    router.push(adminRoutes.adminSettingsRates());
+    if (isEditMode && rateDetailQuery.data?.data) {
+      form.setValues(prefillFromDetail(rateDetailQuery.data.data));
+      form.clearErrors();
+      setIsEditMode(false);
+    } else {
+      router.push(adminRoutes.adminSettingsRates());
+    }
   };
 
   const handleSaveClick = () => {
@@ -253,7 +279,7 @@ export default function RateDetailPage() {
 
   const handleSuccessManageRate = () => {
     setIsSuccessOpen(false);
-    router.push(adminRoutes.adminSettingsRates());
+    setIsEditMode(false);
   };
 
   if (!rateId) {
@@ -300,6 +326,50 @@ export default function RateDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Page header with Actions dropdown */}
+      <Group justify="flex-end" mb="md">
+        <Menu shadow="md" width={220} position="bottom-end" withinPortal>
+          <Menu.Target>
+            <Button
+              radius="xl"
+              size="md"
+              className="!text-body-text-100!"
+              rightSection={<ChevronDown size={16} />}
+            >
+              Take Action
+            </Button>
+          </Menu.Target>
+
+          <Menu.Dropdown className="rounded-xl! border border-gray-50 p-1!">
+            <Menu.Item
+              leftSection={<Pencil size={16} />}
+              onClick={handleEditClick}
+              disabled={isEditMode}
+            >
+              Edit
+            </Menu.Item>
+
+            {showCompleteReview && (
+              <Menu.Item
+                leftSection={<CheckCheck size={16} />}
+                onClick={() => setIsTakeActionOpen(true)}
+              >
+                Complete Review
+              </Menu.Item>
+            )}
+
+            {showViewUpdates && (
+              <Menu.Item
+                leftSection={<Eye size={16} />}
+                onClick={() => setIsTakeActionOpen(true)}
+              >
+                View Updates
+              </Menu.Item>
+            )}
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
+
       <div className="rounded-2xl bg-white shadow-sm p-6 md:p-8">
         <section className="mb-8">
           <Text className={SECTION_TITLE_CLASS} mb={4}>
@@ -319,6 +389,7 @@ export default function RateDetailPage() {
                 <CurrencySelector
                   value={form.values.buyCurrency}
                   onChange={(value) => form.setFieldValue("buyCurrency", value)}
+                  disabled={!isEditMode}
                 />
                 <TextInput
                   value="1"
@@ -342,7 +413,7 @@ export default function RateDetailPage() {
                   color="dark"
                   onClick={handleSwapConversion}
                   aria-label="Swap conversion"
-                  disabled={updateRateMutation.isPending}
+                  disabled={!isEditMode || updateRateMutation.isPending}
                 >
                   <div className="flex items-center rounded-md justify-center bg-[#6d6b6e] h-5 w-5">
                     <ArrowLeftRight size={16} />
@@ -353,6 +424,7 @@ export default function RateDetailPage() {
                   value={form.values.buyRateInput}
                   onChange={(e) => form.setFieldValue("buyRateInput", e.currentTarget.value)}
                   error={form.errors.buyRateInput}
+                  readOnly={!isEditMode}
                   radius="md"
                   className="flex-1 min-w-[140px]"
                   classNames={{ input: "text-xl! font-bold! text-end!" }}
@@ -383,6 +455,7 @@ export default function RateDetailPage() {
                 <CurrencySelector
                   value={form.values.sellCurrency}
                   onChange={(value) => form.setFieldValue("sellCurrency", value)}
+                  disabled={!isEditMode}
                 />
                 <TextInput
                   value="1"
@@ -406,7 +479,7 @@ export default function RateDetailPage() {
                   color="dark"
                   onClick={handleSwapConversion}
                   aria-label="Swap conversion"
-                  disabled={updateRateMutation.isPending}
+                  disabled={!isEditMode || updateRateMutation.isPending}
                 >
                   <div className="flex items-center rounded-md justify-center bg-[#6d6b6e] h-5 w-5">
                     <ArrowLeftRight size={16} />
@@ -417,6 +490,7 @@ export default function RateDetailPage() {
                   value={form.values.sellRateInput}
                   onChange={(e) => form.setFieldValue("sellRateInput", e.currentTarget.value)}
                   error={form.errors.sellRateInput}
+                  readOnly={!isEditMode}
                   radius="md"
                   className="flex-1 min-w-[140px]"
                   classNames={{ input: "text-xl! font-bold! text-end!" }}
@@ -462,6 +536,7 @@ export default function RateDetailPage() {
                   error={form.errors.startDate}
                   radius="md"
                   rightSection={<Calendar size={16} />}
+                  readOnly={!isEditMode}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
                   When this rate goes live, it will affect foreign exchange transactions on the
@@ -478,6 +553,7 @@ export default function RateDetailPage() {
                   error={form.errors.startTime}
                   radius="md"
                   rightSection={<Clock size={16} />}
+                  readOnly={!isEditMode}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
                   From the stated start time, this rate will apply to all foreign exchange
@@ -497,6 +573,7 @@ export default function RateDetailPage() {
                   error={form.errors.endDate}
                   radius="md"
                   rightSection={<Calendar size={16} />}
+                  readOnly={!isEditMode}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
                   When this rate ends, it will no longer apply to foreign exchange transactions on
@@ -513,6 +590,7 @@ export default function RateDetailPage() {
                   error={form.errors.endTime}
                   radius="md"
                   rightSection={<Clock size={16} />}
+                  readOnly={!isEditMode}
                 />
                 <Text size="xs" c="dimmed" mt={6}>
                   After the stated end time, this rate will no longer apply to foreign exchange
@@ -539,6 +617,7 @@ export default function RateDetailPage() {
               onChange={(e) => form.setFieldValue("note", e.currentTarget.value)}
               minRows={4}
               radius="md"
+              readOnly={!isEditMode}
             />
             <Text size="xs" c="dimmed" mt={6}>
               Optional field ({justificationWordCount} word{justificationWordCount === 1 ? "" : "s"}
@@ -547,26 +626,28 @@ export default function RateDetailPage() {
           </div>
         </section>
 
-        <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
-          <CustomButton
-            fullWidth
-            size="lg"
-            buttonType="secondary"
-            onClick={handleCancel}
-            disabled={updateRateMutation.isPending}
-          >
-            Cancel
-          </CustomButton>
-          <CustomButton
-            fullWidth
-            size="lg"
-            buttonType="primary"
-            onClick={handleSaveClick}
-            disabled={updateRateMutation.isPending}
-          >
-            Save
-          </CustomButton>
-        </Group>
+        {isEditMode && (
+          <Group justify="center" wrap="nowrap" gap="sm" mt="xl">
+            <CustomButton
+              fullWidth
+              size="lg"
+              buttonType="secondary"
+              onClick={handleCancel}
+              disabled={updateRateMutation.isPending}
+            >
+              Cancel
+            </CustomButton>
+            <CustomButton
+              fullWidth
+              size="lg"
+              buttonType="primary"
+              onClick={handleSaveClick}
+              disabled={updateRateMutation.isPending}
+            >
+              Save
+            </CustomButton>
+          </Group>
+        )}
       </div>
 
       <ConfirmationModal
@@ -586,10 +667,20 @@ export default function RateDetailPage() {
         onClose={() => setIsSuccessOpen(false)}
         title="New Changes Saved"
         message="New Changes has been successfully Saved and Updated"
-        primaryButtonText="Manage Rate"
+        primaryButtonText="Done"
         onPrimaryClick={handleSuccessManageRate}
         secondaryButtonText="No, Close"
         onSecondaryClick={() => setIsSuccessOpen(false)}
+      />
+
+      <RateTakeActionOverlay
+        opened={isTakeActionOpen}
+        onClose={() => setIsTakeActionOpen(false)}
+        rateId={rateId}
+        rateStatus={rateStatus}
+        isApprovalOfficer={isApprovalOfficer}
+        approvalState={approvalState}
+        workflowLine={workflowLine}
       />
     </div>
   );

@@ -2,7 +2,7 @@
 
 
 
-import { Card, Group, Text } from "@mantine/core";
+import { Card, Group, Text, Select } from "@mantine/core";
 
 import Link from "next/link";
 
@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 
 import { Transaction } from "../../../_types/dashboard";
 
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ListFilter } from "lucide-react";
+import { TRANSACTION_TYPE_FILTER_OPTIONS } from "../mapDashboardData";
 
 import DynamicTableSection from "../../../_components/DynamicTableSection";
 
@@ -25,11 +26,19 @@ export function RecentTransactionsTable({
 
   loading = false,
 
+  txnType,
+
+  onTxnTypeChange,
+
 }: {
 
   data: Transaction[];
 
   loading?: boolean;
+
+  txnType: string;
+
+  onTxnTypeChange: (value: string) => void;
 
 }) {
 
@@ -49,6 +58,18 @@ export function RecentTransactionsTable({
 
         </Text>
 
+        <Group gap="sm">
+
+        <Select
+          value={txnType}
+          onChange={(value) => onTxnTypeChange(value ?? "")}
+          data={TRANSACTION_TYPE_FILTER_OPTIONS}
+          clearable
+          radius="xl"
+          w={180}
+          rightSection={<ListFilter size={16} />}
+        />
+
         <Link
 
           href={adminRoutes.adminTransactions()}
@@ -66,6 +87,8 @@ export function RecentTransactionsTable({
           <ArrowUpRight size={14} color="orange" />
 
         </Link>
+
+        </Group>
 
       </Group>
 

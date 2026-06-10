@@ -177,7 +177,7 @@ export default function BranchSection() {
                 setFilter(value);
                 setPage(1);
               }}
-              data={["Active", "Deactivated"]}
+              data={["Active", "Pending", "Deactivated"]}
               placeholder="Filter By"
               clearable
               radius="xl"

@@ -110,6 +110,7 @@ export const API_ENDPOINTS = {
     notifications: {
       all: "/api/admin/notifications",
       unread: "/api/admin/notifications/unread",
+      unreadCount: "/api/admin/notifications/unread-count",
       markRead: (id: string) => `/api/admin/notifications/${id}/read`,
     },
     auditTrail: "/api/admin/audit/trail",
@@ -167,6 +168,8 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/rate/${id}`,
       update: (id: string) => `/api/admin/rate/${id}`,
       stats: "/api/admin/rate/stats",
+      approve: (id: string) => `/api/admin/rate/${id}/approve`,
+      reject: (id: string) => `/api/admin/rate/${id}/reject`,
     },
     outlet: {
       pickupStations: {
@@ -230,6 +233,25 @@ export const API_ENDPOINTS = {
         `/api/admin/transactions/${id}/documents/${documentId}/reject`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
+    },
+    wallet: {
+      list: "/api/admin/wallet",
+      export: "/api/admin/wallet/export",
+      getById: (id: string) => `/api/admin/wallet/${id}`,
+      ledger: (id: string) => `/api/admin/wallet/${id}/ledger`,
+      ledgerExport: (id: string) => `/api/admin/wallet/${id}/ledger/export`,
+      ledgerEntry: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}`,
+      ledgerEntryNotes: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/notes`,
+      ledgerLinkTransaction: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/link-transaction`,
+      ledgerFlag: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/flag`,
+      ledgerRefund: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/refund`,
+      ledgerDisburse: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/disburse`,
     },
     reports: {
       modules: "/api/admin/reports/modules",

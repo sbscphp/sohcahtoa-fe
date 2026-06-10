@@ -7,6 +7,7 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -15,27 +16,41 @@ import { useGetExportData } from "@/app/_lib/api/hooks";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 const headers = [
   { label: "Date and time", key: "dateTime" },
   { label: "Currency pair", key: "currencyPair" },
   { label: "We buy at", key: "buyAt" },
   { label: "We sell at", key: "sellAt" },
+  { label: "Status", key: "status" },
   { label: "Last updated", key: "lastUpdated" },
   { label: "Action", key: "action" },
 ];
 
 const PAGE_SIZE = 5;
-type RateStatusValue = "active" | "scheduled";
-type RateTab = RateStatusValue;
 
-function getStatusLabel(status: RateStatusValue) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+type RateTab = "all" | "active" | "pending_approval" | "scheduled" | "expired";
+
+const TABS: { value: RateTab; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "pending_approval", label: "Pending Approval" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "expired", label: "Expired" },
+];
+
+function getEmptyState(tab: RateTab) {
+  if (tab === "all") return { title: "No Rates Available", message: "No rates have been created yet." };
+  const label = TABS.find((t) => t.value === tab)?.label ?? tab;
+  return {
+    title: `No ${label} Rates Available`,
+    message: `You currently don't have any ${label.toLowerCase()} rates available yet.`,
+  };
 }
 
 function renderDateTimeCell(value: string) {
   const [date = "--", time = "--"] = value?.split("\n") ?? [];
-
   return (
     <div>
       <Text size="sm">{date}</Text>
@@ -48,38 +63,38 @@ function renderDateTimeCell(value: string) {
 
 export default function RateTableSection() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<RateTab>("active");
+  const [activeTab, setActiveTab] = useState<RateTab>("all");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
-  const status = activeTab;
-  const statusLabel = getStatusLabel(status);
-  const emptyTitle = `No ${statusLabel} Rates Available`;
-  const emptyMessage = `You currently don't have any ${status.toLowerCase()} rates available yet. Check back later.`;
+
+  const { title: emptyTitle, message: emptyMessage } = getEmptyState(activeTab);
+
+  const apiStatus = activeTab === "all" ? undefined : activeTab;
 
   const queryParams = useMemo(
     () => ({
       page,
       limit: PAGE_SIZE,
       search: debouncedSearch.trim() || undefined,
-      status,
+      status: apiStatus,
     }),
-    [debouncedSearch, page, status],
+    [debouncedSearch, page, apiStatus],
   );
 
   const { rates, isLoading, totalPages } = useRates(queryParams);
+
   const exportRatesMutation = useGetExportData(
     () =>
       adminApi.rate.export({
         search: debouncedSearch.trim() || undefined,
-        status,
+        status: apiStatus,
       }),
     {
       onSuccess: (csvBlob) => {
         const objectUrl = URL.createObjectURL(csvBlob);
         const link = document.createElement("a");
         const dateStamp = new Date().toISOString().slice(0, 10);
-
         link.href = objectUrl;
         link.download = `exchange-rates-${dateStamp}.csv`;
         document.body.appendChild(link);
@@ -101,6 +116,14 @@ export default function RateTableSection() {
     },
   );
 
+  const pagination = {
+    page,
+    totalPages,
+    onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
+    onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
+    onPageChange: setPage,
+  };
+
   const renderRow = (item: RateListItem) => [
     <div key="dateTime">{renderDateTimeCell(item.dateTime)}</div>,
     <Text key="currencyPair" size="sm" fw={500}>
@@ -112,6 +135,9 @@ export default function RateTableSection() {
     <Text key="sellAt" size="sm">
       {item.sellAt}
     </Text>,
+    <div key="status">
+      <StatusBadge status={toSentenceCase(item.status)} size="md" />
+    </div>,
     <div key="lastUpdated">{renderDateTimeCell(item.lastUpdated)}</div>,
     <RowActionIcon
       key="action"
@@ -126,7 +152,7 @@ export default function RateTableSection() {
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <Group justify="space-between" mb="md">
         <div className="flex flex-wrap items-center gap-4">
-          <h2 className="text-lg font-semibold">All Rate</h2>
+          <h2 className="text-lg font-semibold">All Rates</h2>
           <TextInput
             placeholder="Enter keyword"
             leftSection={<Search size={16} />}
@@ -169,86 +195,31 @@ export default function RateTableSection() {
         color="orange"
         value={activeTab}
         onChange={(value) => {
-          setActiveTab((value as RateTab) || "active");
+          setActiveTab((value as RateTab) ?? "all");
           setPage(1);
         }}
       >
         <Tabs.List className="mb-4 border-0! before:content-none!">
-          <AdminTabButton value="active">Active</AdminTabButton>
-          <AdminTabButton value="scheduled">Scheduled</AdminTabButton>
+          {TABS.map((tab) => (
+            <AdminTabButton key={tab.value} value={tab.value}>
+              {tab.label}
+            </AdminTabButton>
+          ))}
         </Tabs.List>
 
-        <Tabs.Panel value="active">
-          <DynamicTableSection
-            headers={headers}
-            data={rates}
-            loading={isLoading}
-            renderItems={renderRow}
-            emptyTitle={emptyTitle}
-            emptyMessage={emptyMessage}
-            pagination={{
-              page,
-              totalPages,
-              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
-              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
-              onPageChange: setPage,
-            }}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="deactivated">
-          <DynamicTableSection
-            headers={headers}
-            data={rates}
-            loading={isLoading}
-            renderItems={renderRow}
-            emptyTitle={emptyTitle}
-            emptyMessage={emptyMessage}
-            pagination={{
-              page,
-              totalPages,
-              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
-              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
-              onPageChange: setPage,
-            }}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="expired">
-          <DynamicTableSection
-            headers={headers}
-            data={rates}
-            loading={isLoading}
-            renderItems={renderRow}
-            emptyTitle={emptyTitle}
-            emptyMessage={emptyMessage}
-            pagination={{
-              page,
-              totalPages,
-              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
-              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
-              onPageChange: setPage,
-            }}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="scheduled">
-          <DynamicTableSection
-            headers={headers}
-            data={rates}
-            loading={isLoading}
-            renderItems={renderRow}
-            emptyTitle={emptyTitle}
-            emptyMessage={emptyMessage}
-            pagination={{
-              page,
-              totalPages,
-              onNext: () => setPage((p) => Math.min(p + 1, totalPages)),
-              onPrevious: () => setPage((p) => Math.max(p - 1, 1)),
-              onPageChange: setPage,
-            }}
-          />
-        </Tabs.Panel>
+        {TABS.map((tab) => (
+          <Tabs.Panel key={tab.value} value={tab.value}>
+            <DynamicTableSection
+              headers={headers}
+              data={rates}
+              loading={isLoading}
+              renderItems={renderRow}
+              emptyTitle={emptyTitle}
+              emptyMessage={emptyMessage}
+              pagination={pagination}
+            />
+          </Tabs.Panel>
+        ))}
       </Tabs>
     </div>
   );

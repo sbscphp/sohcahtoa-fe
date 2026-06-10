@@ -12,15 +12,16 @@ const noteHeaders = [
 ];
 
 interface EntryAdminNotesTabProps {
+  walletId: string;
   entryId: string;
 }
 
-export default function EntryAdminNotesTab({ entryId }: EntryAdminNotesTabProps) {
+export default function EntryAdminNotesTab({ walletId, entryId }: EntryAdminNotesTabProps) {
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
 
   const { notes, isLoading, isFetching, totalPages } =
-    useTransientEntryAdminNotes(entryId, page, pageSize);
+    useTransientEntryAdminNotes(walletId, entryId, page, pageSize);
 
   const safeTotalPages = Math.max(1, totalPages);
 

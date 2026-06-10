@@ -6,19 +6,6 @@ import type { AdminDashboardTransactionsByType } from "@/app/admin/_types/dashbo
 import type { DonutSegment } from "../mapDashboardData";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
-const LEGEND_DOT: Record<string, string> = {
-  "orange.7": "bg-orange-600",
-  "orange.5": "bg-orange-500",
-  "orange.3": "bg-orange-300",
-  "orange.9": "bg-orange-800",
-  "orange.2": "bg-orange-200",
-  "gray.4": "bg-gray-400",
-  "gray.5": "bg-gray-500",
-};
-
-function legendClass(segment: DonutSegment): string {
-  return LEGEND_DOT[segment.color] ?? "bg-orange-400";
-}
 
 export function TransactionsByType({
   transactionsByType,
@@ -67,7 +54,8 @@ export function TransactionsByType({
             {donutData.map((item) => (
               <Group key={item.name} gap="xs">
                 <div
-                  className={`h-2 w-2 shrink-0 rounded-full ${legendClass(item)}`}
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: item.color }}
                 />
                 <Text size="sm">{item.name}</Text>
               </Group>

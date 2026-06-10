@@ -12,9 +12,10 @@ type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 interface CurrencySelectorProps {
   value?: CurrencyCode | null;
   onChange?: (value: CurrencyCode) => void;
+  disabled?: boolean;
 }
 
-export default function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
+export default function CurrencySelector({ value, onChange, disabled }: CurrencySelectorProps) {
   const [internalSelected, setInternalSelected] = useState<(typeof CURRENCIES)[number]>(
     CURRENCIES[0]
   );
@@ -34,11 +35,12 @@ export default function CurrencySelector({ value, onChange }: CurrencySelectorPr
   };
 
   return (
-    <Menu position="bottom-end" width={220} closeOnItemClick>
+    <Menu position="bottom-end" width={220} closeOnItemClick disabled={disabled}>
       <Menu.Target>
         <button
           type="button"
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-2.5 text-xs font-normal leading-4 text-body-text-400 transition-opacity hover:opacity-90"
+          disabled={disabled}
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-2.5 text-xs font-normal leading-4 text-body-text-400 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="text-base leading-none" aria-hidden>
             <Image

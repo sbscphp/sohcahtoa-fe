@@ -37,6 +37,7 @@ export default function TransientWalletDetailPage() {
       <WalletSummaryCard
         wallet={wallet}
         isLoading={isLoading}
+        showAddNote={false}
         onAddNote={() => setNoteModalOpen(true)}
       />
 
