@@ -31,6 +31,7 @@ import AgentProceedToPaymentModal from "@/app/agent/_components/transactions/det
 import AgentRecordDisbursementModal from "@/app/agent/_components/transactions/details/AgentRecordDisbursementModal";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { buildAgentDetailPayloadFromApi } from "@/app/agent/_utils/agent-transaction-detail-payload";
+import { resolveTransactionPayoutDisplay } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
 import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import Loader from "@/components/loader";
 import { Button } from "@mantine/core";
@@ -116,8 +117,10 @@ export default function AgentTransactionDetailPage() {
     ? Number(apiData.foreignAmount)
     : 0;
   const cashPickup = apiData?.cashPickup ?? null;
-  const beneficiaryDetails = apiData?.beneficiaryDetails;
-  const bankAccounts = apiData?.bankAccounts ?? [];
+  const payoutDisplay = resolveTransactionPayoutDisplay(
+    apiData?.bankAccounts,
+    apiData?.beneficiaryDetails,
+  );
   const isReceivedPaymentStep =
     (apiData?.status ?? "").toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
   const isAwaitingDisbursement = statusKey === "AWAITING_DISBURSEMENT";
@@ -343,11 +346,11 @@ export default function AgentTransactionDetailPage() {
           )}
           <TransactionDetailsSection data={payload.transactionDetails} />
           {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
-          {bankAccounts.length > 0 ? (
-            <TransactionBankAccountsSection accounts={bankAccounts} />
+          {payoutDisplay.kind === "bankAccounts" ? (
+            <TransactionBankAccountsSection accounts={payoutDisplay.accounts} />
           ) : null}
-          {beneficiaryDetails ? (
-            <BeneficiaryDetailsSection data={beneficiaryDetails} />
+          {payoutDisplay.kind === "beneficiary" ? (
+            <BeneficiaryDetailsSection data={payoutDisplay.data} />
           ) : null}
           <RequiredDocumentsSection
             data={payload.requiredDocuments}

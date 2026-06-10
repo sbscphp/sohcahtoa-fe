@@ -19,6 +19,7 @@ import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
+import { resolveTransactionPayoutDisplay } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import {
   TransactionDetailsSection,
@@ -117,8 +118,10 @@ export default function TransactionDetailPage() {
     Number.isFinite(paymentAmountNgn) &&
     paymentAmountNgn > 0;
   const cashPickup = apiData?.cashPickup ?? null;
-  const beneficiaryDetails = apiData?.beneficiaryDetails;
-  const bankAccounts = apiData?.bankAccounts ?? [];
+  const payoutDisplay = resolveTransactionPayoutDisplay(
+    apiData?.bankAccounts,
+    apiData?.beneficiaryDetails,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -254,11 +257,11 @@ export default function TransactionDetailPage() {
       <div className="flex flex-col gap-4 pb-8">
         <TransactionDetailsSection data={payload.transactionDetails} />
         {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
-        {bankAccounts.length > 0 ? (
-          <TransactionBankAccountsSection accounts={bankAccounts} />
+        {payoutDisplay.kind === "bankAccounts" ? (
+          <TransactionBankAccountsSection accounts={payoutDisplay.accounts} />
         ) : null}
-        {beneficiaryDetails ? (
-          <BeneficiaryDetailsSection data={beneficiaryDetails} />
+        {payoutDisplay.kind === "beneficiary" ? (
+          <BeneficiaryDetailsSection data={payoutDisplay.data} />
         ) : null}
         <RequiredDocumentsSection
           data={payload.requiredDocuments}
