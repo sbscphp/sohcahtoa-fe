@@ -10,7 +10,10 @@ import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import WorkflowLineView from "../_workflowComponents/WorkflowLineView";
 import { useWorkflowTemplateDetails } from "../hooks/useWorkflowTemplateDetails";
+import { useWorkflowTemplateStatusActions } from "../hooks/useWorkflowTemplateStatusActions";
 import { approvalTypeLabel } from "../_workflowComponents/ApprovalTypeModal";
+
+type WorkflowStatus = "Active" | "Deactivated" | "Draft" | "Archived";
 
 function formatAmount(amount: number | null): string {
   if (amount === null) return "--";
@@ -77,8 +80,8 @@ export default function WorkflowDetailPage() {
   const router = useRouter();
   const id = params?.id ?? "";
   const { template, isLoading, isError } = useWorkflowTemplateDetails(id);
-  const [status, setStatus] = useState<"Active" | "Deactivated" | "Draft">("Active");
-  const [loading, setLoading] = useState(false);
+  const [statusOverride, setStatusOverride] = useState<WorkflowStatus | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
@@ -87,33 +90,39 @@ export default function WorkflowDetailPage() {
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
   const [reactivateSuccessOpen, setReactivateSuccessOpen] = useState(false);
 
+  const { deactivate, activate, isDeactivating, isActivating } =
+    useWorkflowTemplateStatusActions(id, {
+      onDeactivateSuccess: () => {
+        setDeactivateConfirmOpen(false);
+        setStatusOverride("Deactivated");
+        setDeactivateSuccessOpen(true);
+      },
+      onActivateSuccess: () => {
+        setReactivateConfirmOpen(false);
+        setStatusOverride("Active");
+        setReactivateSuccessOpen(true);
+      },
+    });
+
   const workflow = template;
-  const effectiveStatus = status === "Active" && workflow?.status ? workflow.status : status;
+  const currentStatus: WorkflowStatus = statusOverride ?? workflow?.status ?? "Active";
 
   const handleDelete = async () => {
-    setLoading(true);
+    setDeleteLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
-    setLoading(false);
+    setDeleteLoading(false);
     setDeleteConfirmOpen(false);
     setDeleteSuccessOpen(true);
   };
 
-  const handleDeactivate = async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setLoading(false);
-    setDeactivateConfirmOpen(false);
-    setStatus("Deactivated");
-    setDeactivateSuccessOpen(true);
+  const handleDeactivate = () => {
+    if (!id || isDeactivating) return;
+    deactivate.mutate(undefined);
   };
 
-  const handleReactivate = async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setLoading(false);
-    setReactivateConfirmOpen(false);
-    setStatus("Active");
-    setReactivateSuccessOpen(true);
+  const handleReactivate = () => {
+    if (!id || isActivating) return;
+    activate.mutate(undefined);
   };
 
   const handleManageWorkflow = () => {
@@ -154,7 +163,7 @@ export default function WorkflowDetailPage() {
               </Text>
               <Group gap={8} className="flex-wrap text-sm text-gray-600">
                 <span>Date Created: {workflow.dateCreated} | {workflow.timeCreated}</span>
-                <StatusBadge status={effectiveStatus} />
+                <StatusBadge status={currentStatus} />
               </Group>
             </div>
 
@@ -171,12 +180,12 @@ export default function WorkflowDetailPage() {
                 <Menu.Divider />
                 <Menu.Item
                   onClick={() =>
-                    effectiveStatus === "Active"
+                    currentStatus === "Active"
                       ? setDeactivateConfirmOpen(true)
                       : setReactivateConfirmOpen(true)
                   }
                 >
-                  {effectiveStatus === "Active" ? "Deactivate" : "Reactivate"}
+                  {currentStatus === "Active" ? "Deactivate" : "Reactivate"}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -259,7 +268,7 @@ export default function WorkflowDetailPage() {
         primaryButtonText="Yes, Delete Workflow process"
         secondaryButtonText="No, Close"
         onPrimary={handleDelete}
-        loading={loading}
+        loading={deleteLoading}
       />
       <SuccessModal
         opened={deleteSuccessOpen}
@@ -278,7 +287,7 @@ export default function WorkflowDetailPage() {
         primaryButtonText="Yes, Deactivate Workflow process"
         secondaryButtonText="No, Close"
         onPrimary={handleDeactivate}
-        loading={loading}
+        loading={isDeactivating}
       />
       <SuccessModal
         opened={deactivateSuccessOpen}
@@ -297,7 +306,7 @@ export default function WorkflowDetailPage() {
         primaryButtonText="Yes, Reactivate Workflow process"
         secondaryButtonText="No, Close"
         onPrimary={handleReactivate}
-        loading={loading}
+        loading={isActivating}
       />
       <SuccessModal
         opened={reactivateSuccessOpen}

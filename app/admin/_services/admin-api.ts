@@ -2612,5 +2612,15 @@ export const adminApi = {
         `/api/admin/workflow/templates/${id}`,
         data
       ),
+
+    activateTemplate: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        `/api/admin/workflow/templates/${id}/activate`
+      ),
+
+    deactivateTemplate: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        `/api/admin/workflow/templates/${id}/deactivate`
+      ),
   },
 };
