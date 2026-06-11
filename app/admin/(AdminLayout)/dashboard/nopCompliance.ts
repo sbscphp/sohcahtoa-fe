@@ -1,23 +1,28 @@
-export const SHAREHOLDER_FUNDS_NGN = 2_000_000_000;
-export const NOP_LIMIT_NGN = 600_000_000; // 30% of SHF
-export const NOP_AMBER_THRESHOLD_NGN = 480_000_000; // 80% of limit
-
 export type NopComplianceStatus = "green" | "amber" | "red";
 
-export function getNopCompliance(currentNop: number): {
-  status: NopComplianceStatus;
-  utilizationPercent: number;
-} {
-  const utilizationPercent = Math.round((currentNop / NOP_LIMIT_NGN) * 100);
+export function getUnsettledNopUtilization(
+  balance: number,
+  comparisonLimit: number
+): number {
+  if (!comparisonLimit) return 0;
+  return Math.round((balance / comparisonLimit) * 100);
+}
 
-  let status: NopComplianceStatus = "green";
-  if (currentNop >= NOP_LIMIT_NGN) {
-    status = "red";
-  } else if (currentNop >= NOP_AMBER_THRESHOLD_NGN) {
-    status = "amber";
+export function mapApiColorToStatus(
+  color?: string | null,
+  utilizationPercent?: number
+): NopComplianceStatus {
+  const normalized = color?.trim().toLowerCase();
+  if (normalized === "red") return "red";
+  if (normalized === "amber") return "amber";
+  if (normalized === "green") return "green";
+
+  if (utilizationPercent != null) {
+    if (utilizationPercent >= 100) return "red";
+    if (utilizationPercent >= 80) return "amber";
   }
 
-  return { status, utilizationPercent };
+  return "green";
 }
 
 export const NOP_BADGE_STYLES: Record<

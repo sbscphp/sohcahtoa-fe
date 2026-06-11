@@ -986,6 +986,20 @@ export interface AdminTransactionStatsData {
   approved: number;
 }
 
+export interface AdminUnsettledBalanceBreakdownItem {
+  currency: string;
+  totalForeignAmount: number;
+  totalNairaEquivalent: number;
+  count: number;
+}
+
+export interface AdminUnsettledBalanceData {
+  totalUnsettledNairaBalance: number;
+  comparisonLimit: number;
+  color: "Red" | "Amber" | "Green" | string;
+  breakdown: AdminUnsettledBalanceBreakdownItem[];
+}
+
 export interface WorkflowStatsData {
   pending: number;
   completed: number;
@@ -2213,6 +2227,11 @@ export const adminApi = {
     getStats: () =>
       apiClient.get<ApiResponse<AdminTransactionStatsData>>(
         API_ENDPOINTS.admin.transactions.stats
+      ),
+
+    getUnsettledBalance: () =>
+      apiClient.get<ApiResponse<AdminUnsettledBalanceData>>(
+        API_ENDPOINTS.admin.transactions.unsettledBalance
       ),
 
     getById: (id: string) =>

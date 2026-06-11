@@ -349,6 +349,8 @@ export const adminKeys = {
   
   transactions: {
     all: ["admin", "transactions"] as const,
+    unsettledBalance: () =>
+      [...adminKeys.transactions.all, "unsettled-balance"] as const,
     stats: () => [...adminKeys.transactions.all, "stats"] as const,
     lists: () => [...adminKeys.transactions.all, "list"] as const,
     list: (params?: {
