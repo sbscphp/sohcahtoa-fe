@@ -28,9 +28,25 @@ interface WorkflowLineItemProps {
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
   onDelete: (id: string) => void;
+  allowedWorkflowTypes?: string[];
 }
 
-const WORKFLOW_TYPES = ["Review", "Approval", "Documentation", "Verification"];
+export const ALL_WORKFLOW_TYPE_OPTIONS = [
+  "Review",
+  "Approval",
+  "Documentation",
+  "Verification",
+] as const;
+
+export const RATE_WORKFLOW_TYPE_OPTIONS = ["Approval"] as const;
+
+export function coerceRateWorkflowLines(
+  lines: WorkflowLine[],
+  approvalType: string
+): WorkflowLine[] {
+  if (approvalType !== "RATE") return lines;
+  return lines.map((line) => ({ ...line, workflowType: "Approval" }));
+}
 
 function getInitials(name: string): string {
   return name
@@ -64,6 +80,7 @@ function WorkflowLineItem({
   onMoveUp,
   onMoveDown,
   onDelete,
+  allowedWorkflowTypes = [...ALL_WORKFLOW_TYPE_OPTIONS],
 }: WorkflowLineItemProps) {
   const badgeColor = index === 0 ? "bg-orange-500" : "bg-green-500";
   const totalAssigned = line.selectedUsers.length + line.selectedRoles.length;
@@ -87,7 +104,7 @@ function WorkflowLineItem({
               <Select
                 label="Workflow Type"
                 placeholder="Select an Option"
-                data={WORKFLOW_TYPES}
+                data={[...allowedWorkflowTypes]}
                 value={line.workflowType}
                 onChange={(value) => value && onUpdateWorkflowType(line.id, value)}
                 required
