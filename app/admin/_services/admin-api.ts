@@ -715,6 +715,28 @@ export type AdminLedgerNotesParams = {
   limit?: number;
 };
 
+export interface AdminLedgerAuditLog {
+  id: string;
+  adminId: string;
+  adminName: string;
+  adminEmail: string;
+  actionType: string;
+  actionLabel: string;
+  previousState: string | null;
+  newState: string | null;
+  reason: string | null;
+  metadata: Record<string, unknown> | null;
+  status: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  performedAt: string;
+}
+
+export type AdminLedgerAuditLogsParams = {
+  page?: number;
+  limit?: number;
+};
+
 export interface AdminTransactionSearchItem {
   id: string;
   customerName: string;
@@ -2346,6 +2368,16 @@ export const adminApi = {
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.wallet.ledgerEntryNotes(walletId, entryId),
         body
+      ),
+
+    getLedgerAuditLogs: (
+      walletId: string,
+      entryId: string,
+      params?: AdminLedgerAuditLogsParams
+    ) =>
+      apiClient.get<ApiResponse<AdminLedgerAuditLog[]>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntryAuditLogs(walletId, entryId),
+        { params }
       ),
 
     linkTransaction: (

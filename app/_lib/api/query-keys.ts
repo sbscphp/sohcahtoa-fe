@@ -402,6 +402,18 @@ export const adminKeys = {
         entryId,
         params ?? {},
       ] as const,
+    ledgerAuditLogs: (
+      walletId: string,
+      entryId: string,
+      params?: { page?: number; limit?: number }
+    ) =>
+      [
+        ...adminKeys.wallet.all,
+        "ledger-audit-logs",
+        walletId,
+        entryId,
+        params ?? {},
+      ] as const,
   },
 
   reports: {

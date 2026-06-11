@@ -12,15 +12,16 @@ const auditHeaders = [
 ];
 
 interface EntryAuditLogsTabProps {
+  walletId: string;
   entryId: string;
 }
 
-export default function EntryAuditLogsTab({ entryId }: EntryAuditLogsTabProps) {
+export default function EntryAuditLogsTab({ walletId, entryId }: EntryAuditLogsTabProps) {
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
 
   const { logs, isLoading, isFetching, totalPages } =
-    useTransientEntryAuditLogs(entryId, page, pageSize);
+    useTransientEntryAuditLogs(walletId, entryId, page, pageSize);
 
   const safeTotalPages = Math.max(1, totalPages);
 
