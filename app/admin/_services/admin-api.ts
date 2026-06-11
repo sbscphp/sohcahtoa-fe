@@ -445,18 +445,39 @@ export type PickupStationRequestListParams = Record<
   status?: string;
 };
 
-/** Loose DTO; align with UI mock row until backend contract is final. */
+export interface PickupStationRequestCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+}
+
+export interface PickupStationRequestTransaction {
+  id: string;
+  referenceNumber: string;
+  type: string;
+  transactionMode: string | null;
+}
+
 export interface PickupStationRequestListItemData {
-  id?: string;
-  customerName?: string;
-  customerCode?: string;
-  phoneNumber?: string;
-  email?: string;
-  type?: string;
-  status?: string;
-  createdAt?: string;
-  date?: string;
-  time?: string;
+  requestId: string;
+  pickupStationId: string;
+  pickupStationName: string;
+  pickupCode: string;
+  status: string;
+  amount: string;
+  currency: string;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  pickupState: string;
+  pickupCity: string;
+  scheduledPickupDate: string | null;
+  scheduledPickupTime: string | null;
+  expiryDate: string;
+  pickedUpAt: string | null;
+  createdAt: string;
+  customer: PickupStationRequestCustomer;
+  transaction: PickupStationRequestTransaction;
 }
 
 export type BranchListParams = Record<

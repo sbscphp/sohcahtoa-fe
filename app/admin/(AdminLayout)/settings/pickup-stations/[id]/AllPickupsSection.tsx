@@ -11,6 +11,7 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import {
+  mapPickupStatusFilterToApi,
   usePickupStationRequests,
   type StationPickup,
 } from "../../hooks/usePickupStationRequests";
@@ -27,10 +28,10 @@ export default function AllPickupsSection({
   const [statusFilter, setStatusFilter] = useState("Filter By");
   const [page, setPage] = useState(1);
 
-  const apiStatus = useMemo(() => {
-    if (statusFilter === "Filter By" || statusFilter === "All") return undefined;
-    return statusFilter;
-  }, [statusFilter]);
+  const apiStatus = useMemo(
+    () => mapPickupStatusFilterToApi(statusFilter),
+    [statusFilter]
+  );
 
   const {
     pickups,
