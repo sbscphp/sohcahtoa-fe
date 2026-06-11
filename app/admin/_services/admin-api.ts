@@ -1744,6 +1744,9 @@ export const adminApi = {
     reject: (id: string, data: { reason: string }) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.reject(id), data),
 
+    deactivate: (id: string) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.deactivate(id)),
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),
   },

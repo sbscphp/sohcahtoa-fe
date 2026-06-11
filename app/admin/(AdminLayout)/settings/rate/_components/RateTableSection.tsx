@@ -30,7 +30,7 @@ const headers = [
 
 const PAGE_SIZE = 5;
 
-type RateTab = "all" | "active" | "pending_approval" | "scheduled" | "expired";
+type RateTab = "all" | "active" | "pending_approval" | "scheduled" | "expired" | "deactivated";
 
 const TABS: { value: RateTab; label: string }[] = [
   { value: "all", label: "All" },
@@ -38,6 +38,7 @@ const TABS: { value: RateTab; label: string }[] = [
   { value: "pending_approval", label: "Pending Approval" },
   { value: "scheduled", label: "Scheduled" },
   { value: "expired", label: "Expired" },
+  { value: "deactivated", label: "Deactivated" },
 ];
 
 function getEmptyState(tab: RateTab) {

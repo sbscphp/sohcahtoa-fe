@@ -170,6 +170,7 @@ export const API_ENDPOINTS = {
       stats: "/api/admin/rate/stats",
       approve: (id: string) => `/api/admin/rate/${id}/approve`,
       reject: (id: string) => `/api/admin/rate/${id}/reject`,
+      deactivate: (id: string) => `/api/admin/rate/${id}/deactivate`,
     },
     outlet: {
       pickupStations: {

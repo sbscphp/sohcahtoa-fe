@@ -23,7 +23,7 @@ import CurrencySelector from "@/app/admin/_components/CurrencySelector";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { notifications } from "@mantine/notifications";
-import { useFetchSingleData, usePutData } from "@/app/_lib/api/hooks";
+import { useFetchSingleData, usePatchData, usePutData } from "@/app/_lib/api/hooks";
 import {
   adminApi,
   type CreateRatePayload,
@@ -122,6 +122,8 @@ export default function RateDetailPage() {
   const [isTakeActionOpen, setIsTakeActionOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false);
+  const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
 
   const form = useForm<RateFormValues>({
     initialValues: {
@@ -218,6 +220,38 @@ export default function RateDetailPage() {
 
   const showCompleteReview = isPendingApproval;
   const showViewUpdates = isApproved && !isPendingApproval;
+  const showDeactivate = rateStatus === "ACTIVE" || rateStatus === "SCHEDULED";
+
+  const deactivateMutation = usePatchData(
+    () => adminApi.rate.deactivate(rateId),
+    {
+      onSuccess: async () => {
+        setDeactivateConfirmOpen(false);
+        setDeactivateSuccessOpen(true);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: [...adminKeys.rate.all] }),
+          queryClient.invalidateQueries({ queryKey: [...adminKeys.rate.stats()] }),
+          queryClient.invalidateQueries({ queryKey: [...adminKeys.rate.detail(rateId)] }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Deactivate Rate Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to deactivate this rate right now. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
+
+  const handleDeactivateConfirm = () => {
+    if (!rateId || deactivateMutation.isPending) return;
+    deactivateMutation.mutate(undefined);
+  };
 
   const isLoading = rateDetailQuery.isLoading;
   const hasError = rateDetailQuery.isError || (!isLoading && !rateDetailQuery.data?.data);
@@ -365,6 +399,15 @@ export default function RateDetailPage() {
               >
                 View Updates
               </Menu.Item>
+            )}
+
+            {showDeactivate && (
+              <>
+                <Menu.Divider />
+                <Menu.Item onClick={() => setDeactivateConfirmOpen(true)}>
+                  Deactivate
+                </Menu.Item>
+              </>
             )}
           </Menu.Dropdown>
         </Menu>
@@ -671,6 +714,30 @@ export default function RateDetailPage() {
         onPrimaryClick={handleSuccessManageRate}
         secondaryButtonText="No, Close"
         onSecondaryClick={() => setIsSuccessOpen(false)}
+      />
+
+      <ConfirmationModal
+        opened={deactivateConfirmOpen}
+        onClose={() => setDeactivateConfirmOpen(false)}
+        title="Deactivate Rate ?"
+        message="Are you sure you want to deactivate this rate? Kindly note that this rate will no longer apply to foreign exchange transactions on the system."
+        primaryButtonText="Yes, Deactivate Rate"
+        secondaryButtonText="No, Close"
+        onPrimary={handleDeactivateConfirm}
+        onSecondary={() => setDeactivateConfirmOpen(false)}
+        loading={deactivateMutation.isPending}
+      />
+
+      <SuccessModal
+        opened={deactivateSuccessOpen}
+        onClose={() => setDeactivateSuccessOpen(false)}
+        title="Rate Deactivated"
+        message="Rate has been successfully deactivated"
+        primaryButtonText="Manage Rates"
+        onPrimaryClick={() => router.push(adminRoutes.adminSettingsRates())}
+        secondaryButtonText="Close"
+        onSecondaryClick={() => setDeactivateSuccessOpen(false)}
+        zIndex={4100}
       />
 
       <RateTakeActionOverlay
