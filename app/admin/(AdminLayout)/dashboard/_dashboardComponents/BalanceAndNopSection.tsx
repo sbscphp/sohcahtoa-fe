@@ -17,7 +17,7 @@ import {
 type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 
 export function BalanceAndNopSection() {
-  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>("USD");
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>("NGN");
 
   const balance = DUMMY_BALANCES_BY_CURRENCY[selectedCurrency] ?? 0;
   const { status, utilizationPercent } = getNopCompliance(DUMMY_NOP_NGN);
