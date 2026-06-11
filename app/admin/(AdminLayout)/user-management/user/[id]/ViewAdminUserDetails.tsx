@@ -212,7 +212,7 @@ export default function ViewAdminUserDetails() {
                 <Menu.Dropdown>
                   <Menu.Item onClick={() => setEditOpen(true)}>Edit</Menu.Item>
                   <Divider />
-                  <Menu.Item color="red" onClick={handleToggleClick}>
+                  <Menu.Item color="orange" onClick={handleToggleClick}>
                     {menuActionLabel}
                   </Menu.Item>
                 </Menu.Dropdown>

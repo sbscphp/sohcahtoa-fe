@@ -345,12 +345,9 @@ export function CreateRoleModal({
                 </Text>
 
                 <Text size="xs" c="dimmed">
-                  1. If another role is deactivated, its admin user will be
-                  temporarily reassigned to this role.
-                </Text>
-                <Text size="xs" c="dimmed">
-                  2. If another role is deleted, its admin user will be
-                  permanently reassigned to this role until given a new one.
+                  If another role is deactivated, its admin users will be
+                  temporarily reassigned to this role until the role is
+                  reactivated or they are given a new one.
                 </Text>
               </Stack>
             </div>

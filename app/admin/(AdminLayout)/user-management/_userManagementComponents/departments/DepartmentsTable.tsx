@@ -18,7 +18,7 @@ import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useDepartments, type DepartmentItem } from "../../hooks/useDepartments";
-import { usePatchData, useDeleteData, useGetExportData } from "@/app/_lib/api/hooks";
+import { usePatchData, useGetExportData } from "@/app/_lib/api/hooks";
 import {
   adminApi,
   type UpdateDepartmentStatusPayload,
@@ -47,10 +47,6 @@ export default function DepartmentsTable() {
   // Deactivate / Reactivate
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivateSuccessOpen, setDeactivateSuccessOpen] = useState(false);
-
-  // Delete
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
 
   const { departments, totalPages, isLoading } = useDepartments({
     page,
@@ -94,36 +90,6 @@ export default function DepartmentsTable() {
     }
   );
 
-  /* ---- Delete mutation ---- */
-  const deleteDepartmentMutation = useDeleteData(
-    (id: string) => adminApi.management.departments.delete(id),
-    {
-      onSuccess: async () => {
-        setDeleteOpen(false);
-        setDeleteSuccessOpen(true);
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [...adminKeys.management.departments.all()],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: [...adminKeys.management.departments.stats()],
-          }),
-        ]);
-      },
-      onError: (error) => {
-        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
-        notifications.show({
-          title: "Delete Department Failed",
-          message:
-            apiResponse?.error?.message ??
-            error.message ??
-            "Unable to delete department. Please try again.",
-          color: "red",
-        });
-      },
-    }
-  );
-
   const exportDepartmentsMutation = useGetExportData(
     () => adminApi.management.departments.export(),
     {
@@ -160,11 +126,6 @@ export default function DepartmentsTable() {
       id: selectedDepartment.id,
       data: { isActive: !selectedDepartment.isActive },
     });
-  };
-
-  const handleConfirmDelete = () => {
-    if (!selectedDepartment) return;
-    deleteDepartmentMutation.mutate(selectedDepartment.id);
   };
 
   /* Table Headers */
@@ -238,10 +199,6 @@ export default function DepartmentsTable() {
         onDeactivate={() => {
           setSelectedDepartment(dept);
           setDeactivateOpen(true);
-        }}
-        onDelete={() => {
-          setSelectedDepartment(dept);
-          setDeleteOpen(true);
         }}
       />,
     ];
@@ -358,26 +315,6 @@ export default function DepartmentsTable() {
         onPrimaryClick={() => setDeactivateSuccessOpen(false)}
       />
 
-      {/* Delete confirmation */}
-      <ConfirmationModal
-        opened={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title="Delete Department ?"
-        message="Are you sure you want to delete this department? This action is irreversible. Department details will be permanently removed and admin users will be reassigned to the default department."
-        primaryButtonText="Yes, Delete Department"
-        secondaryButtonText="No, Close"
-        onPrimary={handleConfirmDelete}
-        loading={deleteDepartmentMutation.isPending}
-      />
-
-      <SuccessModal
-        opened={deleteSuccessOpen}
-        onClose={() => setDeleteSuccessOpen(false)}
-        title="Department Deleted"
-        message="Department has been successfully deleted."
-        primaryButtonText="Done"
-        onPrimaryClick={() => setDeleteSuccessOpen(false)}
-      />
     </div>
   );
 }

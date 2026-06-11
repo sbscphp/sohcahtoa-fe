@@ -6,14 +6,12 @@ import {
   TbEye,
   TbEdit,
   TbBan,
-  TbTrash,
 } from "react-icons/tb";
 
 interface RowActionMenuProps {
   onView: () => void;
   onEdit: () => void;
   onDeactivate: () => void;
-  onDelete: () => void;
   deactivateLabel?: string;
 }
 
@@ -21,7 +19,6 @@ export default function RowActionMenu({
   onView,
   onEdit,
   onDeactivate,
-  onDelete,
   deactivateLabel = "Deactivate",
 }: RowActionMenuProps) {
   return (
@@ -49,14 +46,6 @@ export default function RowActionMenu({
           onClick={onDeactivate}
         >
           {deactivateLabel}
-        </Menu.Item>
-
-        <Menu.Item
-          leftSection={<TbTrash size={16} />}
-          color="red"
-          onClick={onDelete}
-        >
-          Delete
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

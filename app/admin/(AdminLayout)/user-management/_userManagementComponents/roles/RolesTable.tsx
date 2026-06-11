@@ -37,7 +37,6 @@ export default function RolesTable() {
   const [filter, setFilter] = useState<RoleFilter>("Filter By");
   const [open, setOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [status, setStatus] = useState<CustomerStatus>("Active");
   const isCurrentlyActive = status === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
@@ -234,25 +233,6 @@ export default function RolesTable() {
         onClose={() => setIsSuccessOpen(false)}
         title={`Department ${pastTenseVerb}`}
         message={`Department has been successfully ${pastTenseVerb.toLowerCase()}.`}
-        primaryButtonText="Manage User"
-        secondaryButtonText="No, Close"
-      />
-      <ConfirmationModal
-        opened={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title="Delete Department ?"
-        message="Are you sure, Delete this department? Kindly note that this action is irreversible, hence department details would be deleted completely and admin users under this department would be reassigned to the default department"
-        primaryButtonText={`Yes, Delete Department`}
-        secondaryButtonText="No, Close"
-        onPrimary={handleConfirm}
-      />
-
-      {/* Success modal */}
-      <SuccessModal
-        opened={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
-        title="Department Deleted"
-        message="Department has been successfully deleted"
         primaryButtonText="Manage User"
         secondaryButtonText="No, Close"
       />

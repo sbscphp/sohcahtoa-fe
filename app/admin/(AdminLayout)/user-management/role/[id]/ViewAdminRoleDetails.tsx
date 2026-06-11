@@ -20,7 +20,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useAdminRoleDetails } from "../../hooks/useAdminRoleDetails";
 import { adminRoutes } from "@/lib/adminRoutes";
-import { useDeleteData, usePatchData } from "@/app/_lib/api/hooks";
+import { usePatchData } from "@/app/_lib/api/hooks";
 import { adminApi, type UpdateRoleStatusPayload } from "@/app/admin/_services/admin-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/app/_lib/api/query-keys";
@@ -40,14 +40,12 @@ export default function ViewAdminRoleDetails() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
 
   const status: CustomerStatus =
     statusOverride ?? (role?.isActive ? "Active" : "Deactivated");
   const isActive = status === "Active";
   const actionVerb = isActive ? "Deactivate" : "Reactivate";
-  const pastTenseVerb = isActive ? "Reactivated" : "Deactivated";
+  const pastTenseVerb = isActive ? "Deactivated" : "Reactivated";
 
   const formatDateTime = (iso?: string | null) => {
     if (!iso) return "—";
@@ -128,47 +126,6 @@ export default function ViewAdminRoleDetails() {
     }
   );
 
-  const deleteRoleMutation = useDeleteData(
-    (id: string) => adminApi.management.roles.delete(id),
-    {
-      onSuccess: async () => {
-        setDeleteConfirmOpen(false);
-        setDeleteSuccessOpen(true);
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [...adminKeys.management.roles.all()],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: [...adminKeys.management.roles.stats()],
-          }),
-          ...(roleId
-            ? [
-                queryClient.invalidateQueries({
-                  queryKey: [...adminKeys.management.roles.detail(roleId)],
-                }),
-              ]
-            : []),
-        ]);
-      },
-      onError: (error) => {
-        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
-        notifications.show({
-          title: "Delete Role Failed",
-          message:
-            apiResponse?.error?.message ??
-            error.message ??
-            "Unable to delete admin role. Please try again.",
-          color: "red",
-        });
-      },
-    }
-  );
-
-  const handleDeleteConfirm = () => {
-    if (!roleId || deleteRoleMutation.isPending) return;
-    deleteRoleMutation.mutate(roleId);
-  };
-
   return (
     <>
       <Card radius="lg" p="xl">
@@ -202,12 +159,9 @@ export default function ViewAdminRoleDetails() {
 
               <Menu.Dropdown>
                 <Menu.Item onClick={() => setEditOpen(true)}>Edit</Menu.Item>
-
-                <Menu.Item onClick={() => setConfirmOpen(true)}>
+                <Menu.Divider />
+                <Menu.Item color="orange" onClick={() => setConfirmOpen(true)}>
                   {actionVerb}
-                </Menu.Item>
-                <Menu.Item color="red" onClick={() => setDeleteConfirmOpen(true)}>
-                  Delete
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -317,29 +271,6 @@ export default function ViewAdminRoleDetails() {
         title={`Role ${pastTenseVerb}`}
         message={`Role has been successfully ${pastTenseVerb.toLowerCase()}.`}
         primaryButtonText="Manage Roles"
-        onPrimaryClick={() => router.push(adminRoutes.adminUserManagement())}
-        secondaryButtonText="No, Close"
-      />
-
-      {/* Delete Role Confirmation Modal */}
-      <ConfirmationModal
-        opened={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="Delete Admin Role ?"
-        message="Are you sure, Delete this admin role ? Kindly note that this action is irreversible, all admin users under this role would be reassigned to the default admin role"
-        primaryButtonText="Yes, Delete Admin Role"
-        secondaryButtonText="No, Close"
-        onPrimary={handleDeleteConfirm}
-        loading={deleteRoleMutation.isPending}
-      />
-
-      {/* Delete Role Success Modal */}
-      <SuccessModal
-        opened={deleteSuccessOpen}
-        onClose={() => setDeleteSuccessOpen(false)}
-        title="Admin Role Deleted"
-        message="Admin role has been successfully deleted."
-        primaryButtonText="Manage User"
         onPrimaryClick={() => router.push(adminRoutes.adminUserManagement())}
         secondaryButtonText="No, Close"
       />

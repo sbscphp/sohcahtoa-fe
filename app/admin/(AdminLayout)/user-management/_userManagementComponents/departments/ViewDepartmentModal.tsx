@@ -254,12 +254,9 @@ export function ViewDepartmentModal({
                 </Text>
 
                 <Text size="sm" c="dimmed">
-                  1. If another department is deactivated, its admin user will
-                  be temporarily moved here
-                </Text>
-                <Text size="sm" c="dimmed">
-                  2. If another department is deleted, its admin user will be
-                  permanently moved here until assigned to a new department.
+                  If another department is deactivated, its admin users will be
+                  temporarily moved here until the department is reactivated or
+                  they are assigned elsewhere.
                 </Text>
               </Stack>
             </div>
