@@ -86,12 +86,17 @@ function isRequiredDocEntry(doc: TransactionDetailRequiredDoc): boolean {
   return doc.required !== false;
 }
 
+/** Required docs always show; optional docs only when a file was uploaded. */
+function shouldIncludeDocumentInDetailView(doc: TransactionDetailRequiredDoc): boolean {
+  return isRequiredDocEntry(doc) || doc.uploaded != null;
+}
+
 function mapRequiredDocsToDocumentItems(
   requiredDocuments: TransactionDetailRequiredDoc[],
   comments: TransactionDetailComment[] = []
 ): TransactionDocumentItem[] {
   const statusOverrides = buildDocStatusOverrideMap(comments);
-  return requiredDocuments.filter(isRequiredDocEntry).map((doc) => {
+  return requiredDocuments.filter(shouldIncludeDocumentInDetailView).map((doc) => {
     const uploaded = doc.uploaded;
     const overrideStatus = statusOverrides.get(doc.type);
 
@@ -134,7 +139,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     bvn: stepData?.bvn ?? api.personalInfo?.bvn ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: docs
-      .filter((d) => isRequiredDocEntry(d) && d.uploaded != null)
+      .filter((d) => d.uploaded != null)
       .map((d) => ({
         documentType: d.type,
         filename: d.uploaded!.fileName,
