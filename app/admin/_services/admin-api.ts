@@ -445,18 +445,39 @@ export type PickupStationRequestListParams = Record<
   status?: string;
 };
 
-/** Loose DTO; align with UI mock row until backend contract is final. */
+export interface PickupStationRequestCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+}
+
+export interface PickupStationRequestTransaction {
+  id: string;
+  referenceNumber: string;
+  type: string;
+  transactionMode: string | null;
+}
+
 export interface PickupStationRequestListItemData {
-  id?: string;
-  customerName?: string;
-  customerCode?: string;
-  phoneNumber?: string;
-  email?: string;
-  type?: string;
-  status?: string;
-  createdAt?: string;
-  date?: string;
-  time?: string;
+  requestId: string;
+  pickupStationId: string;
+  pickupStationName: string;
+  pickupCode: string;
+  status: string;
+  amount: string;
+  currency: string;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  pickupState: string;
+  pickupCity: string;
+  scheduledPickupDate: string | null;
+  scheduledPickupTime: string | null;
+  expiryDate: string;
+  pickedUpAt: string | null;
+  createdAt: string;
+  customer: PickupStationRequestCustomer;
+  transaction: PickupStationRequestTransaction;
 }
 
 export type BranchListParams = Record<
@@ -690,6 +711,28 @@ export interface AdminLedgerEntryNote {
 }
 
 export type AdminLedgerNotesParams = {
+  page?: number;
+  limit?: number;
+};
+
+export interface AdminLedgerAuditLog {
+  id: string;
+  adminId: string;
+  adminName: string;
+  adminEmail: string;
+  actionType: string;
+  actionLabel: string;
+  previousState: string | null;
+  newState: string | null;
+  reason: string | null;
+  metadata: Record<string, unknown> | null;
+  status: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  performedAt: string;
+}
+
+export type AdminLedgerAuditLogsParams = {
   page?: number;
   limit?: number;
 };
@@ -941,6 +984,20 @@ export interface AdminTransactionStatsData {
   rejected: number;
   requestInformation: number;
   approved: number;
+}
+
+export interface AdminUnsettledBalanceBreakdownItem {
+  currency: string;
+  totalForeignAmount: number;
+  totalNairaEquivalent: number;
+  count: number;
+}
+
+export interface AdminUnsettledBalanceData {
+  totalUnsettledNairaBalance: number;
+  comparisonLimit: number;
+  color: "Red" | "Amber" | "Green" | string;
+  breakdown: AdminUnsettledBalanceBreakdownItem[];
 }
 
 export interface WorkflowStatsData {
@@ -1744,6 +1801,9 @@ export const adminApi = {
     reject: (id: string, data: { reason: string }) =>
       apiClient.post<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.reject(id), data),
 
+    deactivate: (id: string) =>
+      apiClient.patch<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.deactivate(id)),
+
     getStats: () =>
       apiClient.get<ApiResponse<unknown>>(API_ENDPOINTS.admin.rate.stats),
   },
@@ -2169,6 +2229,11 @@ export const adminApi = {
         API_ENDPOINTS.admin.transactions.stats
       ),
 
+    getUnsettledBalance: () =>
+      apiClient.get<ApiResponse<AdminUnsettledBalanceData>>(
+        API_ENDPOINTS.admin.transactions.unsettledBalance
+      ),
+
     getById: (id: string) =>
       apiClient.get<ApiResponse<AdminTransactionDetailsData>>(
         API_ENDPOINTS.admin.transactions.getById(id)
@@ -2322,6 +2387,16 @@ export const adminApi = {
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.wallet.ledgerEntryNotes(walletId, entryId),
         body
+      ),
+
+    getLedgerAuditLogs: (
+      walletId: string,
+      entryId: string,
+      params?: AdminLedgerAuditLogsParams
+    ) =>
+      apiClient.get<ApiResponse<AdminLedgerAuditLog[]>>(
+        API_ENDPOINTS.admin.wallet.ledgerEntryAuditLogs(walletId, entryId),
+        { params }
       ),
 
     linkTransaction: (
@@ -2587,6 +2662,16 @@ export const adminApi = {
       apiClient.patch<ApiResponse<unknown>>(
         `/api/admin/workflow/templates/${id}`,
         data
+      ),
+
+    activateTemplate: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        `/api/admin/workflow/templates/${id}/activate`
+      ),
+
+    deactivateTemplate: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        `/api/admin/workflow/templates/${id}/deactivate`
       ),
   },
 };

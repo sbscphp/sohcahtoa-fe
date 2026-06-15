@@ -49,15 +49,6 @@ export interface TransientEntryDetail {
   status: LedgerEntryStatus;
 }
 
-export interface TransientAuditLog {
-  id: string;
-  entryId: string;
-  date: string;
-  time: string;
-  action: string;
-  initiator: string;
-}
-
 export interface TransientAdminNote {
   id: string;
   entryId: string;
@@ -362,41 +353,6 @@ export const MOCK_ENTRY_DETAILS: TransientEntryDetail[] = [
     entryDate: "Sept 19, 2025",
     entryTime: "11:00 am",
     status: "Matched",
-  },
-];
-
-export const MOCK_AUDIT_LOGS: TransientAuditLog[] = [
-  {
-    id: "1",
-    entryId: "677333",
-    date: "Sept 19, 2025",
-    time: "11:00 am",
-    action: "Matched",
-    initiator: "Stephen Seunfunmi",
-  },
-  {
-    id: "2",
-    entryId: "677333",
-    date: "Sept 19, 2025",
-    time: "11:00 am",
-    action: "Received by system",
-    initiator: "Transaction by Emeka Duru",
-  },
-  {
-    id: "3",
-    entryId: "9022",
-    date: "Sept 19, 2025",
-    time: "11:00 am",
-    action: "Matched",
-    initiator: "Stephen Seunfunmi",
-  },
-  {
-    id: "4",
-    entryId: "9022",
-    date: "Sept 19, 2025",
-    time: "11:00 am",
-    action: "Received by system",
-    initiator: "Transaction by Emeka Duru",
   },
 ];
 

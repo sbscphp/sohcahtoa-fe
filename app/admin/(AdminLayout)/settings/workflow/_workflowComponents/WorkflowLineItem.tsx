@@ -1,3 +1,9 @@
 "use client";
 
-export { default, type WorkflowLine } from "../../../workflow/_workflowComponents/WorkflowLineItem";
+export {
+  default,
+  ALL_WORKFLOW_TYPE_OPTIONS,
+  coerceRateWorkflowLines,
+  RATE_WORKFLOW_TYPE_OPTIONS,
+  type WorkflowLine,
+} from "../../../workflow/_workflowComponents/WorkflowLineItem";

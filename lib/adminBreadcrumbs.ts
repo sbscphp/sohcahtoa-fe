@@ -249,6 +249,30 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Settings Rate Details: /admin/settings/rate/:id
+  if (
+    /^\/admin\/settings\/rate\/[^/]+$/.test(pathname) &&
+    pathname !== '/admin/settings/rate/create'
+  ) {
+    return [
+      { label: 'Settings', url: adminRoutes.adminSettings() },
+      { label: 'Rate Management', url: adminRoutes.adminSettingsRates() },
+      { label: 'Rate Details' },
+    ];
+  }
+
+  // Settings Workflow Details: /admin/settings/workflow/:id
+  if (
+    /^\/admin\/settings\/workflow\/[^/]+$/.test(pathname) &&
+    pathname !== '/admin/settings/workflow/create'
+  ) {
+    return [
+      { label: 'Settings', url: adminRoutes.adminSettings() },
+      { label: 'Workflow Configuration', url: adminRoutes.adminSettingsWorkflowConfiguration() },
+      { label: 'Workflow Details' },
+    ];
+  }
+
   // Default: no breadcrumbs
   return [];
 }

@@ -86,13 +86,18 @@ export default function TransientWalletEntryDetailPage() {
       queryKey: adminKeys.wallet.ledgerNotes(walletId, entryId),
     });
 
+  const invalidateAuditLogs = () =>
+    queryClient.invalidateQueries({
+      queryKey: adminKeys.wallet.ledgerAuditLogs(walletId, entryId),
+    });
+
   // ==================== Mutations ====================
 
   const addNoteMutation = useCreateData(
     (note: string) => adminApi.wallet.addLedgerNote(walletId, entryId, { note }),
     {
       onSuccess: async () => {
-        await invalidateNotes();
+        await Promise.all([invalidateNotes(), invalidateAuditLogs()]);
         setNoteModalOpen(false);
         setSuccessVariant("note");
       },
@@ -105,7 +110,7 @@ export default function TransientWalletEntryDetailPage() {
       adminApi.wallet.linkTransaction(walletId, entryId, { transactionId, reason }),
     {
       onSuccess: async () => {
-        await invalidateEntry();
+        await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
         setLinkModalOpen(false);
         setSuccessVariant("matched");
       },
@@ -117,7 +122,7 @@ export default function TransientWalletEntryDetailPage() {
     () => adminApi.wallet.unlinkTransaction(walletId, entryId),
     {
       onSuccess: async () => {
-        await invalidateEntry();
+        await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
         setConfirmType(null);
         setSuccessVariant("unmatched");
       },
@@ -129,7 +134,7 @@ export default function TransientWalletEntryDetailPage() {
     (reason: string) => adminApi.wallet.flagEntry(walletId, entryId, { reason }),
     {
       onSuccess: async () => {
-        await invalidateEntry();
+        await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
         setFlagModalOpen(false);
         setSuccessVariant("flagged");
       },
@@ -141,7 +146,7 @@ export default function TransientWalletEntryDetailPage() {
     () => adminApi.wallet.refundEntry(walletId, entryId),
     {
       onSuccess: async () => {
-        await invalidateEntry();
+        await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
         setConfirmType(null);
         setSuccessVariant("refund");
       },
@@ -153,7 +158,7 @@ export default function TransientWalletEntryDetailPage() {
     () => adminApi.wallet.disburseEntry(walletId, entryId),
     {
       onSuccess: async () => {
-        await invalidateEntry();
+        await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
         setConfirmType(null);
         setSuccessVariant("disbursement");
       },
@@ -419,7 +424,7 @@ export default function TransientWalletEntryDetailPage() {
           </Tabs.List>
 
           <Tabs.Panel value="audit">
-            <EntryAuditLogsTab entryId={entryId} />
+            <EntryAuditLogsTab walletId={walletId} entryId={entryId} />
           </Tabs.Panel>
           <Tabs.Panel value="notes">
             <EntryAdminNotesTab walletId={walletId} entryId={entryId} />

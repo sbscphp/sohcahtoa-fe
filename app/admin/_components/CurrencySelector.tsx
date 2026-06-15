@@ -13,19 +13,32 @@ interface CurrencySelectorProps {
   value?: CurrencyCode | null;
   onChange?: (value: CurrencyCode) => void;
   disabled?: boolean;
+  currencyCodes?: CurrencyCode[];
 }
 
-export default function CurrencySelector({ value, onChange, disabled }: CurrencySelectorProps) {
+export default function CurrencySelector({
+  value,
+  onChange,
+  disabled,
+  currencyCodes,
+}: CurrencySelectorProps) {
+  const currencies = useMemo(() => {
+    if (currencyCodes && currencyCodes.length > 0) {
+      return CURRENCIES.filter((c) => currencyCodes.includes(c.code));
+    }
+    return CURRENCIES;
+  }, [currencyCodes]);
+
   const [internalSelected, setInternalSelected] = useState<(typeof CURRENCIES)[number]>(
-    CURRENCIES[0]
+    currencies[0] ?? CURRENCIES[0]
   );
 
   const selected = useMemo(() => {
     if (value) {
-      return CURRENCIES.find((currency) => currency.code === value) ?? CURRENCIES[0];
+      return currencies.find((currency) => currency.code === value) ?? currencies[0] ?? CURRENCIES[0];
     }
     return internalSelected;
-  }, [internalSelected, value]);
+  }, [internalSelected, value, currencies]);
 
   const handleSelect = (currency: (typeof CURRENCIES)[number]) => {
     if (!value) {
@@ -55,7 +68,7 @@ export default function CurrencySelector({ value, onChange, disabled }: Currency
         </button>
       </Menu.Target>
       <Menu.Dropdown className="max-h-[250px] overflow-y-auto">
-        {CURRENCIES.map((currency) => (
+        {currencies.map((currency) => (
           <Menu.Item
             key={currency.code}
             onClick={() => handleSelect(currency)}
@@ -64,8 +77,8 @@ export default function CurrencySelector({ value, onChange, disabled }: Currency
             <div className="flex items-center gap-2">
               <span className="text-base leading-none" aria-hidden>
                 <Image
-                  src={getCurrencyFlagUrl(currency.code ?? CURRENCIES[0].code) ?? ""}
-                  alt={currency.name ?? CURRENCIES[0].name}
+                  src={getCurrencyFlagUrl(currency.code) ?? ""}
+                  alt={currency.name}
                   width={24}
                   height={24}
                 />

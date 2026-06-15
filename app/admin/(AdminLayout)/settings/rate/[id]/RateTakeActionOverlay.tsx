@@ -16,6 +16,8 @@ import type { RateWorkflowLineItem } from "@/app/admin/_services/admin-api";
 import Connector from "../../../../_components/assets/Connector.png";
 import { useState } from "react";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { useRouter } from "next/navigation";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 interface RateTakeActionOverlayProps {
   opened: boolean;
@@ -47,6 +49,10 @@ export default function RateTakeActionOverlay({
 }: RateTakeActionOverlayProps) {
   const queryClient = useQueryClient();
   const isPendingApproval = rateStatus === "PENDING_APPROVAL";
+  const router = useRouter();
+  const navigateToSettingsRates = () => {
+    router.push(adminRoutes.adminSettingsRates());
+  };
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [approveSuccessOpen, setApproveSuccessOpen] = useState(false);
@@ -286,8 +292,8 @@ export default function RateTakeActionOverlay({
         onClose={handleSuccessClose}
         title="Rate Approved"
         message="The rate has been successfully approved and updated in the workflow."
-        primaryButtonText="Close"
-        onPrimaryClick={handleSuccessClose}
+        primaryButtonText="Manage Rates"
+        onPrimaryClick={navigateToSettingsRates}
         secondaryButtonText="Close"
         onSecondaryClick={handleSuccessClose}
         zIndex={4100}
@@ -298,8 +304,8 @@ export default function RateTakeActionOverlay({
         onClose={handleSuccessClose}
         title="Rate Rejected"
         message="The rate has been successfully rejected and marked as closed."
-        primaryButtonText="Close"
-        onPrimaryClick={handleSuccessClose}
+        primaryButtonText="Manage Rates"
+        onPrimaryClick={navigateToSettingsRates}
         secondaryButtonText="Close"
         onSecondaryClick={handleSuccessClose}
         zIndex={4100}
