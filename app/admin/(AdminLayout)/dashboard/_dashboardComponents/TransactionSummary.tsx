@@ -82,9 +82,9 @@ export function TransactionSummary({
           dataKey="month"
           type="stacked"
           series={[
-            { name: "completed", label: "Completed", color: "#933503" },
-            { name: "pending", label: "Pending", color: "#E88A58" },
-            { name: "rejected", label: "Rejected", color: "gray.3" },
+            { name: "rejected", label: "Rejected", color: "#933503" },
+            { name: "pending", label: "Pending", color: "#EEA782" },
+            { name: "completed", label: "Completed", color: "#E36C2F" },
           ]}
           withLegend
           legendProps={{ verticalAlign: "bottom" }}
