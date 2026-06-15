@@ -242,6 +242,8 @@ function buildBTAPayload(
     purpose: "Business travel",
     destinationCountry: "United States",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
+    nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
+    tinNumber: typeof upload?.tinNumber === "string" ? upload.tinNumber : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
     passportDocumentNumber:
       typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
