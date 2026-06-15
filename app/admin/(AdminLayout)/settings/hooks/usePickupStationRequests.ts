@@ -38,7 +38,20 @@ type PickupStationRequestsListResponse = Omit<
   } | null;
 };
 
-function formatDate(value?: string): string {
+const TRANSACTION_TYPE_LABELS: Record<string, string> = {
+  PTA: "PTA",
+  BTA: "BTA",
+  SCHOOL_FEES: "School Fees",
+  MEDICAL: "Medical",
+  PROFESSIONAL_BODY: "Professional Body",
+  TOURIST_FX: "Tourist FX",
+  RESIDENT_FX: "Resident FX",
+  EXPATRIATE_FX: "Expatriate FX",
+  IMTO_REMITTANCE: "IMTO Remittance",
+  CASH_REMITTANCE: "Cash Remittance",
+};
+
+function formatDate(value?: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -49,7 +62,7 @@ function formatDate(value?: string): string {
   });
 }
 
-function formatTime(value?: string): string {
+function formatTimeFromIso(value?: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -60,26 +73,65 @@ function formatTime(value?: string): string {
   });
 }
 
-function normalizeStatus(raw?: string): StationPickupStatus {
+function formatScheduledTime(value?: string | null): string {
+  if (!value?.trim()) return "—";
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return value;
+
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = match[2];
+  if (Number.isNaN(hours)) return value;
+
+  const period = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 || 12;
+  return `${hour12}:${minutes} ${period}`;
+}
+
+function formatTransactionType(type?: string | null): string {
+  if (!type?.trim()) return "—";
+  return TRANSACTION_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
+}
+
+export function mapPickupStatusFilterToApi(
+  value: string
+): string | undefined {
+  if (value === "Filter By" || value === "All") return undefined;
+  if (value === "Pending") return "PENDING";
+  if (value === "Picked Up") return "PICKED_UP";
+  return undefined;
+}
+
+function normalizeStatus(
+  raw?: string,
+  pickedUpAt?: string | null
+): StationPickupStatus {
+  if (pickedUpAt) return "Picked Up";
   if (!raw?.trim()) return "Pending";
-  const lower = raw.toLowerCase();
-  if (lower.includes("picked")) return "Picked Up";
-  if (lower.includes("pending")) return "Pending";
+
+  const normalized = raw.trim().toLowerCase().replace(/_/g, " ");
+  if (normalized.includes("picked")) return "Picked Up";
+  if (normalized.includes("pending")) return "Pending";
   return "Pending";
 }
 
 function mapRequest(item: PickupStationRequestListItemData): StationPickup {
-  const created = item.createdAt;
+  const hasScheduledDate = Boolean(item.scheduledPickupDate);
+  const hasScheduledTime = Boolean(item.scheduledPickupTime?.trim());
+
   return {
-    id: item.id ?? "—",
-    customerName: item.customerName ?? "—",
-    customerCode: item.customerCode ?? item.id ?? "—",
-    phoneNumber: item.phoneNumber ?? "—",
-    email: item.email ?? "—",
-    date: item.date ?? (created ? formatDate(created) : "—"),
-    time: item.time ?? (created ? formatTime(created) : "—"),
-    type: item.type ?? "—",
-    status: normalizeStatus(item.status),
+    id: item.requestId ?? "—",
+    customerName: item.customer?.name ?? "—",
+    customerCode: item.customer?.id ?? "—",
+    phoneNumber: item.customer?.phoneNumber ?? "—",
+    email: item.customer?.email ?? "—",
+    date: hasScheduledDate
+      ? formatDate(item.scheduledPickupDate)
+      : formatDate(item.createdAt),
+    time: hasScheduledTime
+      ? formatScheduledTime(item.scheduledPickupTime)
+      : formatTimeFromIso(item.createdAt),
+    type: formatTransactionType(item.transaction?.type),
+    status: normalizeStatus(item.status, item.pickedUpAt),
   };
 }
 

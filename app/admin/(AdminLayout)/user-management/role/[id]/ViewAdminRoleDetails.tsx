@@ -28,6 +28,7 @@ import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import EmptySection from "@/app/admin/_components/EmptySection";
 import { EditRoleModal } from "../../_userManagementComponents/roles/EditRoleModal";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 export default function ViewAdminRoleDetails() {
   const params = useParams<{ id: string }>();
@@ -213,7 +214,7 @@ export default function ViewAdminRoleDetails() {
                       chevron={<ChevronDown size={18} />}
                     >
                       <Text size="sm" fw={500}>
-                        {moduleKey}
+                        {toSentenceCase(moduleKey)?.toUpperCase()}
                       </Text>
                     </Accordion.Control>
 

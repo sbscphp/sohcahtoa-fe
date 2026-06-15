@@ -170,6 +170,7 @@ export const API_ENDPOINTS = {
       stats: "/api/admin/rate/stats",
       approve: (id: string) => `/api/admin/rate/${id}/approve`,
       reject: (id: string) => `/api/admin/rate/${id}/reject`,
+      deactivate: (id: string) => `/api/admin/rate/${id}/deactivate`,
     },
     outlet: {
       pickupStations: {
@@ -233,6 +234,7 @@ export const API_ENDPOINTS = {
         `/api/admin/transactions/${id}/documents/${documentId}/reject`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
+      unsettledBalance: "/api/admin/transactions/unsettled-balance",
     },
     wallet: {
       list: "/api/admin/wallet",
@@ -244,6 +246,8 @@ export const API_ENDPOINTS = {
         `/api/admin/wallet/${walletId}/ledger/${entryId}`,
       ledgerEntryNotes: (walletId: string, entryId: string) =>
         `/api/admin/wallet/${walletId}/ledger/${entryId}/notes`,
+      ledgerEntryAuditLogs: (walletId: string, entryId: string) =>
+        `/api/admin/wallet/${walletId}/ledger/${entryId}/audit-logs`,
       ledgerLinkTransaction: (walletId: string, entryId: string) =>
         `/api/admin/wallet/${walletId}/ledger/${entryId}/link-transaction`,
       ledgerFlag: (walletId: string, entryId: string) =>

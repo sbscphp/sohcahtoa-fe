@@ -5,14 +5,11 @@ import { useFetchData, useFetchDataSeperateLoading } from "@/app/_lib/api/hooks"
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import {
   adminApi,
+  type AdminLedgerAuditLog,
   type AdminLedgerEntryDetail,
   type AdminLedgerEntryNote,
   type AdminTransactionSearchItem,
 } from "@/app/admin/_services/admin-api";
-import {
-  MOCK_AUDIT_LOGS,
-  paginate,
-} from "./mockData";
 import { asNumber, formatCreatedAt, normalizeMatchStatus } from "./walletUtils";
 
 export type LedgerEntryStatus = "Matched" | "Unmatched";
@@ -161,7 +158,7 @@ export function useTransientEntryAdminNotes(
   };
 }
 
-// ==================== Audit Logs (mock — API WIP) ====================
+// ==================== Audit Logs ====================
 
 export interface AuditLogRow {
   id: string;
@@ -172,22 +169,81 @@ export interface AuditLogRow {
   initiator: string;
 }
 
-export function useTransientEntryAuditLogs(
-  entryId: string,
-  page = 1,
-  limit = 10
-) {
-  const result = useMemo(() => {
-    const filtered = MOCK_AUDIT_LOGS.filter((log) => log.entryId === entryId);
-    return paginate(filtered, page, limit);
-  }, [entryId, page, limit]);
+interface AuditLogsListResponse {
+  data?: AdminLedgerAuditLog[] | unknown;
+  metadata?: {
+    pagination?: {
+      page?: number;
+      limit?: number;
+      total?: number;
+      totalPages?: number;
+    };
+  } | null;
+}
+
+function mapAuditLog(item: AdminLedgerAuditLog): AuditLogRow {
+  const { dateCreated, timeCreated } = formatCreatedAt(item.performedAt);
+  const action =
+    item.actionLabel?.trim() ||
+    item.actionType?.replaceAll("_", " ") ||
+    "--";
 
   return {
-    logs: result.items,
-    totalPages: result.totalPages,
-    isLoading: false,
-    isFetching: false,
-    isError: false,
+    id: item.id,
+    entryId:
+      typeof item.metadata?.entryId === "string"
+        ? item.metadata.entryId
+        : "",
+    date: dateCreated,
+    time: timeCreated,
+    action,
+    initiator: item.adminName?.trim() || item.adminEmail?.trim() || "--",
+  };
+}
+
+function parseAuditLogs(data: unknown): AuditLogRow[] {
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter(
+      (item): item is AdminLedgerAuditLog =>
+        Boolean(item && typeof item === "object")
+    )
+    .map(mapAuditLog);
+}
+
+export function useTransientEntryAuditLogs(
+  walletId: string,
+  entryId: string,
+  page = 1,
+  limit = 20
+) {
+  const params = useMemo(() => ({ page, limit }), [page, limit]);
+
+  const query = useFetchDataSeperateLoading<AuditLogsListResponse>(
+    [...adminKeys.wallet.ledgerAuditLogs(walletId, entryId, params)],
+    () =>
+      adminApi.wallet.getLedgerAuditLogs(
+        walletId,
+        entryId,
+        params
+      ) as unknown as Promise<AuditLogsListResponse>,
+    Boolean(walletId && entryId)
+  );
+
+  const logs = useMemo(
+    () => parseAuditLogs(query.data?.data),
+    [query.data?.data]
+  );
+
+  const pagination = query.data?.metadata?.pagination;
+  const totalPages = asNumber(pagination?.totalPages, 1);
+
+  return {
+    logs,
+    totalPages,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError,
   };
 }
 
