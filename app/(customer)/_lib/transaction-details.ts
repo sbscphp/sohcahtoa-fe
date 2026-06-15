@@ -33,6 +33,7 @@ const MISSING_DOCUMENT_UPLOAD_STATUSES = new Set([
   "DRAFT",
   "AWAITING_VERIFICATION",
   "VERIFICATION_IN_PROGRESS",
+  "REJECTED",
 ]);
 
 export function transactionAllowsMissingDocumentUpload(

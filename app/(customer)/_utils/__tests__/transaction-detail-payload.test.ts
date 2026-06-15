@@ -71,4 +71,28 @@ describe("buildDetailPayloadFromApi documents", () => {
       { documentType: "INVOICE", label: expect.any(String) },
     ]);
   });
+
+  it("allows uploading missing required documents when transaction is rejected", () => {
+    const payload = buildDetailPayloadFromApi({
+      ...baseApi,
+      status: "REJECTED",
+      requiredDocuments: [
+        makeApiDoc("PASSPORT", true, {
+          id: "doc-1",
+          fileName: "passport.jpg",
+          fileUrl: "https://example.com/passport.jpg",
+          status: "PENDING",
+          rejectionNotes: null,
+          uploadedAt: "2026-06-13T23:30:42.566Z",
+          verifiedAt: null,
+        }),
+        makeApiDoc("INVOICE", true, null),
+      ],
+    } as TransactionDetailData);
+
+    expect(payload.allowMissingDocumentUpload).toBe(true);
+    const invoice = payload.documentsForSheet?.find((d) => d.id === "INVOICE");
+    expect(invoice?.needsUpload).toBe(true);
+    expect(invoice?.status).toBe("Not uploaded");
+  });
 });
