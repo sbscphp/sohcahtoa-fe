@@ -36,7 +36,7 @@ export interface TransactionDocumentItem {
 interface DocumentDetailProps {
   transactionTypeLabel?: string;
   documents?: TransactionDocumentItem[];
-  /** When true, docs with `needsUpload` show an upload field (e.g. DRAFT). */
+  /** When true, customer may upload missing docs or resubmit (blocked when transaction is REJECTED). */
   allowMissingDocumentUpload?: boolean;
   onResubmitDocuments?: (
     documents: Array<{ documentType: string; file: FileWithPath }>
@@ -108,8 +108,8 @@ export default function DocumentDetail({
     () =>
       displayDocuments.filter(
         (doc) =>
-          canResubmitStatus(doc.status) ||
-          Boolean(doc.needsUpload && allowMissingDocumentUpload),
+          allowMissingDocumentUpload &&
+          (canResubmitStatus(doc.status) || Boolean(doc.needsUpload)),
       ),
     [displayDocuments, allowMissingDocumentUpload],
   );
@@ -194,8 +194,8 @@ export default function DocumentDetail({
             ) : (
               displayDocuments.map((doc) => {
                 const showUploadField =
-                  canResubmitStatus(doc.status) ||
-                  Boolean(doc.needsUpload && allowMissingDocumentUpload);
+                  allowMissingDocumentUpload &&
+                  (canResubmitStatus(doc.status) || Boolean(doc.needsUpload));
                 const canOpenExisting = Boolean(doc.url?.trim());
                 const subtitle = doc.needsUpload
                   ? "No file uploaded yet"

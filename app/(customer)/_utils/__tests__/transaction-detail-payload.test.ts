@@ -70,9 +70,10 @@ describe("buildDetailPayloadFromApi documents", () => {
     expect(payload.requiredDocuments.missingDocumentTypes).toEqual([
       { documentType: "INVOICE", label: expect.any(String) },
     ]);
+    expect(payload.allowMissingDocumentUpload).toBe(true);
   });
 
-  it("allows uploading missing required documents when transaction is rejected", () => {
+  it("blocks document upload when transaction is rejected", () => {
     const payload = buildDetailPayloadFromApi({
       ...baseApi,
       status: "REJECTED",
@@ -90,9 +91,16 @@ describe("buildDetailPayloadFromApi documents", () => {
       ],
     } as TransactionDetailData);
 
+    expect(payload.allowMissingDocumentUpload).toBe(false);
+  });
+
+  it("allows missing document upload during compliance review", () => {
+    const payload = buildDetailPayloadFromApi({
+      ...baseApi,
+      status: "COMPLIANCE_REVIEW",
+      requiredDocuments: [makeApiDoc("INVOICE", true, null)],
+    } as TransactionDetailData);
+
     expect(payload.allowMissingDocumentUpload).toBe(true);
-    const invoice = payload.documentsForSheet?.find((d) => d.id === "INVOICE");
-    expect(invoice?.needsUpload).toBe(true);
-    expect(invoice?.status).toBe("Not uploaded");
   });
 });
