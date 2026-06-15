@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
-import type { AgentCustomerListResponse } from "@/app/_lib/api/types";
+import type { AgentCustomerExportParams, AgentCustomerListResponse } from "@/app/_lib/api/types";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import type { UseTableResult } from "@/app/_hooks/use-table";
 
@@ -39,6 +39,14 @@ export function useAgentCustomers(
     [statusFilter, table.limit, table.page, table.searchValue]
   );
 
+  const exportParams = useMemo<AgentCustomerExportParams>(
+    () => ({
+      search: requestParams.search,
+      status: requestParams.status,
+    }),
+    [requestParams.search, requestParams.status],
+  );
+
   const query = useFetchDataSeperateLoading<AgentCustomerListResponse>(
     [...agentKeys.customers.list(requestParams)],
     () => agentApi.customers.list(requestParams),
@@ -51,6 +59,7 @@ export function useAgentCustomers(
   return {
     customers,
     statusFilter,
+    exportParams,
     page: pagination?.page ?? requestParams.page,
     limit: pagination?.limit ?? requestParams.limit,
     total: pagination?.total ?? customers.length,

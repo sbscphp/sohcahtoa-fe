@@ -17,7 +17,6 @@ import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
-import type { AuthOtpPurpose } from "@/app/_lib/api/types";
 import {
   isPasswordPolicyCompliant,
   passwordLengthOk,
@@ -25,8 +24,6 @@ import {
   passwordSpecialOk,
   passwordUpperLowerOk,
 } from "@/app/_lib/password-policy";
-
-const CHANGE_PASSWORD_PURPOSE: AuthOtpPurpose = "CHANGE_PASSWORD";
 
 type Step = "old" | "new";
 
@@ -47,23 +44,24 @@ export default function ChangePasswordPage() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   const [otpModalOpened, { open: openOtpModal, close: closeOtpModal }] =
     useDisclosure(false);
   const [successOpened, { open: openSuccess, close: closeSuccess }] =
     useDisclosure(false);
 
-  const sendOtpMutation = useCreateData(customerApi.auth.otp.send);
-  const changePasswordMutation = useCreateData(customerApi.auth.changePassword);
+  const requestOtpMutation = useCreateData(customerApi.auth.otp.changePassword);
+  const resetPasswordMutation = useCreateData(customerApi.auth.resetPassword);
 
   const email = userProfile?.email;
-  const phoneNumber = userProfile?.phoneNumber;
 
   const newPasswordValid =
     newPassword.length > 0 &&
     isPasswordPolicyCompliant(newPassword) &&
     newPassword === confirmNewPassword;
+
+  const otpVerified = Boolean(resetToken);
 
   const isValid =
     step === "old" ? oldPassword.length > 0 : newPasswordValid && otpVerified;
@@ -75,60 +73,59 @@ export default function ChangePasswordPage() {
   };
 
   const handleContinueFromOld = () => {
-    if (!oldPassword || sendOtpMutation.isPending) return;
+    if (!oldPassword || requestOtpMutation.isPending) return;
 
-    if (!email && !phoneNumber) {
+    if (!email) {
       notifications.show({
-        title: "Contact required",
+        title: "Email required",
         message:
-          "We could not find an email or phone number on your profile to send an OTP.",
+          "We could not find an email on your profile. Contact support to update your account.",
         color: "red",
       });
       return;
     }
 
-    const payload = email
-      ? { email, purpose: CHANGE_PASSWORD_PURPOSE }
-      : { phoneNumber: phoneNumber!, purpose: CHANGE_PASSWORD_PURPOSE };
-
-    sendOtpMutation.mutate(payload, {
-      onSuccess: (response) => {
-        if (response.success) {
-          const devOtp = (response.data as { otp?: string } | undefined)?.otp;
-          if (devOtp) {
-            notifications.show({
-              title: "DEV OTP",
-              message: `OTP: ${devOtp}`,
-              color: "blue",
-              autoClose: 8000,
-            });
+    requestOtpMutation.mutate(
+      { email, oldPassword },
+      {
+        onSuccess: (response) => {
+          if (response.success) {
+            const devOtp = response.data?.otp;
+            if (devOtp) {
+              notifications.show({
+                title: "DEV OTP",
+                message: `OTP: ${devOtp}`,
+                color: "blue",
+                autoClose: 8000,
+              });
+            }
+            openOtpModal();
+            return;
           }
-          openOtpModal();
-          return;
-        }
-        handleApiError(
-          { message: response.error?.message || "Failed to send OTP", status: 400 },
-          { customMessage: response.error?.message || "Failed to send OTP." }
-        );
-      },
-      onError: (error) => {
-        handleApiError(error, { customMessage: "Failed to send OTP." });
-      },
-    });
+          handleApiError(
+            { message: response.error?.message || "Failed to send OTP", status: 400 },
+            { customMessage: response.error?.message || "Failed to send OTP." }
+          );
+        },
+        onError: (error) => {
+          handleApiError(error, { customMessage: "Failed to send OTP." });
+        },
+      }
+    );
   };
 
-  const handleOtpVerified = () => {
-    setOtpVerified(true);
+  const handleOtpVerified = (token: string) => {
+    setResetToken(token);
     setStep("new");
   };
 
   const handleCreateNew = () => {
-    if (!newPasswordValid || !otpVerified || changePasswordMutation.isPending) {
+    if (!newPasswordValid || !resetToken || resetPasswordMutation.isPending) {
       return;
     }
 
-    changePasswordMutation.mutate(
-      { oldPassword, newPassword },
+    resetPasswordMutation.mutate(
+      { resetToken, newPassword },
       {
         onSuccess: (response) => {
           if (response.success) {
@@ -153,6 +150,13 @@ export default function ChangePasswordPage() {
         },
       }
     );
+  };
+
+  const handleBackToOldStep = () => {
+    setStep("old");
+    setResetToken(null);
+    setNewPassword("");
+    setConfirmNewPassword("");
   };
 
   const handleSuccessClose = () => {
@@ -202,8 +206,8 @@ export default function ChangePasswordPage() {
                 </Button>
                 <Button
                   className="!h-[52px] !min-w-[188px] !rounded-full !bg-primary-400 !px-6 !py-3.5 !text-base !font-medium !leading-6 !text-[#FFF6F1] hover:!bg-primary-500 disabled:!opacity-20"
-                  disabled={!isValid || sendOtpMutation.isPending}
-                  loading={sendOtpMutation.isPending}
+                  disabled={!isValid || requestOtpMutation.isPending}
+                  loading={requestOtpMutation.isPending}
                   onClick={handleContinueFromOld}
                 >
                   Continue
@@ -287,19 +291,14 @@ export default function ChangePasswordPage() {
                 <Button
                   variant="default"
                   className="!h-[52px] !min-w-[188px] !rounded-full !border-[#CCCACA] !bg-white !px-6 !py-3.5 !text-base !font-medium !leading-6 !text-[#4D4B4B] hover:!bg-gray-50"
-                  onClick={() => {
-                    setStep("old");
-                    setOtpVerified(false);
-                    setNewPassword("");
-                    setConfirmNewPassword("");
-                  }}
+                  onClick={handleBackToOldStep}
                 >
                   Back
                 </Button>
                 <Button
                   className="!h-[52px] !min-w-[188px] !rounded-full !bg-primary-400 !px-6 !py-3.5 !text-base !font-medium !leading-6 !text-[#FFF6F1] hover:!bg-primary-500 disabled:!opacity-20"
-                  disabled={!isValid || changePasswordMutation.isPending}
-                  loading={changePasswordMutation.isPending}
+                  disabled={!isValid || resetPasswordMutation.isPending}
+                  loading={resetPasswordMutation.isPending}
                   onClick={handleCreateNew}
                 >
                   Create New Password
@@ -310,13 +309,15 @@ export default function ChangePasswordPage() {
         )}
       </div>
 
-      <ChangePasswordOtpModal
-        opened={otpModalOpened}
-        onClose={closeOtpModal}
-        onVerified={handleOtpVerified}
-        email={email}
-        phoneNumber={phoneNumber}
-      />
+      {email ? (
+        <ChangePasswordOtpModal
+          opened={otpModalOpened}
+          onClose={closeOtpModal}
+          onVerified={handleOtpVerified}
+          email={email}
+          oldPassword={oldPassword}
+        />
+      ) : null}
 
       <SuccessModal
         opened={successOpened}

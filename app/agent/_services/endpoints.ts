@@ -7,10 +7,15 @@ export const AGENT_API_ENDPOINTS = {
     changePassword: "/api/agent/auth/change-password", // NOSONAR
     forgotPassword: "/api/auth/agent/forgot-password", // NOSONAR
     verifyResetOtp: "/api/auth/agent/verify-reset-otp", // NOSONAR
-    resetPassword: "/api/auth/agent/reset-password", // NOSONAR
+    resetPassword: "/api/agent/auth/reset-password",
+    otp: {
+      changePassword: "/api/agent/auth/otp/change-password",
+      verifyChangePassword: "/api/agent/auth/otp/verify-change-password",
+    },
   },
   customers: {
     list: "/api/agent/customers",
+    export: "/api/agent/customers/export",
     stats: "/api/agent/customers/stats",
     getById: (userId: string) => `/api/agent/customers/${userId}`,
     update: (userId: string) => `/api/agent/customers/${userId}`,
@@ -63,6 +68,7 @@ export const AGENT_API_ENDPOINTS = {
     health: "/api/agent/transactions/health",
     export: "/api/agent/transactions/export",
     paymentsMovements: "/api/agent/transactions/payments/movements",
+    paymentsMovementsExport: "/api/agent/transactions/payments/movements/export",
     pickupLocationTerminals: "/api/customer/transactions/pickup-locations/terminals",
   },
 

@@ -34,6 +34,8 @@ export const API_ENDPOINTS = {
     otp: {
       send: "/api/auth/otp/send",
       validate: "/api/auth/otp/validate",
+      changePassword: "/api/auth/otp/change-password",
+      verifyChangePassword: "/api/auth/otp/verify-change-password",
     },
     
     kyc: {
