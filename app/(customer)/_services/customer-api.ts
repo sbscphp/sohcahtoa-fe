@@ -190,6 +190,12 @@ export const customerApi = {
           API_ENDPOINTS.auth.otp.verifyChangePassword,
           data
         ),
+
+      resendChangePassword: (data: ForgotPasswordRequest) =>
+        apiClient.post<ChangePasswordOtpResponse>(
+          API_ENDPOINTS.auth.otp.resendChangePassword,
+          data
+        ),
     },
 
     // KYC

@@ -164,6 +164,12 @@ export const agentApi = {
           AGENT_API_ENDPOINTS.auth.otp.verifyChangePassword,
           data
         ),
+
+      resendChangePassword: (data: ForgotPasswordRequest) =>
+        apiClient.post<ChangePasswordOtpResponse>(
+          AGENT_API_ENDPOINTS.auth.otp.resendChangePassword,
+          data
+        ),
     },
 
     forgotPassword: (data: ForgotPasswordRequest) =>
@@ -433,13 +439,13 @@ export const agentApi = {
         apiClient.get<AgentPaymentMovementsResponse>(
           AGENT_API_ENDPOINTS.transactions.paymentsMovements,
           {
-            params: params as ApiRequestConfig["params"],
+            params: params as unknown as ApiRequestConfig["params"],
           }
         ),
 
       paymentMovementsExport: (params: AgentPaymentMovementExportParams) =>
         apiClient.download(AGENT_API_ENDPOINTS.transactions.paymentsMovementsExport, {
-          params: params as ApiRequestConfig["params"],
+          params: params as unknown as ApiRequestConfig["params"],
         }),
 
       getPickupTerminals: (params?: PickupTerminalsQueryParams) => {

@@ -11,6 +11,7 @@ export const AGENT_API_ENDPOINTS = {
     otp: {
       changePassword: "/api/agent/auth/otp/change-password",
       verifyChangePassword: "/api/agent/auth/otp/verify-change-password",
+      resendChangePassword: "/api/agent/auth/otp/change-password/resend",
     },
   },
   customers: {

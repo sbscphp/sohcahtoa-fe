@@ -315,7 +315,6 @@ export default function ChangePasswordPage() {
           onClose={closeOtpModal}
           onVerified={handleOtpVerified}
           email={email}
-          oldPassword={oldPassword}
         />
       ) : null}
 

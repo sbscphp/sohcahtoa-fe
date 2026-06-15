@@ -21,7 +21,6 @@ interface ChangePasswordOtpModalProps {
   onClose: () => void;
   onVerified: (resetToken: string) => void;
   email: string;
-  oldPassword: string;
 }
 
 export function ChangePasswordOtpModal({
@@ -29,13 +28,12 @@ export function ChangePasswordOtpModal({
   onClose,
   onVerified,
   email,
-  oldPassword,
 }: Readonly<ChangePasswordOtpModalProps>) {
   const [otp, setOtp] = useState("");
   const [isComplete, setIsComplete] = useState(false);
 
   const verifyOtpMutation = useCreateData(customerApi.auth.otp.verifyChangePassword);
-  const resendOtpMutation = useCreateData(customerApi.auth.otp.changePassword);
+  const resendOtpMutation = useCreateData(customerApi.auth.otp.resendChangePassword);
 
   const deliveryLabel = `email (${maskEmail(email)})`;
 
@@ -87,13 +85,13 @@ export function ChangePasswordOtpModal({
   };
 
   const handleResend = () => {
-    if (!oldPassword || resendOtpMutation.isPending) return;
+    if (resendOtpMutation.isPending) return;
 
     setOtp("");
     setIsComplete(false);
 
     resendOtpMutation.mutate(
-      { email, oldPassword },
+      { email },
       {
         onSuccess: (response) => {
           if (response.success) {
