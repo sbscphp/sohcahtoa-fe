@@ -20,6 +20,7 @@ export interface TransientEntryDetail {
   entryId: string;
   sessionId: string;
   transactionRef: string;
+  type: "DEBIT" | "CREDIT";
   transactionType: string;
   amount: number;
   entryDate: string;
@@ -42,6 +43,7 @@ function mapEntryDetail(
     entryId: item.id,
     sessionId: item.sessionId ?? "--",
     transactionRef: item.transactionRef ?? "--",
+    type: item.type,
     transactionType: item.linkedTransaction?.type ?? "--",
     amount: item.amount,
     entryDate: dateCreated,

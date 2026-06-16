@@ -62,8 +62,13 @@ export default function TransientWalletEntryDetailPage() {
   );
 
   const isMatched = normalizeMatchStatus(entry?.matchStatus ?? null) === "Matched";
-  const canDisburse = isMatched && !entry?.disbursementStatus;
-  const canRefund = isMatched && !entry?.refundStatus;
+  const isCreditEntry = entry?.type === "CREDIT";
+  const canUnlink =
+    isMatched && !entry?.refundStatus && !entry?.disbursementStatus;
+  const canDisburse =
+    isMatched && isCreditEntry && !entry?.disbursementStatus;
+  const canRefund =
+    isMatched && isCreditEntry && !entry?.refundStatus;
 
   const [activeTab, setActiveTab] = useState<"audit" | "notes">("audit");
 
@@ -370,6 +375,7 @@ export default function TransientWalletEntryDetailPage() {
               <TakeActionMenu
                 onAction={handleTakeAction}
                 isMatched={isMatched}
+                canUnlink={canUnlink}
                 canDisburse={canDisburse}
                 canRefund={canRefund}
               />
