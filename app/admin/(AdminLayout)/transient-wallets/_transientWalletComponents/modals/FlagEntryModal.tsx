@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button, Modal, Select, Text, Textarea } from "@mantine/core";
 import { X } from "lucide-react";
 
@@ -26,13 +26,15 @@ export default function FlagEntryModal({
 }: FlagEntryModalProps) {
   const [reason, setReason] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [prevOpened, setPrevOpened] = useState(opened);
 
-  useEffect(() => {
+  if (opened !== prevOpened) {
+    setPrevOpened(opened);
     if (!opened) {
       setReason(null);
       setDescription("");
     }
-  }, [opened]);
+  }
 
   const handleSubmit = () => {
     if (!reason) return;
@@ -107,7 +109,6 @@ export default function FlagEntryModal({
         </Button>
         <Button
           radius="xl"
-          color="#F63D68"
           loading={loading}
           onClick={handleSubmit}
           disabled={loading || !reason}
