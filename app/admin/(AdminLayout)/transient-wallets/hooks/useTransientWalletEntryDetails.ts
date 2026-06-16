@@ -263,14 +263,19 @@ function parseTransactions(data: unknown): AdminTransactionSearchItem[] {
   );
 }
 
-export function useTransactionSearch(search: string) {
+export function useTransactionSearch(userId: string, search: string) {
   const trimmed = search.trim();
-  const enabled = trimmed.length >= 3;
+  const enabled = Boolean(userId) && trimmed.length >= 3;
 
   const query = useFetchData<TransactionSearchResponse>(
-    [...adminKeys.transactions.list({ search: trimmed, limit: 20 })],
+    [
+      ...adminKeys.customers.transactions(userId, {
+        search: trimmed,
+        limit: 20,
+      }),
+    ],
     () =>
-      adminApi.transactions.list({
+      adminApi.customers.transactions(userId, {
         search: trimmed,
         limit: 20,
       }) as unknown as Promise<TransactionSearchResponse>,

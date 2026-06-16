@@ -24,6 +24,8 @@ interface LinkTransactionModalProps {
   onClose: () => void;
   walletId: string;
   entryId: string;
+  customerId: string;
+  customerName: string;
   onConfirmLink: (transactionId: string, reason: string) => void;
   loading?: boolean;
 }
@@ -36,6 +38,8 @@ export default function LinkTransactionModal({
   opened,
   onClose,
   entryId,
+  customerId,
+  customerName,
   onConfirmLink,
   loading = false,
 }: LinkTransactionModalProps) {
@@ -45,7 +49,10 @@ export default function LinkTransactionModal({
   const [reason, setReason] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 350);
 
-  const { results, isLoading: isSearching } = useTransactionSearch(debouncedSearch);
+  const { results, isLoading: isSearching } = useTransactionSearch(
+    customerId,
+    debouncedSearch
+  );
 
   const resetState = () => {
     setStep(1);
@@ -135,7 +142,7 @@ export default function LinkTransactionModal({
 
               {showResults && !isSearching && results.length === 0 && (
                 <Text size="xs" c="dimmed" mt={6}>
-                  No transactions found matching your search.
+                  No transactions for {customerName} matching your search.
                 </Text>
               )}
 
@@ -155,7 +162,7 @@ export default function LinkTransactionModal({
                       </Text>
                       <Text size="xs" c="dimmed">
                         {tx.customerName} &bull; {tx.transactionType} &bull;{" "}
-                        {formatCurrency(tx.transactionValue)} {tx.currency}
+                        {formatCurrency(tx.transactionValue)} &bull;{" "} {tx.currency}
                       </Text>
                     </Paper>
                   ))}

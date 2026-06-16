@@ -18,6 +18,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useTransientWalletEntryDetails } from "../../../hooks/useTransientWalletEntryDetails";
+import { useTransientWalletDetails } from "../../../hooks/useTransientWalletDetails";
 import { normalizeMatchStatus } from "../../../hooks/walletUtils";
 import EntryAuditLogsTab from "../../../_transientWalletComponents/EntryAuditLogsTab";
 import EntryAdminNotesTab from "../../../_transientWalletComponents/EntryAdminNotesTab";
@@ -60,6 +61,7 @@ export default function TransientWalletEntryDetailPage() {
     walletId,
     entryId
   );
+  const { wallet } = useTransientWalletDetails(walletId);
 
   const isMatched = normalizeMatchStatus(entry?.matchStatus ?? null) === "Matched";
   const isCreditEntry = entry?.type === "CREDIT";
@@ -450,6 +452,8 @@ export default function TransientWalletEntryDetailPage() {
         onClose={() => setLinkModalOpen(false)}
         walletId={walletId}
         entryId={entryId}
+        customerId={wallet?.customerId ?? ""}
+        customerName={wallet?.customerName ?? ""}
         onConfirmLink={handleLinkConfirm}
         loading={linkMutation.isPending}
       />
