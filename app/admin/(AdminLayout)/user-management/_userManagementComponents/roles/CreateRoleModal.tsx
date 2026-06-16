@@ -13,7 +13,7 @@ import {
   Checkbox,
   Accordion,
 } from "@mantine/core";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useForm } from "@mantine/form";
 import { useManagementLookups } from "../../hooks/useManagementLookups";
@@ -55,6 +55,11 @@ export function CreateRoleModal({
   const { options: departmentOptions, isLoading: departmentsLoading } =
     useManagementLookups("department");
   const { roleModules, isLoading: modulesLoading } = useManagementModules();
+
+  const creatableModules = useMemo(
+    () => roleModules.filter((m) => m.key !== "USER_MANAGEMENT"),
+    [roleModules]
+  );
 
   const form = useForm({
     initialValues: {
@@ -112,7 +117,7 @@ export function CreateRoleModal({
     setStep("details");
     setIsConfirmOpen(false);
     setPendingPayload(null);
-    setPermissions(createInitialPermissions(roleModules));
+    setPermissions(createInitialPermissions(creatableModules));
   };
 
   const handleClose = () => {
@@ -121,7 +126,7 @@ export function CreateRoleModal({
   };
 
   const goToPermissions = () => {
-    if (modulesLoading || roleModules.length === 0) return;
+    if (modulesLoading || creatableModules.length === 0) return;
     const validation = form.validate();
     if (validation.hasErrors) return;
     setStep("permissions");
@@ -138,7 +143,7 @@ export function CreateRoleModal({
   };
 
   const hasSelectedPermission = () =>
-    roleModules.some((roleModule) =>
+    creatableModules.some((roleModule) =>
       roleModule.scopes.some((scope) =>
         PERMISSION_ACTIONS.some(
           (action) => permissions[roleModule.key]?.[scope]?.[action] ?? false
@@ -209,7 +214,7 @@ export function CreateRoleModal({
     }
 
     const permissionsPayload = Object.fromEntries(
-      roleModules
+      creatableModules
         .map((roleModule) => {
           const scopePayload = Object.fromEntries(
             roleModule.scopes
@@ -364,7 +369,7 @@ export function CreateRoleModal({
             <Text size="sm" c="dimmed">
               Loading permission modules...
             </Text>
-          ) : roleModules.length === 0 ? (
+          ) : creatableModules.length === 0 ? (
             <EmptySection
               format="compact"
               title="No Permission Modules"
@@ -372,7 +377,7 @@ export function CreateRoleModal({
             />
           ) : (
             <Accordion chevronPosition="right" radius="md" variant="separated">
-              {roleModules.map((roleModule) => (
+              {creatableModules.map((roleModule) => (
                 <Accordion.Item key={roleModule.key} value={roleModule.key}>
                   <Accordion.Control>
                     <Checkbox
@@ -450,7 +455,7 @@ export function CreateRoleModal({
           radius="xl"
           onClick={step === "details" ? goToPermissions : handleCreateRole}
           loading={step === "permissions" ? createRoleMutation.isPending : false}
-          disabled={modulesLoading || roleModules.length === 0}
+          disabled={modulesLoading || creatableModules.length === 0}
         >
           {step === "details" ? "Continue" : "Create Role"}
         </Button>

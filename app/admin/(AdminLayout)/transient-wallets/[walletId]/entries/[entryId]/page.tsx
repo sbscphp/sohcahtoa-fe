@@ -18,6 +18,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useTransientWalletEntryDetails } from "../../../hooks/useTransientWalletEntryDetails";
+import { useTransientWalletDetails } from "../../../hooks/useTransientWalletDetails";
 import { normalizeMatchStatus } from "../../../hooks/walletUtils";
 import EntryAuditLogsTab from "../../../_transientWalletComponents/EntryAuditLogsTab";
 import EntryAdminNotesTab from "../../../_transientWalletComponents/EntryAdminNotesTab";
@@ -60,10 +61,16 @@ export default function TransientWalletEntryDetailPage() {
     walletId,
     entryId
   );
+  const { wallet } = useTransientWalletDetails(walletId);
 
   const isMatched = normalizeMatchStatus(entry?.matchStatus ?? null) === "Matched";
-  const canDisburse = isMatched && !entry?.disbursementStatus;
-  const canRefund = isMatched && !entry?.refundStatus;
+  const isCreditEntry = entry?.type === "CREDIT";
+  const canUnlink =
+    isMatched && !entry?.refundStatus && !entry?.disbursementStatus;
+  const canDisburse =
+    isMatched && isCreditEntry && !entry?.disbursementStatus;
+  const canRefund =
+    isMatched && isCreditEntry && !entry?.refundStatus;
 
   const [activeTab, setActiveTab] = useState<"audit" | "notes">("audit");
 
@@ -370,6 +377,7 @@ export default function TransientWalletEntryDetailPage() {
               <TakeActionMenu
                 onAction={handleTakeAction}
                 isMatched={isMatched}
+                canUnlink={canUnlink}
                 canDisburse={canDisburse}
                 canRefund={canRefund}
               />
@@ -444,6 +452,8 @@ export default function TransientWalletEntryDetailPage() {
         onClose={() => setLinkModalOpen(false)}
         walletId={walletId}
         entryId={entryId}
+        customerId={wallet?.customerId ?? ""}
+        customerName={wallet?.customerName ?? ""}
         onConfirmLink={handleLinkConfirm}
         loading={linkMutation.isPending}
       />

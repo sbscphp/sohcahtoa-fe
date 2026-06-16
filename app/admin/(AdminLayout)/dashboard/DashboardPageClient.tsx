@@ -55,13 +55,13 @@ export default function DashboardPageClient() {
       </Flex>
 
       <div className="w-full rounded-xl bg-white p-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {isLoading ? (
             <>
               <Skeleton height={88} radius="xl" />
               <Skeleton height={88} radius="xl" />
               <Skeleton height={88} radius="xl" />
-              <Skeleton height={88} radius="xl" />
+              {/* <Skeleton height={88} radius="xl" /> */}
             </>
           ) : (
             showStats && (
@@ -86,12 +86,12 @@ export default function DashboardPageClient() {
                   icon={<HiMiniUserGroup className="h-5 w-5 text-green-600" />}
                   iconBg="bg-green-100"
                 />
-                <StatCard
+                {/* <StatCard
                   title="Total Users"
                   value={counters.totalUsers.toLocaleString()}
                   icon={<HiMiniUserGroup className="h-5 w-5 text-pink-600" />}
                   iconBg="bg-pink-100"
-                />
+                /> */}
               </>
             )
           )}

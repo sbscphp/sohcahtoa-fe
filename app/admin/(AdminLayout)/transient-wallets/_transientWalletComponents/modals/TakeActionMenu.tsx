@@ -7,6 +7,7 @@ export type TakeActionType = "link" | "unlink" | "flag" | "refund" | "disburse";
 interface TakeActionMenuProps {
   onAction: (action: TakeActionType) => void;
   isMatched?: boolean;
+  canUnlink?: boolean;
   canDisburse?: boolean;
   canRefund?: boolean;
 }
@@ -14,9 +15,14 @@ interface TakeActionMenuProps {
 export default function TakeActionMenu({
   onAction,
   isMatched = false,
+  canUnlink = false,
   canDisburse = false,
   canRefund = false,
 }: TakeActionMenuProps) {
+  const showLink = !isMatched;
+  const showUnlink = isMatched && canUnlink;
+  const showLinkSection = showLink || showUnlink;
+
   return (
     <Menu position="bottom-end" shadow="md" width={200}>
       <Menu.Target>
@@ -25,16 +31,21 @@ export default function TakeActionMenu({
         </Button>
       </Menu.Target>
       <Menu.Dropdown>
-        {isMatched ? (
-          <Menu.Item onClick={() => onAction("unlink")}>
-            Unlink transaction
-          </Menu.Item>
-        ) : (
-          <Menu.Item onClick={() => onAction("link")}>
-            Link transaction
-          </Menu.Item>
-        )}
-        <Menu.Divider />
+        {showLinkSection ? (
+          <>
+            {showLink ? (
+              <Menu.Item onClick={() => onAction("link")}>
+                Link transaction
+              </Menu.Item>
+            ) : null}
+            {showUnlink ? (
+              <Menu.Item onClick={() => onAction("unlink")}>
+                Unlink transaction
+              </Menu.Item>
+            ) : null}
+            <Menu.Divider />
+          </>
+        ) : null}
         <Menu.Item onClick={() => onAction("flag")}>
           Mark as flagged
         </Menu.Item>
