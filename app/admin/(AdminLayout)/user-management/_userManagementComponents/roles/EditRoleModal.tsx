@@ -184,13 +184,15 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
   };
 
   const hasSelectedPermission = () =>
-    roleModules.some((roleModule) =>
-      roleModule.scopes.some((scope) =>
-        PERMISSION_ACTIONS.some(
-          (action) => permissions[roleModule.key]?.[scope]?.[action] ?? false
+    roleModules
+      .filter((m) => m.key !== "USER_MANAGEMENT")
+      .some((roleModule) =>
+        roleModule.scopes.some((scope) =>
+          PERMISSION_ACTIONS.some(
+            (action) => permissions[roleModule.key]?.[scope]?.[action] ?? false
+          )
         )
-      )
-    );
+      );
 
   const updateRoleMutation = usePutData(
     (payload: CreateRolePayload) => adminApi.management.roles.update(roleId, payload),
@@ -416,6 +418,7 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
                         onChange={(e) => toggleModule(roleModule.key, e.currentTarget.checked)}
                         label={roleModule.label}
                         color="orange"
+                        disabled={roleModule.key === "USER_MANAGEMENT"}
                       />
                     </Accordion.Control>
                     <Accordion.Panel>
@@ -437,6 +440,7 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
                                   label={actionLabelMap[action]}
                                   color="orange"
                                   checked={permissions[roleModule.key]?.[scope]?.[action] ?? false}
+                                  disabled={roleModule.key === "USER_MANAGEMENT"}
                                   onChange={(e) => {
                                     const checked = e.currentTarget?.checked ?? false;
                                     setPermissionsError("");
