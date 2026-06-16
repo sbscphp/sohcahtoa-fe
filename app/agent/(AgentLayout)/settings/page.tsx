@@ -43,10 +43,11 @@ const SETTINGS_OPTIONS_WITH_LINKS = [
   },
 ] as const;
 
-const DELETE_ACCOUNT_OPTION = {
+const DEACTIVATE_ACCOUNT_OPTION = {
   icon: Trash2,
-  title: "Delete Account",
-  description: "Permanently remove your account and all associated data.",
+  title: "Deactivate Account",
+  description:
+    "Temporarily suspend your account. Contact support if you need to reactivate.",
 } as const;
 
 export default function SettingsPage() {
@@ -60,7 +61,7 @@ export default function SettingsPage() {
   const [successOpen, { open: openSuccess, close: closeSuccess }] =
     useDisclosure(false);
 
-  const openDeleteAccountFlow = () => {
+  const openDeactivateAccountFlow = () => {
     openConfirm();
   };
 
@@ -100,14 +101,14 @@ export default function SettingsPage() {
           />
         ))}
         {/* <FxTransactionTypeCard
-          icon={<DELETE_ACCOUNT_OPTION.icon className="size-6 text-primary-400" />}
-          title={DELETE_ACCOUNT_OPTION.title}
-          description={DELETE_ACCOUNT_OPTION.description}
-          onClick={openDeleteAccountFlow}
+          icon={<DEACTIVATE_ACCOUNT_OPTION.icon className="size-6 text-primary-400" />}
+          title={DEACTIVATE_ACCOUNT_OPTION.title}
+          description={DEACTIVATE_ACCOUNT_OPTION.description}
+          onClick={openDeactivateAccountFlow}
         /> */}
       </div>
 
-      {/* Delete Account Confirmation Modal */}
+      {/* Deactivate Account Confirmation Modal */}
       <Modal
         opened={confirmOpen}
         onClose={closeConfirm}
@@ -131,10 +132,11 @@ export default function SettingsPage() {
             </div>
             <div className="flex flex-col items-center gap-2 text-center">
               <h3 className="text-xl font-semibold leading-7 text-[#131212]">
-                Delete account
+                Deactivate Account?
               </h3>
               <p className="text-base font-normal leading-6 text-[#6C6969]">
-                Are you sure you want to delete your account?
+                Are you sure you want to deactivate your account? Your access
+                will be suspended until your account is reactivated.
               </p>
             </div>
           </div>
@@ -144,7 +146,7 @@ export default function SettingsPage() {
               className="h-[52px]! rounded-full! bg-primary-400! text-base font-medium leading-6 text-[#FFF6F1]! hover:bg-primary-500!"
               onClick={handleConfirmYes}
             >
-              Yes, Delete
+              Yes, Deactivate Account
             </Button>
             <Button
               fullWidth
@@ -185,7 +187,7 @@ export default function SettingsPage() {
                 Enter Password to Continue
               </h3>
               <p className="text-base font-normal leading-6 text-[#6C6969]">
-                Enter your password to authorise account deletion process
+                Enter your password to authorise account deactivation
               </p>
             </div>
           </div>
@@ -203,7 +205,7 @@ export default function SettingsPage() {
               disabled={!password.trim()}
               onClick={handleSubmitPassword}
             >
-              Yes, Delete Account
+              Yes, Deactivate Account
             </Button>
             <Button
               fullWidth
@@ -220,8 +222,8 @@ export default function SettingsPage() {
       <SuccessModal
         opened={successOpen}
         onClose={closeSuccess}
-        title="Account deleted successfully"
-        message="You have successfully deleted your Account"
+        title="Account Deactivated"
+        message="Your account has been successfully deactivated."
         buttonText="Close"
         buttonVariant="outline"
         onButtonClick={handleCloseSuccess}

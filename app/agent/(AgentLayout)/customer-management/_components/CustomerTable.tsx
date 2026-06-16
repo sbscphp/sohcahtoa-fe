@@ -1,14 +1,15 @@
 "use client";
 
+import { useMemo } from "react";
+import { notifications } from "@mantine/notifications";
 import { ActionButton } from "@/app/admin/_components/ActionButton";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import type { AgentCustomerSummary } from "@/app/_lib/api/types";
 import SearchInput from "@/app/admin/_components/SearchInput";
 import { formatLocalDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import { Badge, Button, Group, Select, Text } from "@mantine/core";
-import { ArrowUpRight, ListFilter, Upload } from "lucide-react";
+import { ListFilter, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
 import type { AgentCustomerUiStatusFilter } from "../hooks/useAgentCustomers";
 
 interface Customer {
@@ -30,6 +31,8 @@ interface CustomerTableProps {
   onSearchChange: (value: string) => void;
   onFilterChange: (value: AgentCustomerUiStatusFilter) => void;
   onPageChange: (page: number) => void;
+  onExportClick?: () => void;
+  isExporting?: boolean;
 }
 
 const getKYCStatusColor = (status: string) => {
@@ -81,6 +84,8 @@ export default function CustomerTable({
   onSearchChange,
   onFilterChange,
   onPageChange,
+  onExportClick,
+  isExporting = false,
 }: Readonly<CustomerTableProps>) {
   const router = useRouter();
 
@@ -172,6 +177,9 @@ export default function CustomerTable({
               color="orange"
               radius="xl"
               rightSection={<Upload size={16} />}
+              onClick={onExportClick}
+              loading={isExporting}
+              disabled={!onExportClick || isExporting}
             >
               Export
             </Button>

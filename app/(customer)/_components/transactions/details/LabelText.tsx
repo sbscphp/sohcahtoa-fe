@@ -32,6 +32,8 @@ export interface LabelTextProps {
   statusBadge?: string;
   /** Multi-line value (e.g. "Line1\nLine2") */
   multiline?: string;
+  /** Show full text with wrapping instead of single-line truncation */
+  wrapText?: boolean;
   className?: string;
 }
 
@@ -59,6 +61,7 @@ export default function LabelText({
   document: doc,
   statusBadge,
   multiline,
+  wrapText = false,
   className = "",
 }: LabelTextProps) {
   if (shouldHideEmptyRow({
@@ -131,7 +134,12 @@ export default function LabelText({
     }
     if (text !== undefined) {
       return (
-        <span className={`${valueClass} block max-w-full truncate`} title={text}>
+        <span
+          className={`${valueClass} block max-w-full ${
+            wrapText ? "break-all whitespace-normal" : "truncate"
+          }`}
+          title={text}
+        >
           {text}
         </span>
       );

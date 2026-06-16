@@ -3,8 +3,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { Card, Text, TextInput } from "@mantine/core";
 import { useRouter } from "next/navigation";
+import { notifications } from "@mantine/notifications";
 import { TableWrapper, type FilterTabOption } from "@/app/agent/_components/common";
-import type { AgentPaymentMovementItem } from "@/app/_lib/api/types";
+import type { AgentPaymentMovementExportParams, AgentPaymentMovementItem } from "@/app/_lib/api/types";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { agentApi } from "@/app/agent/_services/agent-api";
 import { useCashInventoryMovements } from "../hooks/useCashInventoryMovements";
 import {
   formatMovementDate,
@@ -43,9 +46,49 @@ export function CashInventoryTable() {
     setModalOpened(true);
   }, []);
 
+  const exportParams = useMemo<AgentPaymentMovementExportParams>(
+    () => ({
+      type: movementType,
+      q: table.searchValue?.trim() || undefined,
+    }),
+    [movementType, table.searchValue],
+  );
+
+  const exportMutation = useCreateData(async () => {
+    const { blob, filename } = await agentApi.transactions.paymentMovementsExport(
+      exportParams,
+    );
+    return {
+      blob,
+      filename:
+        filename ??
+        `cash-inventory-${movementType}-${new Date().toISOString().slice(0, 10)}.csv`,
+    };
+  });
+
   const handleExport = useCallback(() => {
-    console.log("export");
-  }, []);
+    if (exportMutation.isPending) return;
+    exportMutation.mutate(undefined, {
+      onSuccess: ({ blob, filename }) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        notifications.show({
+          title: "Export failed",
+          message:
+            error.message || "Unable to export cash inventory. Please try again.",
+          color: "red",
+        });
+      },
+    });
+  }, [exportMutation]);
 
   const goToTransaction = useCallback(
     (id: string) => {

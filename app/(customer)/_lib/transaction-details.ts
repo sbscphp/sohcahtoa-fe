@@ -27,18 +27,27 @@ export function normalizeTransactionStatus(raw: string | null | undefined): stri
   return (raw ?? "").trim().toUpperCase();
 }
 
-/** Label for badges, timeline titles, etc. Title-cases unknown API values. */
-/** Transaction statuses where customer may upload docs that were never submitted (`uploaded: null`). */
-const MISSING_DOCUMENT_UPLOAD_STATUSES = new Set([
-  "DRAFT",
-  "AWAITING_VERIFICATION",
-  "VERIFICATION_IN_PROGRESS",
+/** Terminal transaction statuses — no document upload or resubmit. */
+const DOCUMENT_UPLOAD_BLOCKED_STATUSES = new Set([
+  "REJECTED",
+  "COMPLETED",
+  "CANCELLED",
 ]);
 
+/** Whether the customer may upload missing docs or resubmit on this transaction. */
+export function transactionAllowsDocumentUpload(
+  status: string | null | undefined,
+): boolean {
+  const normalized = normalizeTransactionStatus(status);
+  if (!normalized) return false;
+  return !DOCUMENT_UPLOAD_BLOCKED_STATUSES.has(normalized);
+}
+
+/** @deprecated Use `transactionAllowsDocumentUpload` — kept for call sites. */
 export function transactionAllowsMissingDocumentUpload(
   status: string | null | undefined,
 ): boolean {
-  return MISSING_DOCUMENT_UPLOAD_STATUSES.has(normalizeTransactionStatus(status));
+  return transactionAllowsDocumentUpload(status);
 }
 
 export function getTransactionStatusLabel(status: string | null | undefined): string {

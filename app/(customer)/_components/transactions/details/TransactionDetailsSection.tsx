@@ -28,7 +28,13 @@ export default function TransactionDetailsSection({ data }: TransactionDetailsSe
 
   return (
     <SectionBlock title="Transaction Details">
-      <LabelText hideWhenEmpty label="Transaction ID" text={data.transactionId} />
+      <LabelText
+        hideWhenEmpty
+        label="Transaction ID"
+        text={data.transactionId}
+        wrapText
+        className="col-span-full"
+      />
       <LabelText hideWhenEmpty label="Amount" amount={data.amount} />
       <LabelText hideWhenEmpty label="Equivalent Amount" amount={data.equivalentAmount} />
       <LabelText hideWhenEmpty label="Date initiated" text={data.dateInitiated} />

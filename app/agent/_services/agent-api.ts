@@ -13,6 +13,7 @@ import type {
   AgentDashboardRecentTransactionsResponse,
   AgentDashboardTransactionsByTypeResponse,
   AgentCustomerListParams,
+  AgentCustomerExportParams,
   AgentCustomerListResponse,
   AgentCustomerStatsResponse,
   AgentCustomerTransactionsResponse,
@@ -20,6 +21,8 @@ import type {
   AgentCustomerUpdateResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  ChangePasswordOtpRequest,
+  ChangePasswordOtpResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   LoginRequest,
@@ -65,7 +68,8 @@ import type {
   AgentDashboardCashStatsPeriod,
   AgentDashboardCashStatsResponse,
   AgentDashboardBalanceResponse,
-  AgentPaymentMovementType,
+  AgentPaymentMovementListParams,
+  AgentPaymentMovementExportParams,
   AgentPaymentMovementsResponse,
 } from "@/app/_lib/api/types";
 
@@ -141,11 +145,32 @@ export const agentApi = {
         { skipAuth: true }
       ),
 
+    /** @deprecated Use otp.changePassword + otp.verifyChangePassword + resetPassword */
     changePassword: (data: ChangePasswordRequest) =>
       apiClient.post<ChangePasswordResponse>(
         AGENT_API_ENDPOINTS.auth.changePassword,
         data
       ),
+
+    otp: {
+      changePassword: (data: ChangePasswordOtpRequest) =>
+        apiClient.post<ChangePasswordOtpResponse>(
+          AGENT_API_ENDPOINTS.auth.otp.changePassword,
+          data
+        ),
+
+      verifyChangePassword: (data: VerifyResetOtpRequest) =>
+        apiClient.post<VerifyResetOtpResponse>(
+          AGENT_API_ENDPOINTS.auth.otp.verifyChangePassword,
+          data
+        ),
+
+      resendChangePassword: (data: ForgotPasswordRequest) =>
+        apiClient.post<ChangePasswordOtpResponse>(
+          AGENT_API_ENDPOINTS.auth.otp.resendChangePassword,
+          data
+        ),
+    },
 
     forgotPassword: (data: ForgotPasswordRequest) =>
       apiClient.post<ForgotPasswordResponse>(
@@ -195,6 +220,10 @@ export const agentApi = {
           params: params as ApiRequestConfig["params"],
         }
       ),
+    export: (params?: AgentCustomerExportParams) =>
+      apiClient.download(AGENT_API_ENDPOINTS.customers.export, {
+        params: params as ApiRequestConfig["params"],
+      }),
   },
 
   dashboard: {
@@ -406,17 +435,18 @@ export const agentApi = {
       stats: () =>
         apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
 
-      paymentMovements: (params: {
-        type: AgentPaymentMovementType;
-        page?: number;
-        limit?: number;
-      }) =>
+      paymentMovements: (params: AgentPaymentMovementListParams) =>
         apiClient.get<AgentPaymentMovementsResponse>(
           AGENT_API_ENDPOINTS.transactions.paymentsMovements,
           {
-            params: params as ApiRequestConfig["params"],
+            params: params as unknown as ApiRequestConfig["params"],
           }
         ),
+
+      paymentMovementsExport: (params: AgentPaymentMovementExportParams) =>
+        apiClient.download(AGENT_API_ENDPOINTS.transactions.paymentsMovementsExport, {
+          params: params as unknown as ApiRequestConfig["params"],
+        }),
 
       getPickupTerminals: (params?: PickupTerminalsQueryParams) => {
         const p: Record<string, string> = {};

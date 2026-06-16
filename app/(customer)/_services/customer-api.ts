@@ -64,6 +64,8 @@ import type {
   VerifyPassportResponse,
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
+  ChangePasswordOtpRequest,
+  ChangePasswordOtpResponse,
   Document,
   DocumentsListResponse,
   DocumentUploadResponse,
@@ -123,6 +125,7 @@ export const customerApi = {
     resetPassword: (data: ResetPasswordRequest) =>
       apiClient.post<ResetPasswordResponse>(API_ENDPOINTS.auth.resetPassword, data, { skipAuth: true }),
 
+    /** @deprecated Use otp.changePassword + otp.verifyChangePassword + resetPassword */
     changePassword: (data: CustomerChangePasswordRequest) =>
       apiClient.post<ChangePasswordResponse>(API_ENDPOINTS.auth.changePassword, data),
 
@@ -178,6 +181,21 @@ export const customerApi = {
 
       validate: (data: AuthOtpValidateRequest, config?: Pick<ApiRequestConfig, "skipAuth">) =>
         apiClient.post<AuthOtpValidateResponse>(API_ENDPOINTS.auth.otp.validate, data, config),
+
+      changePassword: (data: ChangePasswordOtpRequest) =>
+        apiClient.post<ChangePasswordOtpResponse>(API_ENDPOINTS.auth.otp.changePassword, data),
+
+      verifyChangePassword: (data: VerifyResetOtpRequest) =>
+        apiClient.post<VerifyResetOtpResponse>(
+          API_ENDPOINTS.auth.otp.verifyChangePassword,
+          data
+        ),
+
+      resendChangePassword: (data: ForgotPasswordRequest) =>
+        apiClient.post<ChangePasswordOtpResponse>(
+          API_ENDPOINTS.auth.otp.resendChangePassword,
+          data
+        ),
     },
 
     // KYC

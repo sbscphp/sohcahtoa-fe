@@ -214,6 +214,19 @@ export interface VerifyResetOtpResponseData {
 export type VerifyResetOtpResponse =
   ApiResponseWrapper<VerifyResetOtpResponseData>;
 
+export interface ChangePasswordOtpRequest {
+  email: string;
+  oldPassword: string;
+}
+
+export interface ChangePasswordOtpResponseData {
+  message: string;
+  otp?: string;
+}
+
+export type ChangePasswordOtpResponse =
+  ApiResponseWrapper<ChangePasswordOtpResponseData>;
+
 export interface ResetPasswordRequest {
   resetToken: string;
   newPassword: string;
@@ -430,6 +443,17 @@ export type AgentPaymentMovementType =
   | "cash_received_from_admin"
   | "cash_received_from_customer";
 
+export interface AgentPaymentMovementListParams {
+  type: AgentPaymentMovementType;
+  page?: number;
+  limit?: number;
+  q?: string;
+}
+
+export type AgentPaymentMovementExportParams = Omit<
+  AgentPaymentMovementListParams,
+  "page" | "limit"
+>;
 
 export interface AgentPaymentMovementItem {
   transaction_id: string;
@@ -465,6 +489,11 @@ export interface AgentCustomerListParams extends PaginationParams {
   toDate?: string;
   search?: string;
 }
+
+export type AgentCustomerExportParams = Omit<
+  AgentCustomerListParams,
+  "page" | "limit"
+>;
 
 export interface AgentCustomerSummary {
   userId: string;

@@ -6,7 +6,7 @@ import { notifications } from "@mantine/notifications";
 import { ArrowUpRight } from "lucide-react";
 import { OTPInput } from "@/app/(customer)/_components/auth/OTPInput";
 import { useCreateData } from "@/app/_lib/api/hooks";
-import { customerApi } from "@/app/(customer)/_services/customer-api";
+import { agentApi } from "@/app/agent/_services/agent-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 
 function maskEmail(email: string) {
@@ -16,24 +16,24 @@ function maskEmail(email: string) {
   return `${email.slice(0, visible)}${"*".repeat(Math.max(0, at - visible))}${email.slice(at)}`;
 }
 
-interface ChangePasswordOtpModalProps {
+interface AgentChangePasswordOtpModalProps {
   opened: boolean;
   onClose: () => void;
   onVerified: (resetToken: string) => void;
   email: string;
 }
 
-export function ChangePasswordOtpModal({
+export function AgentChangePasswordOtpModal({
   opened,
   onClose,
   onVerified,
   email,
-}: Readonly<ChangePasswordOtpModalProps>) {
+}: Readonly<AgentChangePasswordOtpModalProps>) {
   const [otp, setOtp] = useState("");
   const [isComplete, setIsComplete] = useState(false);
 
-  const verifyOtpMutation = useCreateData(customerApi.auth.otp.verifyChangePassword);
-  const resendOtpMutation = useCreateData(customerApi.auth.otp.resendChangePassword);
+  const verifyOtpMutation = useCreateData(agentApi.auth.otp.verifyChangePassword);
+  const resendOtpMutation = useCreateData(agentApi.auth.otp.resendChangePassword);
 
   const deliveryLabel = `email (${maskEmail(email)})`;
 
