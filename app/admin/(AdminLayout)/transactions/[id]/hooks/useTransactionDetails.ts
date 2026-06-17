@@ -11,6 +11,7 @@ import {
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 type TransactionType =
   | "PTA"
@@ -318,12 +319,13 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const needsBeneficiarySection = true;
 
   const beneficiarySection: OverviewSection = {
-    title:
-      transactionType === "SCHOOL_FEES"
-        ? "School Fee Beneficiary Details"
-        : transactionType === "MEDICAL"
-          ? "Medical Fee Beneficiary Details"
-          : "Professional Fee Beneficiary Details",
+    title: toSentenceCase(`${transactionType} Beneficiary Details`),
+      // transactionType === "SCHOOL_FEES"
+      //   ? "School Fee Beneficiary Details"
+      //   : transactionType === "MEDICAL"
+      //     ? "Medical Fee Beneficiary Details"
+
+      //     : "Professional Fee Beneficiary Details",
     fields: [
       { label: "Bank Name", value: pickString(beneficiary.bankName, receipt.bankName, raw.bankName) },
       {

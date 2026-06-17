@@ -14,12 +14,12 @@ import {
 import { notifications } from "@mantine/notifications";
 import Connector from "../../../_components/assets/Connector.png";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
-import { adminRoutes } from "@/lib/adminRoutes";
+// import { adminRoutes } from "@/lib/adminRoutes";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
@@ -95,7 +95,7 @@ export default function TakeActionOverlay({
   isApprovalOfficer = false,
   approvalState,
 }: TakeActionOverlayProps) {
-  const router = useRouter();
+  // const router = useRouter();
   const hideTransactionFooter =
     isTransactionStatusApproved(transactionStatusLabel) ||
     canActOnTransactionFooter === false;
@@ -378,15 +378,15 @@ export default function TakeActionOverlay({
     });
   };
 
-  const navigateToTransactionsList = () => {
-    router.push(adminRoutes.adminTransactions());
-    setApprovalSuccessOpen(false);
-    setResubmissionSuccessOpen(false);
-    setRejectSuccessOpen(false);
-    setTransactionCompleteReviewSuccessOpen(false);
-    setRequestMoreInfoSuccessOpen(false);
-    setTransactionRejectSuccessOpen(false);
-  };
+  // const navigateToTransactionsList = () => {
+  //   router.push(adminRoutes.adminTransactions());
+  //   setApprovalSuccessOpen(false);
+  //   setResubmissionSuccessOpen(false);
+  //   setRejectSuccessOpen(false);
+  //   setTransactionCompleteReviewSuccessOpen(false);
+  //   setRequestMoreInfoSuccessOpen(false);
+  //   setTransactionRejectSuccessOpen(false);
+  // };
 
   return (
     <>
@@ -946,8 +946,8 @@ export default function TakeActionOverlay({
         onClose={() => setApprovalSuccessOpen(false)}
         title="Document Approval Completed"
         message="This document has been successfully approved and marked as completed in the workflow"
-        primaryButtonText="View More Action Approval"
-        onPrimaryClick={navigateToTransactionsList}
+        // primaryButtonText="View More Action Approval"
+        // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setApprovalSuccessOpen(false)}
         zIndex={4100}
@@ -958,8 +958,8 @@ export default function TakeActionOverlay({
         onClose={() => setResubmissionSuccessOpen(false)}
         title="Document Resubmission Request Completed"
         message="Your request for resubmission has been sent. The document has been returned to the submitter with your comments for review and correction."
-        primaryButtonText="View More Action Approval"
-        onPrimaryClick={navigateToTransactionsList}
+        // primaryButtonText="View More Action Approval"
+        // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setResubmissionSuccessOpen(false)}
         zIndex={4100}
@@ -970,8 +970,8 @@ export default function TakeActionOverlay({
         onClose={() => setRejectSuccessOpen(false)}
         title="Document Rejected"
         message="The document has been rejected and your comments have been recorded in the workflow"
-        primaryButtonText="View More Action Approval"
-        onPrimaryClick={navigateToTransactionsList}
+        // primaryButtonText="View More Action Approval"
+        // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => setRejectSuccessOpen(false)}
         zIndex={4100}
@@ -982,8 +982,8 @@ export default function TakeActionOverlay({
         onClose={() => setTransactionCompleteReviewSuccessOpen(false)}
         title="Action Approval Completed"
         message="The request/application has been successfully approved and the process is now complete"
-        primaryButtonText="View More Action Approval"
-        onPrimaryClick={navigateToTransactionsList}
+        // primaryButtonText="View More Action Approval"
+        // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => {
           setTransactionCompleteReviewSuccessOpen(false);
@@ -997,8 +997,8 @@ export default function TakeActionOverlay({
         onClose={() => setRequestMoreInfoSuccessOpen(false)}
         title="More Information Requested"
         message="Your request for more information has been submitted successfully and passed on to the next review/approval officer"
-        primaryButtonText="View More Action Approval"
-        onPrimaryClick={navigateToTransactionsList}
+        // primaryButtonText="View More Action Approval"
+        // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => {
           setRequestMoreInfoSuccessOpen(false);
@@ -1012,8 +1012,8 @@ export default function TakeActionOverlay({
         onClose={() => setTransactionRejectSuccessOpen(false)}
         title="Action Approval Rejected"
         message="The application has been successfully rejected and marked as closed"
-        primaryButtonText="View More Action Approval"
-        onPrimaryClick={navigateToTransactionsList}
+        // primaryButtonText="View More Action Approval"
+        // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
         onSecondaryClick={() => {
           setTransactionRejectSuccessOpen(false);
