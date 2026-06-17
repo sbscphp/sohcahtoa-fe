@@ -14,13 +14,15 @@ export type AgentAddCustomerStep =
   | "type-select"
   | "resident-bvn"
   | "otp-delivery"
-  | "passport-details"
+  | "expatriate-details"
+  | "tourist-details"
   | "verify-otp"
   | "success";
 
 export type OtpDeliveryMethod = "phone" | "email";
 
 const DEFAULT_AGENT_CUSTOMER_PASSWORD = "securePass12!"; // NOSONAR: backend requires a password for agent-created customers.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function useAgentAddCustomerFlow() {
   const queryClient = useQueryClient();
@@ -29,6 +31,10 @@ export function useAgentAddCustomerFlow() {
   const [bvn, setBvn] = useState("");
   const [passportNumber, setPassportNumber] = useState("");
   const [passportFile, setPassportFile] = useState<FileWithPath | null>(null);
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [otp, setOtp] = useState("");
   const [isOtpComplete, setIsOtpComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,6 +81,10 @@ export function useAgentAddCustomerFlow() {
     setBvn("");
     setPassportNumber("");
     setPassportFile(null);
+    setEmail("");
+    setFirstName("");
+    setLastName("");
+    setDateOfBirth("");
     setOtp("");
     setIsOtpComplete(false);
     setIsSubmitting(false);
@@ -91,13 +101,19 @@ export function useAgentAddCustomerFlow() {
   const handleTypeContinue = () => {
     if (selectedType === "resident") {
       setStep("resident-bvn");
-    } else if (selectedType === "tourist" || selectedType === "expatriate") {
-      setStep("passport-details");
+    } else if (selectedType === "tourist") {
+      setStep("tourist-details");
+    } else if (selectedType === "expatriate") {
+      setStep("expatriate-details");
     }
   };
 
   const handleBack = () => {
-    if (step === "resident-bvn" || step === "passport-details") {
+    if (
+      step === "resident-bvn" ||
+      step === "expatriate-details" ||
+      step === "tourist-details"
+    ) {
       setStep("type-select");
       setVerificationToken(null);
       resetOtpState();
@@ -105,16 +121,58 @@ export function useAgentAddCustomerFlow() {
     }
 
     if (step === "otp-delivery") {
-      setStep(selectedType === "resident" ? "resident-bvn" : "passport-details");
+      setStep(selectedType === "resident" ? "resident-bvn" : "expatriate-details");
       resetOtpState();
       return;
     }
 
     if (step === "verify-otp") {
-      setStep("otp-delivery");
+      if (selectedType === "tourist") {
+        setStep("tourist-details");
+      } else {
+        setStep("otp-delivery");
+      }
       setOtp("");
       setIsOtpComplete(false);
     }
+  };
+
+  const validatePassportNumber = (value: string): string | null => {
+    const normalized = value.trim().toUpperCase();
+    if (!PASSPORT_NUMBER_REGEX.test(normalized) || normalized.length > 9) {
+      return "Passport number must be alphanumeric and at most 9 characters.";
+    }
+    return null;
+  };
+
+  const uploadPassportAndVerify = async (
+    verify: (passportDocumentUrl: string, normalizedPassportNumber: string) => void
+  ) => {
+    if (!passportFile) return;
+
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append("passport", passportFile);
+
+    uploadPassportMutation.mutate(formData, {
+      onSuccess: (uploadResponse) => {
+        if (!uploadResponse.success || !uploadResponse.data?.passportDocumentUrl) {
+          setIsSubmitting(false);
+          handleApiError(
+            { message: uploadResponse.error?.message ?? "File upload failed", status: 400 },
+            { customMessage: uploadResponse.error?.message ?? "Failed to upload passport. Please try again." }
+          );
+          return;
+        }
+
+        const normalizedPassportNumber = passportNumber.trim().toUpperCase();
+        verify(uploadResponse.data.passportDocumentUrl, normalizedPassportNumber);
+      },
+      onError: (error) => {
+        setIsSubmitting(false);
+        handleApiError(error, { customMessage: "Failed to upload passport. Please try again." });
+      },
+    });
   };
 
   const handleResidentBvnContinue = () => {
@@ -175,51 +233,65 @@ export function useAgentAddCustomerFlow() {
     };
 
     const payload = { verificationToken, verificationType: method };
-    if (selectedType === "tourist") {
-      sendTouristOtpMutation.mutate(payload, callbacks);
-    } else if (selectedType === "expatriate") {
+    if (selectedType === "expatriate") {
       sendExpatriateOtpMutation.mutate(payload, callbacks);
     } else {
       sendOtpMutation.mutate(payload, callbacks);
     }
   };
 
-  const handlePassportContinue = () => {
-    const normalizedPassportNumber = passportNumber.trim().toUpperCase();
-    if (
-      !PASSPORT_NUMBER_REGEX.test(normalizedPassportNumber) ||
-      normalizedPassportNumber.length > 9
-    ) {
+  const sendTouristEmailOtp = (token: string, customerEmail: string) => {
+    sendTouristOtpMutation.mutate(
+      { verificationToken: token, email: customerEmail.trim() },
+      {
+        onSuccess: (response) => {
+          setIsSubmitting(false);
+          if (response.success) {
+            setOtpDeliveryMethod("email");
+            setOtp("");
+            setIsOtpComplete(false);
+            setStep("verify-otp");
+          } else {
+            handleApiError(
+              { message: response.error?.message ?? "Failed to send OTP", status: 400 },
+              { customMessage: response.error?.message ?? "Failed to send OTP. Please try again." }
+            );
+          }
+        },
+        onError: (error) => {
+          setIsSubmitting(false);
+          handleApiError(error, { customMessage: "Failed to send OTP. Please try again." });
+        },
+      }
+    );
+  };
+
+  const handleExpatriateContinue = () => {
+    if (bvn.length !== 11) {
       handleApiError(
-        { message: "Invalid passport number", status: 400 },
-        { customMessage: "Passport number must be alphanumeric and at most 9 characters." }
+        { message: "Invalid BVN", status: 400 },
+        { customMessage: "BVN must be 11 digits." }
       );
       return;
     }
 
-    if (!passportFile || (selectedType !== "tourist" && selectedType !== "expatriate")) return;
+    const passportError = validatePassportNumber(passportNumber);
+    if (passportError) {
+      handleApiError({ message: passportError, status: 400 }, { customMessage: passportError });
+      return;
+    }
 
-    setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append("passport", passportFile);
+    if (!passportFile) return;
 
-    uploadPassportMutation.mutate(formData, {
-      onSuccess: (uploadResponse) => {
-        if (!uploadResponse.success || !uploadResponse.data?.passportDocumentUrl) {
-          setIsSubmitting(false);
-          handleApiError(
-            { message: uploadResponse.error?.message ?? "File upload failed", status: 400 },
-            { customMessage: uploadResponse.error?.message ?? "Failed to upload passport. Please try again." }
-          );
-          return;
-        }
-
-        const verifyPayload = {
-          passportDocumentUrl: uploadResponse.data.passportDocumentUrl,
+    void uploadPassportAndVerify((passportDocumentUrl, normalizedPassportNumber) => {
+      verifyExpatriatePassportMutation.mutate(
+        {
+          passportDocumentUrl,
           passportNumber: normalizedPassportNumber,
-        };
-        const callbacks = {
-          onSuccess: (response: { success: boolean; data?: { verificationToken?: string }; error?: { message?: string } }) => {
+          bvn,
+        },
+        {
+          onSuccess: (response) => {
             setIsSubmitting(false);
             if (response.success && response.data?.verificationToken) {
               setPassportNumber(normalizedPassportNumber);
@@ -228,27 +300,87 @@ export function useAgentAddCustomerFlow() {
               setStep("otp-delivery");
             } else {
               handleApiError(
-                { message: response.error?.message ?? "Passport verification failed", status: 400 },
-                { customMessage: response.error?.message ?? "Passport verification failed. Please check and try again." }
+                { message: response.error?.message ?? "Verification failed", status: 400 },
+                { customMessage: response.error?.message ?? "Verification failed. Please check and try again." }
               );
             }
           },
-          onError: (error: Error) => {
+          onError: (error) => {
             setIsSubmitting(false);
-            handleApiError(error, { customMessage: "Failed to verify passport. Please try again." });
+            handleApiError(error, { customMessage: "Failed to verify details. Please try again." });
           },
-        };
-
-        if (selectedType === "tourist") {
-          verifyTouristPassportMutation.mutate(verifyPayload, callbacks);
-        } else {
-          verifyExpatriatePassportMutation.mutate(verifyPayload, callbacks);
         }
-      },
-      onError: (error) => {
-        setIsSubmitting(false);
-        handleApiError(error, { customMessage: "Failed to upload passport. Please try again." });
-      },
+      );
+    });
+  };
+
+  const handleTouristContinue = () => {
+    const trimmedEmail = email.trim();
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      handleApiError(
+        { message: "Invalid email", status: 400 },
+        { customMessage: "Please enter a valid email address." }
+      );
+      return;
+    }
+
+    if (!trimmedFirstName || !trimmedLastName) {
+      handleApiError(
+        { message: "Missing name", status: 400 },
+        { customMessage: "First name and last name are required." }
+      );
+      return;
+    }
+
+    if (!dateOfBirth.trim()) {
+      handleApiError(
+        { message: "Missing date of birth", status: 400 },
+        { customMessage: "Date of birth is required." }
+      );
+      return;
+    }
+
+    const passportError = validatePassportNumber(passportNumber);
+    if (passportError) {
+      handleApiError({ message: passportError, status: 400 }, { customMessage: passportError });
+      return;
+    }
+
+    if (!passportFile) return;
+
+    void uploadPassportAndVerify((passportDocumentUrl, normalizedPassportNumber) => {
+      verifyTouristPassportMutation.mutate(
+        {
+          passportDocumentUrl,
+          passportNumber: normalizedPassportNumber,
+          email: trimmedEmail,
+          firstName: trimmedFirstName,
+          lastName: trimmedLastName,
+          dateOfBirth: dateOfBirth.trim(),
+        },
+        {
+          onSuccess: (response) => {
+            if (response.success && response.data?.verificationToken) {
+              setPassportNumber(normalizedPassportNumber);
+              setVerificationToken(response.data.verificationToken);
+              sendTouristEmailOtp(response.data.verificationToken, trimmedEmail);
+            } else {
+              setIsSubmitting(false);
+              handleApiError(
+                { message: response.error?.message ?? "Verification failed", status: 400 },
+                { customMessage: response.error?.message ?? "Verification failed. Please check and try again." }
+              );
+            }
+          },
+          onError: (error) => {
+            setIsSubmitting(false);
+            handleApiError(error, { customMessage: "Failed to verify details. Please try again." });
+          },
+        }
+      );
     });
   };
 
@@ -258,7 +390,7 @@ export function useAgentAddCustomerFlow() {
   };
 
   const handleResendOtp = () => {
-    if (!verificationToken || !otpDeliveryMethod) return;
+    if (!verificationToken) return;
     setOtp("");
     setIsOtpComplete(false);
 
@@ -276,10 +408,18 @@ export function useAgentAddCustomerFlow() {
       },
     };
 
-    const payload = { verificationToken, verificationType: otpDeliveryMethod };
     if (selectedType === "tourist") {
-      resendTouristOtpMutation.mutate(payload, callbacks);
-    } else if (selectedType === "expatriate") {
+      resendTouristOtpMutation.mutate(
+        { verificationToken, email: email.trim() },
+        callbacks
+      );
+      return;
+    }
+
+    if (!otpDeliveryMethod) return;
+
+    const payload = { verificationToken, verificationType: otpDeliveryMethod };
+    if (selectedType === "expatriate") {
       resendExpatriateOtpMutation.mutate(payload, callbacks);
     } else {
       resendOtpMutation.mutate(payload, callbacks);
@@ -289,6 +429,7 @@ export function useAgentAddCustomerFlow() {
   const handleVerifyContinue = () => {
     if (!isOtpComplete || !selectedType || !verificationToken) return;
     setIsSubmitting(true);
+
     if (selectedType !== "resident") {
       const callbacks = {
         onSuccess: (validateRes: { success: boolean; data?: { validationToken?: string }; error?: { message?: string } }) => {
@@ -336,11 +477,13 @@ export function useAgentAddCustomerFlow() {
         },
       };
 
-      const payload = { verificationToken, otp };
       if (selectedType === "tourist") {
-        validateTouristOtpMutation.mutate(payload, callbacks);
+        validateTouristOtpMutation.mutate(
+          { verificationToken, otp, email: email.trim() },
+          callbacks
+        );
       } else {
-        validateExpatriateOtpMutation.mutate(payload, callbacks);
+        validateExpatriateOtpMutation.mutate({ verificationToken, otp }, callbacks);
       }
       return;
     }
@@ -402,6 +545,14 @@ export function useAgentAddCustomerFlow() {
     setPassportNumber,
     passportFile,
     setPassportFile,
+    email,
+    setEmail,
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    dateOfBirth,
+    setDateOfBirth,
     isOtpComplete,
     isSubmitting,
     otpDeliveryMethod,
@@ -414,7 +565,8 @@ export function useAgentAddCustomerFlow() {
     handleBack,
     handleResidentBvnContinue,
     handleOtpDeliveryContinue,
-    handlePassportContinue,
+    handleExpatriateContinue,
+    handleTouristContinue,
     handleOtpComplete,
     handleResendOtp,
     handleVerifyContinue,

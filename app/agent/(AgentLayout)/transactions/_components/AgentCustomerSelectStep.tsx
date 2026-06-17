@@ -10,7 +10,6 @@ import { CustomerInterface } from "../constant";
 interface AgentCustomerSelectStepProps {
   onSubmit: (customer: CustomerInterface) => void;
   onAddCustomer: () => void;
-  onBack: () => void;
   selectedCustomer?: CustomerInterface | null;
 }
 
@@ -21,7 +20,6 @@ function getCustomerKey(item: any): string {
 export function AgentCustomerSelectStep({
   onSubmit,
   onAddCustomer,
-  onBack,
   selectedCustomer,
 }: Readonly<AgentCustomerSelectStepProps>) {
   const [selectedKey, setSelectedKey] = useState<string | null>(
@@ -119,7 +117,7 @@ export function AgentCustomerSelectStep({
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setSelectedKey(key)}
+                    onClick={() => setSelectedKey(isActive ? null : key)}
                     className={`flex w-full flex-row items-start gap-4 rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
                       isActive
                         ? "border-primary-500 bg-[#FFF6F1]"
@@ -154,22 +152,14 @@ export function AgentCustomerSelectStep({
           <button
             type="button"
             onClick={onAddCustomer}
-            className="mt-2 flex w-full items-center justify-center rounded-full border border-dashed border-[#E88A58] bg-[#FFF6F1] px-4 py-2 text-sm font-medium text-[#E36C2F]"
+            disabled={Boolean(effectiveSelectedKey)}
+            className="mt-2 flex w-full items-center justify-center rounded-full border border-dashed border-[#E88A58] bg-[#FFF6F1] px-4 py-2 text-sm font-medium text-[#E36C2F] disabled:cursor-not-allowed disabled:border-[#E1E0E0] disabled:bg-gray-50 disabled:text-[#8F8B8B]"
           >
             Add New Customer +
           </button>
         </div>
 
-        {/* Footer actions */}
-        <div className="flex flex-row justify-end gap-4">
-          <Button
-            variant="outline"
-            radius="xl"
-            onClick={onBack}
-            className="min-w-[120px] border-[#CCCACA] text-[#4D4B4B]"
-          >
-            Back
-          </Button>
+        <div className="flex flex-row justify-end">
           <Button
             variant="filled"
             radius="xl"

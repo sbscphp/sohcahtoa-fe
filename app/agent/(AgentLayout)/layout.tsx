@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import AgentLayoutShell from '../_components/layout/AgentLayoutShell';
 
 export default function AgentLayout({
@@ -5,5 +6,9 @@ export default function AgentLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AgentLayoutShell>{children}</AgentLayoutShell>;
+  return (
+    <Suspense fallback={null}>
+      <AgentLayoutShell>{children}</AgentLayoutShell>
+    </Suspense>
+  );
 }

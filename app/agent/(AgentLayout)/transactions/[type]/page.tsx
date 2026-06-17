@@ -7,6 +7,7 @@ import type { BTATransactionAmountFormData } from "@/app/(customer)/_components/
 import BTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTATransactionAmountStep";
 import type { BTAUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
 import BTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAUploadDocumentsStep";
+import BTAPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAPickupPointStep";
 import type { MedicalBankDetailsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalBankDetailsStep";
 import MedicalBankDetailsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalBankDetailsStep";
 import type { MedicalTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/medical/MedicalTransactionAmountStep";
@@ -29,10 +30,12 @@ import type { TouristTransactionAmountFormData } from "@/app/(customer)/_compone
 import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import type { TouristUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
 import TouristUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristUploadDocumentsStep";
+import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import type { TransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
 import PTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
 import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import PTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
+import PTAPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
@@ -55,6 +58,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CustomerInterface } from "../constant";
 import { notifications } from "@mantine/notifications";
+import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
 
 const TRANSACTION_TYPE_MAP = {
   vacation: "pta",
@@ -81,17 +85,17 @@ export default function AgentTransactionCreationPage() {
   const steps = useMemo(
     () => {
       const base = getStepsForTransactionType(flowType)
-        .filter((value) => value !== "pickup-point")
+        .filter((value) => (isSchoolFees || isMedical || isProfessionalBody ? true : value !== "bank-details"))
         .map((value) => ({
           label: STEP_LABELS[value],
           value,
         }));
       return [{ label: "Select Customer", value: "select-customer" as AgentTransactionStep }, ...base];
     },
-    [flowType]
+    [flowType, isMedical, isProfessionalBody, isSchoolFees]
   );
 
-  const [activeStep, setActiveStep] = useState<AgentTransactionStep>("select-customer");
+  const [activeStep, setActiveStep] = useAgentTransactionStep(`/agent/transactions/${type}`);
   const [confirmationOpened, setConfirmationOpened] = useState(false);
   const [addCustomerOpened, setAddCustomerOpened] = useState(false);
 
@@ -119,6 +123,7 @@ export default function AgentTransactionCreationPage() {
     | ProfessionalBodyBankDetailsFormData
     | null
   >(null);
+  const [pickupPointData, setPickupPointData] = useState<Record<string, unknown> | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
   const selectedCustomerKycPrefill = useMemo(
     () => ({
@@ -162,7 +167,7 @@ export default function AgentTransactionCreationPage() {
     if (isSchoolFees || isMedical || isProfessionalBody) {
       setActiveStep("bank-details");
     } else {
-      setConfirmationOpened(true);
+      setActiveStep("pickup-point");
     }
   };
 
@@ -173,6 +178,11 @@ export default function AgentTransactionCreationPage() {
       | ProfessionalBodyBankDetailsFormData
   ) => {
     setBankDetailsData(data);
+    setConfirmationOpened(true);
+  };
+
+  const handlePickupPointSubmit = (data: Record<string, unknown>) => {
+    setPickupPointData(data);
     setConfirmationOpened(true);
   };
 
@@ -197,7 +207,7 @@ export default function AgentTransactionCreationPage() {
     const bag: TransactionFormDataBag = {
       uploadDocumentsData: uploadDocumentsData as Record<string, unknown>,
       transactionAmountData: transactionAmountData as Record<string, unknown>,
-      pickupPointData: null,
+      pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
       bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
     };
 
@@ -247,11 +257,11 @@ export default function AgentTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "pickup-point") {
+      setActiveStep("amount");
     } else if (activeStep === "bank-details") {
       setActiveStep("amount");
-    } else if (activeStep === "select-customer") {
-      router.push("/agent/transactions/new/buy");
-    } else {
+    } else if (activeStep !== "select-customer") {
       setActiveStep("select-customer");
     }
   };
@@ -265,7 +275,6 @@ export default function AgentTransactionCreationPage() {
             setActiveStep("upload-documents");
           }}
           onAddCustomer={() => setAddCustomerOpened(true)}
-          onBack={handleBack}
           selectedCustomer={selectedCustomer as any}
         />
       );
@@ -289,6 +298,14 @@ export default function AgentTransactionCreationPage() {
             <TouristTransactionAmountStep
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
+              onBack={handleBack}
+            />
+          );
+        case "pickup-point":
+          return (
+            <TouristPickupPointStep
+              initialValues={pickupPointData || undefined}
+              onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
             />
           );
@@ -435,6 +452,14 @@ export default function AgentTransactionCreationPage() {
               onBack={handleBack}
             />
           );
+        case "pickup-point":
+          return (
+            <BTAPickupPointStep
+              initialValues={pickupPointData || undefined}
+              onSubmit={handlePickupPointSubmit}
+              onBack={handleBack}
+            />
+          );
         default:
           return null;
       }
@@ -459,6 +484,14 @@ export default function AgentTransactionCreationPage() {
           <PTATransactionAmountStep
             initialValues={transactionAmountData || undefined}
             onSubmit={handleTransactionAmountSubmit}
+            onBack={handleBack}
+          />
+        );
+      case "pickup-point":
+        return (
+          <PTAPickupPointStep
+            initialValues={pickupPointData || undefined}
+            onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
           />
         );

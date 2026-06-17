@@ -15,6 +15,9 @@ export type TransactionStep =
   | "pickup-point"
   | "bank-details";
 
+/** Agent transaction flows prepend customer selection before document upload. */
+export type AgentTransactionFlowStep = "select-customer" | TransactionStep;
+
 export interface BreadcrumbItem {
   label: string;
   href?: string;
@@ -53,6 +56,8 @@ export const STEP_LABELS: Record<TransactionStep, string> = {
   "pickup-point": "Payout Method",
   "bank-details": "Bank Details",
 };
+
+export const AGENT_SELECT_CUSTOMER_LABEL = "Select Customer";
 
 export type GetTransactionBreadcrumbsOptions = {
   rootHref?: string;
@@ -94,6 +99,50 @@ export function getTransactionBreadcrumbs(
         i === currentIndex
           ? undefined
           : `/${pathPrefix}/${urlSegment}/${step}`,
+    });
+  }
+
+  return base;
+}
+
+/** Agent buy/sell flows: Select Customer → transaction steps (query `?step=`). */
+export function getAgentTransactionBreadcrumbs(
+  transactionType: TransactionType,
+  currentStep: AgentTransactionFlowStep,
+  pathPrefix: string,
+  options?: GetTransactionBreadcrumbsOptions & { excludePickupPoint?: boolean }
+): BreadcrumbItem[] {
+  const rootHref = options?.rootHref ?? "/agent/transactions";
+  const chooseOptionsHref = options?.chooseOptionsHref ?? "/agent/transactions/options";
+  const urlSegment = options?.urlTypeSegment ?? transactionType;
+  const basePath = `/${pathPrefix}/${urlSegment}`;
+
+  const base: BreadcrumbItem[] = [
+    { label: "Transactions", href: rootHref },
+    { label: "Choose an Option", href: chooseOptionsHref },
+  ];
+
+  if (currentStep === "select-customer") {
+    base.push({ label: AGENT_SELECT_CUSTOMER_LABEL, href: undefined });
+    return base;
+  }
+
+  base.push({
+    label: AGENT_SELECT_CUSTOMER_LABEL,
+    href: `${basePath}?step=select-customer`,
+  });
+
+  const steps = getStepsForTransactionType(transactionType).filter(
+    (step) => !options?.excludePickupPoint || step !== "pickup-point"
+  );
+  const txStep = currentStep as TransactionStep;
+  const currentIndex = steps.indexOf(txStep);
+
+  for (let i = 0; i <= currentIndex; i++) {
+    const step = steps[i]!;
+    base.push({
+      label: STEP_LABELS[step],
+      href: i === currentIndex ? undefined : `${basePath}?step=${step}`,
     });
   }
 
