@@ -84,7 +84,7 @@ console.log(data)
       <LabelText hideWhenEmpty label="International Passport Number" text={data.passportDocumentNumber} />
       <LabelText hideWhenEmpty label="Passport Issued Date" text={data.passportIssueDate} />
       <LabelText hideWhenEmpty label="Passport Expiry Date" text={data.passportExpiryDate} />
-      <LabelText hideWhenEmpty label="TIN Number" text={data.tinNumber} />
+      {/* <LabelText hideWhenEmpty label="TIN Number" text={data.tinNumber} /> */}
       {data.uploadedFiles.map((file) => (
         <LabelText
           key={file.documentType}
