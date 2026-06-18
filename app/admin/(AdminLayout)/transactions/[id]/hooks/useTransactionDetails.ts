@@ -28,6 +28,7 @@ type TransactionType =
 export interface OverviewField {
   label: string;
   value: string;
+  href?: string;
 }
 
 export interface OverviewSection {
@@ -119,6 +120,19 @@ const LABEL_BY_TYPE: Partial<Record<TransactionType, string>> = {
   EXPATRIATE_FX: "Expatriate",
   IMTO_REMITTANCE: "IMTO Remittance",
   CASH_REMITTANCE: "Cash Remittance",
+};
+
+const BENEFICIARY_SECTION_TITLE_BY_TYPE: Partial<Record<TransactionType, string>> = {
+  PTA: "PTA Beneficiary Details",
+  BTA: "BTA Beneficiary Details",
+  SCHOOL_FEES: "School Fee Beneficiary Details",
+  MEDICAL: "Medical Fee Beneficiary Details",
+  PROFESSIONAL_BODY: "Professional Fee Beneficiary Details",
+  TOURIST_FX: "Tourist Beneficiary Details",
+  RESIDENT_FX: "Resident Beneficiary Details",
+  EXPATRIATE_FX: "Expatriate Beneficiary Details",
+  IMTO_REMITTANCE: "IMTO Remittance Beneficiary Details",
+  CASH_REMITTANCE: "Cash Remittance Beneficiary Details",
 };
 
 const SECTION_TITLE_BY_TYPE: Partial<Record<TransactionType, string>> = {
@@ -246,7 +260,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const details = asRecord(data.details);
   const raw = asRecord(data.raw);
   const cashPickup = asRecord(raw.cashPickup);
-  const receipt = asRecord(raw.receipt);
+  // const receipt = asRecord(raw.receipt);
   const steps = raw.steps;
   const firstStep = Array.isArray(steps) ? steps[0] : undefined;
   const firstStepDataRaw = asRecord(firstStep).data;
@@ -288,10 +302,14 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     { label: "Requestor Type", value: pickString(details.requesterType) },
     {
       label: "BVN Number",
-      value: pickString(details.bvnNumber, stepData.bvn, stepData.nin),
+      value: pickString(details.bvnNumber, stepData.bvn),
     },
+    { label: "NIN", value: pickString(details.nin, stepData.nin) },
     { label: "TIN Number", value: pickString(raw.taxClearanceNumber) },
     { label: "Form A ID", value: pickString(raw.formAId) },
+    { label: "Int'l Passport Number", value: pickString(stepData.passportDocumentNumber) },
+    { label: "Passport Issue Date", value: pickString(stepData.passportIssueDate) },
+    { label: "Passport Expiry Date", value: pickString(stepData.passportExpiryDate) },
     { label: "No. of Documents", value: pickString(details.numberOfDocuments) },
     {
       label: "Admission Type",
@@ -310,41 +328,42 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     },
   ];
 
-  const baseTitle = SECTION_TITLE_BY_TYPE[transactionType] ?? "Transaction Details";
+  const documentFields: OverviewField[] = Array.isArray(raw.documents)
+    ? (raw.documents as Record<string, unknown>[])
+        .map((d) => asRecord(d))
+        .filter((d) => pickString(d.fileUrl) !== "--")
+        .map((d) => ({
+          label: formatEnum(d.documentType),
+          value: pickString(d.fileName, "View Document"),
+          href: pickString(d.fileUrl),
+        }))
+    : [];
+
+  const baseTitle = SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Transaction Details`);
   const primarySection: OverviewSection = {
     title: baseTitle,
-    fields: commonFields.filter((item) => item.value !== "--"),
+    fields: [
+      ...commonFields.filter((item) => item.value !== "--"),
+      ...documentFields,
+    ],
   };
 
   const needsBeneficiarySection = true;
 
   const beneficiarySection: OverviewSection = {
-    title: toSentenceCase(`${transactionType} Beneficiary Details`),
+    title: BENEFICIARY_SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Beneficiary Details`),
       // transactionType === "SCHOOL_FEES"
       //   ? "School Fee Beneficiary Details"
       //   : transactionType === "MEDICAL"
       //     ? "Medical Fee Beneficiary Details"
 
       //     : "Professional Fee Beneficiary Details",
-    fields: [
-      { label: "Bank Name", value: pickString(beneficiary.bankName, receipt.bankName, raw.bankName) },
-      {
-        label: "Account Name",
-        value: pickString(
-          beneficiary.accountName,
-          beneficiary.bankAccountName,
-          receipt.accountName,
-          raw.accountName,
-          raw.beneficiaryName
-        ),
-      },
-      {
-        label: "Account Number",
-        value: pickString(beneficiary.accountNumber, beneficiary.bankAccountNumber, receipt.accountNumber, raw.accountNumber),
-      },
-      { label: "IBAN Number", value: pickString(beneficiary.ibanNumber, beneficiary.bankAccountIban, receipt.ibanNumber, raw.ibanNumber) },
-      { label: "Swift Code", value: pickString(beneficiary.swiftCode, beneficiary.bankAccountSwiftCode, receipt.swiftCode, raw.swiftCode) },
-    ].filter((item) => item.value !== "--"),
+    fields: Object.entries(beneficiary)
+      .filter(([, val]) => val !== null && val !== undefined && String(val).trim() !== "")
+      .map(([key, val]) => ({
+        label: toSentenceCase(key),
+        value: String(val),
+      })),
   };
 
   const sections = [primarySection];
