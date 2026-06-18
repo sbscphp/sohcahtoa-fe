@@ -121,6 +121,19 @@ const LABEL_BY_TYPE: Partial<Record<TransactionType, string>> = {
   CASH_REMITTANCE: "Cash Remittance",
 };
 
+const BENEFICIARY_SECTION_TITLE_BY_TYPE: Partial<Record<TransactionType, string>> = {
+  PTA: "PTA Beneficiary Details",
+  BTA: "BTA Beneficiary Details",
+  SCHOOL_FEES: "School Fee Beneficiary Details",
+  MEDICAL: "Medical Fee Beneficiary Details",
+  PROFESSIONAL_BODY: "Professional Fee Beneficiary Details",
+  TOURIST_FX: "Tourist Beneficiary Details",
+  RESIDENT_FX: "Resident Beneficiary Details",
+  EXPATRIATE_FX: "Expatriate Beneficiary Details",
+  IMTO_REMITTANCE: "IMTO Remittance Beneficiary Details",
+  CASH_REMITTANCE: "Cash Remittance Beneficiary Details",
+};
+
 const SECTION_TITLE_BY_TYPE: Partial<Record<TransactionType, string>> = {
   PTA: "PTA Transaction Details",
   BTA: "BTA Transaction Details",
@@ -310,7 +323,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     },
   ];
 
-  const baseTitle = SECTION_TITLE_BY_TYPE[transactionType] ?? "Transaction Details";
+  const baseTitle = SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Transaction Details`);
   const primarySection: OverviewSection = {
     title: baseTitle,
     fields: commonFields.filter((item) => item.value !== "--"),
@@ -319,7 +332,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const needsBeneficiarySection = true;
 
   const beneficiarySection: OverviewSection = {
-    title: toSentenceCase(`${transactionType} Beneficiary Details`),
+    title: BENEFICIARY_SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Beneficiary Details`),
       // transactionType === "SCHOOL_FEES"
       //   ? "School Fee Beneficiary Details"
       //   : transactionType === "MEDICAL"
