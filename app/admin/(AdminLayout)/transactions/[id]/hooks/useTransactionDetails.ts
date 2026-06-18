@@ -28,6 +28,7 @@ type TransactionType =
 export interface OverviewField {
   label: string;
   value: string;
+  href?: string;
 }
 
 export interface OverviewSection {
@@ -301,10 +302,14 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     { label: "Requestor Type", value: pickString(details.requesterType) },
     {
       label: "BVN Number",
-      value: pickString(details.bvnNumber, stepData.bvn, stepData.nin),
+      value: pickString(details.bvnNumber, stepData.bvn),
     },
+    { label: "NIN", value: pickString(details.nin, stepData.nin) },
     { label: "TIN Number", value: pickString(raw.taxClearanceNumber) },
     { label: "Form A ID", value: pickString(raw.formAId) },
+    { label: "Int'l Passport Number", value: pickString(stepData.passportDocumentNumber) },
+    { label: "Passport Issue Date", value: pickString(stepData.passportIssueDate) },
+    { label: "Passport Expiry Date", value: pickString(stepData.passportExpiryDate) },
     { label: "No. of Documents", value: pickString(details.numberOfDocuments) },
     {
       label: "Admission Type",
@@ -323,10 +328,24 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     },
   ];
 
+  const documentFields: OverviewField[] = Array.isArray(raw.documents)
+    ? (raw.documents as Record<string, unknown>[])
+        .map((d) => asRecord(d))
+        .filter((d) => pickString(d.fileUrl) !== "--")
+        .map((d) => ({
+          label: formatEnum(d.documentType),
+          value: pickString(d.fileName, "View Document"),
+          href: pickString(d.fileUrl),
+        }))
+    : [];
+
   const baseTitle = SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Transaction Details`);
   const primarySection: OverviewSection = {
     title: baseTitle,
-    fields: commonFields.filter((item) => item.value !== "--"),
+    fields: [
+      ...commonFields.filter((item) => item.value !== "--"),
+      ...documentFields,
+    ],
   };
 
   const needsBeneficiarySection = true;

@@ -11,6 +11,7 @@ import type {
   TransactionActionDocumentViewModel,
   TransactionOverviewViewModel,
   TransactionWorkflowHistoryItemViewModel,
+  OverviewSection,
 } from "./hooks/useTransactionDetails";
 
 interface OverviewProps {
@@ -39,7 +40,7 @@ const loadingBasicDetails = [
   { label: "Customer Type", value: "--" },
 ];
 
-const loadingSections = [
+const loadingSections: OverviewSection[] = [
   {
     title: "Transaction Details",
     fields: [
@@ -140,7 +141,20 @@ export default function Overview({
               <DetailItem
                 key={`${section.title}-${item.label}`}
                 label={item.label}
-                value={item.value}
+                value={
+                  item.href ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-[#DD4F05] underline break-all"
+                    >
+                      {item.value}
+                    </a>
+                  ) : (
+                    item.value
+                  )
+                }
                 loading={isLoading}
               />
             ))}
