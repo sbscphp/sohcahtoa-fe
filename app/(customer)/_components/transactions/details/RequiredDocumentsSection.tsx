@@ -34,29 +34,42 @@ interface RequiredDocumentsSectionProps {
   onViewDocument?: (docKey: string, filename: string, url: string) => void;
 }
 
+function hasRequiredDocumentsContent(data: RequiredDocumentsData): boolean {
+  const textFields = [
+    data.studentName,
+    data.bvn,
+    data.nin,
+    data.tin,
+    data.tinNumber,
+    data.formAId,
+    data.passportDocumentNumber,
+    data.passportIssueDate,
+    data.passportExpiryDate,
+    data.workPermitNumber,
+  ];
+
+  if (textFields.some((value) => !isBlankDetailText(value))) {
+    return true;
+  }
+
+  if (data.uploadedFiles.some((file) => !isBlankDetailText(file.filename))) {
+    return true;
+  }
+
+  return (data.missingDocumentTypes?.length ?? 0) > 0;
+}
+
 export default function RequiredDocumentsSection({
   data,
   onDownload,
   onViewDocument,
-}: RequiredDocumentsSectionProps) {
-  const hasNin = data.nin != null && !isBlankDetailText(data.nin);
-  const hasTin = data.tin != null && !isBlankDetailText(data.tin);
-  const hasAnyUploaded = data.uploadedFiles.some(
-    (f) => !isBlankDetailText(f.filename)
-  );
-  const missingDocs = data.missingDocumentTypes ?? [];
-  const hasMissing = missingDocs.length > 0;
-  const hasSection =
-    !isBlankDetailText(data.bvn) ||
-    !isBlankDetailText(data.formAId) ||
-    hasNin ||
-    hasTin ||
-    hasAnyUploaded ||
-    hasMissing;
-
-  if (!hasSection) {
+}: Readonly<RequiredDocumentsSectionProps>) {
+  if (!hasRequiredDocumentsContent(data)) {
     return null;
   }
+
+  const missingDocs = data.missingDocumentTypes ?? [];
+  const tinDisplay = data.tinNumber ?? data.tin;
 
   const makeDoc = (d: { filename: string; url?: string } | undefined, key: string) =>
     d
@@ -73,18 +86,23 @@ export default function RequiredDocumentsSection({
           onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
         }
       : undefined;
-console.log(data)
+
   return (
     <SectionBlock title="Required Documents">
-<LabelText hideWhenEmpty label="Student Name" text={data.studentName} />
+      <LabelText hideWhenEmpty label="Student Name" text={data.studentName} />
       <LabelText hideWhenEmpty label="BVN" text={data.bvn} />
-      {hasNin && <LabelText hideWhenEmpty label="NIN" text={data.nin} />}
-      {hasTin && <LabelText hideWhenEmpty label="TIN" text={data.tin} />}
+      <LabelText hideWhenEmpty label="NIN" text={data.nin} />
+      <LabelText hideWhenEmpty label="TIN Number" text={tinDisplay} />
       <LabelText hideWhenEmpty label="Form A ID" text={data.formAId} />
-      <LabelText hideWhenEmpty label="International Passport Number" text={data.passportDocumentNumber} />
+      <LabelText hideWhenEmpty label="Work Permit Number" text={data.workPermitNumber} />
+      <LabelText
+        hideWhenEmpty
+        label="International Passport Number"
+        text={data.passportDocumentNumber}
+      />
       <LabelText hideWhenEmpty label="Passport Issued Date" text={data.passportIssueDate} />
       <LabelText hideWhenEmpty label="Passport Expiry Date" text={data.passportExpiryDate} />
-      {/* <LabelText hideWhenEmpty label="TIN Number" text={data.tinNumber} /> */}
+
       {data.uploadedFiles.map((file) => (
         <LabelText
           key={file.documentType}
