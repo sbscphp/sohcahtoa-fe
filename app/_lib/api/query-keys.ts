@@ -85,15 +85,14 @@ export const customerKeys = {
 
   wallet: {
     all: ["customer", "wallet"] as const,
-    transientHistory: (params?: {
+    balance: () => [...customerKeys.wallet.all, "balance"] as const,
+    ledger: (params?: {
       page?: number;
       limit?: number;
-      q?: string;
-      startDate?: string;
-      endDate?: string;
-      sortBy?: string;
-      sortOrder?: string;
-    }) => [...customerKeys.wallet.all, "transient-history", params] as const,
+      type?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) => [...customerKeys.wallet.all, "ledger", params] as const,
   },
 
   support: {

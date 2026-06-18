@@ -113,8 +113,8 @@ export const API_ENDPOINTS = {
   },
 
   wallet: {
-    transientHistory: "/api/customer/wallet/transient-history",
-    transientHistoryExport: "/api/customer/wallet/transient-history/export",
+    balance: "/api/customer/wallet",
+    ledger: "/api/customer/wallet/ledger",
   },
 
   bankAccounts: {

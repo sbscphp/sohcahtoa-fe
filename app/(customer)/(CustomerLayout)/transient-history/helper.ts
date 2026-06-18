@@ -1,5 +1,7 @@
 import type {
-  CustomerTransientHistoryApiItem,
+  CustomerWalletLedgerEntry,
+  CustomerWalletLedgerListResponse,
+  PaginationMetadata,
 } from "@/app/_lib/api/types";
 
 export interface TransientHistoryRow {
@@ -9,30 +11,85 @@ export interface TransientHistoryRow {
   totalDebit: number;
   totalCredit: number;
   balance: number;
+  description?: string;
+  status?: string;
 }
 
-function pickAmount(
-  primary: number | null | undefined,
-  fallback: number | null | undefined
-): number {
-  if (primary != null && !Number.isNaN(Number(primary))) return Number(primary);
-  if (fallback != null && !Number.isNaN(Number(fallback))) return Number(fallback);
-  return 0;
-}
+export function normalizeCustomerWalletLedgerResponse(
+  response: CustomerWalletLedgerListResponse | undefined
+): {
+  wallet: { balance: number; currency: string };
+  entries: CustomerWalletLedgerEntry[];
+  meta: PaginationMetadata;
+} {
+  const emptyMeta: PaginationMetadata = {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  };
 
-export function mapTransientHistoryItem(
-  item: CustomerTransientHistoryApiItem
-): TransientHistoryRow {
-  const txId = item.transaction_id ?? item.id;
-  const date =
-    item.transaction_date ?? item.created_at ?? new Date(0).toISOString();
+  if (!response) {
+    return {
+      wallet: { balance: 0, currency: "NGN" },
+      entries: [],
+      meta: emptyMeta,
+    };
+  }
+
+  if (response.entries != null && response.meta != null) {
+    const summary =
+      response.data && "balance" in response.data
+        ? response.data
+        : { balance: 0, currency: "NGN" as const };
+
+    return {
+      wallet: {
+        balance: summary.balance ?? 0,
+        currency: summary.currency ?? "NGN",
+      },
+      entries: response.entries,
+      meta: response.meta,
+    };
+  }
+
+  const nested = response.data;
+  if (nested && "entries" in nested && Array.isArray(nested.entries)) {
+    return {
+      wallet: {
+        balance: nested.wallet?.balance ?? 0,
+        currency: nested.wallet?.currency ?? "NGN",
+      },
+      entries: nested.entries,
+      meta: nested.meta ?? emptyMeta,
+    };
+  }
 
   return {
-    id: item.id,
-    transactionId: String(txId),
-    date,
-    totalDebit: pickAmount(item.total_debit, item.total_debits),
-    totalCredit: pickAmount(item.total_credit, item.total_credits),
-    balance: pickAmount(item.balance, null),
+    wallet: {
+      balance:
+        response.data && "balance" in response.data ? (response.data.balance ?? 0) : 0,
+      currency:
+        response.data && "currency" in response.data
+          ? (response.data.currency ?? "NGN")
+          : "NGN",
+    },
+    entries: [],
+    meta: response.meta ?? emptyMeta,
+  };
+}
+
+export function mapWalletLedgerEntry(entry: CustomerWalletLedgerEntry): TransientHistoryRow {
+  const isDebit = entry.type === "DEBIT";
+
+  return {
+    id: entry.id,
+    transactionId: entry.transactionId ?? entry.transactionRef ?? entry.id,
+    date: entry.createdAt,
+    totalDebit: isDebit ? entry.amount : 0,
+    totalCredit: isDebit ? 0 : entry.amount,
+    balance: entry.balanceAfter,
+    description: entry.description ?? undefined,
+    status: entry.status ?? undefined,
   };
 }

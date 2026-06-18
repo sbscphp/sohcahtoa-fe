@@ -137,6 +137,13 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
   const pickup = api.cashPickup;
   const requiredDocuments: RequiredDocumentsData = {
     bvn: stepData?.bvn ?? api.personalInfo?.bvn ?? "",
+    nin: stepData?.nin ?? api.personalInfo?.nin ?? "",
+    passportDocumentNumber: stepData?.passportDocumentNumber ?? api.personalInfo?.passportDocumentNumber ?? "",
+    passportIssueDate: stepData?.passportIssueDate ?? api.personalInfo?.passportIssueDate ?? "",
+    passportExpiryDate: stepData?.passportExpiryDate ?? api.personalInfo?.passportExpiryDate ?? "",
+    tinNumber: stepData?.tinNumber ?? api.personalInfo?.tinNumber ?? "",
+    studentName: stepData?.studentName ?? api.personalInfo?.studentName ?? "",
+    workPermitNumber: stepData?.workPermitNumber ?? api.personalInfo?.workPermitNumber ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: docs
       .filter((d) => d.uploaded != null)

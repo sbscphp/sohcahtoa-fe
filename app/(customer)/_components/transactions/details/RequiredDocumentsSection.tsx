@@ -8,6 +8,12 @@ export interface RequiredDocumentsData {
   bvn: string;
   nin?: string;
   tin?: string;
+  passportDocumentNumber?: string;
+  passportIssueDate?: string;
+  passportExpiryDate?: string;
+  tinNumber?: string;
+  studentName?: string;
+  workPermitNumber?: string;
   formAId: string;
   /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
   uploadedFiles: Array<{
@@ -67,13 +73,18 @@ export default function RequiredDocumentsSection({
           onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
         }
       : undefined;
-
+console.log(data)
   return (
     <SectionBlock title="Required Documents">
+<LabelText hideWhenEmpty label="Student Name" text={data.studentName} />
       <LabelText hideWhenEmpty label="BVN" text={data.bvn} />
       {hasNin && <LabelText hideWhenEmpty label="NIN" text={data.nin} />}
       {hasTin && <LabelText hideWhenEmpty label="TIN" text={data.tin} />}
       <LabelText hideWhenEmpty label="Form A ID" text={data.formAId} />
+      <LabelText hideWhenEmpty label="International Passport Number" text={data.passportDocumentNumber} />
+      <LabelText hideWhenEmpty label="Passport Issued Date" text={data.passportIssueDate} />
+      <LabelText hideWhenEmpty label="Passport Expiry Date" text={data.passportExpiryDate} />
+      <LabelText hideWhenEmpty label="TIN Number" text={data.tinNumber} />
       {data.uploadedFiles.map((file) => (
         <LabelText
           key={file.documentType}

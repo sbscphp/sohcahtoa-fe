@@ -1,5 +1,6 @@
 import { normalizeTransactionStatus } from "@/app/(customer)/_lib/transaction-details";
-import { Transaction, TransactionListItem } from "@/app/_lib/api/types";
+import type { Transaction as TransactionTableRow } from "@/app/(customer)/_components/transactions/table/TransactionTableOverview";
+import { TransactionListItem } from "@/app/_lib/api/types";
 export const TAB_TO_GROUP = {
     "Buy FX": "BUY" as const,
     "Sell FX": "SELL" as const,
@@ -12,7 +13,7 @@ export const TAB_TO_GROUP = {
     REMITTANCE: "Receive FX",
   };
   
-export function mapListItemToTransaction(item: TransactionListItem): Transaction {
+export function mapListItemToTransaction(item: TransactionListItem): TransactionTableRow {
     return {
       id: item.id,
       referenceNumber: item.referenceNumber,
@@ -20,6 +21,7 @@ export function mapListItemToTransaction(item: TransactionListItem): Transaction
       type: item.type,
       stage: item.currentStep,
       status: normalizeTransactionStatus(item.status),
+      purpose: item.purpose,
       transaction_type: GROUP_TO_LABEL[item.group] ?? "Buy FX",
     };
   }

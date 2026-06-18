@@ -81,8 +81,9 @@ import type {
   TransactionVirtualAccountResponse,
   TransactionDepositInstructionsResponse,
   TransactionDepositStatusResponse,
-  CustomerTransientHistoryListParams,
-  CustomerTransientHistoryListResponse,
+  CustomerWalletBalanceResponse,
+  CustomerWalletLedgerListParams,
+  CustomerWalletLedgerListResponse,
   PickupPointsResponse,
   PickupTerminalsQueryParams,
   PickupLocationStatesResponse,
@@ -292,18 +293,13 @@ export const customerApi = {
 
   // ==================== Wallet ====================
   wallet: {
-    transientHistory: {
-      list: (params?: CustomerTransientHistoryListParams) =>
-        apiClient.get<CustomerTransientHistoryListResponse>(
-          API_ENDPOINTS.wallet.transientHistory,
-          { params: params as ApiRequestConfig["params"] }
-        ),
+    getBalance: () =>
+      apiClient.get<CustomerWalletBalanceResponse>(API_ENDPOINTS.wallet.balance),
 
-      export: (params?: CustomerTransientHistoryListParams) =>
-        apiClient.download(API_ENDPOINTS.wallet.transientHistoryExport, {
-          params: params as ApiRequestConfig["params"],
-        }),
-    },
+    getLedger: (params?: CustomerWalletLedgerListParams) =>
+      apiClient.get<CustomerWalletLedgerListResponse>(API_ENDPOINTS.wallet.ledger, {
+        params: params as ApiRequestConfig["params"],
+      }),
   },
 
   // ==================== Notifications ====================

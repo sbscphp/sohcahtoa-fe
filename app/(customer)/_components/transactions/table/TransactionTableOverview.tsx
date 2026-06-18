@@ -26,6 +26,7 @@ export interface Transaction {
   stage: string;
   /** Normalized API status (uppercase snake_case). */
   status: string;
+  purpose: string;
   transaction_type: "Buy FX" | "Sell FX" | "Receive FX";
 }
 
@@ -101,7 +102,7 @@ export default function  TransactionTableOverview({
       key: "type",
       label: "Transaction Type",
       render: (transaction) => (
-        <p className="text-body-text-400 text-sm leading-5">{transaction.type}</p>
+        <p className="text-body-text-400 text-sm leading-5">{transaction.purpose}</p>
       ),
     },
     {

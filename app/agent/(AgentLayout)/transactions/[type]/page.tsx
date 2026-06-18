@@ -36,6 +36,19 @@ import PTATransactionAmountStep from "@/app/(customer)/_components/transactions/
 import type { UploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import PTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import PTAPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
+import type { BTAPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/business/BTAPickupPointStep";
+import type { TouristPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
+import type { PickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
+import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
+import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
+import { useAgentBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
+import {
+  getCreatedTransactionId,
+  getPickupBankAccountId,
+  toCreateBankAccountPayload,
+} from "@/app/(customer)/_utils/customer-bank-accounts";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
@@ -55,7 +68,7 @@ import { AgentAddCustomerModal } from "@/app/agent/(AgentLayout)/transactions/_c
 import { AgentCustomerSelectStep } from "@/app/agent/(AgentLayout)/transactions/_components/AgentCustomerSelectStep";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CustomerInterface } from "../constant";
 import { notifications } from "@mantine/notifications";
 import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
@@ -69,6 +82,23 @@ const TRANSACTION_TYPE_MAP = {
   tourist: "tourist",
 } as const;
 
+function getRequestedForeignAmount(
+  data:
+    | TransactionAmountFormData
+    | BTATransactionAmountFormData
+    | TouristTransactionAmountFormData
+    | SchoolFeesTransactionAmountFormData
+    | MedicalTransactionAmountFormData
+    | ProfessionalBodyTransactionAmountFormData
+    | null
+) {
+  const record = data as Record<string, unknown> | null;
+  const rawAmount = record?.receiveAmount ?? record?.sendAmount ?? 0;
+  return typeof rawAmount === "number"
+    ? rawAmount
+    : Number.parseFloat(String(rawAmount)) || 0;
+}
+
 type AgentTransactionStep = "select-customer" | TransactionStep;
 
 export default function AgentTransactionCreationPage() {
@@ -81,18 +111,17 @@ export default function AgentTransactionCreationPage() {
   const isMedical = type === "medical";
   const isProfessionalBody = type === "professional-body";
   const isTourist = type === "tourist";
+  const usesPayoutMethod = !isSchoolFees && !isMedical && !isProfessionalBody;
 
   const steps = useMemo(
     () => {
-      const base = getStepsForTransactionType(flowType)
-        .filter((value) => (isSchoolFees || isMedical || isProfessionalBody ? true : value !== "bank-details"))
-        .map((value) => ({
-          label: STEP_LABELS[value],
-          value,
-        }));
+      const base = getStepsForTransactionType(flowType).map((value) => ({
+        label: STEP_LABELS[value],
+        value,
+      }));
       return [{ label: "Select Customer", value: "select-customer" as AgentTransactionStep }, ...base];
     },
-    [flowType, isMedical, isProfessionalBody, isSchoolFees]
+    [flowType]
   );
 
   const [activeStep, setActiveStep] = useAgentTransactionStep(`/agent/transactions/${type}`);
@@ -123,7 +152,17 @@ export default function AgentTransactionCreationPage() {
     | ProfessionalBodyBankDetailsFormData
     | null
   >(null);
-  const [pickupPointData, setPickupPointData] = useState<Record<string, unknown> | null>(null);
+  const [pickupPointData, setPickupPointData] = useState<
+    PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData | null
+  >(null);
+  const [addBankOpened, setAddBankOpened] = useState(false);
+  const {
+    accounts: bankAccounts,
+    isLoading: bankAccountsLoading,
+    addAccount,
+    isSaving: isSavingBankAccount,
+    attachToTransaction,
+  } = useAgentBankAccounts();
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
   const selectedCustomerKycPrefill = useMemo(
     () => ({
@@ -181,8 +220,54 @@ export default function AgentTransactionCreationPage() {
     setConfirmationOpened(true);
   };
 
-  const handlePickupPointSubmit = (data: Record<string, unknown>) => {
+  const handlePickupPointSubmit = (
+    data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
+  ) => {
     setPickupPointData(data);
+    if (data.payoutMethod === "electronic_transfer_100") {
+      setActiveStep("bank-details");
+      return;
+    }
+
+    if (data.payoutMethod === "card_75_cash_25") {
+      const cashAmount = getRequestedForeignAmount(transactionAmountData) * 0.25;
+      if (cashAmount > 500) {
+        notifications.show({
+          title: "Cash limit exceeded",
+          message:
+            "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
+          color: "orange",
+        });
+        return;
+      }
+    }
+
+    setConfirmationOpened(true);
+  };
+
+  const handleAddBank = useCallback(
+    async (data: AddBankAccountFormData) => {
+      try {
+        await addAccount(toCreateBankAccountPayload(data));
+      } catch (error) {
+        handleApiError(error);
+        throw error;
+      }
+    },
+    [addAccount]
+  );
+
+  const handlePayoutBankAccountSubmit = (bankAccount: BankAccount) => {
+    setPickupPointData((prev) => ({
+      locationId: prev?.locationId ?? "",
+      pickupDate: prev?.pickupDate ?? "",
+      pickupTime: prev?.pickupTime ?? "",
+      state: prev?.state,
+      city: prev?.city,
+      payoutMethod: prev?.payoutMethod ?? "electronic_transfer_100",
+      selectedBankId: bankAccount.id,
+      bankAccount,
+    }));
     setConfirmationOpened(true);
   };
 
@@ -211,13 +296,37 @@ export default function AgentTransactionCreationPage() {
       bankDetailsData: bankDetailsData ? (bankDetailsData as Record<string, unknown>) : null,
     };
 
+    if (usesPayoutMethod && !pickupPointData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Pickup location required",
+        message: "Go back and select a payout method before initiating the transaction.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
+      return;
+    }
+    if (
+      pickupPointData?.payoutMethod === "electronic_transfer_100" &&
+      !pickupPointData.bankAccount
+    ) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Bank account required",
+        message: "Select or add a bank account before initiating the transaction.",
+        color: "orange",
+      });
+      setActiveStep("bank-details");
+      return;
+    }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
       setConfirmationOpened(false);
       notifications.show({
-        title: "Error",
-        message: "Please fill in the bank details to continue",
-        color: "red",
+        title: "Bank details required",
+        message: "Go back and complete bank details before continuing.",
+        color: "orange",
       });
+      setActiveStep("bank-details");
       return;
     }
 
@@ -240,9 +349,24 @@ export default function AgentTransactionCreationPage() {
         ...payload,
         userId: customerId,
       });
+      const transactionId = getCreatedTransactionId(created);
+      const bankAccountId = getPickupBankAccountId(
+        pickupPointData as Record<string, unknown> | null
+      );
+      if (transactionId && bankAccountId) {
+        try {
+          await attachToTransaction(transactionId, [bankAccountId]);
+        } catch (attachError) {
+          handleApiError(attachError);
+          notifications.show({
+            title: "Transaction created",
+            message:
+              "The request was submitted, but linking the bank account failed. You can retry from transaction details.",
+            color: "orange",
+          });
+        }
+      }
       setConfirmationOpened(false);
-      const transactionId = (created as unknown as { data: { transactionId: string } })?.data
-        ?.transactionId;
       router.push(
         transactionId
           ? `/agent/transactions/detail/${transactionId}`
@@ -257,9 +381,9 @@ export default function AgentTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
-    } else if (activeStep === "pickup-point") {
-      setActiveStep("amount");
-    } else if (activeStep === "bank-details") {
+    } else if (activeStep === "bank-details" && usesPayoutMethod) {
+      setActiveStep("pickup-point");
+    } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
       setActiveStep("amount");
     } else if (activeStep !== "select-customer") {
       setActiveStep("select-customer");
@@ -307,6 +431,17 @@ export default function AgentTransactionCreationPage() {
               initialValues={pickupPointData || undefined}
               onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
+            />
+          );
+        case "bank-details":
+          return (
+            <BankAccountSelectionStep
+              banks={bankAccounts}
+              isLoading={bankAccountsLoading}
+              initialSelectedBankId={pickupPointData?.selectedBankId}
+              onSubmit={handlePayoutBankAccountSubmit}
+              onBack={handleBack}
+              onAddBank={() => setAddBankOpened(true)}
             />
           );
         default:
@@ -460,6 +595,17 @@ export default function AgentTransactionCreationPage() {
               onBack={handleBack}
             />
           );
+        case "bank-details":
+          return (
+            <BankAccountSelectionStep
+              banks={bankAccounts}
+              isLoading={bankAccountsLoading}
+              initialSelectedBankId={pickupPointData?.selectedBankId}
+              onSubmit={handlePayoutBankAccountSubmit}
+              onBack={handleBack}
+              onAddBank={() => setAddBankOpened(true)}
+            />
+          );
         default:
           return null;
       }
@@ -493,6 +639,17 @@ export default function AgentTransactionCreationPage() {
             initialValues={pickupPointData || undefined}
             onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
+          />
+        );
+      case "bank-details":
+        return (
+          <BankAccountSelectionStep
+            banks={bankAccounts}
+            isLoading={bankAccountsLoading}
+            initialSelectedBankId={pickupPointData?.selectedBankId}
+            onSubmit={handlePayoutBankAccountSubmit}
+            onBack={handleBack}
+            onAddBank={() => setAddBankOpened(true)}
           />
         );
       default:
@@ -532,6 +689,12 @@ export default function AgentTransactionCreationPage() {
           onConfirm={handleConfirmInitiate}
           requireInfoConfirmation
           loading={uploadDocuments.isPending || createTransaction.isPending}
+        />
+        <AddBankAccountModal
+          opened={addBankOpened}
+          onClose={() => setAddBankOpened(false)}
+          onAddAccount={handleAddBank}
+          isSubmitting={isSavingBankAccount}
         />
       </div>
 

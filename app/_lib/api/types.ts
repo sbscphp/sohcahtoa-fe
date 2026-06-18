@@ -844,6 +844,12 @@ export interface TransactionDetailStepData {
     recipientName: string;
     recipientPhone: string;
   };
+  passportDocumentNumber: string | null;
+  passportIssueDate: string | null;
+  passportExpiryDate: string | null;
+  tinNumber: string | null;
+  studentName: string | null;
+  workPermitNumber: string | null;
 }
 
 export interface TransactionDetailStep {
@@ -854,6 +860,12 @@ export interface TransactionDetailStep {
   data: TransactionDetailStepData;
   completedAt: string;
   createdAt: string;
+  passportDocumentNumber: string | null;
+  passportIssueDate: string | null;
+  passportExpiryDate: string | null;
+  tinNumber: string | null;
+  studentName: string | null;
+  workPermitNumber: string | null;
 }
 
 export interface TransactionDetailBankAccount {
@@ -952,6 +964,12 @@ export interface TransactionDetailData {
     bvn: string | null;
     nin: string | null;
     admissionType: string | null;
+    passportDocumentNumber: string | null;
+    passportIssueDate: string | null;
+    passportExpiryDate: string | null;
+    tinNumber: string | null;
+    studentName: string | null;
+    workPermitNumber: string | null;
   } | null;
   beneficiaryDetails?: Record<string, unknown> | null;
   bankAccounts?: TransactionDetailBankAccount[] | null;
@@ -1356,29 +1374,61 @@ export interface TransactionListParams extends PaginationParams {
   sortOrder?: "asc" | "desc";
 }
 
-export interface CustomerTransientHistoryListParams extends PaginationParams {
-  q?: string;
-  startDate?: string;
-  endDate?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-}
-
-export interface CustomerTransientHistoryApiItem {
+export interface CustomerWalletBalance {
   id: string;
-  transaction_id?: string | number | null;
-  transaction_date?: string | null;
-  created_at?: string | null;
-  total_debit?: number | null;
-  total_credit?: number | null;
-  total_debits?: number | null;
-  total_credits?: number | null;
-  balance?: number | null;
+  userId: string;
+  balance: number;
+  currency: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface CustomerTransientHistoryListResponse
-  extends ApiResponseWrapper<CustomerTransientHistoryApiItem[]> {
-  pagination: PaginationMetadata;
+export type CustomerWalletBalanceResponse = ApiResponseWrapper<CustomerWalletBalance>;
+
+export interface CustomerWalletLedgerListParams extends PaginationParams {
+  type?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface CustomerWalletLedgerEntry {
+  id: string;
+  type: "DEBIT" | "CREDIT" | string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description?: string | null;
+  status?: string | null;
+  transactionRef?: string | null;
+  transactionId?: string | null;
+  sessionId?: string | null;
+  createdAt: string;
+}
+
+export interface CustomerWalletLedgerNestedData {
+  wallet: {
+    id: string;
+    balance: number;
+    currency: string;
+  };
+  entries: CustomerWalletLedgerEntry[];
+  meta: PaginationMetadata;
+}
+
+/** Live API shape: wallet summary in `data`, `entries` and `meta` at root. */
+export interface CustomerWalletLedgerListResponse {
+  success: boolean;
+  data?:
+    | {
+        id: string;
+        balance: number;
+        currency: string;
+      }
+    | CustomerWalletLedgerNestedData;
+  entries?: CustomerWalletLedgerEntry[];
+  meta?: PaginationMetadata;
+  metadata?: ApiResponseWrapper<unknown>["metadata"];
 }
 
 export interface ApiResponse<T> {

@@ -43,12 +43,9 @@ interface TransientHistoryTableProps {
   page: number;
   pageSize: number;
   totalPages: number;
-  searchValue: string;
-  onSearchChange: (value: string) => void;
   filters: TableFilterGroup[];
   filterValues?: TableFilterValues;
   onFiltersApply: (values: TableFilterValues) => void;
-  onExportClick: () => void;
   onPageChange: (page: number) => void;
 }
 
@@ -58,12 +55,9 @@ export default function TransientHistoryTable({
   page,
   pageSize,
   totalPages,
-  searchValue,
-  onSearchChange,
   filters,
   filterValues,
   onFiltersApply,
-  onExportClick,
   onPageChange,
 }: Readonly<TransientHistoryTableProps>) {
   const columns: PaginatedTableColumn<TransientHistoryRow>[] = useMemo(
@@ -87,19 +81,19 @@ export default function TransientHistoryTable({
       },
       {
         key: "totalDebit",
-        label: "Total Debits",
+        label: "Debit",
         render: (row) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatCurrencyAmount(row.totalDebit)}
+            {row.totalDebit > 0 ? formatCurrencyAmount(row.totalDebit) : "—"}
           </p>
         ),
       },
       {
         key: "totalCredit",
-        label: "Total Credit",
+        label: "Credit",
         render: (row) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatCurrencyAmount(row.totalCredit)}
+            {row.totalCredit > 0 ? formatCurrencyAmount(row.totalCredit) : "—"}
           </p>
         ),
       },
@@ -122,9 +116,6 @@ export default function TransientHistoryTable({
       filters={filters}
       filterValues={filterValues}
       onFiltersApply={onFiltersApply}
-      onExportClick={onExportClick}
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
       data={rows}
       columns={columns}
       pageSize={pageSize}
