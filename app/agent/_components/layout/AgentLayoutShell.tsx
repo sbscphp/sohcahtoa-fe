@@ -3,14 +3,14 @@
 import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useSearchParams } from "next/navigation";
 import AgentHeader from "./AgentHeader";
 import AgentSidebar from "./AgentSidebar";
 import { AuthProfileSync } from "@/app/(customer)/_components/auth/AuthProfileSync";
 import {
-  getTransactionBreadcrumbs,
+  getAgentTransactionBreadcrumbs,
   getTransactionTypeLabel,
-  type TransactionStep,
+  type AgentTransactionFlowStep,
   type TransactionType,
 } from "@/app/(customer)/_utils/transaction-flow";
 
@@ -32,6 +32,7 @@ const TYPE_MAP: Record<string, TransactionType> = {
 function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const params = useParams();
+  const searchParams = useSearchParams();
 
   const urlType =
     typeof params?.type === "string" ? params.type : undefined;
@@ -139,22 +140,29 @@ function AgentLayoutShellContent({ children }: { children: React.ReactNode }) {
       ];
     }
     if (isTransactionCreatePage && transactionType && urlType) {
-      const stepMatch = pathname?.match(
-        /\/(upload-documents|amount|pickup-point|bank-details)/
-      );
-      const currentStep: TransactionStep =
-        (stepMatch?.[1] as TransactionStep) || "upload-documents";
+      const stepParam = searchParams.get("step");
+      const agentStep: AgentTransactionFlowStep =
+        stepParam === "select-customer" ||
+        stepParam === "upload-documents" ||
+        stepParam === "amount" ||
+        stepParam === "pickup-point" ||
+        stepParam === "bank-details"
+          ? stepParam
+          : "select-customer";
       const pathPrefix = isSellFlow
         ? "agent/transactions/sell"
         : "agent/transactions";
-      return getTransactionBreadcrumbs(
+      return getAgentTransactionBreadcrumbs(
         transactionType,
-        currentStep,
+        agentStep,
         pathPrefix,
         {
           rootHref: "/agent/transactions",
-          chooseOptionsHref: "/agent/transactions/options",
+          chooseOptionsHref: isSellFlow
+            ? "/agent/transactions/new/sell"
+            : "/agent/transactions/new/buy",
           urlTypeSegment: urlType,
+          excludePickupPoint: false,
         }
       );
     }

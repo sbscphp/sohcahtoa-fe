@@ -106,14 +106,36 @@ export interface AgentVerifyPassportRequest {
   passportNumber: string;
 }
 
+export interface AgentExpatriateVerifyPassportRequest extends AgentVerifyPassportRequest {
+  bvn: string;
+}
+
+export interface AgentTouristVerifyPassportRequest extends AgentVerifyPassportRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+}
+
 export interface AgentPassportOtpRequest {
   verificationToken: string;
   verificationType: "phone" | "email";
 }
 
+export interface AgentTouristOtpRequest {
+  verificationToken: string;
+  email: string;
+}
+
 export interface AgentPassportValidateOtpRequest {
   verificationToken: string;
   otp: string;
+}
+
+export interface AgentTouristValidateOtpRequest {
+  verificationToken: string;
+  otp: string;
+  email: string;
 }
 
 export interface AgentPassportCreateAccountRequest {
@@ -316,22 +338,22 @@ export const agentApi = {
         ),
     },
     tourist: {
-      verifyPassport: (data: AgentVerifyPassportRequest) =>
+      verifyPassport: (data: AgentTouristVerifyPassportRequest) =>
         apiClient.post<VerifyPassportResponse>(
           AGENT_API_ENDPOINTS.customerAuth.tourist.verifyPassport,
           data
         ),
-      sendOtp: (data: AgentPassportOtpRequest) =>
+      sendOtp: (data: AgentTouristOtpRequest) =>
         apiClient.post<SendOtpResponse>(
           AGENT_API_ENDPOINTS.customerAuth.tourist.sendOtp,
           data
         ),
-      resendOtp: (data: AgentPassportOtpRequest) =>
+      resendOtp: (data: AgentTouristOtpRequest) =>
         apiClient.post<SendOtpResponse>(
           AGENT_API_ENDPOINTS.customerAuth.tourist.resendOtp,
           data
         ),
-      validateOtp: (data: AgentPassportValidateOtpRequest) =>
+      validateOtp: (data: AgentTouristValidateOtpRequest) =>
         apiClient.post<ValidateOtpResponse>(
           AGENT_API_ENDPOINTS.customerAuth.tourist.validateOtp,
           data
@@ -343,7 +365,7 @@ export const agentApi = {
         ),
     },
     expatriate: {
-      verifyPassport: (data: AgentVerifyPassportRequest) =>
+      verifyPassport: (data: AgentExpatriateVerifyPassportRequest) =>
         apiClient.post<VerifyPassportResponse>(
           AGENT_API_ENDPOINTS.customerAuth.expatriate.verifyPassport,
           data

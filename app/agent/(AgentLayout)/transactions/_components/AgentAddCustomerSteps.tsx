@@ -1,11 +1,15 @@
 "use client";
 
 import { Button, TextInput } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import type { FileWithPath } from "@mantine/dropzone";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
 import { OTPInput } from "@/app/(customer)/_components/auth/OTPInput";
 import { UserTypeCard } from "@/app/(customer)/_components/auth/UserTypeCard";
 import TransactionFileUploadInput from "@/app/(customer)/_components/forms/TransactionFileUploadInput";
+import { formatDateToIso } from "@/app/(customer)/_utils/input-validation";
 import { emailIcon, phoneIcon } from "@/app/assets/asset";
 import type {
   AgentCustomerType,
@@ -223,25 +227,32 @@ export function OtpDeliveryStep({
   );
 }
 
-interface PassportDetailsStepProps {
+interface ExpatriateDetailsStepProps {
+  bvn: string;
   passportNumber: string;
   passportFile: FileWithPath | null;
   isSubmitting: boolean;
+  onBvnChange: (value: string) => void;
   onPassportNumberChange: (value: string) => void;
   onPassportFileChange: (file: FileWithPath | null) => void;
   onContinue: () => void;
   onBack: () => void;
 }
 
-export function PassportDetailsStep({
+export function ExpatriateDetailsStep({
+  bvn,
   passportNumber,
   passportFile,
   isSubmitting,
+  onBvnChange,
   onPassportNumberChange,
   onPassportFileChange,
   onContinue,
   onBack,
-}: Readonly<PassportDetailsStepProps>) {
+}: Readonly<ExpatriateDetailsStepProps>) {
+  const canContinue =
+    bvn.length === 11 && passportNumber.trim().length > 0 && passportFile != null;
+
   return (
     <div className="space-y-6">
       <BackButton onBack={onBack} />
@@ -250,20 +261,35 @@ export function PassportDetailsStep({
           Add New Customer
         </h2>
         <p className="text-body-text-200 text-sm md:text-base">
-          Kindly input the customer&apos;s international passport number and upload
-          the passport document for verification.
+          Enter the expatriate customer&apos;s BVN, international passport number,
+          and upload their passport document.
         </p>
       </div>
 
       <div className="space-y-2">
+        <label htmlFor="agent-expatriate-bvn" className="block text-heading-200 text-sm font-medium">
+          BVN <span className="text-error-500">*</span>
+        </label>
+        <TextInput
+          id="agent-expatriate-bvn"
+          value={bvn}
+          onChange={(e) =>
+            onBvnChange(e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11))
+          }
+          placeholder="22234455555"
+          size="lg"
+        />
+      </div>
+
+      <div className="space-y-2">
         <label
-          htmlFor="agent-customer-passport-number"
+          htmlFor="agent-expatriate-passport-number"
           className="block text-heading-200 text-sm font-medium"
         >
           International Passport Number <span className="text-error-500">*</span>
         </label>
         <TextInput
-          id="agent-customer-passport-number"
+          id="agent-expatriate-passport-number"
           value={passportNumber}
           onChange={(e) =>
             onPassportNumberChange(
@@ -285,7 +311,163 @@ export function PassportDetailsStep({
 
       <Button
         onClick={onContinue}
-        disabled={!passportNumber.trim() || !passportFile || isSubmitting}
+        disabled={!canContinue || isSubmitting}
+        loading={isSubmitting}
+        fullWidth
+        radius="xl"
+        size="lg"
+        rightSection={!isSubmitting && <ArrowUpRight size={18} />}
+        className="bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] disabled:bg-primary-100 disabled:text-white disabled:cursor-not-allowed"
+      >
+        {isSubmitting ? "Verifying..." : "Continue"}
+      </Button>
+    </div>
+  );
+}
+
+interface TouristDetailsStepProps {
+  email: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  passportNumber: string;
+  passportFile: FileWithPath | null;
+  isSubmitting: boolean;
+  onEmailChange: (value: string) => void;
+  onFirstNameChange: (value: string) => void;
+  onLastNameChange: (value: string) => void;
+  onDateOfBirthChange: (value: string) => void;
+  onPassportNumberChange: (value: string) => void;
+  onPassportFileChange: (file: FileWithPath | null) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}
+
+export function TouristDetailsStep({
+  email,
+  firstName,
+  lastName,
+  dateOfBirth,
+  passportNumber,
+  passportFile,
+  isSubmitting,
+  onEmailChange,
+  onFirstNameChange,
+  onLastNameChange,
+  onDateOfBirthChange,
+  onPassportNumberChange,
+  onPassportFileChange,
+  onContinue,
+  onBack,
+}: Readonly<TouristDetailsStepProps>) {
+  const canContinue =
+    email.trim().length > 0 &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    dateOfBirth.trim().length > 0 &&
+    passportNumber.trim().length > 0 &&
+    passportFile != null;
+
+  return (
+    <div className="space-y-6">
+      <BackButton onBack={onBack} />
+      <div className="space-y-2">
+        <h2 className="text-body-heading-300 text-2xl font-semibold">
+          Add New Customer
+        </h2>
+        <p className="text-body-text-200 text-sm md:text-base">
+          Enter the tourist customer&apos;s details. An OTP will be sent to their
+          email address for verification.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label htmlFor="agent-tourist-first-name" className="block text-heading-200 text-sm font-medium">
+            First Name <span className="text-error-500">*</span>
+          </label>
+          <TextInput
+            id="agent-tourist-first-name"
+            value={firstName}
+            onChange={(e) => onFirstNameChange(e.currentTarget.value)}
+            placeholder="First name"
+            size="lg"
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="agent-tourist-last-name" className="block text-heading-200 text-sm font-medium">
+            Last Name <span className="text-error-500">*</span>
+          </label>
+          <TextInput
+            id="agent-tourist-last-name"
+            value={lastName}
+            onChange={(e) => onLastNameChange(e.currentTarget.value)}
+            placeholder="Last name"
+            size="lg"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="agent-tourist-email" className="block text-heading-200 text-sm font-medium">
+          Email Address <span className="text-error-500">*</span>
+        </label>
+        <TextInput
+          id="agent-tourist-email"
+          type="email"
+          value={email}
+          onChange={(e) => onEmailChange(e.currentTarget.value)}
+          placeholder="customer@email.com"
+          size="lg"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="agent-tourist-dob" className="block text-heading-200 text-sm font-medium">
+          Date of Birth <span className="text-error-500">*</span>
+        </label>
+        <DateInput
+          id="agent-tourist-dob"
+          placeholder="Select date of birth"
+          value={dateOfBirth.trim() ? new Date(dateOfBirth) : null}
+          onChange={(value) => onDateOfBirthChange(formatDateToIso(value))}
+          maxDate={new Date()}
+          size="lg"
+          rightSection={<HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label
+          htmlFor="agent-tourist-passport-number"
+          className="block text-heading-200 text-sm font-medium"
+        >
+          Passport Number <span className="text-error-500">*</span>
+        </label>
+        <TextInput
+          id="agent-tourist-passport-number"
+          value={passportNumber}
+          onChange={(e) =>
+            onPassportNumberChange(
+              e.currentTarget.value.toUpperCase().replaceAll(/[^A-Z0-9]/g, "").slice(0, 9)
+            )
+          }
+          placeholder="A12345678"
+          size="lg"
+          maxLength={9}
+        />
+      </div>
+
+      <TransactionFileUploadInput
+        label="International Passport"
+        required
+        value={passportFile}
+        onChange={onPassportFileChange}
+      />
+
+      <Button
+        onClick={onContinue}
+        disabled={!canContinue || isSubmitting}
         loading={isSubmitting}
         fullWidth
         radius="xl"
@@ -323,13 +505,17 @@ export function VerifyOtpStep({
   onBack,
 }: Readonly<VerifyOtpStepProps>) {
   let maskedInfo =
-    "A six (6) digit OTP has been sent to the phone number or email linked to this passport. Enter to verify.";
+    "A six (6) digit OTP has been sent. Enter to verify.";
 
   if (selectedType === "resident" && otpDeliveryMethod) {
     const destination = otpDeliveryMethod === "phone" ? "phone number" : "email";
     maskedInfo = `A six (6) digit OTP has been sent to the customer's ${destination} linked to this BVN. Enter to verify.`;
-  } else if (selectedType === "resident") {
-    maskedInfo = "A six (6) digit OTP has been sent. Enter to verify.";
+  } else if (selectedType === "expatriate" && otpDeliveryMethod) {
+    const destination = otpDeliveryMethod === "phone" ? "phone number" : "email";
+    maskedInfo = `A six (6) digit OTP has been sent to the customer's ${destination}. Enter to verify.`;
+  } else if (selectedType === "tourist") {
+    maskedInfo =
+      "A six (6) digit OTP has been sent to the customer's email address. Enter to verify.";
   }
 
   return (
@@ -337,7 +523,12 @@ export function VerifyOtpStep({
       <BackButton onBack={onBack} />
       <div className="space-y-2">
         <h2 className="text-body-heading-300 text-2xl font-semibold">
-          Verify {selectedType === "resident" ? "BVN" : "Passport"}
+          Verify{" "}
+          {selectedType === "resident"
+            ? "BVN"
+            : selectedType === "tourist"
+              ? "Email"
+              : "Details"}
         </h2>
         <OTPInput
           onComplete={onOtpComplete}

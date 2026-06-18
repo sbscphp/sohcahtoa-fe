@@ -4,9 +4,10 @@ import { Modal } from "@mantine/core";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
 import {
   CustomerTypeStep,
+  ExpatriateDetailsStep,
   OtpDeliveryStep,
-  PassportDetailsStep,
   ResidentBvnStep,
+  TouristDetailsStep,
   VerifyOtpStep,
 } from "@/app/agent/(AgentLayout)/transactions/_components/AgentAddCustomerSteps";
 import { useAgentAddCustomerFlow } from "@/app/agent/(AgentLayout)/transactions/_components/useAgentAddCustomerFlow";
@@ -57,15 +58,37 @@ export function AgentAddCustomerModal({
             onBack={flow.handleBack}
           />
         );
-      case "passport-details":
+      case "expatriate-details":
         return (
-          <PassportDetailsStep
+          <ExpatriateDetailsStep
+            bvn={flow.bvn}
             passportNumber={flow.passportNumber}
             passportFile={flow.passportFile}
             isSubmitting={flow.isSubmitting}
+            onBvnChange={flow.setBvn}
             onPassportNumberChange={flow.setPassportNumber}
             onPassportFileChange={flow.setPassportFile}
-            onContinue={flow.handlePassportContinue}
+            onContinue={flow.handleExpatriateContinue}
+            onBack={flow.handleBack}
+          />
+        );
+      case "tourist-details":
+        return (
+          <TouristDetailsStep
+            email={flow.email}
+            firstName={flow.firstName}
+            lastName={flow.lastName}
+            dateOfBirth={flow.dateOfBirth}
+            passportNumber={flow.passportNumber}
+            passportFile={flow.passportFile}
+            isSubmitting={flow.isSubmitting}
+            onEmailChange={flow.setEmail}
+            onFirstNameChange={flow.setFirstName}
+            onLastNameChange={flow.setLastName}
+            onDateOfBirthChange={flow.setDateOfBirth}
+            onPassportNumberChange={flow.setPassportNumber}
+            onPassportFileChange={flow.setPassportFile}
+            onContinue={flow.handleTouristContinue}
             onBack={flow.handleBack}
           />
         );
