@@ -1172,6 +1172,7 @@ export interface AdminTransactionDetailsData {
   time: string;
   customerName: string;
   customerType: string;
+  customerTransientWalletId?: string | null;
   transactionType: string;
   fxType: string;
   transactionStage: string;

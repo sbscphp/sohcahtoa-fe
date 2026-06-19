@@ -7,11 +7,13 @@ import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import EmptyState from "@/app/admin/_components/EmptyState";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
+import Link from "next/link";
 import type {
   TransactionActionDocumentViewModel,
   TransactionOverviewViewModel,
   TransactionWorkflowHistoryItemViewModel,
   OverviewSection,
+  OverviewField,
 } from "./hooks/useTransactionDetails";
 
 interface OverviewProps {
@@ -28,7 +30,7 @@ interface OverviewProps {
   approvalProcessName?: string;
 }
 
-const loadingBasicDetails = [
+const loadingBasicDetails: OverviewField[] = [
   { label: "Customer Name", value: "--" },
   { label: "Transaction ID", value: "--" },
   { label: "Transaction Date", value: "--" },
@@ -39,6 +41,7 @@ const loadingBasicDetails = [
   { label: "Workflow Stage", value: "--" },
   { label: "Request Status", value: "--" },
   { label: "Customer Type", value: "--" },
+  { label: "Transient Wallet ID", value: "--" },
 ];
 
 const loadingSections: OverviewSection[] = [
@@ -126,7 +129,27 @@ export default function Overview({
             <DetailItem
               key={item.label}
               label={item.label}
-              value={item.value}
+              value={
+                item.route ? (
+                  <Link
+                    href={item.route}
+                    className="hover:text-[#DD4F05] underline break-all"
+                  >
+                    {item.value}
+                  </Link>
+                ) : item.href ? (
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#DD4F05] underline break-all"
+                  >
+                    {item.value}
+                  </a>
+                ) : (
+                  item.value
+                )
+              }
               loading={isLoading}
             />
           ))}
@@ -145,7 +168,14 @@ export default function Overview({
                 key={`${section.title}-${item.label}`}
                 label={item.label}
                 value={
-                  item.href ? (
+                  item.route ? (
+                    <Link
+                      href={item.route}
+                      className="hover:text-[#DD4F05] underline break-all"
+                    >
+                      {item.value}
+                    </Link>
+                  ) : item.href ? (
                     <a
                       href={item.href}
                       target="_blank"

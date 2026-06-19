@@ -12,6 +12,7 @@ import {
 import type { ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 type TransactionType =
   | "PTA"
@@ -29,6 +30,7 @@ export interface OverviewField {
   label: string;
   value: string;
   href?: string;
+  route?: string;
 }
 
 export interface OverviewSection {
@@ -289,6 +291,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
       value: pickString(formatEnum(data.requestStatus), formatEnum(raw.status), "--"),
     },
     { label: "Customer Type", value: formatEnum(data.customerType) },
+    { label: "Transient Wallet ID", value: data.customerTransientWalletId ? data.customerTransientWalletId : "--", route: data.customerTransientWalletId ? adminRoutes.adminTransientWalletDetails(data.customerTransientWalletId) : undefined },
   ];
 
   const commonFields: OverviewField[] = [
