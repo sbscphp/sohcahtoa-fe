@@ -7,6 +7,7 @@ import type {
 } from "@/app/_lib/api/types";
 import type { TransactionType } from "./transaction-document-requirements";
 import { mapUiAdmissionTypeToApi } from "./school-fees-admission";
+import { getCustomerFxPurposeForPayload } from "@/app/(customer)/_lib/fx-transaction-purpose-payload";
 
 export interface TransactionFormDataBag {
   uploadDocumentsData: Record<string, unknown> | null;
@@ -208,7 +209,7 @@ function buildPTAPayload(
     type: "PTA",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Personal travel",
+    purpose: getCustomerFxPurposeForPayload("PTA", "BUY"),
     destinationCountry: "United States",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
@@ -239,7 +240,7 @@ function buildBTAPayload(
     type: "BTA",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Business travel",
+    purpose: getCustomerFxPurposeForPayload("BTA", "BUY"),
     destinationCountry: "United States",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
@@ -260,7 +261,8 @@ function buildBTAPayload(
 
 function buildTouristPayload(
   bag: TransactionFormDataBag,
-  documents: TransactionDocument[]
+  documents: TransactionDocument[],
+  mode: TransactionPayloadMode
 ): CreateTransactionRequest {
   const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
   const amount = bag.transactionAmountData;
@@ -271,7 +273,7 @@ function buildTouristPayload(
     type: "TOURIST_FX",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Tourist travel",
+    purpose: getCustomerFxPurposeForPayload("TOURIST_FX", mode),
     destinationCountry: "United States",
     formAId: upload?.formAId ?? undefined,
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
@@ -297,7 +299,7 @@ function buildSchoolFeesPayload(
     type: "SCHOOL_FEES",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "School fees",
+    purpose: getCustomerFxPurposeForPayload("SCHOOL_FEES", "BUY"),
     destinationCountry: "United Kingdom",
     studentName: typeof upload?.studentName === "string" ? upload.studentName : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
@@ -328,7 +330,7 @@ function buildMedicalPayload(
     type: "MEDICAL",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Medical",
+    purpose: getCustomerFxPurposeForPayload("MEDICAL", "BUY"),
     destinationCountry: "United Kingdom",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
@@ -356,7 +358,7 @@ function buildProfessionalBodyPayload(
     type: "PROFESSIONAL_BODY",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Professional body fees",
+    purpose: getCustomerFxPurposeForPayload("PROFESSIONAL_BODY", "BUY"),
     destinationCountry: "United Kingdom",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
@@ -383,7 +385,7 @@ function buildResidentFxPayload(
     type: "RESIDENT_FX",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Transaction",
+    purpose: getCustomerFxPurposeForPayload("RESIDENT_FX", "SELL"),
     destinationCountry: "United States",
     bvn: upload?.bvn ?? undefined,
     nin: upload?.ninNumber ?? undefined,
@@ -410,7 +412,7 @@ function buildExpatriateFxPayload(
     type: "EXPATRIATE_FX",
     currency: getCurrency(amount),
     amount: getAmount(amount),
-    purpose: "Transaction",
+    purpose: getCustomerFxPurposeForPayload("EXPATRIATE_FX", "SELL"),
     destinationCountry: "United States",
     bvn: upload?.bvn ?? undefined,
     nin: upload?.ninNumber ?? undefined,
@@ -444,7 +446,7 @@ export function buildTransactionPayload(
       payload = buildBTAPayload(bag, documents);
       break;
     case "TOURIST_FX":
-      payload = buildTouristPayload(bag, documents);
+      payload = buildTouristPayload(bag, documents, mode);
       break;
     case "SCHOOL_FEES":
       payload = buildSchoolFeesPayload(bag, documents);

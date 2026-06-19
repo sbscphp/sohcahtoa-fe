@@ -159,9 +159,10 @@ export default function TransactionsPage() {
           filters={TX_FILTER_OPTIONS}
           filterValues={{ selections: table.selections, dateRange: table.dateRange }}
           onFiltersApply={(next: TableFilterValues) => {
-            table.setSelections(next.selections ?? {});
-            table.setDateRange(next.dateRange ?? null);
-            table.setPage(1);
+            table.applyFilters({
+              selections: next.selections ?? {},
+              dateRange: next.dateRange ?? null,
+            });
           }}
           onExportClick={handleExportClick}
           transactions={tableRows}

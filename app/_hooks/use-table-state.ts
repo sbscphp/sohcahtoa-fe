@@ -45,6 +45,11 @@ export interface UseTableStateResult<TFilterKey extends string = string> {
 
   reset: () => void;
   hasActiveFilters: boolean;
+  /** Apply filter sheet values and reset to page 1 in one update (triggers a single refetch). */
+  applyFilters: (values: {
+    selections: TableSelections<TFilterKey>;
+    dateRange?: DatesRangeValue | null;
+  }) => void;
 }
 
 export function useTableState<TFilterKey extends string = string>(
@@ -99,6 +104,12 @@ export function useTableState<TFilterKey extends string = string>(
     setLimit: (limit) => patchTableState({ limit, page: 1 }),
     reset,
     hasActiveFilters,
+    applyFilters: (values) =>
+      patchTableState({
+        selections: values.selections ?? {},
+        dateRange: values.dateRange ?? null,
+        page: 1,
+      }),
   };
 }
 

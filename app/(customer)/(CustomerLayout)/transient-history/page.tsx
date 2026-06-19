@@ -91,9 +91,10 @@ export default function TransientHistoryPage() {
             dateRange: table.dateRange,
           }}
           onFiltersApply={(next: TableFilterValues) => {
-            table.setSelections(next.selections ?? {});
-            table.setDateRange(next.dateRange ?? null);
-            table.setPage(1);
+            table.applyFilters({
+              selections: next.selections ?? {},
+              dateRange: next.dateRange ?? null,
+            });
           }}
           onPageChange={(next) => table.setPage(next)}
         />

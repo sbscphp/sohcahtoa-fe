@@ -4,7 +4,7 @@ import { ChevronDown } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Drawer, Button, Checkbox, MultiSelect, Select } from "@mantine/core";
 import { DatePickerInput, type DatesRangeValue } from "@mantine/dates";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface TableFilterOption {
   label: string;
@@ -34,6 +34,8 @@ interface TableFilterSheetProps {
   value?: TableFilterValues;
   onApply: (next: TableFilterValues) => void;
 }
+
+const EMPTY_FILTERS: TableFilterValues = { selections: {}, dateRange: null };
 
 function CloseIcon() {
   return (
@@ -71,10 +73,21 @@ export default function TableFilterSheet({
   value,
   onApply,
 }: Readonly<TableFilterSheetProps>) {
-  const initial = useMemo(() => normalize(value), [value]);
-  const [draft, setDraft] = useState<TableFilterValues>(initial);
+  const [draft, setDraft] = useState<TableFilterValues>(() => normalize(value));
 
-  const handleReset = () => setDraft({ selections: {}, dateRange: null });
+  useEffect(() => {
+    if (!opened) return;
+    setDraft(normalize(value));
+    // Sync from applied filters when the sheet opens only (not on every parent render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- value read at open time
+  }, [opened]);
+
+  const handleReset = () => {
+    setDraft(EMPTY_FILTERS);
+    onApply(EMPTY_FILTERS);
+    onClose();
+  };
+
   const handleSave = () => {
     onApply(draft);
     onClose();
@@ -161,13 +174,12 @@ export default function TableFilterSheet({
                   size="md"
                   radius="md"
                   classNames={{
-                    
                     dropdown: "rounded-xl!",
                   }}
                   rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
                   renderOption={({ option, checked }) => (
                     <div>
-                    <Checkbox label={option.label} checked={checked} readOnly radius="sm" />
+                      <Checkbox label={option.label} checked={checked} readOnly radius="sm" />
                     </div>
                   )}
                 />
@@ -192,7 +204,6 @@ export default function TableFilterSheet({
                   rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
                   searchable={false}
                   classNames={{
-                    
                     dropdown: "rounded-xl!",
                     pillsList: "hidden",
                   }}
@@ -227,4 +238,3 @@ export default function TableFilterSheet({
     </Drawer>
   );
 }
-

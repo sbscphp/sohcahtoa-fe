@@ -35,12 +35,11 @@ export function getTransactionTypeLabel(type: string): string {
 }
 
 export const MOCK_TRANSACTIONS: TableTransaction[] = [
-  // Clear examples for sheet Overview: Approved (Documentation + Approved) and Rejected (Documentation + Rejected)
   { id: "GHA67AGHA0", date: "2025-11-17T10:00:00", type: "PTA", stage: "Documentation", status: "Approved", transaction_type: "Buy FX" },
   { id: "GHA67AGHA1", date: "2025-11-16T11:00:00", type: "PTA", stage: "Documentation", status: "Pending", transaction_type: "Buy FX" },
   { id: "GHA67AGHA2", date: "2025-11-15T14:30:00", type: "BTA", stage: "Transaction Settlement", status: "Completed", transaction_type: "Buy FX" },
   { id: "GHA67AGHA3", date: "2025-11-14T09:15:00", type: "Medical", stage: "Awaiting Disbursement", status: "Request More Info", transaction_type: "Sell FX" },
-  { id: "GHA67AGHA4", date: "2025-11-13T16:45:00", type: "Professional Body Fee", stage: "Documentation", status: "Rejected", transaction_type: "Buy FX" }, // Rejected overview in sheet
+  { id: "GHA67AGHA4", date: "2025-11-13T16:45:00", type: "Professional Body Fee", stage: "Documentation", status: "Rejected", transaction_type: "Buy FX" },
   { id: "GHA67AGHA5", date: "2025-11-12T10:20:00", type: "Tourist", stage: "Transaction Settlement", status: "Approved", transaction_type: "Receive FX" },
   { id: "GHA67AGHA6", date: "2025-11-11T13:10:00", type: "School Fees", stage: "Awaiting Disbursement", status: "Pending", transaction_type: "Buy FX" },
   { id: "GHA67AGHA7", date: "2025-11-10T15:30:00", type: "IMTO", stage: "Documentation", status: "Completed", transaction_type: "Sell FX" },
