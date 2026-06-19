@@ -1158,6 +1158,7 @@ export interface AdminTransactionApprovalWorkflowStage {
 }
 
 export interface AdminTransactionApprovalProcess {
+  name?: string;
   workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
   pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;

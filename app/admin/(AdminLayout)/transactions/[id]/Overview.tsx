@@ -25,6 +25,7 @@ interface OverviewProps {
   isApprovalOfficer?: boolean;
   canActOnTransactionFooter?: boolean;
   approvalState?: string;
+  approvalProcessName?: string;
 }
 
 const loadingBasicDetails = [
@@ -68,6 +69,7 @@ export default function Overview({
   isApprovalOfficer = false,
   canActOnTransactionFooter = true,
   approvalState,
+  approvalProcessName,
 }: OverviewProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   const hasData = Boolean(transaction);
@@ -108,6 +110,7 @@ export default function Overview({
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}
+          approvalProcessName={approvalProcessName}
         />
       </Group>
 

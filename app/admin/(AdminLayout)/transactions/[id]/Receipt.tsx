@@ -24,6 +24,7 @@ interface ReceiptProps {
   isApprovalOfficer?: boolean;
   canActOnTransactionFooter?: boolean;
   approvalState?: string;
+  approvalProcessName?: string;
 }
 
 const loadingFields = [
@@ -43,6 +44,7 @@ export default function Receipt({
   isApprovalOfficer = false,
   canActOnTransactionFooter = true,
   approvalState,
+  approvalProcessName,
 }: ReceiptProps) {
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   const hasData = Boolean(transaction);
@@ -77,6 +79,7 @@ export default function Receipt({
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}
+          approvalProcessName={approvalProcessName}
         />
       </Group>
 
