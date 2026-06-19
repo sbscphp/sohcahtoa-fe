@@ -2288,6 +2288,12 @@ export const adminApi = {
         data
       ),
 
+    refund: (id: string, data: { reason: string; notes: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.refund(id),
+        data
+      ),
+
     settle: (id: string) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.settle(id)
