@@ -25,7 +25,7 @@ type FilterTab = "all" | "pending" | "completed" | "rejected";
 const workflowActionHeaders = [
   { label: "Date Initiated", key: "dateInitiated" },
   { label: "Escalation Period", key: "escalationPeriod" },
-  { label: "Module", key: "module" },
+  { label: "Transaction", key: "title" },
   { label: "Workflow Action", key: "workflowAction" },
   { label: "Action Needed", key: "actionNeeded" },
   { label: "Status", key: "status" },
@@ -110,7 +110,7 @@ export default function WorkflowActionTable() {
       {item.escalationPeriod}
     </Text>,
     <Text key="module" size="sm">
-      {item.module}
+      {item.title}
     </Text>,
     <Text key="workflowAction" size="sm">
       {item.workflowAction}
