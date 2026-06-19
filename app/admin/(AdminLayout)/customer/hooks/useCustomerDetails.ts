@@ -9,6 +9,7 @@ interface CustomerDetailsApiUser {
   name?: string;
   email?: string;
   phoneNumber?: string;
+  transientWalletId?: string;
   status?: string;
   dateJoined?: string;
   totalTransactions?: number | string;
