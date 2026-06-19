@@ -25,6 +25,7 @@ import EntryAdminNotesTab from "../../../_transientWalletComponents/EntryAdminNo
 import AddNoteToEntryModal from "../../../_transientWalletComponents/modals/AddNoteToEntryModal";
 import LinkTransactionModal from "../../../_transientWalletComponents/modals/LinkTransactionModal";
 import FlagEntryModal from "../../../_transientWalletComponents/modals/FlagEntryModal";
+import InitiateRefundModal from "../../../_transientWalletComponents/modals/InitiateRefundModal";
 import TakeActionMenu, {
   type TakeActionType,
 } from "../../../_transientWalletComponents/modals/TakeActionMenu";
@@ -77,6 +78,7 @@ export default function TransientWalletEntryDetailPage() {
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [flagModalOpen, setFlagModalOpen] = useState(false);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
 
   const [confirmType, setConfirmType] = useState<
     "unlink" | "refund" | "disburse" | null
@@ -149,12 +151,13 @@ export default function TransientWalletEntryDetailPage() {
     }
   );
 
-  const refundMutation = useCreateData<unknown, void>(
-    () => adminApi.wallet.refundEntry(walletId, entryId),
+  const refundMutation = useCreateData(
+    ({ transactionId, notes }: { transactionId: string; notes: string }) =>
+      adminApi.transactions.refund(transactionId, { reason: "", notes }),
     {
       onSuccess: async () => {
         await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
-        setConfirmType(null);
+        setRefundModalOpen(false);
         setSuccessVariant("refund");
       },
       onError: (error) => showErrorToast(error, "Unable to initiate refund."),
@@ -210,11 +213,24 @@ export default function TransientWalletEntryDetailPage() {
     flagMutation.mutate(fullReason);
   };
 
+  const handleRefundSubmit = (notes: string) => {
+    const transactionId = entry?.linkedTransaction?.id;
+    if (!transactionId) {
+      showErrorToast(
+        new Error("No linked transaction"),
+        "Unable to initiate refund."
+      );
+      return;
+    }
+    refundMutation.mutate({ transactionId, notes });
+  };
+
   const handleConfirm = () => {
     if (confirmType === "unlink") {
       unlinkMutation.mutate(undefined);
     } else if (confirmType === "refund") {
-      refundMutation.mutate(undefined);
+      setConfirmType(null);
+      setRefundModalOpen(true);
     } else if (confirmType === "disburse") {
       disburseMutation.mutate(undefined);
     }
@@ -225,15 +241,13 @@ export default function TransientWalletEntryDetailPage() {
     router.push(adminRoutes.adminTransientWalletDetails(walletId));
   };
 
-  const handleGoToDashboard = () => {
+  const handleViewWallet = () => {
     setSuccessVariant(null);
-    router.push(adminRoutes.adminDashboard());
+    router.push(adminRoutes.adminTransientWalletDetails(walletId));
   };
 
   const isConfirmLoading =
-    unlinkMutation.isPending ||
-    refundMutation.isPending ||
-    disburseMutation.isPending;
+    unlinkMutation.isPending || disburseMutation.isPending;
 
   const getConfirmModalProps = () => {
     switch (confirmType) {
@@ -242,15 +256,13 @@ export default function TransientWalletEntryDetailPage() {
           title: "Unlink Transaction?",
           message: `Are you sure you want to unlink this transaction from entry ${entryId.slice(0, 8).toUpperCase()}? The entry status will revert to UNMATCHED.`,
           primaryButtonText: "Yes, Unlink",
-          primaryColor: "red",
         };
       case "refund":
         return {
           title: "Initiate Refund?",
           message:
-            "Are you sure you want to initiate a refund for this transaction? A refund workflow will be triggered for this entry. Entry will be updated to REFUND PENDING status.",
-          primaryButtonText: "Yes, Initiate Refund",
-          primaryColor: "orange",
+            "Are you sure you want to initiate a refund for this transaction? A refund workflow will be triggered for this entry",
+          primaryButtonText: "Yes, Proceed",
         };
       case "disburse":
         return {
@@ -258,7 +270,6 @@ export default function TransientWalletEntryDetailPage() {
           message:
             "Are you sure you want to confirm disbursement for this transaction? This action can not be undone.",
           primaryButtonText: "Yes, Confirm Disbursement",
-          primaryColor: "red",
         };
       default:
         return null;
@@ -315,9 +326,9 @@ export default function TransientWalletEntryDetailPage() {
         return {
           title: "Disbursement Successful",
           message: "Funds disbursed successfully!",
-          primaryButtonText: "Go to Dashboard",
+          primaryButtonText: "View Wallet",
           secondaryButtonText: undefined,
-          onPrimary: handleGoToDashboard,
+          onPrimary: handleViewWallet,
           primaryButtonVariant: "outline" as const,
         };
       default:
@@ -465,6 +476,13 @@ export default function TransientWalletEntryDetailPage() {
         loading={flagMutation.isPending}
       />
 
+      <InitiateRefundModal
+        opened={refundModalOpen}
+        onClose={() => setRefundModalOpen(false)}
+        onSubmit={handleRefundSubmit}
+        loading={refundMutation.isPending}
+      />
+
       {confirmProps ? (
         <ConfirmationModal
           opened={confirmType !== null}
@@ -472,7 +490,6 @@ export default function TransientWalletEntryDetailPage() {
           title={confirmProps.title}
           message={confirmProps.message}
           primaryButtonText={confirmProps.primaryButtonText}
-          primaryColor={confirmProps.primaryColor}
           secondaryButtonText="No, Close"
           onPrimary={handleConfirm}
           loading={isConfirmLoading}

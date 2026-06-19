@@ -32,6 +32,7 @@ import type {
 import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
 import React, { useRef, useEffect } from "react";
 import { useState } from "react";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 interface TakeActionOverlayProps {
   opened: boolean;
@@ -46,6 +47,7 @@ interface TakeActionOverlayProps {
   /** When true, shows per-document approval popover. Default false. */
   isApprovalOfficer?: boolean;
   approvalState?: string;
+  approvalProcessName?: string;
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -94,6 +96,7 @@ export default function TakeActionOverlay({
   canActOnTransactionFooter = true,
   isApprovalOfficer = false,
   approvalState,
+  approvalProcessName,
 }: TakeActionOverlayProps) {
   // const router = useRouter();
   const hideTransactionFooter =
@@ -418,7 +421,7 @@ export default function TakeActionOverlay({
             <div className="space-y-1 mb-3">
               <Title order={4} className="text-body-heading-300 font-bold! text-xl!">
                 <span className="text-body-text-50!">Request: </span>
-                Transaction Review and Approval
+                {approvalProcessName ?? "Transaction Review and Approval"}
               </Title>
               <Text size="sm" className="text-body-text-50!">
                 Take action on transactions
@@ -552,7 +555,7 @@ export default function TakeActionOverlay({
                         >
                           <div className="flex flex-col gap-1 min-w-0 flex-1">
                             <Text size="sm" fw={500} className="text-body-heading-300 truncate!">
-                              {doc.title}
+                              {toSentenceCase(doc.documentType)}
                             </Text>
                             <Text size="xs" c="dimmed" className="text-body-text-50!">
                               {doc.fileSize}

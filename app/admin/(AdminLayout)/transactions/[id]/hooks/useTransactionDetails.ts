@@ -12,6 +12,7 @@ import {
 import type { ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 type TransactionType =
   | "PTA"
@@ -29,6 +30,7 @@ export interface OverviewField {
   label: string;
   value: string;
   href?: string;
+  route?: string;
 }
 
 export interface OverviewSection {
@@ -81,6 +83,7 @@ export interface TransactionApprovalUiViewModel {
   isApprovalOfficer: boolean;
   canActOnTransactionFooter: boolean;
   approvalState?: string;
+  approvalProcessName?: string;
 }
 
 export interface UseTransactionDetailsOptions {
@@ -288,6 +291,7 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
       value: pickString(formatEnum(data.requestStatus), formatEnum(raw.status), "--"),
     },
     { label: "Customer Type", value: formatEnum(data.customerType) },
+    { label: "Transient Wallet ID", value: data.customerTransientWalletId ? data.customerTransientWalletId : "--", route: data.customerTransientWalletId ? adminRoutes.adminTransientWalletDetails(data.customerTransientWalletId) : undefined },
   ];
 
   const commonFields: OverviewField[] = [
@@ -638,16 +642,18 @@ export function buildTransactionApprovalUi(
     isApprovalOfficer: false,
     canActOnTransactionFooter: true,
     approvalState: undefined,
+    approvalProcessName: undefined,
   };
   if (!data) return legacy;
 
   const ap = resolveApprovalProcess(data);
   const approvalState = ap?.approvalState;
+  const approvalProcessName = ap?.name?.trim() || undefined;
   const isApprovalOfficer = Boolean(ap?.isApprovalOfficer);
   const stages = ap?.workflowStages;
 
   if (!ap || !Array.isArray(stages) || stages.length === 0) {
-    return { isApprovalOfficer, canActOnTransactionFooter: true, approvalState };
+    return { isApprovalOfficer, canActOnTransactionFooter: true, approvalState, approvalProcessName };
   }
 
   const currentStage = stages.find((s) => {
@@ -655,12 +661,12 @@ export function buildTransactionApprovalUi(
     return (s as AdminTransactionApprovalWorkflowStage).isCurrent === true;
   }) as AdminTransactionApprovalWorkflowStage | undefined;
   if (!currentStage) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState, approvalProcessName };
   }
 
   const assignees = currentStage.assignees;
   if (!Array.isArray(assignees) || assignees.length === 0) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState, approvalProcessName };
   }
 
   const assigneeIds = new Set<string>();
@@ -669,18 +675,19 @@ export function buildTransactionApprovalUi(
     if (id) assigneeIds.add(id);
   }
   if (assigneeIds.size === 0) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState, approvalProcessName };
   }
 
   const uid = adminUserId?.trim();
   if (!uid) {
-    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState };
+    return { isApprovalOfficer, canActOnTransactionFooter: false, approvalState, approvalProcessName };
   }
 
   return {
     isApprovalOfficer,
     canActOnTransactionFooter: assigneeIds.has(uid),
     approvalState,
+    approvalProcessName,
   };
 }
 
@@ -722,6 +729,7 @@ export function useTransactionDetails(
     workflowHistory,
     isApprovalOfficer: approvalUi.isApprovalOfficer,
     approvalState: approvalUi.approvalState,
+    approvalProcessName: approvalUi.approvalProcessName,
     canActOnTransactionFooter: approvalUi.canActOnTransactionFooter,
     isLoading: query.isLoading,
     isError: query.isError,

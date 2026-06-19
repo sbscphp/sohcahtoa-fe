@@ -1158,6 +1158,7 @@ export interface AdminTransactionApprovalWorkflowStage {
 }
 
 export interface AdminTransactionApprovalProcess {
+  name?: string;
   workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
   pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;
@@ -1171,6 +1172,7 @@ export interface AdminTransactionDetailsData {
   time: string;
   customerName: string;
   customerType: string;
+  customerTransientWalletId?: string | null;
   transactionType: string;
   fxType: string;
   transactionStage: string;
@@ -2285,6 +2287,12 @@ export const adminApi = {
     reject: (id: string, data: { reason: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.reject(id),
+        data
+      ),
+
+    refund: (id: string, data: { reason: string; notes: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.refund(id),
         data
       ),
 

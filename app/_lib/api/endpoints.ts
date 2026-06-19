@@ -233,6 +233,7 @@ export const API_ENDPOINTS = {
       rejectDocument: (id: string, documentId: string) =>
         `/api/admin/transactions/${id}/documents/${documentId}/reject`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
+      refund: (id: string) => `/api/admin/transactions/${id}/refund`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
       unsettledBalance: "/api/admin/transactions/unsettled-balance",
     },
