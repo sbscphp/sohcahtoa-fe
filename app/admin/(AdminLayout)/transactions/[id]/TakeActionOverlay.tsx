@@ -80,10 +80,9 @@ function isDocumentVerificationApproved(verificationStatus: string): boolean {
   return n === "VERIFIED" || n === "APPROVED";
 }
 
-/** Header status uses title-case labels (e.g. "Approved"). */
-function isTransactionStatusApproved(statusLabel: string | undefined): boolean {
+function isTransationActionable(statusLabel: string | undefined): boolean {
   if (!statusLabel || statusLabel.trim() === "" || statusLabel === "--") return false;
-  return normalizeStatusForComparison(statusLabel) === "APPROVED";
+  return normalizeStatusForComparison(statusLabel) === "PENDING" || normalizeStatusForComparison(statusLabel) === "UNDER_REVIEW";
 }
 
 export default function TakeActionOverlay({
@@ -100,7 +99,7 @@ export default function TakeActionOverlay({
 }: TakeActionOverlayProps) {
   // const router = useRouter();
   const hideTransactionFooter =
-    isTransactionStatusApproved(transactionStatusLabel) ||
+    !isTransationActionable(transactionStatusLabel) ||
     canActOnTransactionFooter === false;
   const queryClient = useQueryClient();
   const [takeActionPopoverKey, setTakeActionPopoverKey] = useState<string | null>(
