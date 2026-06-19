@@ -23,6 +23,33 @@ export const TRANSACTION_STATUS_LABELS = {
 
 export type TransactionStatus = keyof typeof TRANSACTION_STATUS_LABELS;
 
+/** Display order for status filter dropdowns (matches API enum values). */
+export const TRANSACTION_STATUS_FILTER_ORDER = [
+  "DRAFT",
+  "AWAITING_VERIFICATION",
+  "VERIFICATION_IN_PROGRESS",
+  "VERIFICATION_COMPLETED",
+  "AWAITING_DEPOSIT",
+  "DEPOSIT_PENDING",
+  "DEPOSIT_CONFIRMED",
+  "AWAITING_DISBURSEMENT",
+  "COMPLIANCE_REVIEW",
+  "ADMIN_APPROVAL_PENDING",
+  "APPROVED",
+  "DISBURSEMENT_IN_PROGRESS",
+  "PENDING_RECORD_VALIDATION",
+  "COMPLETED",
+  "REJECTED",
+  "CANCELLED",
+] as const satisfies readonly TransactionStatus[];
+
+export const TRANSACTION_STATUS_FILTER_OPTIONS = TRANSACTION_STATUS_FILTER_ORDER.map(
+  (status) => ({
+    label: TRANSACTION_STATUS_LABELS[status],
+    value: status,
+  })
+);
+
 export function normalizeTransactionStatus(raw: string | null | undefined): string {
   return (raw ?? "").trim().toUpperCase();
 }

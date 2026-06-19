@@ -22,6 +22,7 @@ import { adminRoutes } from "@/lib/adminRoutes";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 
 import { resolveAdminTransactionListGroup } from "@/app/(customer)/_lib/transaction-list-params";
+import { TRANSACTION_STATUS_FILTER_OPTIONS } from "@/app/(customer)/_lib/transaction-details";
 
 const pageSize = 10;
 
@@ -29,13 +30,7 @@ type TransactionTab = "all" | "buy-fx" | "sell-fx" | "receive-fx";
 
 const statusOptions = [
   { value: "All", label: "Filter By" },
-  { value: "AWAITING_VERIFICATION", label: "Awaiting Verification" },
-  { value: "COMPLIANCE_REVIEW", label: "Compliance Review" },
-  { value: "PENDING", label: "Pending" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-  // { value: "REQUEST_INFO", label: "Request Information" },
+  ...TRANSACTION_STATUS_FILTER_OPTIONS.map(({ value, label }) => ({ value, label })),
 ];
 
 

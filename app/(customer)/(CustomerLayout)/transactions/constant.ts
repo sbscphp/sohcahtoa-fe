@@ -1,4 +1,5 @@
 import { TableFilterGroup } from "../../_components/common/table/TableFilterSheet";
+import { TRANSACTION_STATUS_FILTER_OPTIONS } from "@/app/(customer)/_lib/transaction-details";
 export { TRANSACTION_GROUP_FILTER_OPTIONS as FILTER_OPTIONS } from "@/app/(customer)/_lib/transaction-group-tabs";
 
 export const TX_FILTER_OPTIONS: TableFilterGroup[] = [
@@ -6,13 +7,8 @@ export const TX_FILTER_OPTIONS: TableFilterGroup[] = [
         label: "Filter By Status",
         key: "status",
         type: "single",
-        options: [
-            { label: "Pending", value: "pending" },
-            { label: "Completed", value: "completed" },
-            { label: "Rejected", value: "rejected" },
-            { label: "Approved", value: "approved" },
-            { label: "Requested more info", value: "request_more_info" },
-        ],
+        placeholder: "All statuses",
+        options: TRANSACTION_STATUS_FILTER_OPTIONS,
     },
     {
         label: "Filter By Transaction Type",

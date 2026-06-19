@@ -39,6 +39,19 @@ export function mapTransactionFilterTypesToApi(
   return mapped.length > 0 ? mapped.join(",") : undefined;
 }
 
+export function mapTransactionFilterStatusToApi(
+  filterCsv?: string | null,
+): string | undefined {
+  if (!filterCsv?.trim()) return undefined;
+
+  const mapped = filterCsv
+    .split(",")
+    .map((part) => part.trim().toUpperCase())
+    .filter(Boolean);
+
+  return mapped.length > 0 ? mapped.join(",") : undefined;
+}
+
 export function resolveAdminTransactionListGroup(
   tab: string,
 ): TransactionListParams["group"] | undefined {
@@ -65,6 +78,7 @@ export function buildTransactionListQueryParams(
 
   return {
     ...rest,
+    status: mapTransactionFilterStatusToApi(rest.status),
     group: resolveTransactionListGroup(activeGroupTab),
     type: mapTransactionFilterTypesToApi(transactionTypeFilter),
   };

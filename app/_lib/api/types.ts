@@ -1305,11 +1305,20 @@ export type TransactionVirtualAccountResponse =
   ApiResponseWrapper<TransactionVirtualAccountData>;
 
 export interface TransactionDepositInstructionsData {
+  accountNumber?: string;
+  accountName?: string;
+  bankName?: string;
+  /** Total amount the customer must transfer (includes processing fee). */
+  amount?: string | number | null;
+  baseAmount?: string | number | null;
+  feeAmount?: string | number | null;
+  currency?: string;
+  expiresAt?: string;
   title?: string;
   message?: string;
   instructions?: string[] | string;
   note?: string;
-  [key: string]: unknown;
+  warningNote?: string;
 }
 
 export type TransactionDepositInstructionsResponse =

@@ -197,6 +197,105 @@ export function getInstructionsParagraphs(source: unknown): string[] | null {
   return null;
 }
 
+function parsePositiveAmount(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function formatNgnAmount(amount: number): string {
+  return amount.toLocaleString("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function readInstructionsAmountField(
+  instructionsData: unknown,
+  key: "amount" | "baseAmount" | "feeAmount"
+): number | null {
+  if (!instructionsData || typeof instructionsData !== "object") return null;
+  return parsePositiveAmount((instructionsData as Record<string, unknown>)[key]);
+}
+
+/** Total payable amount from deposit-instructions (includes processing fee when present). */
+export function getDepositInstructionsPayableAmount(instructionsData: unknown): number | null {
+  return readInstructionsAmountField(instructionsData, "amount");
+}
+
+export type DepositPaymentAmountSource = "instructions" | "fallback";
+
+export type DepositPaymentAmountViewModel = {
+  payableAmount: number | null;
+  formattedAmount: string | null;
+  baseAmount: number | null;
+  feeAmount: number | null;
+  feeNote: string | null;
+  source: DepositPaymentAmountSource | null;
+  isLoading: boolean;
+};
+
+export function resolveDepositPaymentAmount(options: {
+  instructionsData?: unknown;
+  instructionsLoading?: boolean;
+  fallbackAmountNgn?: number | null;
+  /** When false, show fallback immediately (e.g. agent cash pickup). Default true. */
+  preferInstructions?: boolean;
+}): DepositPaymentAmountViewModel {
+  const preferInstructions = options.preferInstructions !== false;
+  const payableFromInstructions = getDepositInstructionsPayableAmount(options.instructionsData);
+  const baseAmount = readInstructionsAmountField(options.instructionsData, "baseAmount");
+  const feeAmount = readInstructionsAmountField(options.instructionsData, "feeAmount");
+
+  if (payableFromInstructions != null) {
+    const feeNote =
+      feeAmount != null
+        ? `Includes ₦${formatNgnAmount(feeAmount)} processing fee`
+        : null;
+    return {
+      payableAmount: payableFromInstructions,
+      formattedAmount: formatNgnAmount(payableFromInstructions),
+      baseAmount,
+      feeAmount,
+      feeNote,
+      source: "instructions",
+      isLoading: false,
+    };
+  }
+
+  if (preferInstructions && options.instructionsLoading) {
+    return {
+      payableAmount: null,
+      formattedAmount: null,
+      baseAmount: null,
+      feeAmount: null,
+      feeNote: null,
+      source: null,
+      isLoading: true,
+    };
+  }
+
+  const fallback = parsePositiveAmount(options.fallbackAmountNgn);
+  return {
+    payableAmount: fallback,
+    formattedAmount: fallback != null ? formatNgnAmount(fallback) : null,
+    baseAmount: null,
+    feeAmount: null,
+    feeNote: null,
+    source: fallback != null ? "fallback" : null,
+    isLoading: false,
+  };
+}
+
+/** @deprecated Prefer {@link resolveDepositPaymentAmount}. */
+export function resolveDepositPayableAmount(options: {
+  instructionsData?: unknown;
+  instructionsLoading?: boolean;
+  fallbackAmountNgn?: number | null;
+}): number | null {
+  return resolveDepositPaymentAmount(options).payableAmount;
+}
+
 /** @deprecated Prefer {@link getInstructionsParagraphs} for UI. */
 export function getInstructionsText(source: unknown): string | null {
   const paragraphs = getInstructionsParagraphs(source);

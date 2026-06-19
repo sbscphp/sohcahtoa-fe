@@ -41,6 +41,21 @@ describe("transaction-list-params", () => {
     );
   });
 
+  it("maps filter status values to API enums", () => {
+    expect(
+      buildTransactionListQueryParams({
+        activeGroupTab: TRANSACTION_GROUP_TAB_ALL,
+        status: "draft,approved",
+        page: 1,
+      }),
+    ).toEqual({
+      group: undefined,
+      type: undefined,
+      status: "DRAFT,APPROVED",
+      page: 1,
+    });
+  });
+
   it("maps admin tabs to group", () => {
     expect(resolveAdminTransactionListGroup("buy-fx")).toBe("BUY");
     expect(resolveAdminTransactionListGroup("sellfx")).toBe("SELL");

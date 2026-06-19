@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { Button, Modal, Textarea } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
@@ -10,7 +9,6 @@ import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
-import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import {
   getInstructionsParagraphs,
   getStringField,
@@ -19,6 +17,8 @@ import {
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { AgentDepositConfirmingModal } from "@/app/agent/_components/transactions/details/AgentDepositConfirmingModal";
 import { PaymentInstructionsCallout } from "@/app/(customer)/_components/transactions/details/PaymentInstructionsCallout";
+import { PaymentAmountSummary } from "@/app/(customer)/_components/transactions/details/PaymentAmountSummary";
+import { useDepositPaymentAmount } from "@/app/(customer)/_components/transactions/details/useDepositPaymentAmount";
 import { AgentVirtualAccountBankPaymentSection } from "@/app/agent/_components/transactions/details/AgentVirtualAccountBankPaymentSection";
 import { useAgentDepositConfirmationPoll } from "@/app/agent/_components/transactions/details/useAgentDepositConfirmationPoll";
 import { getVirtualAccountBankStepUiState } from "@/app/agent/_utils/virtualAccountBankStepUi";
@@ -66,6 +66,7 @@ export default function AgentProceedToPaymentModal({
   const bankPollStartedAtRef = useRef<number | null>(null);
 
   const bankQueriesEnabled = opened && step === "bank" && !!transactionId;
+  const useInstructionsAmount = selectedMethod === "bank_transfer";
 
   useEffect(() => {
     if (!opened) {
@@ -188,16 +189,12 @@ export default function AgentProceedToPaymentModal({
       "Once approved, 75% of your funds will be sent to customer bank account or prepaid card, while the remaining 25% will be available for cash pickup.",
     ];
   }, [instructionsQuery.data?.data]);
-  const formattedAmount = useMemo(
-    () =>
-      Number(amountNgn || 0).toLocaleString("en-NG", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }),
-    [amountNgn]
-  );
-
-  const flagUrl = getCurrencyFlagUrl("NGN");
+  const paymentAmount = useDepositPaymentAmount({
+    instructionsData: instructionsQuery.data?.data,
+    instructionsLoading: useInstructionsAmount && instructionsQuery.isPending,
+    fallbackAmountNgn: amountNgn,
+    preferInstructions: useInstructionsAmount,
+  });
 
   useEffect(() => {
     if (!opened || step !== "bank" || selectedMethod !== "bank_transfer") return;
@@ -241,7 +238,7 @@ export default function AgentProceedToPaymentModal({
       setSubmitting(true);
       const formData = new FormData();
       formData.append("method", "CASH_PICKUP");
-      formData.append("amount", String(amountNgn));
+      formData.append("amount", String(paymentAmount.payableAmount ?? amountNgn));
       formData.append("notes", notes.trim());
       formData.append("paymentReceipt", receiptFile);
       await agentApi.transactions.recordPayment(transactionId, formData);
@@ -284,16 +281,11 @@ export default function AgentProceedToPaymentModal({
 
   const cashOrBankBody = (
     <div className="max-h-[55vh] space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6">
-      <div className="flex w-full max-w-full flex-col items-center gap-2 rounded-lg bg-[#F1F1F1] px-3 py-5 sm:gap-3 sm:py-6">
-        <div className="flex items-center gap-2 text-sm font-medium text-[#6C6969]">
-          <span>{selectedMethod === "cash" ? "Collect" : "Send"}</span>
-          {flagUrl && <Image src={flagUrl} alt="NGN" width={24} height={24} className="shrink-0" />}
-          <span>NGN</span>
-        </div>
-        <div className="w-full max-w-full px-1 text-center text-2xl font-medium leading-tight text-[#4D4B4B] tabular-nums break-all sm:text-3xl md:text-4xl">
-          {formattedAmount}
-        </div>
-      </div>
+      <PaymentAmountSummary
+        actionLabel={selectedMethod === "cash" ? "Collect" : "Send"}
+        amount={paymentAmount}
+        compactLabel
+      />
 
       {selectedMethod === "bank_transfer" ? (
         <AgentVirtualAccountBankPaymentSection
@@ -381,7 +373,10 @@ export default function AgentProceedToPaymentModal({
           Reference: <span className="font-medium text-[#323131]">{referenceNumber}</span>
         </p>
         <p className="text-sm text-[#6C6969]">
-          Amount (NGN): <span className="font-medium text-[#323131]">{formattedAmount}</span>
+          Amount (NGN):{" "}
+          <span className="font-medium text-[#323131]">
+            {paymentAmount.formattedAmount ?? "—"}
+          </span>
         </p>
         <Textarea
           label="Notes (optional)"

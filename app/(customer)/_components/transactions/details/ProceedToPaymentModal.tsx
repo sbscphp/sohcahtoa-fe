@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { Button, Modal } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
-import { getCurrencyFlagUrl } from "@/app/(customer)/_lib/currency";
 import {
   getInstructionsParagraphs,
   getStringField,
@@ -20,6 +18,8 @@ import { notifications } from "@mantine/notifications";
 import { DepositConfirmingModal } from "./DepositConfirmingModal";
 import { useDepositConfirmationPoll } from "./useDepositConfirmationPoll";
 import { PaymentInstructionsCallout } from "./PaymentInstructionsCallout";
+import { PaymentAmountSummary } from "./PaymentAmountSummary";
+import { useDepositPaymentAmount } from "./useDepositPaymentAmount";
 import { VirtualAccountBankPaymentSection } from "./VirtualAccountBankPaymentSection";
 
 interface ProceedToPaymentModalProps {
@@ -40,7 +40,6 @@ export default function ProceedToPaymentModal({
   amountNgn,
 }: Readonly<ProceedToPaymentModalProps>) {
   const queryClient = useQueryClient();
-  const flagUrl = getCurrencyFlagUrl("NGN");
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const pollStartedAtRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
@@ -108,7 +107,11 @@ export default function ProceedToPaymentModal({
     () => customerApi.transactions.getDepositStatus(transactionId),
     opened && !!transactionId && !confirmingPayment
   );
-
+  const paymentAmount = useDepositPaymentAmount({
+    instructionsData: instructionsQuery.data?.data,
+    instructionsLoading: instructionsQuery.isPending,
+    fallbackAmountNgn: amountNgn,
+  });
   const accountData = virtualAccountQuery?.data?.data;
   const expiryFromAccount = getStringField(accountData, ["expiresAt", "expiryDate", "expiry"]);
   const statusData = depositStatusQuery?.data?.data;
@@ -188,11 +191,6 @@ export default function ProceedToPaymentModal({
     ];
   }, [instructionsQuery.data?.data]);
 
-  const formattedAmount = useMemo(
-    () => Number(amountNgn || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    [amountNgn]
-  );
-
   const handleCopy = async (value: string) => {
     if (!value || value === "—") return;
     try {
@@ -260,16 +258,7 @@ export default function ProceedToPaymentModal({
           </div>
 
           <div className="max-h-[58vh] space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6">
-            <div className="flex w-full max-w-full flex-col items-center gap-2 rounded-lg bg-[#F9F9F9] p-4 sm:gap-3 sm:p-5">
-              <div className="flex items-center gap-2 text-lg font-medium leading-none text-[#6C6969] sm:text-2xl md:text-3xl">
-                <span>Send</span>
-                {flagUrl && <Image src={flagUrl} alt="NGN" width={24} height={24} className="shrink-0" />}
-                <span>NGN</span>
-              </div>
-              <div className="w-full max-w-full px-1 text-center text-2xl font-medium leading-tight text-[#4D4B4B] tabular-nums break-all sm:text-3xl md:text-4xl">
-                {formattedAmount}
-              </div>
-            </div>
+            <PaymentAmountSummary actionLabel="Send" amount={paymentAmount} />
 
             <VirtualAccountBankPaymentSection
               ui={bankUi}
