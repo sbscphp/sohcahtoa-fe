@@ -29,7 +29,7 @@ export function PaymentAmountSummary({
 }: Readonly<PaymentAmountSummaryProps>) {
   const flagUrl = getCurrencyFlagUrl("NGN");
   const labelClass = compactLabel
-    ? "text-sm font-medium text-[#6C6969]"
+    ? "text-sm font-medium text-[#6C6969] "
     : "text-lg font-medium leading-none text-[#6C6969] sm:text-2xl md:text-3xl";
 
   return (
