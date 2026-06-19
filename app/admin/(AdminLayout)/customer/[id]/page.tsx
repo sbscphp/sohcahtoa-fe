@@ -21,6 +21,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import CustomerTransactionsTable from "../_customerComponents/CustomerTransactionTable";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import Link from "next/link";
 
 export type CustomerStatus = "Active" | "Deactivated";
 
@@ -44,19 +45,19 @@ export default function CustomerDetailsPage() {
   const customerName = customer?.name ?? "—";
   const dateJoined = customer?.dateJoined
     ? new Date(customer.dateJoined).toLocaleString("en-NG", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
     : "—";
   const lastActive = customer?.lastActive
     ? new Date(customer.lastActive).toLocaleDateString("en-NG", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
     : "—";
   const currentStatus: CustomerStatus =
     statusOverride ?? toCustomerStatus(customer?.status);
@@ -185,13 +186,23 @@ export default function CustomerDetailsPage() {
                 value={lastActive}
                 loading={isLoading}
               />
+              <DetailItem
+                label="Transient Wallet ID"
+                value={<Link
+                  href={adminRoutes.adminTransientWalletDetails(customer?.transientWalletId)}
+                  className="hover:text-[#DD4F05] underline break-all"
+                >
+                  {customer?.transientWalletId ?? "—"}
+                </Link>}
+                loading={isLoading}
+              />
             </div>
           </section>
         </div>
       </div>
 
       {/* Transactions table */}
-      
+
       <CustomerTransactionsTable customerId={customerId} />
 
       {/* Deactivate / Reactivate confirmation modal */}
@@ -199,11 +210,10 @@ export default function CustomerDetailsPage() {
         opened={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         title={`${actionVerb} Customer ?`}
-        message={`Are you sure you want to ${actionVerb.toLowerCase()} this customer profile? Kindly note that this action implies the customer will ${
-          isCurrentlyActive
+        message={`Are you sure you want to ${actionVerb.toLowerCase()} this customer profile? Kindly note that this action implies the customer will ${isCurrentlyActive
             ? "no longer be able to access both the mobile app and web app."
             : "again be able to access both the mobile app and web app."
-        }`}
+          }`}
         primaryButtonText={`Yes, ${actionVerb} Customer`}
         secondaryButtonText="No, Close"
         onPrimary={handleConfirm}

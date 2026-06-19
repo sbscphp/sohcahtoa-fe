@@ -5,6 +5,8 @@ import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import type { TransientWalletDetail } from "../hooks/useTransientWalletDetails";
+import Link from "next/link";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 interface WalletSummaryCardProps {
   wallet: TransientWalletDetail | null;
@@ -48,7 +50,12 @@ export default function WalletSummaryCard({
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <DetailItem
               label="Customer ID"
-              value={wallet?.customerId ?? "—"}
+              value={<Link
+                href={adminRoutes.adminCustomerDetails(wallet?.customerId)}
+                className="hover:text-[#DD4F05] underline break-all"
+              >
+                {wallet?.customerId ?? "—"}
+              </Link>}
               loading={isLoading}
             />
             <DetailItem
