@@ -8,6 +8,7 @@ import {
   type AdminLedgerAuditLog,
   type AdminLedgerEntryDetail,
   type AdminLedgerEntryNote,
+  type AdminLedgerLinkedTransaction,
   type AdminTransactionSearchItem,
 } from "@/app/admin/_services/admin-api";
 import { asNumber, formatCreatedAt, normalizeMatchStatus } from "./walletUtils";
@@ -30,6 +31,7 @@ export interface TransientEntryDetail {
   isFlagged: boolean;
   refundStatus: string | null;
   disbursementStatus: string | null;
+  linkedTransaction: AdminLedgerLinkedTransaction | null;
 }
 
 function mapEntryDetail(
@@ -53,6 +55,7 @@ function mapEntryDetail(
     isFlagged: item.isFlagged,
     refundStatus: item.refundStatus,
     disbursementStatus: item.disbursementStatus,
+    linkedTransaction: item.linkedTransaction,
   };
 }
 

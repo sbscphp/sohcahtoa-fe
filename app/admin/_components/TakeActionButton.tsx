@@ -32,6 +32,7 @@ interface TakeActionButtonProps {
   /** When true, per-document approval actions are shown (independent of assignee check). Default false. */
   isApprovalOfficer?: boolean;
   approvalState?: string;
+  approvalProcessName?: string;
 }
 
 export default function TakeActionButton({
@@ -49,6 +50,7 @@ export default function TakeActionButton({
   canActOnTransactionFooter = true,
   isApprovalOfficer = false,
   approvalState,
+  approvalProcessName,
 }: TakeActionButtonProps) {
   const [opened, setOpened] = useState(false);
 
@@ -84,6 +86,7 @@ export default function TakeActionButton({
         canActOnTransactionFooter={canActOnTransactionFooter}
         isApprovalOfficer={isApprovalOfficer}
         approvalState={approvalState}
+        approvalProcessName={approvalProcessName}
       />
     </>
   );
