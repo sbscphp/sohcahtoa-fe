@@ -11,6 +11,7 @@ import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
   getBuyOverThresholdProofOfFundsUploadSpec,
   getDocumentUploadSpec,
+  mergeDocumentUploadSpecs,
 } from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   buildTransactionPayload,
@@ -314,27 +315,14 @@ export default function TransactionCreationPage() {
     }
 
     try {
-      const baseSpec = getDocumentUploadSpec(
-        transactionType,
-        bag.uploadDocumentsData,
-        bag.bankDetailsData
+      const combinedSpec = mergeDocumentUploadSpecs(
+        getDocumentUploadSpec(
+          transactionType,
+          bag.uploadDocumentsData,
+          bag.bankDetailsData
+        ),
+        getBuyOverThresholdProofOfFundsUploadSpec(bag.transactionAmountData)
       );
-      const overThresholdProofSpec = getBuyOverThresholdProofOfFundsUploadSpec(
-        bag.transactionAmountData
-      );
-      const combinedSpec =
-        baseSpec || overThresholdProofSpec
-          ? {
-              files: [
-                ...(baseSpec?.files ?? []),
-                ...(overThresholdProofSpec?.files ?? []),
-              ],
-              documentTypes: [
-                ...(baseSpec?.documentTypes ?? []),
-                ...(overThresholdProofSpec?.documentTypes ?? []),
-              ],
-            }
-          : null;
       const uploaded = combinedSpec
         ? await uploadDocuments.mutateAsync({
             file: combinedSpec.files,

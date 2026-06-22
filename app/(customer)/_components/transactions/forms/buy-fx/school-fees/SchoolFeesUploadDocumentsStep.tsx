@@ -198,8 +198,26 @@ export default function SchoolFeesUploadDocumentsStep({
     form.setFieldValue("ninNumber", kyc.defaultNin);
   }, [kyc.defaultNin, initialValues?.ninNumber, form]);
 
+  useEffect(() => {
+    const nextAdmissionType = initialValues?.admissionType?.trim();
+    if (!nextAdmissionType) return;
+    setAdmissionType(nextAdmissionType);
+    if ((form.values.admissionType ?? "").trim() !== nextAdmissionType) {
+      form.setFieldValue("admissionType", nextAdmissionType);
+    }
+  }, [initialValues?.admissionType, form]);
+
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values as SchoolFeesUploadDocumentsFormData);
+    onSubmit({
+      ...values,
+      admissionType: values.admissionType?.trim() || admissionType,
+      studentName: form.values.studentName?.trim() ?? values.studentName,
+      passportDocumentNumber: form.values.passportDocumentNumber?.trim() ?? values.passportDocumentNumber,
+      passportIssueDate: form.values.passportIssueDate ?? values.passportIssueDate,
+      passportExpiryDate: form.values.passportExpiryDate ?? values.passportExpiryDate,
+      passportFile: form.values.passportFile ?? values.passportFile ?? null,
+      ninNumber: form.values.ninNumber ?? values.ninNumber,
+    } as SchoolFeesUploadDocumentsFormData);
   });
 
   const isPostgraduate = admissionType === SCHOOL_FEES_ADMISSION_UI.POSTGRADUATE;

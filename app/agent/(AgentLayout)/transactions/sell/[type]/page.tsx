@@ -31,7 +31,11 @@ import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload"
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
-import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  getDocumentUploadSpec,
+  getSellOver10kDocumentUploadSpec,
+  mergeDocumentUploadSpecs,
+} from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   buildTransactionPayload,
   toTransactionDocuments,
@@ -156,7 +160,10 @@ export default function AgentSellTransactionCreationPage() {
     };
 
     try {
-      const spec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
+      const spec = mergeDocumentUploadSpecs(
+        getDocumentUploadSpec(transactionType, bag.uploadDocumentsData),
+        getSellOver10kDocumentUploadSpec(transactionType, bag.transactionAmountData)
+      );
       const uploaded = spec
         ? await uploadDocuments.mutateAsync({
             file: spec.files,

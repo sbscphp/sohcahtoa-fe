@@ -16,6 +16,7 @@ import {
 import {
   getDocumentUploadSpec,
   getSellOver10kDocumentUploadSpec,
+  mergeDocumentUploadSpecs,
 } from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   buildTransactionPayload,
@@ -156,21 +157,10 @@ export default function SellTransactionCreationPage() {
     };
 
     try {
-      const baseSpec = getDocumentUploadSpec(transactionType, bag.uploadDocumentsData);
-      const over10kSpec = getSellOver10kDocumentUploadSpec(
-        transactionType,
-        bag.transactionAmountData
+      const combinedSpec = mergeDocumentUploadSpecs(
+        getDocumentUploadSpec(transactionType, bag.uploadDocumentsData),
+        getSellOver10kDocumentUploadSpec(transactionType, bag.transactionAmountData)
       );
-      const combinedSpec =
-        baseSpec || over10kSpec
-          ? {
-              files: [...(baseSpec?.files ?? []), ...(over10kSpec?.files ?? [])],
-              documentTypes: [
-                ...(baseSpec?.documentTypes ?? []),
-                ...(over10kSpec?.documentTypes ?? []),
-              ],
-            }
-          : null;
 
       const uploaded = combinedSpec
         ? await uploadDocuments.mutateAsync({

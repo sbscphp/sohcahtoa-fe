@@ -51,7 +51,11 @@ import {
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
-import { getDocumentUploadSpec } from "@/app/(customer)/_utils/transaction-document-upload-spec";
+import {
+  getBuyOverThresholdProofOfFundsUploadSpec,
+  getDocumentUploadSpec,
+  mergeDocumentUploadSpecs,
+} from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   getStepsForTransactionType,
   STEP_LABELS,
@@ -331,10 +335,13 @@ export default function AgentTransactionCreationPage() {
     }
 
     try {
-      const spec = getDocumentUploadSpec(
-        transactionType,
-        bag.uploadDocumentsData,
-        bag.bankDetailsData
+      const spec = mergeDocumentUploadSpecs(
+        getDocumentUploadSpec(
+          transactionType,
+          bag.uploadDocumentsData,
+          bag.bankDetailsData
+        ),
+        getBuyOverThresholdProofOfFundsUploadSpec(bag.transactionAmountData)
       );
       const uploaded = spec
         ? await uploadDocuments.mutateAsync({

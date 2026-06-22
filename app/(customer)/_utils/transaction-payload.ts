@@ -32,6 +32,12 @@ export function toTransactionDocuments(uploaded: UploadedDocumentLike[]): Transa
   }));
 }
 
+function pickOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
 /** Maps international bank-details step into API `beneficiaryDetails`. */
 export function beneficiaryDetailsFromBankForm(
   bank: Record<string, unknown> | null | undefined
@@ -301,18 +307,15 @@ function buildSchoolFeesPayload(
     amount: getAmount(amount),
     purpose: getCustomerFxPurposeForPayload("SCHOOL_FEES", "BUY"),
     destinationCountry: "United Kingdom",
-    studentName: typeof upload?.studentName === "string" ? upload.studentName : undefined,
-    formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
+    studentName: pickOptionalString(upload?.studentName),
+    formAId: pickOptionalString(upload?.formAId),
     admissionType: mapUiAdmissionTypeToApi(
       typeof upload?.admissionType === "string" ? upload.admissionType : undefined,
     ),
-    nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
-    passportDocumentNumber:
-      typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
-    passportIssueDate:
-      typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,
-    passportExpiryDate:
-      typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
+    nin: pickOptionalString(upload?.ninNumber),
+    passportDocumentNumber: pickOptionalString(upload?.passportDocumentNumber),
+    passportIssueDate: pickOptionalString(upload?.passportIssueDate),
+    passportExpiryDate: pickOptionalString(upload?.passportExpiryDate),
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
     documents,
   };

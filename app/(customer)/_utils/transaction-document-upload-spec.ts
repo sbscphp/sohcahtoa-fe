@@ -8,8 +8,14 @@ export interface DocumentUploadSpec {
 
 type UploadStepData = Record<string, unknown>;
 
+export function isUploadableFile(value: unknown): value is File {
+  if (typeof File !== "undefined" && value instanceof File) return true;
+  if (value instanceof Blob && typeof (value as File).name === "string") return true;
+  return false;
+}
+
 function hasFile(value: unknown): value is File {
-  return value instanceof File;
+  return isUploadableFile(value);
 }
 
 function collectFileAndType(
@@ -113,7 +119,7 @@ function toTextFile(name: string, content: string): File {
 }
 
 function hasFileArray(value: unknown): value is File[] {
-  return Array.isArray(value) && value.every((v) => v instanceof File);
+  return Array.isArray(value) && value.length > 0 && value.every((v) => isUploadableFile(v));
 }
 
 function isSellFxType(transactionType: TransactionType): boolean {
@@ -139,7 +145,9 @@ function readSignature(data: AmountStepData): {
     return {
       mode,
       initials: "",
-      file: data.sourceOfFundsSignatureFile instanceof File ? data.sourceOfFundsSignatureFile : null,
+      file: isUploadableFile(data.sourceOfFundsSignatureFile)
+        ? data.sourceOfFundsSignatureFile
+        : null,
     };
   }
   const initials =
@@ -231,6 +239,23 @@ export function getBuyOverThresholdProofOfFundsUploadSpec(
 
   return {
     files: [...proofFilesRaw],
-    documentTypes: proofFilesRaw.map(() => "PROOF_OF_FUNDS"),
+    documentTypes: proofFilesRaw.map(() => "PROOF_OF_FUNDS" as const),
   };
+}
+
+/** Combines multiple upload specs (e.g. step documents + over-threshold proof/signature). */
+export function mergeDocumentUploadSpecs(
+  ...specs: Array<DocumentUploadSpec | null | undefined>
+): DocumentUploadSpec | null {
+  const files: File[] = [];
+  const documentTypes: DocumentUploadSpec["documentTypes"] = [];
+
+  for (const spec of specs) {
+    if (!spec) continue;
+    files.push(...spec.files);
+    documentTypes.push(...spec.documentTypes);
+  }
+
+  if (files.length === 0) return null;
+  return { files, documentTypes };
 }
