@@ -67,7 +67,7 @@ export default function ResidentTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
-  const { displayRate, recalculate } = useTransactionRateCalculator({
+  const { displayRate, recalculate, hasValidRate, isCalculating } = useTransactionRateCalculator({
     mode: "sell",
     // Re-map sell form to calculator shape:
     // source amount/currency = sendAmount/sendCurrency
@@ -91,6 +91,12 @@ export default function ResidentTransactionAmountStep({
     form.values.sendAmount,
     form.values.sendCurrency
   );
+
+  const nextDisabled =
+    !form.values.sendAmount?.trim() ||
+    !form.values.receiveAmount?.trim() ||
+    !hasValidRate ||
+    isCalculating;
 
   const validateOver10kRequirements = () => {
     if (!over10k) return true;
@@ -268,6 +274,7 @@ export default function ResidentTransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

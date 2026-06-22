@@ -34,6 +34,7 @@ export default function ViewTransactionPage() {
     canActOnTransactionFooter,
     approvalState,
     approvalProcessName,
+    approvalType,
     isLoading,
     isError,
   } = useTransactionDetails(transactionId, { adminUserId: adminUser?.id });
@@ -65,6 +66,7 @@ export default function ViewTransactionPage() {
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
+          approvalType={approvalType}
         />
       )}
       {activeTab === "receipt" && (
@@ -79,6 +81,7 @@ export default function ViewTransactionPage() {
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
+          approvalType={approvalType}
         />
       )}
       {activeTab === "transaction-settlement" && (
@@ -93,6 +96,7 @@ export default function ViewTransactionPage() {
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
+          approvalType={approvalType}
         />
       )}
     </div>

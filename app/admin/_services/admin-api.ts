@@ -160,10 +160,15 @@ export interface AgentTransactionDetails {
 export interface AgentTransactionRequiredDocuments {
   bvn?: string | null;
   nin?: string | null;
+  tin?: string | null;
   taxClearanceNumber?: string | null;
   documentsCount?: number | null;
+  passport?: string | null;
   visa?: string | null;
   returnTicket?: string | null;
+  schoolAdmission?: string | null;
+  invoice?: string | null;
+  receipt?: string | null;
 }
 
 export interface AgentTransactionPaymentDetails {
@@ -1159,6 +1164,7 @@ export interface AdminTransactionApprovalWorkflowStage {
 
 export interface AdminTransactionApprovalProcess {
   name?: string;
+  approvalType?: string | null;
   workflowStages?: AdminTransactionApprovalWorkflowStage[] | null;
   pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;

@@ -19,3 +19,5 @@ export function formatExchangeRateLabel(
 ): string {
   return `${fromCurrency}1 - ${rate} ${toCurrency}`;
 }
+
+export const RATE_UNAVAILABLE_LABEL = "Rate unavailable";

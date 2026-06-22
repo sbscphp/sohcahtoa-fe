@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Avatar,
   Button,
@@ -24,6 +24,7 @@ import {
 import { getCurrencyFlagUrl } from "@/app/admin/_lib/currency";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { getAgentRequiredDocumentDisplayItems } from "@/app/admin/_utils/agent-transaction-required-documents";
 
 const PLACEHOLDER = "—";
 
@@ -87,6 +88,10 @@ export default function AgentTransactionDetailsPage() {
   const txDetails = transaction?.transactionDetails;
   const agentDetails = transaction?.agentDetails;
   const requiredDocs = transaction?.requiredDocuments;
+  const { items: requiredDocItems, uploadedDocumentsCount } = useMemo(
+    () => getAgentRequiredDocumentDisplayItems(requiredDocs),
+    [requiredDocs],
+  );
   const paymentDetails = transaction?.paymentDetails;
   const settlement = transaction?.transactionSettlement;
 
@@ -293,62 +298,38 @@ export default function AgentTransactionDetailsPage() {
             <Text fw={600} className="text-primary-400! mb-5!">
               Required Documents
             </Text>
-            <div className="grid gap-6 md:grid-cols-4">
-              <DetailItem
-                label="BVN"
-                value={requiredDocs?.bvn ?? PLACEHOLDER}
-              />
-              <DetailItem
-                label="NIN"
-                value={requiredDocs?.nin ?? PLACEHOLDER}
-              />
-              <DetailItem
-                label="Tax Clearance Number"
-                value={requiredDocs?.taxClearanceNumber ?? PLACEHOLDER}
-              />
-              <DetailItem
-                label="Documents Count"
-                value={
-                  requiredDocs?.documentsCount != null
-                    ? String(requiredDocs.documentsCount)
-                    : PLACEHOLDER
-                }
-              />
-              <DetailItem
-                label="Visa"
-                value={
-                  requiredDocs?.visa ? (
-                    <a
-                      href={requiredDocs.visa}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[#DD4F05] underline"
-                    >
-                      View Document
-                    </a>
-                  ) : (
-                    PLACEHOLDER
-                  )
-                }
-              />
-              <DetailItem
-                label="Return Ticket"
-                value={
-                  requiredDocs?.returnTicket ? (
-                    <a
-                      href={requiredDocs.returnTicket}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[#DD4F05] underline"
-                    >
-                      View Document
-                    </a>
-                  ) : (
-                    PLACEHOLDER
-                  )
-                }
-              />
-            </div>
+            {requiredDocItems.length === 0 && uploadedDocumentsCount === 0 ? (
+              <Text size="sm" className="text-body-text-200!">
+                No required documents available.
+              </Text>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-4">
+                <DetailItem
+                  label="Uploaded Documents"
+                  value={String(uploadedDocumentsCount)}
+                />
+                {requiredDocItems.map((item) => (
+                  <DetailItem
+                    key={item.label}
+                    label={item.label}
+                    value={
+                      item.kind === "link" ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#DD4F05] underline"
+                        >
+                          View Document
+                        </a>
+                      ) : (
+                        item.value
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Payment Details */}

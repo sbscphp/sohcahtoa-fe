@@ -25,9 +25,10 @@ import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminApi } from "@/app/admin/_services/admin-api";
-import type {
-  TransactionActionDocumentViewModel,
-  TransactionWorkflowHistoryItemViewModel,
+import {
+  isRefundApprovalType,
+  type TransactionActionDocumentViewModel,
+  type TransactionWorkflowHistoryItemViewModel,
 } from "./hooks/useTransactionDetails";
 import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
 import React, { useRef, useEffect } from "react";
@@ -48,6 +49,7 @@ interface TakeActionOverlayProps {
   isApprovalOfficer?: boolean;
   approvalState?: string;
   approvalProcessName?: string;
+  approvalType?: string;
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -96,7 +98,9 @@ export default function TakeActionOverlay({
   isApprovalOfficer = false,
   approvalState,
   approvalProcessName,
+  approvalType,
 }: TakeActionOverlayProps) {
+  const isRefundWorkflow = isRefundApprovalType(approvalType);
   // const router = useRouter();
   const hideTransactionFooter =
     !isTransationActionable(transactionStatusLabel) ||
@@ -437,6 +441,11 @@ export default function TakeActionOverlay({
                 <AdminTabButton value="overview">
                   Workflow Line
                 </AdminTabButton>
+                {/* {!isRefundWorkflow ? (
+                  <AdminTabButton value="receipt">
+                    Documentation
+                  </AdminTabButton>
+                ) : null} */}
                 <AdminTabButton value="receipt">
                   Documentation
                 </AdminTabButton>
@@ -756,7 +765,7 @@ export default function TakeActionOverlay({
                   className="font-medium! text-sm!"
                   onClick={openTransactionCompleteReview}
                 >
-                  Complete Review
+                  {isRefundWorkflow ? "Complete Refund Review" : "Complete Review"}
                 </Button>
                 <Popover
                   width={360}
@@ -900,9 +909,15 @@ export default function TakeActionOverlay({
       <ApprovalActionConfirmModal
         opened={transactionCompleteReviewOpen}
         onClose={closeTransactionCompleteReview}
-        title="Complete Approval ?"
-        message="You are about to mark this application as fully approved. Once confirmed, the process will be completed, and no further reviews or changes can be made"
-        primaryButtonText="Yes, Complete Approval"
+        title={isRefundWorkflow ? "Complete Refund Approval?" : "Complete Approval ?"}
+        message={
+          isRefundWorkflow
+            ? "You are about to mark this refund request as fully approved. Once confirmed, the refund process will be completed, and no further reviews or changes can be made."
+            : "You are about to mark this application as fully approved. Once confirmed, the process will be completed, and no further reviews or changes can be made"
+        }
+        primaryButtonText={
+          isRefundWorkflow ? "Yes, Complete Refund Approval" : "Yes, Complete Approval"
+        }
         secondaryButtonText="No, Close"
         onConfirm={submitTransactionCompleteReview}
         isLoading={completeReviewMutation.isPending}
@@ -982,8 +997,12 @@ export default function TakeActionOverlay({
       <SuccessModal
         opened={transactionCompleteReviewSuccessOpen}
         onClose={() => setTransactionCompleteReviewSuccessOpen(false)}
-        title="Action Approval Completed"
-        message="The request/application has been successfully approved and the process is now complete"
+        title={isRefundWorkflow ? "Refund Approval Completed" : "Action Approval Completed"}
+        message={
+          isRefundWorkflow
+            ? "The refund request has been successfully approved and the process is now complete"
+            : "The request/application has been successfully approved and the process is now complete"
+        }
         // primaryButtonText="View More Action Approval"
         // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"

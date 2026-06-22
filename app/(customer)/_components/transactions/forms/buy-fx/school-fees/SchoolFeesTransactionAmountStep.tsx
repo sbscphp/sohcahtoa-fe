@@ -56,7 +56,7 @@ export default function SchoolFeesTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
-  const { displayRate, recalculate } = useTransactionRateCalculator({
+  const { displayRate, recalculate, hasValidRate, isCalculating } = useTransactionRateCalculator({
     mode: "buy",
     getValues: () => form.values,
     setSendAmount: (value) => form.setFieldValue("sendAmount", value),
@@ -75,7 +75,9 @@ export default function SchoolFeesTransactionAmountStep({
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
-    (needsProofOfFund && proofOfFundsFiles.length === 0);
+    (needsProofOfFund && proofOfFundsFiles.length === 0) ||
+    !hasValidRate ||
+    isCalculating;
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit({

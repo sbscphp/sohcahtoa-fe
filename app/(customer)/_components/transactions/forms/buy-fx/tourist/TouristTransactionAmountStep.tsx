@@ -55,13 +55,19 @@ export default function TouristTransactionAmountStep({
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
-  const { displayRate, recalculate } = useTransactionRateCalculator({
+  const { displayRate, recalculate, hasValidRate, isCalculating } = useTransactionRateCalculator({
     mode: "buy",
     getValues: () => form.values,
     setSendAmount: (value) => form.setFieldValue("sendAmount", value),
     setExchangeRateLabel: (label) => form.setFieldValue("exchangeRate", label),
     defaultLabel: exchangeRate,
   });
+
+  const nextDisabled =
+    !form.values.receiveAmount?.trim() ||
+    !form.values.sendAmount?.trim() ||
+    !hasValidRate ||
+    isCalculating;
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit({
@@ -179,6 +185,7 @@ export default function TouristTransactionAmountStep({
           size="md"
           radius="xl"
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
+          disabled={nextDisabled}
         >
           Next
         </Button>

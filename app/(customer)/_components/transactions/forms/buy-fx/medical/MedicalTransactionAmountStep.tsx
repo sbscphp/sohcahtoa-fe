@@ -77,7 +77,7 @@ export default function MedicalTransactionAmountStep({
     validate: zod4Resolver(transactionAmountSchema),
   });
 
-  const { displayRate, recalculate } = useTransactionRateCalculator({
+  const { displayRate, recalculate, hasValidRate, isCalculating } = useTransactionRateCalculator({
     mode: "buy",
     getValues: () => form.values,
     setSendAmount: (value) => form.setFieldValue("sendAmount", value),
@@ -88,7 +88,9 @@ export default function MedicalTransactionAmountStep({
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
-    receiveAmountOverMax(form.values.receiveAmount);
+    receiveAmountOverMax(form.values.receiveAmount) ||
+    !hasValidRate ||
+    isCalculating;
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit({

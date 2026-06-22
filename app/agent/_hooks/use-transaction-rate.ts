@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { notifications } from "@mantine/notifications";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import type { TransactionRateMode } from "@/app/_lib/api/types";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import {
   formatExchangeRateLabel,
   getActiveRate,
+  RATE_UNAVAILABLE_LABEL,
 } from "@/app/(customer)/_lib/transaction-rate";
+import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 
 export interface AgentTransactionRateFormSlice {
   receiveAmount: string;
@@ -26,6 +29,7 @@ interface UseAgentTransactionRateCalculatorOptions {
   setExchangeRateLabel?: (label: string) => void;
   defaultLabel?: string;
   skipInitialFetch?: boolean;
+  showErrorToast?: boolean;
 }
 
 function parseAmountInput(raw: string | undefined): number {
@@ -46,8 +50,11 @@ export function useAgentTransactionRateCalculator({
   setExchangeRateLabel,
   defaultLabel = "USD1 - NGN1500",
   skipInitialFetch = false,
+  showErrorToast = true,
 }: UseAgentTransactionRateCalculatorOptions) {
   const [displayRate, setDisplayRate] = useState(defaultLabel);
+  const [hasValidRate, setHasValidRate] = useState(false);
+  const [rateError, setRateError] = useState<string | null>(null);
   const { mutateAsync, isPending } = useCreateData(agentApi.rates.calculate);
 
   const getValuesRef = useRef(getValues);
@@ -55,13 +62,22 @@ export function useAgentTransactionRateCalculator({
   const setExchangeRateLabelRef = useRef(setExchangeRateLabel);
   const modeRef = useRef(mode);
   const requestSeqRef = useRef(0);
+  const showErrorToastRef = useRef(showErrorToast);
 
   useLayoutEffect(() => {
     getValuesRef.current = getValues;
     setSendAmountRef.current = setSendAmount;
     setExchangeRateLabelRef.current = setExchangeRateLabel;
     modeRef.current = mode;
-  }, [getValues, setSendAmount, setExchangeRateLabel, mode]);
+    showErrorToastRef.current = showErrorToast;
+  }, [getValues, setSendAmount, setExchangeRateLabel, mode, showErrorToast]);
+
+  const clearStaleRate = useCallback(() => {
+    setHasValidRate(false);
+    setDisplayRate(RATE_UNAVAILABLE_LABEL);
+    setSendAmountRef.current("");
+    setExchangeRateLabelRef.current?.("");
+  }, []);
 
   const recalculate = useCallback(
     async (
@@ -96,13 +112,31 @@ export function useAgentTransactionRateCalculator({
           mode: rateMode,
         });
 
-        if (requestSeq !== requestSeqRef.current) return;
+        if (requestSeq !== requestSeqRef.current) return false;
 
         const data = response.data;
-        if (!data) return;
+        if (!data) {
+          clearStaleRate();
+          setRateError("Could not calculate exchange rate for this currency.");
+          return false;
+        }
 
         const converted = Number(data.convertedAmount);
         const activeRate = getActiveRate(data, rateMode);
+
+        if (!Number.isFinite(activeRate)) {
+          clearStaleRate();
+          const message = "No exchange rate is configured for this currency pair.";
+          setRateError(message);
+          if (showErrorToastRef.current) {
+            notifications.show({
+              title: "Exchange rate unavailable",
+              message,
+              color: "red",
+            });
+          }
+          return false;
+        }
 
         if (hasValidAmount && Number.isFinite(converted)) {
           setSendAmountRef.current(String(converted));
@@ -110,16 +144,32 @@ export function useAgentTransactionRateCalculator({
           setSendAmountRef.current("");
         }
 
-        if (Number.isFinite(activeRate)) {
-          const label = formatExchangeRateLabel(fromCurrency, toCurrency, activeRate);
-          setDisplayRate(label);
-          setExchangeRateLabelRef.current?.(label);
+        const label = formatExchangeRateLabel(fromCurrency, toCurrency, activeRate);
+        setDisplayRate(label);
+        setExchangeRateLabelRef.current?.(label);
+        setHasValidRate(true);
+        setRateError(null);
+        return true;
+      } catch (error) {
+        if (requestSeq !== requestSeqRef.current) return false;
+
+        clearStaleRate();
+        const message = getAgentApiErrorMessage(
+          error,
+          "Could not calculate exchange rate for this currency.",
+        );
+        setRateError(message);
+        if (showErrorToastRef.current) {
+          notifications.show({
+            title: "Exchange rate unavailable",
+            message,
+            color: "red",
+          });
         }
-      } catch {
-        // Network / API error — keep previous displayRate
+        return false;
       }
     },
-    [mutateAsync]
+    [mutateAsync, clearStaleRate]
   );
 
   const didInitialFetch = useRef(false);
@@ -133,5 +183,7 @@ export function useAgentTransactionRateCalculator({
     displayRate,
     recalculate,
     isCalculating: isPending,
+    hasValidRate,
+    rateError,
   };
 }

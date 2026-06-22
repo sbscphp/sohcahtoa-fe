@@ -33,6 +33,7 @@ interface TakeActionButtonProps {
   isApprovalOfficer?: boolean;
   approvalState?: string;
   approvalProcessName?: string;
+  approvalType?: string;
 }
 
 export default function TakeActionButton({
@@ -51,6 +52,7 @@ export default function TakeActionButton({
   isApprovalOfficer = false,
   approvalState,
   approvalProcessName,
+  approvalType,
 }: TakeActionButtonProps) {
   const [opened, setOpened] = useState(false);
 
@@ -87,6 +89,7 @@ export default function TakeActionButton({
         isApprovalOfficer={isApprovalOfficer}
         approvalState={approvalState}
         approvalProcessName={approvalProcessName}
+        approvalType={approvalType}
       />
     </>
   );
