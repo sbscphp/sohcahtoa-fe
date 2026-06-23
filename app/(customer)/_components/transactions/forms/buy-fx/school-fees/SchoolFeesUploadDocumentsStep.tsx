@@ -204,8 +204,13 @@ export type SchoolFeesUploadDocumentsFormData = z.infer<typeof uploadDocumentsSc
 
 type SchoolFeesUploadDocumentsFormValues = z.infer<typeof uploadDocumentsBaseSchema>;
 
+/** Saved drafts may still use `passportFile` before student passport rename. */
+type SchoolFeesUploadDocumentsInitialValues = Partial<SchoolFeesUploadDocumentsFormValues> & {
+  passportFile?: FileWithPath | null;
+};
+
 interface SchoolFeesUploadDocumentsStepProps {
-  initialValues?: Partial<SchoolFeesUploadDocumentsFormValues>;
+  initialValues?: SchoolFeesUploadDocumentsInitialValues;
   onSubmit: (data: SchoolFeesUploadDocumentsFormData) => void;
   onBack?: () => void;
   lockKycPrefill?: boolean;
