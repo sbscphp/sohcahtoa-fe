@@ -143,6 +143,14 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     passportExpiryDate: stepData?.passportExpiryDate ?? api.personalInfo?.passportExpiryDate ?? "",
     tinNumber: stepData?.tinNumber ?? api.personalInfo?.tinNumber ?? "",
     studentName: stepData?.studentName ?? api.personalInfo?.studentName ?? "",
+    studentPassportDocumentNumber:
+      stepData?.studentPassportDocumentNumber ??
+      api.personalInfo?.studentPassportDocumentNumber ??
+      "",
+    studentPassportIssueDate:
+      stepData?.studentPassportIssueDate ?? api.personalInfo?.studentPassportIssueDate ?? "",
+    studentPassportExpiryDate:
+      stepData?.studentPassportExpiryDate ?? api.personalInfo?.studentPassportExpiryDate ?? "",
     workPermitNumber: stepData?.workPermitNumber ?? api.personalInfo?.workPermitNumber ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: docs

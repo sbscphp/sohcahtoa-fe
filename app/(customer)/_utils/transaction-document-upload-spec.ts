@@ -71,7 +71,10 @@ export function getDocumentUploadSpec(
       break;
     case "SCHOOL_FEES":
       // Buy FX – School Fees: INVOICE = school invoice (upload step); BANK_VERIFICATION = optional bank-step invoice
-      collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
+      collectFileAndType(uploadStepData, "studentPassportFile", "STUDENT_PASSPORT", spec);
+      if (!spec.documentTypes.includes("STUDENT_PASSPORT")) {
+        collectFileAndType(uploadStepData, "passportFile", "STUDENT_PASSPORT", spec);
+      }
       collectFileAndType(uploadStepData, "evidenceOfAdmissionFile", "SCHOOL_ADMISSION", spec);
       collectFileAndType(uploadStepData, "schoolInvoiceFile", "INVOICE", spec);
       collectFileAndType(uploadStepData, "statementOfResultFile", "STATEMENT_OF_RESULT", spec);

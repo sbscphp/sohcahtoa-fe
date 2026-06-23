@@ -667,6 +667,9 @@ export interface CreateTransactionRequest {
   purpose: string;
   destinationCountry: string;
   studentName?: string;
+  studentPassportDocumentNumber?: string;
+  studentPassportIssueDate?: string;
+  studentPassportExpiryDate?: string;
   /** Optional: when an agent creates a transaction on behalf of a customer. */
   customerId?: string;
   bvn?: string;
@@ -849,6 +852,9 @@ export interface TransactionDetailStepData {
   passportExpiryDate: string | null;
   tinNumber: string | null;
   studentName: string | null;
+  studentPassportDocumentNumber: string | null;
+  studentPassportIssueDate: string | null;
+  studentPassportExpiryDate: string | null;
   workPermitNumber: string | null;
 }
 
@@ -865,6 +871,9 @@ export interface TransactionDetailStep {
   passportExpiryDate: string | null;
   tinNumber: string | null;
   studentName: string | null;
+  studentPassportDocumentNumber: string | null;
+  studentPassportIssueDate: string | null;
+  studentPassportExpiryDate: string | null;
   workPermitNumber: string | null;
 }
 
@@ -969,6 +978,9 @@ export interface TransactionDetailData {
     passportExpiryDate: string | null;
     tinNumber: string | null;
     studentName: string | null;
+    studentPassportDocumentNumber: string | null;
+    studentPassportIssueDate: string | null;
+    studentPassportExpiryDate: string | null;
     workPermitNumber: string | null;
   } | null;
   beneficiaryDetails?: Record<string, unknown> | null;

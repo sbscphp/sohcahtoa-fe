@@ -308,6 +308,9 @@ function buildSchoolFeesPayload(
     purpose: getCustomerFxPurposeForPayload("SCHOOL_FEES", "BUY"),
     destinationCountry: "United Kingdom",
     studentName: pickOptionalString(upload?.studentName),
+    studentPassportDocumentNumber: pickOptionalString(upload?.studentPassportDocumentNumber),
+    studentPassportIssueDate: pickOptionalString(upload?.studentPassportIssueDate),
+    studentPassportExpiryDate: pickOptionalString(upload?.studentPassportExpiryDate),
     formAId: pickOptionalString(upload?.formAId),
     admissionType: mapUiAdmissionTypeToApi(
       typeof upload?.admissionType === "string" ? upload.admissionType : undefined,

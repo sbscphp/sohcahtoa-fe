@@ -8,17 +8,17 @@ interface PostgraduateFormProps {
   schoolInvoiceFile: FileWithPath | null;
   statementOfResultFile: FileWithPath | null;
   firstDegreeCertificateFile: FileWithPath | null;
-  passportFile: FileWithPath | null;
+  studentPassportFile: FileWithPath | null;
   onEvidenceOfAdmissionChange: (file: FileWithPath | null) => void;
   onSchoolInvoiceChange: (file: FileWithPath | null) => void;
   onStatementOfResultChange: (file: FileWithPath | null) => void;
   onFirstDegreeCertificateChange: (file: FileWithPath | null) => void;
-  onPassportChange: (file: FileWithPath | null) => void;
+  onStudentPassportChange: (file: FileWithPath | null) => void;
   evidenceOfAdmissionError?: string;
   schoolInvoiceError?: string;
   statementOfResultError?: string;
   firstDegreeCertificateError?: string;
-  passportError?: string;
+  studentPassportError?: string;
 }
 
 export default function PostgraduateForm({
@@ -26,17 +26,17 @@ export default function PostgraduateForm({
   schoolInvoiceFile,
   statementOfResultFile,
   firstDegreeCertificateFile,
-  passportFile,
+  studentPassportFile,
   onEvidenceOfAdmissionChange,
   onSchoolInvoiceChange,
   onStatementOfResultChange,
   onFirstDegreeCertificateChange,
-  onPassportChange,
+  onStudentPassportChange,
   evidenceOfAdmissionError,
   schoolInvoiceError,
   statementOfResultError,
   firstDegreeCertificateError,
-  passportError,
+  studentPassportError,
 }: Readonly<PostgraduateFormProps>) {
   return (
     <>
@@ -73,11 +73,11 @@ export default function PostgraduateForm({
       />
 
       <TransactionFileUploadInput
-        label="Upload International Passport"
+        label="Student International Passport (scan)"
         required
-        value={passportFile}
-        onChange={onPassportChange}
-        error={passportError}
+        value={studentPassportFile}
+        onChange={onStudentPassportChange}
+        error={studentPassportError}
       />
     </>
   );

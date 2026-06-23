@@ -12,6 +12,7 @@ export function validateRequiredDocuments(
     nin?: string;
     formAId?: string;
     passportFile?: File | null;
+    studentPassportFile?: File | null;
     visaFile?: File | null;
     returnTicketFile?: File | null;
     formAFile?: File | null;
@@ -40,6 +41,9 @@ export function validateRequiredDocuments(
         break;
       case "PASSPORT":
         isProvided = !!providedDocuments.passportFile;
+        break;
+      case "STUDENT_PASSPORT":
+        isProvided = !!providedDocuments.studentPassportFile;
         break;
       case "VISA":
         isProvided = !!providedDocuments.visaFile;
@@ -89,6 +93,7 @@ export function getDocumentName(documentType: DocumentType): string {
     BVN: "BVN",
     NIN: "NIN",
     PASSPORT: "International Passport",
+    STUDENT_PASSPORT: "Student International Passport",
     VISA: "Valid Visa",
     RETURN_TICKET: "Return Ticket",
     FORM_A_DOCUMENT: "Form A Document",

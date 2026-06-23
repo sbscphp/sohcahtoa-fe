@@ -13,6 +13,9 @@ export interface RequiredDocumentsData {
   passportExpiryDate?: string;
   tinNumber?: string;
   studentName?: string;
+  studentPassportDocumentNumber?: string;
+  studentPassportIssueDate?: string;
+  studentPassportExpiryDate?: string;
   workPermitNumber?: string;
   formAId: string;
   /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
@@ -37,6 +40,9 @@ interface RequiredDocumentsSectionProps {
 function hasRequiredDocumentsContent(data: RequiredDocumentsData): boolean {
   const textFields = [
     data.studentName,
+    data.studentPassportDocumentNumber,
+    data.studentPassportIssueDate,
+    data.studentPassportExpiryDate,
     data.bvn,
     data.nin,
     data.tin,
@@ -90,6 +96,21 @@ export default function RequiredDocumentsSection({
   return (
     <SectionBlock title="Required Documents">
       <LabelText hideWhenEmpty label="Student Name" text={data.studentName} />
+      <LabelText
+        hideWhenEmpty
+        label="Student International Passport Number"
+        text={data.studentPassportDocumentNumber}
+      />
+      <LabelText
+        hideWhenEmpty
+        label="Student Passport Issued Date"
+        text={data.studentPassportIssueDate}
+      />
+      <LabelText
+        hideWhenEmpty
+        label="Student Passport Expiry Date"
+        text={data.studentPassportExpiryDate}
+      />
       <LabelText hideWhenEmpty label="BVN" text={data.bvn} />
       <LabelText hideWhenEmpty label="NIN" text={data.nin} />
       <LabelText hideWhenEmpty label="TIN Number" text={tinDisplay} />
@@ -97,11 +118,11 @@ export default function RequiredDocumentsSection({
       <LabelText hideWhenEmpty label="Work Permit Number" text={data.workPermitNumber} />
       <LabelText
         hideWhenEmpty
-        label="International Passport Number"
+        label="Applicant International Passport Number"
         text={data.passportDocumentNumber}
       />
-      <LabelText hideWhenEmpty label="Passport Issued Date" text={data.passportIssueDate} />
-      <LabelText hideWhenEmpty label="Passport Expiry Date" text={data.passportExpiryDate} />
+      <LabelText hideWhenEmpty label="Applicant Passport Issued Date" text={data.passportIssueDate} />
+      <LabelText hideWhenEmpty label="Applicant Passport Expiry Date" text={data.passportExpiryDate} />
 
       {data.uploadedFiles.map((file) => (
         <LabelText

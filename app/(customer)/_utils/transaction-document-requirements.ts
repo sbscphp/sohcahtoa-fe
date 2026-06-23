@@ -15,6 +15,7 @@ export type DocumentType =
   | "BVN"
   | "NIN"
   | "PASSPORT"
+  | "STUDENT_PASSPORT"
   | "VISA"
   | "RETURN_TICKET"
   | "FORM_A_DOCUMENT"
@@ -52,7 +53,7 @@ export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, Document
   ],
   // Buy FX – School Fees
   SCHOOL_FEES: [
-    "PASSPORT",
+    "STUDENT_PASSPORT",
     "SCHOOL_ADMISSION",
     "INVOICE",
     "STATEMENT_OF_RESULT",

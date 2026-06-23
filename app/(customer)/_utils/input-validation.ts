@@ -30,8 +30,11 @@ function toUtcDate(dateString: string) {
 
 export function validatePassportDates(
   data: { passportIssueDate?: string; passportExpiryDate?: string },
-  ctx: z.RefinementCtx
+  ctx: z.RefinementCtx,
+  paths: { issueDate?: string; expiryDate?: string } = {}
 ) {
+  const issuePath = paths.issueDate ?? "passportIssueDate";
+  const expiryPath = paths.expiryDate ?? "passportExpiryDate";
   const issue = data.passportIssueDate?.trim() ?? "";
   const expiry = data.passportExpiryDate?.trim() ?? "";
   if (!issue || !expiry) return;
@@ -44,7 +47,7 @@ export function validatePassportDates(
   if (Number.isNaN(issueDate.getTime())) {
     ctx.addIssue({
       code: "custom",
-      path: ["passportIssueDate"],
+      path: [issuePath],
       message: "Passport Issued Date is invalid",
     });
   }
@@ -52,7 +55,7 @@ export function validatePassportDates(
   if (Number.isNaN(expiryDate.getTime())) {
     ctx.addIssue({
       code: "custom",
-      path: ["passportExpiryDate"],
+      path: [expiryPath],
       message: "Passport Expiry Date is invalid",
     });
   }
@@ -62,7 +65,7 @@ export function validatePassportDates(
   if (issueDate > today) {
     ctx.addIssue({
       code: "custom",
-      path: ["passportIssueDate"],
+      path: [issuePath],
       message: "Passport Issued Date cannot be in the future",
     });
   }
@@ -70,7 +73,7 @@ export function validatePassportDates(
   if (expiryDate <= today) {
     ctx.addIssue({
       code: "custom",
-      path: ["passportExpiryDate"],
+      path: [expiryPath],
       message: "Passport Expiry Date must be in the future",
     });
   }
@@ -78,7 +81,7 @@ export function validatePassportDates(
   if (expiryDate <= issueDate) {
     ctx.addIssue({
       code: "custom",
-      path: ["passportExpiryDate"],
+      path: [expiryPath],
       message: "Passport Expiry Date must be after Passport Issued Date",
     });
   }

@@ -38,7 +38,8 @@ export default function SchoolFeesKycFields({
   passportExpiryDateError,
 }: Readonly<SchoolFeesKycFieldsProps>) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-xl border border-[#E1E0E0] bg-white p-4">
+      <p className="text-sm font-medium text-[#4D4B4B]">Applicant details (parent/guardian)</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput
           label="NIN"
@@ -57,7 +58,7 @@ export default function SchoolFeesKycFields({
           error={ninError}
         />
         <TextInput
-          label="International Passport Number"
+          label="Applicant International Passport Number"
           required
           size="md"
           placeholder="Up to 9 letters and numbers (e.g. A12345678)"
@@ -77,7 +78,7 @@ export default function SchoolFeesKycFields({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DateInput
           placeholder="Select"
-          label="Passport Issued Date"
+          label="Applicant Passport Issued Date"
           required
           size="md"
           rightSectionPointerEvents="all"
@@ -90,7 +91,7 @@ export default function SchoolFeesKycFields({
         />
         <DateInput
           placeholder="Select"
-          label="Passport Expiry Date"
+          label="Applicant Passport Expiry Date"
           required
           size="md"
           minDate={new Date()}

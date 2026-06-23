@@ -24,9 +24,55 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import PostgraduateForm from "./components/PostgraduateForm";
 import SchoolFeesKycFields from "./components/SchoolFeesKycFields";
+import SchoolFeesStudentPassportFields from "./components/SchoolFeesStudentPassportFields";
 import UndergraduateForm, {
   OTHER_ADMISSION_DOCUMENT_LABELS,
 } from "./components/UndergraduateForm";
+
+function addSchoolFeesStudentPassportIssues(
+  data: {
+    studentPassportDocumentNumber?: string;
+    studentPassportIssueDate?: string;
+    studentPassportExpiryDate?: string;
+  },
+  ctx: z.RefinementCtx
+) {
+  const passportResult = passportNumberSchema.safeParse(
+    (data.studentPassportDocumentNumber ?? "").toString().trim()
+  );
+  if (!passportResult.success) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["studentPassportDocumentNumber"],
+      message:
+        passportResult.error.issues[0]?.message ??
+        "Student International Passport Number is required",
+    });
+  }
+
+  const requireDate = (
+    path: "studentPassportIssueDate" | "studentPassportExpiryDate",
+    message: string
+  ) => {
+    if (!(data[path] ?? "").toString().trim()) {
+      ctx.addIssue({ code: "custom", path: [path], message });
+    }
+  };
+
+  requireDate("studentPassportIssueDate", "Student Passport Issued Date is required");
+  requireDate("studentPassportExpiryDate", "Student Passport Expiry Date is required");
+  validatePassportDates(
+    {
+      passportIssueDate: (data.studentPassportIssueDate ?? "").toString(),
+      passportExpiryDate: (data.studentPassportExpiryDate ?? "").toString(),
+    },
+    ctx,
+    {
+      issueDate: "studentPassportIssueDate",
+      expiryDate: "studentPassportExpiryDate",
+    }
+  );
+}
 
 function addSchoolFeesKycIssues(
   data: {
@@ -55,7 +101,7 @@ function addSchoolFeesKycIssues(
       path: ["passportDocumentNumber"],
       message:
         passportResult.error.issues[0]?.message ??
-        "International Passport Number is required",
+        "Applicant International Passport Number is required",
     });
   }
 
@@ -65,8 +111,8 @@ function addSchoolFeesKycIssues(
     }
   };
 
-  requireDate("passportIssueDate", "Passport Issued Date is required");
-  requireDate("passportExpiryDate", "Passport Expiry Date is required");
+  requireDate("passportIssueDate", "Applicant Passport Issued Date is required");
+  requireDate("passportExpiryDate", "Applicant Passport Expiry Date is required");
   validatePassportDates(
     {
       passportIssueDate: (data.passportIssueDate ?? "").toString(),
@@ -85,7 +131,7 @@ function requireUndergraduateStyleFiles(
     options?.enrollmentLabel ?? "Evidence of Admission is required";
 
   const requireFile = (
-    path: "evidenceOfAdmissionFile" | "schoolInvoiceFile" | "passportFile",
+    path: "evidenceOfAdmissionFile" | "schoolInvoiceFile" | "studentPassportFile",
     message: string
   ) => {
     const value = data[path] as FileWithPath | null | undefined;
@@ -96,17 +142,20 @@ function requireUndergraduateStyleFiles(
 
   requireFile("evidenceOfAdmissionFile", enrollmentMessage);
   requireFile("schoolInvoiceFile", "School Invoice is required");
-  requireFile("passportFile", "International Passport file is required");
+  requireFile("studentPassportFile", "Student International Passport file is required");
 }
 
 const uploadDocumentsBaseSchema = z.object({
   studentName: z.string().trim().min(1, "Student name is required"),
+  studentPassportDocumentNumber: z.string().optional(),
+  studentPassportIssueDate: z.string().optional(),
+  studentPassportExpiryDate: z.string().optional(),
   admissionType: z.string().min(1, "Admission type is required"),
   formAId: formAIdSchema,
   evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
   schoolInvoiceFile: z.custom<FileWithPath | null>().optional(),
   ninNumber: z.string().optional(),
-  passportFile: z.custom<FileWithPath | null>().optional(),
+  studentPassportFile: z.custom<FileWithPath | null>().optional(),
   passportDocumentNumber: z.string().optional(),
   passportIssueDate: z.string().optional(),
   passportExpiryDate: z.string().optional(),
@@ -116,7 +165,12 @@ const uploadDocumentsBaseSchema = z.object({
 
 const uploadDocumentsSchema = uploadDocumentsBaseSchema.superRefine((data, ctx) => {
   const requireFile = (
-    path: "evidenceOfAdmissionFile" | "schoolInvoiceFile" | "passportFile" | "statementOfResultFile" | "firstDegreeCertificateFile",
+    path:
+      | "evidenceOfAdmissionFile"
+      | "schoolInvoiceFile"
+      | "studentPassportFile"
+      | "statementOfResultFile"
+      | "firstDegreeCertificateFile",
     message: string
   ) => {
     const value = data[path] as FileWithPath | null | undefined;
@@ -125,6 +179,7 @@ const uploadDocumentsSchema = uploadDocumentsBaseSchema.superRefine((data, ctx) 
     }
   };
 
+  addSchoolFeesStudentPassportIssues(data, ctx);
   addSchoolFeesKycIssues(data, ctx);
 
   if (requiresUndergraduateStyleDocuments(data.admissionType)) {
@@ -141,7 +196,7 @@ const uploadDocumentsSchema = uploadDocumentsBaseSchema.superRefine((data, ctx) 
     requireFile("schoolInvoiceFile", "School Invoice is required");
     requireFile("firstDegreeCertificateFile", "First Degree Certificate is required");
     requireFile("statementOfResultFile", "Statement of Result is required");
-    requireFile("passportFile", "International Passport file is required");
+    requireFile("studentPassportFile", "Student International Passport file is required");
   }
 });
 
@@ -175,12 +230,16 @@ export default function SchoolFeesUploadDocumentsStep({
     mode: "controlled",
     initialValues: {
       studentName: initialValues?.studentName || "",
+      studentPassportDocumentNumber: initialValues?.studentPassportDocumentNumber || "",
+      studentPassportIssueDate: initialValues?.studentPassportIssueDate || "",
+      studentPassportExpiryDate: initialValues?.studentPassportExpiryDate || "",
       formAId: initialValues?.formAId || "",
       admissionType: initialValues?.admissionType || "",
       ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
       evidenceOfAdmissionFile: initialValues?.evidenceOfAdmissionFile ?? null,
       schoolInvoiceFile: initialValues?.schoolInvoiceFile ?? null,
-      passportFile: initialValues?.passportFile ?? null,
+      studentPassportFile:
+        initialValues?.studentPassportFile ?? initialValues?.passportFile ?? null,
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
@@ -212,10 +271,16 @@ export default function SchoolFeesUploadDocumentsStep({
       ...values,
       admissionType: values.admissionType?.trim() || admissionType,
       studentName: form.values.studentName?.trim() ?? values.studentName,
+      studentPassportDocumentNumber:
+        form.values.studentPassportDocumentNumber?.trim() ?? values.studentPassportDocumentNumber,
+      studentPassportIssueDate:
+        form.values.studentPassportIssueDate ?? values.studentPassportIssueDate,
+      studentPassportExpiryDate:
+        form.values.studentPassportExpiryDate ?? values.studentPassportExpiryDate,
+      studentPassportFile: form.values.studentPassportFile ?? values.studentPassportFile ?? null,
       passportDocumentNumber: form.values.passportDocumentNumber?.trim() ?? values.passportDocumentNumber,
       passportIssueDate: form.values.passportIssueDate ?? values.passportIssueDate,
       passportExpiryDate: form.values.passportExpiryDate ?? values.passportExpiryDate,
-      passportFile: form.values.passportFile ?? values.passportFile ?? null,
       ninNumber: form.values.ninNumber ?? values.ninNumber,
     } as SchoolFeesUploadDocumentsFormData);
   });
@@ -261,6 +326,25 @@ export default function SchoolFeesUploadDocumentsStep({
         placeholder="Enter student name"
         autoComplete="off"
         {...form.getInputProps("studentName")}
+      />
+
+      <SchoolFeesStudentPassportFields
+        studentPassportDocumentNumber={form.values.studentPassportDocumentNumber || ""}
+        studentPassportIssueDate={form.values.studentPassportIssueDate || ""}
+        studentPassportExpiryDate={form.values.studentPassportExpiryDate || ""}
+        onPassportNumberChange={(value) => {
+          form.setFieldValue("studentPassportDocumentNumber", value);
+          form.validateField("studentPassportDocumentNumber");
+        }}
+        onPassportIssueDateChange={(value) =>
+          form.setFieldValue("studentPassportIssueDate", value)
+        }
+        onPassportExpiryDateChange={(value) =>
+          form.setFieldValue("studentPassportExpiryDate", value)
+        }
+        passportNumberError={form.errors.studentPassportDocumentNumber as string}
+        passportIssueDateError={form.errors.studentPassportIssueDate as string}
+        passportExpiryDateError={form.errors.studentPassportExpiryDate as string}
       />
 
       <TextInput
@@ -311,13 +395,13 @@ export default function SchoolFeesUploadDocumentsStep({
           labels={isOther ? OTHER_ADMISSION_DOCUMENT_LABELS : undefined}
           evidenceOfAdmissionFile={form.values.evidenceOfAdmissionFile ?? null}
           schoolInvoiceFile={form.values.schoolInvoiceFile ?? null}
-          passportFile={form.values.passportFile ?? null}
+          studentPassportFile={form.values.studentPassportFile ?? null}
           onEvidenceOfAdmissionChange={(file) => form.setFieldValue("evidenceOfAdmissionFile", file)}
           onSchoolInvoiceChange={(file) => form.setFieldValue("schoolInvoiceFile", file)}
-          onPassportChange={(file) => form.setFieldValue("passportFile", file)}
+          onStudentPassportChange={(file) => form.setFieldValue("studentPassportFile", file)}
           evidenceOfAdmissionError={form.errors.evidenceOfAdmissionFile as string}
           schoolInvoiceError={form.errors.schoolInvoiceFile as string}
-          passportError={form.errors.passportFile as string}
+          studentPassportError={form.errors.studentPassportFile as string}
         />
       )}
 
@@ -327,7 +411,7 @@ export default function SchoolFeesUploadDocumentsStep({
           schoolInvoiceFile={form.values.schoolInvoiceFile ?? null}
           statementOfResultFile={form.values.statementOfResultFile ?? null}
           firstDegreeCertificateFile={form.values.firstDegreeCertificateFile ?? null}
-          passportFile={form.values.passportFile ?? null}
+          studentPassportFile={form.values.studentPassportFile ?? null}
           onEvidenceOfAdmissionChange={(file) =>
             form.setFieldValue("evidenceOfAdmissionFile", file)
           }
@@ -338,12 +422,12 @@ export default function SchoolFeesUploadDocumentsStep({
           onFirstDegreeCertificateChange={(file) =>
             form.setFieldValue("firstDegreeCertificateFile", file)
           }
-          onPassportChange={(file) => form.setFieldValue("passportFile", file)}
+          onStudentPassportChange={(file) => form.setFieldValue("studentPassportFile", file)}
           evidenceOfAdmissionError={form.errors.evidenceOfAdmissionFile as string}
           schoolInvoiceError={form.errors.schoolInvoiceFile as string}
           statementOfResultError={form.errors.statementOfResultFile as string}
           firstDegreeCertificateError={form.errors.firstDegreeCertificateFile as string}
-          passportError={form.errors.passportFile as string}
+          studentPassportError={form.errors.studentPassportFile as string}
         />
       )}
 

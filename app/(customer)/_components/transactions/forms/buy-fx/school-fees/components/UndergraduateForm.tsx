@@ -6,44 +6,44 @@ import TransactionFileUploadInput from "../../../../../forms/TransactionFileUplo
 export interface SchoolFeesCoreDocumentLabels {
   evidenceOfAdmission: string;
   schoolInvoice: string;
-  passport: string;
+  studentPassport: string;
 }
 
 const DEFAULT_LABELS: SchoolFeesCoreDocumentLabels = {
   evidenceOfAdmission: "Evidence of Admission",
   schoolInvoice: "School Invoice",
-  passport: "International Passport",
+  studentPassport: "Student International Passport (scan)",
 };
 
 export const OTHER_ADMISSION_DOCUMENT_LABELS: SchoolFeesCoreDocumentLabels = {
   evidenceOfAdmission: "Evidence of Enrollment",
   schoolInvoice: "School Invoice",
-  passport: "International Passport",
+  studentPassport: "Student International Passport (scan)",
 };
 
 interface UndergraduateFormProps {
   evidenceOfAdmissionFile: FileWithPath | null;
   schoolInvoiceFile: FileWithPath | null;
-  passportFile: FileWithPath | null;
+  studentPassportFile: FileWithPath | null;
   onEvidenceOfAdmissionChange: (file: FileWithPath | null) => void;
   onSchoolInvoiceChange: (file: FileWithPath | null) => void;
-  onPassportChange: (file: FileWithPath | null) => void;
+  onStudentPassportChange: (file: FileWithPath | null) => void;
   evidenceOfAdmissionError?: string;
   schoolInvoiceError?: string;
-  passportError?: string;
+  studentPassportError?: string;
   labels?: SchoolFeesCoreDocumentLabels;
 }
 
 export default function UndergraduateForm({
   evidenceOfAdmissionFile,
   schoolInvoiceFile,
-  passportFile,
+  studentPassportFile,
   onEvidenceOfAdmissionChange,
   onSchoolInvoiceChange,
-  onPassportChange,
+  onStudentPassportChange,
   evidenceOfAdmissionError,
   schoolInvoiceError,
-  passportError,
+  studentPassportError,
   labels = DEFAULT_LABELS,
 }: Readonly<UndergraduateFormProps>) {
   return (
@@ -65,11 +65,11 @@ export default function UndergraduateForm({
       />
 
       <TransactionFileUploadInput
-        label={labels.passport}
+        label={labels.studentPassport}
         required
-        value={passportFile}
-        onChange={onPassportChange}
-        error={passportError}
+        value={studentPassportFile}
+        onChange={onStudentPassportChange}
+        error={studentPassportError}
       />
     </>
   );

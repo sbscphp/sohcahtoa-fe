@@ -316,9 +316,31 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     
     { label: "TIN Number", value: pickString(raw.taxClearanceNumber, stepData.tin) },
     { label: "Form A ID", value: pickString(raw.formAId) },
-    { label: "Int'l Passport Number", value: pickString(stepData.passportDocumentNumber) },
-    { label: "Passport Issue Date", value: pickString(stepData.passportIssueDate) },
-    { label: "Passport Expiry Date", value: pickString(stepData.passportExpiryDate) },
+    { label: "Student Name", value: pickString(stepData.studentName, raw.personalInfo?.studentName) },
+    {
+      label: "Student Int'l Passport Number",
+      value: pickString(stepData.studentPassportDocumentNumber, raw.personalInfo?.studentPassportDocumentNumber),
+    },
+    {
+      label: "Student Passport Issue Date",
+      value: pickString(stepData.studentPassportIssueDate, raw.personalInfo?.studentPassportIssueDate),
+    },
+    {
+      label: "Student Passport Expiry Date",
+      value: pickString(stepData.studentPassportExpiryDate, raw.personalInfo?.studentPassportExpiryDate),
+    },
+    {
+      label: "Applicant Int'l Passport Number",
+      value: pickString(stepData.passportDocumentNumber, raw.personalInfo?.passportDocumentNumber),
+    },
+    {
+      label: "Applicant Passport Issue Date",
+      value: pickString(stepData.passportIssueDate, raw.personalInfo?.passportIssueDate),
+    },
+    {
+      label: "Applicant Passport Expiry Date",
+      value: pickString(stepData.passportExpiryDate, raw.personalInfo?.passportExpiryDate),
+    },
     { label: "No. of Documents", value: pickString(details.numberOfDocuments) },
     {
       label: "Admission Type",

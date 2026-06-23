@@ -28,18 +28,31 @@ describe("mergeDocumentUploadSpecs", () => {
 
 describe("getDocumentUploadSpec", () => {
   it("includes school fees student passport file uploads", () => {
-    const passportFile = new File(["passport"], "student-passport.pdf", {
+    const studentPassportFile = new File(["passport"], "student-passport.pdf", {
       type: "application/pdf",
     });
 
     const spec = getDocumentUploadSpec("SCHOOL_FEES", {
-      passportFile,
+      studentPassportFile,
       evidenceOfAdmissionFile: new File(["admission"], "admission.pdf"),
       schoolInvoiceFile: new File(["invoice"], "invoice.pdf"),
     });
 
-    expect(spec?.documentTypes).toContain("PASSPORT");
-    expect(spec?.files).toContain(passportFile);
+    expect(spec?.documentTypes).toContain("STUDENT_PASSPORT");
+    expect(spec?.files).toContain(studentPassportFile);
+  });
+
+  it("falls back to legacy passportFile for school fees drafts", () => {
+    const legacyPassportFile = new File(["passport"], "legacy-passport.pdf", {
+      type: "application/pdf",
+    });
+
+    const spec = getDocumentUploadSpec("SCHOOL_FEES", {
+      passportFile: legacyPassportFile,
+    });
+
+    expect(spec?.documentTypes).toContain("STUDENT_PASSPORT");
+    expect(spec?.files).toContain(legacyPassportFile);
   });
 });
 
