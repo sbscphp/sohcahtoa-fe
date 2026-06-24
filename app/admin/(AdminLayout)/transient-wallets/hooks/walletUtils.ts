@@ -90,6 +90,7 @@ export function hasActiveLedgerLink(
 
 export type LedgerLinkedTransactionRef = {
   id?: string | null;
+  status?: string | null;
 } | null | undefined;
 
 /** Entry is associated with an FX transaction via id and/or `linkedTransaction` payload. */
@@ -101,12 +102,21 @@ export function hasLedgerLinkedTransaction(
   return Boolean(linkedTransaction?.id?.trim());
 }
 
-/** Link only when the entry has no linked FX transaction record. */
+/**
+ * Link when there is no active `linkedTransactionId` and any `linkedTransaction`
+ * snapshot is not in a terminal state (cancelled / rejected / declined).
+ */
 export function canLinkLedgerEntry(
   linkedTransactionId: string | null | undefined,
   linkedTransaction: LedgerLinkedTransactionRef
 ): boolean {
-  return !hasLedgerLinkedTransaction(linkedTransactionId, linkedTransaction);
+  if (hasActiveLedgerLink(linkedTransactionId)) return false;
+
+  if (linkedTransaction?.id?.trim()) {
+    return isLinkableTransactionStatus(linkedTransaction.status);
+  }
+
+  return true;
 }
 
 /** Unlink clears an active link before payout/refund workflows start. */
