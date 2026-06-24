@@ -668,6 +668,8 @@ export interface AdminWalletLedgerEntry {
   transactionId: string;
   sessionId: string | null;
   createdAt: string;
+  displayStatus?: string;
+  isFlagged?: boolean;
 }
 
 export interface AdminLedgerLinkedTransaction {

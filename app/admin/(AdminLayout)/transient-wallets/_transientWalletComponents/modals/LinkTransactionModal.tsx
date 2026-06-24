@@ -16,6 +16,7 @@ import { Search, X } from "lucide-react";
 import { useTransactionSearch } from "../../hooks/useTransientWalletEntryDetails";
 import type { AdminTransactionSearchItem } from "@/app/admin/_services/admin-api";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import { formatApiStatusLabel, isLinkableTransactionStatus } from "../../hooks/walletUtils";
 
 const MAX_REASON_LENGTH = 100;
 
@@ -52,6 +53,10 @@ export default function LinkTransactionModal({
   const { results, isLoading: isSearching } = useTransactionSearch(
     customerId,
     debouncedSearch
+  );
+
+  const linkableResults = results.filter((tx) =>
+    isLinkableTransactionStatus(tx.status)
   );
 
   const resetState = () => {
@@ -140,15 +145,17 @@ export default function LinkTransactionModal({
                 </Text>
               )}
 
-              {showResults && !isSearching && results.length === 0 && (
+              {showResults && !isSearching && linkableResults.length === 0 && (
                 <Text size="xs" c="dimmed" mt={6}>
-                  No transactions for {customerName} matching your search.
+                  {results.length > 0
+                    ? "Matching transactions are cancelled or cannot be linked. Try another search."
+                    : `No transactions for ${customerName} matching your search.`}
                 </Text>
               )}
 
-              {showResults && results.length > 0 && (
+              {showResults && linkableResults.length > 0 && (
                 <Stack gap={4} mt={8}>
-                  {results.map((tx) => (
+                  {linkableResults.map((tx) => (
                     <Paper
                       key={tx.id}
                       withBorder
@@ -162,7 +169,8 @@ export default function LinkTransactionModal({
                       </Text>
                       <Text size="xs" c="dimmed">
                         {tx.customerName} &bull; {tx.transactionType} &bull;{" "}
-                        {formatCurrency(tx.transactionValue)} &bull;{" "} {tx.currency}
+                        {formatCurrency(tx.transactionValue)} &bull; {tx.currency} &bull;{" "}
+                        {formatApiStatusLabel(tx.status)}
                       </Text>
                     </Paper>
                   ))}

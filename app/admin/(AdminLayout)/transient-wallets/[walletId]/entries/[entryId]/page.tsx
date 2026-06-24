@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { Group, Text, Divider, Tabs } from "@mantine/core";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import LedgerStatusBadges from "../../../_transientWalletComponents/LedgerStatusBadges";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -19,7 +19,14 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useTransientWalletEntryDetails } from "../../../hooks/useTransientWalletEntryDetails";
 import { useTransientWalletDetails } from "../../../hooks/useTransientWalletDetails";
-import { normalizeMatchStatus } from "../../../hooks/walletUtils";
+import {
+  formatApiStatusLabel,
+  canLinkLedgerEntry,
+  canUnlinkLedgerEntry,
+  canDisburseLedgerEntry,
+  canRefundLedgerEntry,
+  hasLedgerLinkedTransaction,
+} from "../../../hooks/walletUtils";
 import EntryAuditLogsTab from "../../../_transientWalletComponents/EntryAuditLogsTab";
 import EntryAdminNotesTab from "../../../_transientWalletComponents/EntryAdminNotesTab";
 import AddNoteToEntryModal from "../../../_transientWalletComponents/modals/AddNoteToEntryModal";
@@ -64,14 +71,29 @@ export default function TransientWalletEntryDetailPage() {
   );
   const { wallet } = useTransientWalletDetails(walletId);
 
-  const isMatched = normalizeMatchStatus(entry?.matchStatus ?? null) === "Matched";
+  const hasLinkedTransaction = hasLedgerLinkedTransaction(
+    entry?.linkedTransactionId,
+    entry?.linkedTransaction
+  );
   const isCreditEntry = entry?.type === "CREDIT";
-  const canUnlink =
-    isMatched && !entry?.refundStatus && !entry?.disbursementStatus;
-  const canDisburse =
-    isMatched && isCreditEntry && !entry?.disbursementStatus;
-  const canRefund =
-    isMatched && isCreditEntry && !entry?.refundStatus;
+  const canLink = canLinkLedgerEntry(entry?.linkedTransactionId, entry?.linkedTransaction);
+  const canUnlink = canUnlinkLedgerEntry(
+    entry?.linkedTransactionId,
+    entry?.refundStatus,
+    entry?.disbursementStatus
+  );
+  const canDisburse = canDisburseLedgerEntry(
+    entry?.linkedTransactionId,
+    isCreditEntry,
+    entry?.linkedTransactionStatus,
+    entry?.disbursementStatus
+  );
+  const canRefund = canRefundLedgerEntry(
+    entry?.linkedTransactionId,
+    isCreditEntry,
+    entry?.refundStatus
+  );
+  const canFlag = !entry?.isFlagged;
 
   const [activeTab, setActiveTab] = useState<"audit" | "notes">("audit");
 
@@ -374,7 +396,18 @@ export default function TransientWalletEntryDetailPage() {
                   Entry Date: {entry?.entryDate ?? "—"} |{" "}
                   {entry?.entryTime ?? "—"}
                 </span>
-                {entry ? <StatusBadge status={entry.status} /> : null}
+                {entry ? (
+                  <LedgerStatusBadges
+                    entryStatus={entry.entryStatus}
+                    matchDisplayStatus={entry.matchDisplayStatus}
+                    isFlagged={entry.isFlagged}
+                    linkedTransactionStatus={
+                      hasLinkedTransaction ? entry.linkedTransactionStatus : null
+                    }
+                    disbursementStatus={entry.disbursementStatus}
+                    refundStatus={entry.refundStatus}
+                  />
+                ) : null}
               </Group>
             </div>
 
@@ -387,10 +420,11 @@ export default function TransientWalletEntryDetailPage() {
               </CustomButton>
               <TakeActionMenu
                 onAction={handleTakeAction}
-                isMatched={isMatched}
+                canLink={canLink}
                 canUnlink={canUnlink}
                 canDisburse={canDisburse}
                 canRefund={canRefund}
+                canFlag={canFlag}
               />
             </Group>
           </div>
@@ -419,7 +453,48 @@ export default function TransientWalletEntryDetailPage() {
                 value={entry?.transactionType ?? "—"}
                 loading={isLoading}
               />
+              <DetailItem
+                label="Entry Status"
+                value={entry?.entryStatus ?? "—"}
+                loading={isLoading}
+              />
+              <DetailItem
+                label="Match Status"
+                value={
+                  entry
+                    ? entry.isFlagged
+                      ? `${entry.matchDisplayStatus} (Flagged)`
+                      : entry.matchDisplayStatus
+                    : "—"
+                }
+                loading={isLoading}
+              />
+              <DetailItem
+                label="Linked TX Status"
+                value={
+                  hasLinkedTransaction && entry?.linkedTransactionStatus
+                    ? formatApiStatusLabel(entry.linkedTransactionStatus)
+                    : "—"
+                }
+                loading={isLoading}
+              />
+              <DetailItem
+                label="Disbursement Status"
+                value={
+                  entry?.disbursementStatus
+                    ? formatApiStatusLabel(entry.disbursementStatus)
+                    : "—"
+                }
+                loading={isLoading}
+              />
             </div>
+            {entry?.isFlagged ? (
+              <DetailItem
+                label="Flag Reason"
+                value={entry.flagReason?.trim() || "—"}
+                loading={isLoading}
+              />
+            ) : null}
             <DetailItem
               label="Amount"
               value={entry ? formatCurrency(entry.amount) : "—"}

@@ -18,6 +18,7 @@ import {
   useTransientWalletLedger,
   type TransientLedgerEntry,
 } from "../hooks/useTransientWalletLedger";
+import LedgerStatusBadges from "./LedgerStatusBadges";
 
 const pageSize = 20;
 
@@ -33,7 +34,8 @@ const ledgerHeaders = [
   { label: "Session ID", key: "sessionId" },
   { label: "Type", key: "type" },
   { label: "Amount", key: "amount" },
-  { label: "Status", key: "status" },
+  { label: "Entry Status", key: "entryStatus" },
+  { label: "Match Status", key: "matchStatus" },
   { label: "Action", key: "action" },
 ];
 
@@ -126,7 +128,13 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
       {item.type === "Credit" ? "+" : "-"}
       {formatCurrency(item.amount)}
     </Text>,
-    <StatusBadge key="status" status={item.status} />,
+    <StatusBadge key="entryStatus" status={item.entryStatus} />,
+    <LedgerStatusBadges
+      key="matchStatus"
+      matchDisplayStatus={item.matchDisplayStatus}
+      isFlagged={item.isFlagged}
+      layout="stacked"
+    />,
     <RowActionIcon
       key="action"
       onClick={() =>

@@ -11,9 +11,13 @@ import {
   type AdminLedgerLinkedTransaction,
   type AdminTransactionSearchItem,
 } from "@/app/admin/_services/admin-api";
-import { asNumber, formatCreatedAt, normalizeMatchStatus } from "./walletUtils";
-
-export type LedgerEntryStatus = "Matched" | "Unmatched";
+import {
+  asNumber,
+  formatApiStatusLabel,
+  formatCreatedAt,
+  normalizeMatchStatus,
+  type LedgerMatchDisplayStatus,
+} from "./walletUtils";
 
 export interface TransientEntryDetail {
   id: string;
@@ -26,9 +30,14 @@ export interface TransientEntryDetail {
   amount: number;
   entryDate: string;
   entryTime: string;
-  status: LedgerEntryStatus;
+  entryStatus: string;
+  matchDisplayStatus: LedgerMatchDisplayStatus;
   matchStatus: string | null;
+  linkedTransactionId: string | null;
   isFlagged: boolean;
+  flagReason: string | null;
+  flaggedBy: string | null;
+  linkedTransactionStatus: string | null;
   refundStatus: string | null;
   disbursementStatus: string | null;
   linkedTransaction: AdminLedgerLinkedTransaction | null;
@@ -50,9 +59,14 @@ function mapEntryDetail(
     amount: item.amount,
     entryDate: dateCreated,
     entryTime: timeCreated,
-    status: normalizeMatchStatus(item.matchStatus),
+    entryStatus: formatApiStatusLabel(item.status),
+    matchDisplayStatus: normalizeMatchStatus(item.matchStatus),
     matchStatus: item.matchStatus,
+    linkedTransactionId: item.linkedTransactionId,
     isFlagged: item.isFlagged,
+    flagReason: item.flagReason,
+    flaggedBy: item.flaggedBy,
+    linkedTransactionStatus: item.linkedTransaction?.status ?? null,
     refundStatus: item.refundStatus,
     disbursementStatus: item.disbursementStatus,
     linkedTransaction: item.linkedTransaction,

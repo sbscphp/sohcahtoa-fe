@@ -10,12 +10,13 @@ import {
 } from "@/app/admin/_services/admin-api";
 import {
   asNumber,
+  formatApiStatusLabel,
   formatLedgerDateTime,
   mapLedgerType,
   normalizeMatchStatus,
+  type LedgerMatchDisplayStatus,
 } from "./walletUtils";
 
-export type LedgerEntryStatus = "Matched" | "Unmatched";
 export type LedgerEntryType = "Credit" | "Debit";
 
 export interface TransientLedgerEntry {
@@ -27,7 +28,9 @@ export interface TransientLedgerEntry {
   sessionId: string;
   type: LedgerEntryType;
   amount: number;
-  status: LedgerEntryStatus;
+  entryStatus: string;
+  matchDisplayStatus: LedgerMatchDisplayStatus;
+  isFlagged: boolean;
 }
 
 interface Pagination {
@@ -66,7 +69,9 @@ function mapLedgerEntry(
     sessionId: item.sessionId ?? "--",
     type: mapLedgerType(item.type),
     amount: item.amount,
-    status: normalizeMatchStatus(item.matchStatus),
+    entryStatus: formatApiStatusLabel(item.status),
+    matchDisplayStatus: normalizeMatchStatus(item.matchStatus),
+    isFlagged: Boolean(item.isFlagged),
   };
 }
 
