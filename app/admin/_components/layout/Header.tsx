@@ -42,8 +42,8 @@ export default function Header({
 
   return (
     <header className=" bg-white px-6 flex items-center justify-between w-full relative">
-      <div className="flex items-start flex-col justify-between">
-        <div className="h-16 flex items-center gap-4">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex h-16 items-center gap-4">
           {isMobile && toggleMobile
             ? <button
               onClick={toggleMobile}
@@ -99,11 +99,11 @@ export default function Header({
           </div>
         )}
         {/* Dynamic Header Content */}
-        {content && (
-          <div className="w-full bg-white mt-2">
+        {content ? (
+          <div className="mt-2 w-full min-w-0 overflow-hidden">
             {content}
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

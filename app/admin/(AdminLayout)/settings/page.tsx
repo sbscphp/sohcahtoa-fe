@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAtomValue } from "jotai";
-import { useSetHeaderContent } from "../../_hooks/useSetHeaderContent";
 import { HeaderTabs } from "../../_components/HeaderTabs";
 import PasswordTab from "./PasswordTab";
 import AccountInformationTab from "./AccountInformationTab";
@@ -95,24 +94,17 @@ export default function SettingsPage() {
     router.push(`?tab=${tab}`);
   };
 
-  /* ── Header ─────────────────────────────────────────────────────────── */
-  const headerContent = useMemo(
-    () => (
-      <HeaderTabs
-        value={activeTab}
-        onChange={handleTabChange}
-        tabs={visibleTabs}
-      />
-    ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeTab, visibleTabs]
-  );
-
-  useSetHeaderContent(headerContent);
-
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <div className="space-y-4 my-5">
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+        <HeaderTabs
+          value={activeTab}
+          onChange={handleTabChange}
+          tabs={visibleTabs}
+        />
+      </div>
+
       {activeTab === "account" && <AccountInformationTab />}
       {activeTab === "password" && <PasswordTab />}
       {activeTab === "notifications" && <NotificationSettingsTab />}
