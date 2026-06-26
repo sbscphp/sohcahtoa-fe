@@ -147,6 +147,8 @@ export function mapUiPayoutMethodToDisbursementOption(
       return "CARD";
     case "card_75_cash_25":
       return "CARD_AND_CASH";
+    case "electronic_75_cash_25":
+      return "ELECTRONIC_AND_CASH";
     default:
       return undefined;
   }
@@ -168,17 +170,42 @@ function disbursementOptionFromSelection(
   return { disbursementOption };
 }
 
-function beneficiaryDetailsFromPayoutSelection(
+function beneficiaryDetailsFromDomiciliaryAccount(
   data: Record<string, unknown> | null | undefined
 ): Record<string, unknown> | undefined {
-  if (data?.payoutMethod !== "electronic_transfer_100") return undefined;
-  const bankAccount = data.bankAccount as Record<string, unknown> | undefined;
-  if (!bankAccount) return undefined;
+  const dom = data?.domAccountDetails as Record<string, unknown> | undefined;
+  if (!dom) return undefined;
 
   return {
-    bankName: bankAccount.bankName,
-    accountNumber: bankAccount.accountNumber,
-    accountName: bankAccount.accountName,
+    accountNumber: dom.domiciliaryAccountNumber,
+    bankName: dom.domiciliaryBankName,
+    accountName: dom.accountName,
+    swiftCode: dom.swiftCode,
+    routingNumber: dom.routingNumber,
+    bankAddress: dom.bankAddress,
+    isDomiciliaryAccount: true,
+  };
+}
+
+function refundBankDetailsFromSelection(
+  data: Record<string, unknown> | null | undefined
+): Record<string, unknown> | undefined {
+  const refund = data?.refundBankAccount as Record<string, unknown> | undefined;
+  if (!refund) return undefined;
+
+  return {
+    bankName: refund.bankName,
+    accountNumber: refund.accountNumber,
+    accountName: refund.accountName,
+  };
+}
+
+function payoutBeneficiaryAndRefundDetails(
+  pickup: Record<string, unknown> | null | undefined
+): Pick<CreateTransactionRequest, "beneficiaryDetails" | "refundBankDetails"> {
+  return {
+    beneficiaryDetails: beneficiaryDetailsFromDomiciliaryAccount(pickup),
+    refundBankDetails: refundBankDetailsFromSelection(pickup),
   };
 }
 
@@ -228,7 +255,7 @@ function buildPTAPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     ...payout,
-    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
+    ...payoutBeneficiaryAndRefundDetails(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -260,7 +287,7 @@ function buildBTAPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     ...payout,
-    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
+    ...payoutBeneficiaryAndRefundDetails(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -288,7 +315,7 @@ function buildTouristPayload(
     returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
     documents,
     ...payout,
-    beneficiaryDetails: beneficiaryDetailsFromPayoutSelection(pickup),
+    ...payoutBeneficiaryAndRefundDetails(pickup),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }

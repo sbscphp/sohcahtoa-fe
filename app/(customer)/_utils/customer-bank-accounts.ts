@@ -55,7 +55,26 @@ export function getCreatedTransactionId(created: unknown): string | undefined {
   return data?.transactionId ?? data?.id;
 }
 
-/** Saved bank account id from pickup / payout step form data. */
+/** Saved refund bank account id from payout flow form data. */
+export function getRefundBankAccountId(
+  pickup: Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!pickup) return undefined;
+
+  const refundBankAccount = pickup.refundBankAccount as { id?: string } | undefined;
+  if (refundBankAccount?.id && isSavedBankAccountId(refundBankAccount.id)) {
+    return refundBankAccount.id;
+  }
+
+  const selectedRefundBankId = String(pickup.selectedRefundBankId ?? "").trim();
+  if (selectedRefundBankId && isSavedBankAccountId(selectedRefundBankId)) {
+    return selectedRefundBankId;
+  }
+
+  return undefined;
+}
+
+/** @deprecated Use getRefundBankAccountId — kept for sell / legacy pickup-or-bank flows. */
 export function getPickupBankAccountId(
   pickup: Record<string, unknown> | null | undefined,
 ): string | undefined {
@@ -63,7 +82,7 @@ export function getPickupBankAccountId(
 
   const usesElectronicPayout =
     pickup.payoutMethod === "electronic_transfer_100" || pickup.preference === "bank";
-  if (!usesElectronicPayout) return undefined;
+  if (!usesElectronicPayout) return getRefundBankAccountId(pickup);
 
   const bankAccount = pickup.bankAccount as { id?: string } | undefined;
   if (bankAccount?.id && isSavedBankAccountId(bankAccount.id)) {
@@ -75,5 +94,5 @@ export function getPickupBankAccountId(
     return selectedBankId;
   }
 
-  return undefined;
+  return getRefundBankAccountId(pickup);
 }

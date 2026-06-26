@@ -16,6 +16,13 @@ import { useFetchData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import type { PickupTerminalsQueryParams } from "@/app/_lib/api/types";
+import {
+  payoutMethodHasCashPortion,
+  payoutMethodRequiresDomiciliaryAccount,
+  payoutMethodRequiresPickupLocation,
+} from "@/app/(customer)/_lib/payout-method-utils";
+import { domiciliaryAccountSchema } from "@/app/(customer)/_lib/domiciliary-account-schema";
+import DomiciliaryAccountFields from "@/app/(customer)/_components/transactions/forms/DomiciliaryAccountFields";
 
 function toIsoDateString(value: unknown): string | undefined {
   if (value == null || value === "") return undefined;
@@ -145,7 +152,11 @@ export const PAYOUT_METHOD_OPTIONS = [
   },
   {
     value: "card_75_cash_25",
-    label: "Card (75%) + Cash (25%)",
+    label: "Cash (25%) + Card (75%)",
+  },
+  {
+    value: "electronic_75_cash_25",
+    label: "Cash (25%) + Electronic transfer (75%)",
   },
 ] as const;
 
@@ -157,6 +168,7 @@ const payoutMethodSchema = z
       "electronic_transfer_100",
       "card_100",
       "card_75_cash_25",
+      "electronic_75_cash_25",
     ]),
     state: z.string(),
     city: z.string(),
@@ -164,10 +176,20 @@ const payoutMethodSchema = z
     selectedBankId: z.string(),
     pickupDate: z.string(),
     pickupTime: z.string(),
+    domiciliaryAccountNumber: z.string(),
+    domiciliaryBankName: z.string(),
+    accountName: z.string(),
+    swiftCode: z.string(),
+    routingNumber: z.string(),
+    bankAddress: z.string(),
+  })
+  .refine((data) => data.payoutMethod.trim().length > 0, {
+    message: "Select a payout method",
+    path: ["payoutMethod"],
   })
   .refine(
     (data) => {
-      if (data.payoutMethod === "electronic_transfer_100") return true;
+      if (!payoutMethodRequiresPickupLocation(data.payoutMethod)) return true;
       return (
         data.locationId.trim().length > 0 &&
         (data.pickupDate?.trim().length ?? 0) > 0 &&
@@ -176,18 +198,31 @@ const payoutMethodSchema = z
     },
     { message: "Pickup location, date and time are required", path: ["locationId"] }
   )
-  .refine(
-    (data) => data.payoutMethod.trim().length > 0,
-    { message: "Select a payout method", path: ["payoutMethod"] }
-  )
   .superRefine((data, ctx) => {
-    validatePickupDate(
-      {
-        pickupDate: data.pickupDate,
-        preference: data.payoutMethod === "electronic_transfer_100" ? "bank" : "pickup",
-      },
-      ctx
-    );
+    if (payoutMethodRequiresPickupLocation(data.payoutMethod)) {
+      validatePickupDate({ pickupDate: data.pickupDate, preference: "pickup" }, ctx);
+    }
+
+    if (payoutMethodRequiresDomiciliaryAccount(data.payoutMethod)) {
+      const domResult = domiciliaryAccountSchema.safeParse({
+        domiciliaryAccountNumber: data.domiciliaryAccountNumber,
+        domiciliaryBankName: data.domiciliaryBankName,
+        accountName: data.accountName,
+        swiftCode: data.swiftCode,
+        routingNumber: data.routingNumber,
+        bankAddress: data.bankAddress,
+      });
+
+      if (!domResult.success) {
+        for (const issue of domResult.error.issues) {
+          ctx.addIssue({
+            code: "custom",
+            path: issue.path,
+            message: issue.message,
+          });
+        }
+      }
+    }
   });
 
 type PayoutMethodFormData = z.infer<typeof payoutMethodSchema>;
@@ -195,6 +230,16 @@ type PayoutMethodFormData = z.infer<typeof payoutMethodSchema>;
 export type PickupPointFormData = z.infer<typeof pickupOnlySchema> &
   Partial<PayoutMethodFormData> & {
     bankAccount?: BankAccount;
+    refundBankAccount?: BankAccount;
+    selectedRefundBankId?: string;
+    domAccountDetails?: {
+      domiciliaryAccountNumber: string;
+      domiciliaryBankName: string;
+      accountName: string;
+      swiftCode: string;
+      routingNumber: string;
+      bankAddress: string;
+    };
   };
 
 export type PickupOrBankFormData = z.infer<typeof pickupOrBankSchema>;
@@ -285,6 +330,20 @@ export default function PickupPointStep({
         (initialValues as Partial<PayoutMethodFormData>)?.selectedBankId || "",
       pickupDate: (initialValues as Partial<PayoutMethodFormData>)?.pickupDate || "",
       pickupTime: (initialValues as Partial<PayoutMethodFormData>)?.pickupTime || "",
+      domiciliaryAccountNumber:
+        (initialValues as Partial<PickupPointFormData>)?.domAccountDetails
+          ?.domiciliaryAccountNumber || "",
+      domiciliaryBankName:
+        (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.domiciliaryBankName ||
+        "",
+      accountName:
+        (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.accountName || "",
+      swiftCode:
+        (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.swiftCode || "",
+      routingNumber:
+        (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.routingNumber || "",
+      bankAddress:
+        (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.bankAddress || "",
     },
     validate: zod4Resolver(payoutMethodSchema),
   });
@@ -343,8 +402,10 @@ export default function PickupPointStep({
   );
 
   const showPickupForm = isPayoutMethodFlow
-    ? payoutMethod === "card_100" || payoutMethod === "card_75_cash_25"
+    ? payoutMethodRequiresPickupLocation(payoutMethod)
     : !isPickupOrBank || preference === "pickup";
+  const showDomiciliaryForm =
+    isPayoutMethodFlow && payoutMethodRequiresDomiciliaryAccount(payoutMethod);
   const shouldFetchTerminals = showPickupForm && locations.length === 0;
 
   /** Drives query key + request — changes here refetch terminals (state/city/date/time). */
@@ -432,16 +493,21 @@ export default function PickupPointStep({
   };
 
   const submitPayoutMethodSuccess = (v: PayoutMethodFormData) => {
-    if (v.payoutMethod === "electronic_transfer_100") {
-      if (bankSelectionMode === "separate") {
-        onSubmit(v);
-        return;
-      }
+    const domAccountDetails = payoutMethodRequiresDomiciliaryAccount(v.payoutMethod)
+      ? {
+          domiciliaryAccountNumber: v.domiciliaryAccountNumber.trim(),
+          domiciliaryBankName: v.domiciliaryBankName.trim(),
+          accountName: v.accountName.trim(),
+          swiftCode: v.swiftCode.trim().toUpperCase(),
+          routingNumber: v.routingNumber.trim(),
+          bankAddress: v.bankAddress.trim(),
+        }
+      : undefined;
 
-      const selectedBank = banks.find((bank) => bank.id === v.selectedBankId);
+    if (!payoutMethodRequiresPickupLocation(v.payoutMethod)) {
       onSubmit({
         ...v,
-        bankAccount: selectedBank,
+        domAccountDetails,
       });
       return;
     }
@@ -449,6 +515,7 @@ export default function PickupPointStep({
     const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);
     onSubmit({
       ...v,
+      domAccountDetails,
       state: resolveOptionalLocationField(selectedLocation?.state, v.state),
       city: resolveOptionalLocationField(selectedLocation?.city, v.city),
       pickupTime: toAmPmTime(v.pickupTime) ?? v.pickupTime,
@@ -662,6 +729,12 @@ export default function PickupPointStep({
             payoutMethodForm.setFieldValue("payoutMethod", (value ?? "") as PayoutMethod);
             payoutMethodForm.setFieldValue("locationId", "");
             payoutMethodForm.setFieldValue("selectedBankId", "");
+            payoutMethodForm.setFieldValue("domiciliaryAccountNumber", "");
+            payoutMethodForm.setFieldValue("domiciliaryBankName", "");
+            payoutMethodForm.setFieldValue("accountName", "");
+            payoutMethodForm.setFieldValue("swiftCode", "");
+            payoutMethodForm.setFieldValue("routingNumber", "");
+            payoutMethodForm.setFieldValue("bankAddress", "");
           }}
         />
       )}
@@ -854,10 +927,10 @@ export default function PickupPointStep({
             />
           </div>
 
-          {payoutMethod === "card_75_cash_25" && (
+          {payoutMethodHasCashPortion(payoutMethod) && (
             <p className="text-body-text-200 text-sm">
-              Maximum cash collection is $500. The remaining 75% will be issued
-              on card.
+              Maximum cash collection is $500. The remaining{" "}
+              {payoutMethod === "card_75_cash_25" ? "75% will be issued on card" : "75% will be sent via electronic transfer"}.
             </p>
           )}
 
@@ -876,6 +949,13 @@ export default function PickupPointStep({
             ) : null}
           </div>
         </>
+      )}
+
+      {showDomiciliaryForm && (
+        <DomiciliaryAccountFields
+          getInputProps={(field) => payoutMethodForm.getInputProps(field)}
+          setFieldValue={(field, value) => payoutMethodForm.setFieldValue(field, value)}
+        />
       )}
 
       {showPickupForm && !isPickupOrBank && !isPayoutMethodFlow && (

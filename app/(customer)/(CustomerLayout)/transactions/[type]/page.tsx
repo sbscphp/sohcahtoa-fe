@@ -43,6 +43,10 @@ import TouristUploadDocumentsStep from "@/app/(customer)/_components/transaction
 import TouristTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristTransactionAmountStep";
 import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
+import {
+  isCashPortionWithinLimit,
+  payoutMethodRequiresDomiciliaryAccount,
+} from "@/app/(customer)/_lib/payout-method-utils";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
@@ -50,7 +54,7 @@ import type { BankAccount } from "@/app/(customer)/_components/transactions/form
 import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
 import {
   getCreatedTransactionId,
-  getPickupBankAccountId,
+  getRefundBankAccountId,
   toCreateBankAccountPayload,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
@@ -113,15 +117,6 @@ export default function TransactionCreationPage() {
   const isTourist = type === "tourist";
   const usesPayoutMethod = !isSchoolFees && !isMedical && !isProfessionalBody;
 
-  const steps = useMemo(
-    () =>
-      getStepsForTransactionType(flowType).map((value) => ({
-        label: STEP_LABELS[value],
-        value,
-      })),
-    [flowType]
-  );
-
   const [activeStep, setActiveStep] = useState<TransactionStep>("upload-documents");
   const [confirmationOpened, setConfirmationOpened] = useState(false);
 
@@ -160,6 +155,15 @@ export default function TransactionCreationPage() {
     | ProfessionalBodyBankDetailsFormData
     | null
   >(null);
+
+  const steps = useMemo(
+    () =>
+      getStepsForTransactionType(flowType).map((value) => ({
+        label: STEP_LABELS[value],
+        value,
+      })),
+    [flowType]
+  );
 
   const userProfile = useAtomValue(userProfileAtom);
   const uploadDocuments = useUploadDocuments();
@@ -201,25 +205,21 @@ export default function TransactionCreationPage() {
     data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
   ) => {
     setPickupPointData(data);
-    if (data.payoutMethod === "electronic_transfer_100") {
-      setActiveStep("bank-details");
+
+    if (
+      data.payoutMethod &&
+      !isCashPortionWithinLimit(getRequestedForeignAmount(transactionAmountData), data.payoutMethod)
+    ) {
+      notifications.show({
+        title: "Cash limit exceeded",
+        message:
+          "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
+        color: "orange",
+      });
       return;
     }
 
-    if (data.payoutMethod === "card_75_cash_25") {
-      const cashAmount = getRequestedForeignAmount(transactionAmountData) * 0.25;
-      if (cashAmount > 500) {
-        notifications.show({
-          title: "Cash limit exceeded",
-          message:
-            "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
-          color: "orange",
-        });
-        return;
-      }
-    }
-
-    setConfirmationOpened(true);
+    setActiveStep("bank-details");
   };
 
   const handleAddBank = useCallback(
@@ -234,17 +234,16 @@ export default function TransactionCreationPage() {
     [addAccount],
   );
 
-  const handlePayoutBankAccountSubmit = (bankAccount: BankAccount) => {
-    setPickupPointData((prev) => ({
-      locationId: prev?.locationId ?? "",
-      pickupDate: prev?.pickupDate ?? "",
-      pickupTime: prev?.pickupTime ?? "",
-      state: prev?.state,
-      city: prev?.city,
-      payoutMethod: prev?.payoutMethod ?? "electronic_transfer_100",
-      selectedBankId: bankAccount.id,
-      bankAccount,
-    }));
+  const handleRefundBankSubmit = (bankAccount: BankAccount) => {
+    setPickupPointData((prev) =>
+      prev
+        ? {
+            ...prev,
+            refundBankAccount: bankAccount,
+            selectedRefundBankId: bankAccount.id,
+          }
+        : null
+    );
     setConfirmationOpened(true);
   };
 
@@ -291,13 +290,23 @@ export default function TransactionCreationPage() {
       return;
     }
     if (
-      pickupPointData?.payoutMethod === "electronic_transfer_100" &&
-      !pickupPointData.bankAccount
+      payoutMethodRequiresDomiciliaryAccount(pickupPointData?.payoutMethod) &&
+      !pickupPointData?.domAccountDetails
     ) {
       setConfirmationOpened(false);
       notifications.show({
-        title: "Bank account required",
-        message: "Select or add a bank account before initiating your transaction.",
+        title: "Domiciliary account required",
+        message: "Complete your domiciliary account details before initiating your transaction.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
+      return;
+    }
+    if (hasPickup && !pickupPointData?.refundBankAccount) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Refund bank account required",
+        message: "Select a local bank account for refunds before initiating your transaction.",
         color: "orange",
       });
       setActiveStep("bank-details");
@@ -334,7 +343,7 @@ export default function TransactionCreationPage() {
       const payload = buildTransactionPayload(transactionType, bag, documents, "BUY");
       const created = await createTransaction.mutateAsync(payload);
       const transactionId = getCreatedTransactionId(created);
-      const bankAccountId = getPickupBankAccountId(
+      const bankAccountId = getRefundBankAccountId(
         pickupPointData as Record<string, unknown> | null,
       );
       if (transactionId && bankAccountId) {
@@ -374,6 +383,18 @@ export default function TransactionCreationPage() {
     }
   };
 
+  const renderRefundBankStep = () => (
+    <BankAccountSelectionStep
+      purpose="refund"
+      banks={bankAccounts}
+      isLoading={bankAccountsLoading}
+      initialSelectedBankId={pickupPointData?.selectedRefundBankId}
+      onSubmit={handleRefundBankSubmit}
+      onBack={handleBack}
+      onAddBank={() => setAddBankOpened(true)}
+    />
+  );
+
   const renderStepContent = () => {
     if (isTourist) {
       switch (activeStep) {
@@ -406,16 +427,7 @@ export default function TransactionCreationPage() {
             />
           );
         case "bank-details":
-          return (
-            <BankAccountSelectionStep
-              banks={bankAccounts}
-              isLoading={bankAccountsLoading}
-              initialSelectedBankId={pickupPointData?.selectedBankId}
-              onSubmit={handlePayoutBankAccountSubmit}
-              onBack={handleBack}
-              onAddBank={() => setAddBankOpened(true)}
-            />
-          );
+          return renderRefundBankStep();
         default:
           return null;
       }
@@ -564,16 +576,7 @@ export default function TransactionCreationPage() {
             />
           );
         case "bank-details":
-          return (
-            <BankAccountSelectionStep
-              banks={bankAccounts}
-              isLoading={bankAccountsLoading}
-              initialSelectedBankId={pickupPointData?.selectedBankId}
-              onSubmit={handlePayoutBankAccountSubmit}
-              onBack={handleBack}
-              onAddBank={() => setAddBankOpened(true)}
-            />
-          );
+          return renderRefundBankStep();
         default:
           return null;
       }
@@ -605,16 +608,7 @@ export default function TransactionCreationPage() {
           />
         );
       case "bank-details":
-        return (
-          <BankAccountSelectionStep
-            banks={bankAccounts}
-            isLoading={bankAccountsLoading}
-            initialSelectedBankId={pickupPointData?.selectedBankId}
-            onSubmit={handlePayoutBankAccountSubmit}
-            onBack={handleBack}
-            onAddBank={() => setAddBankOpened(true)}
-          />
-        );
+        return renderRefundBankStep();
       default:
         return null;
     }

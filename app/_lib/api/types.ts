@@ -645,7 +645,11 @@ export interface TransactionDocument {
   fileSize: number;
 }
 
-export type DisbursementOption = "ELECTRONIC_TRANSFER" | "CARD" | "CARD_AND_CASH";
+export type DisbursementOption =
+  | "ELECTRONIC_TRANSFER"
+  | "CARD"
+  | "CARD_AND_CASH"
+  | "ELECTRONIC_AND_CASH";
 
 export interface PickupLocation {
   id: string;
@@ -686,6 +690,8 @@ export interface CreateTransactionRequest {
   admissionType?: AdmissionType;
   disbursementOption?: DisbursementOption;
   beneficiaryDetails?: Record<string, unknown>;
+  /** Local Nigerian bank account for refunds when disbursement cannot be completed. */
+  refundBankDetails?: Record<string, unknown>;
   pickupLocation?: PickupLocation;
   documents?: TransactionDocument[];
 }
@@ -785,6 +791,7 @@ export interface TransactionOverviewCustomRate {
 }
 
 export interface TransactionOverviewRequest {
+  currency?: string;
   customRates?: TransactionOverviewCustomRate[];
 }
 

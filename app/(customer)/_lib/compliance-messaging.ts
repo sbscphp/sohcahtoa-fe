@@ -13,3 +13,9 @@ export const INVOICE_BENEFICIARY_MESSAGE =
 
 export const CONFIRM_INFO_MESSAGE =
   "I confirm that the information I have provided is correct.";
+
+export const DOMICILIARY_ACCOUNT_MESSAGE =
+  "Enter your domiciliary (foreign currency) account details. Electronic payouts will be sent to this account.";
+
+export const REFUND_BANK_ACCOUNT_MESSAGE =
+  "Select your local Nigerian bank account. This account will be used for refunds if your transaction cannot be processed.";
