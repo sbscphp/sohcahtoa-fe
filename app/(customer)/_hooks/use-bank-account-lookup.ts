@@ -4,8 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { getCustomerApiErrorMessage } from "@/app/(customer)/_utils/customer-api-error-message";
+import {
+  INPUT_LIMITS,
+  sanitizeNgnAccountNumber,
+} from "@/app/_lib/input-field-rules";
 
-const ACCOUNT_NUMBER_LENGTH = 10;
+const ACCOUNT_NUMBER_LENGTH = INPUT_LIMITS.ngnAccountNumber;
 
 export function useBankAccountLookup(enabled: boolean) {
   const [accountNumber, setAccountNumber] = useState("");
@@ -75,7 +79,7 @@ export function useBankAccountLookup(enabled: boolean) {
   }, [enabled, debouncedBankName, debouncedAccountNumber]);
 
   const setAccountNumberDigits = useCallback((raw: string) => {
-    setAccountNumber(raw.replaceAll(/\D/g, "").slice(0, ACCOUNT_NUMBER_LENGTH));
+    setAccountNumber(sanitizeNgnAccountNumber(raw));
   }, []);
 
   const isResolved =

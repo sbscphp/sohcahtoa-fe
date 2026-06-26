@@ -7,6 +7,10 @@ import { EmptyState } from "@/app/(customer)/_components/common";
 import SelectableBankCard from "@/app/(customer)/_components/forms/SelectableBankCard";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 import { filterBankAccounts } from "@/app/(customer)/_utils/customer-bank-accounts";
+import {
+  INPUT_LIMITS,
+  sanitizeSearchQuery,
+} from "@/app/_lib/input-field-rules";
 
 interface BankAccountsListProps {
   accounts: BankAccount[];
@@ -68,7 +72,8 @@ export function BankAccountsList({
           <TextInput
             placeholder={searchPlaceholder}
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            maxLength={INPUT_LIMITS.searchQuery}
+            onChange={(e) => setSearch(sanitizeSearchQuery(e.currentTarget.value))}
             leftSection={<Search size={16} className="text-primary-400" />}
             size="sm"
             radius="xl"

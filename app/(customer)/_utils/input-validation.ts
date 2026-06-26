@@ -93,3 +93,24 @@ export function formatDateToIso(date: Date | string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().split("T")[0] ?? "";
 }
+
+/** Shared field sanitizers, limits, and Zod builders — see `@/app/_lib/input-field-rules`. */
+export {
+  bindSanitizedInput,
+  constrainedTextFieldSchema,
+  digitsFieldSchema,
+  INPUT_LIMITS,
+  INPUT_PATTERNS,
+  sanitizeAlphanumeric,
+  sanitizeBankAccountNumber,
+  sanitizeBankName,
+  sanitizeDigits,
+  sanitizeElevenDigitId,
+  sanitizeNgnAccountNumber,
+  sanitizePersonName,
+  sanitizePostalAddress,
+  sanitizeRoutingNumber,
+  sanitizeSearchQuery,
+  sanitizeSwiftCode,
+  swiftCodeFieldSchema,
+} from "@/app/_lib/input-field-rules";

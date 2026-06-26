@@ -11,6 +11,11 @@ import {
   type InternationalBankDetailsFormValues,
 } from "@/app/(customer)/_lib/international-bank-details-schema";
 import BankDetailsFormSection from "./BankDetailsFormSection";
+import {
+  INPUT_LIMITS,
+  bindSanitizedInput,
+  sanitizeRoutingNumber,
+} from "@/app/_lib/input-field-rules";
 
 interface InternationalBankDetailsFieldsProps {
   form: UseFormReturnType<InternationalBankDetailsFormValues>;
@@ -235,13 +240,13 @@ export default function InternationalBankDetailsFields({
             required
             size="md"
             placeholder="e.g. 026009593"
-            maxLength={9}
-            inputMode="numeric"
             {...form.getInputProps("routingNumber")}
-            onChange={(e) => {
-              const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 9);
-              form.setFieldValue("routingNumber", raw);
-            }}
+            {...bindSanitizedInput(
+              (value) => sanitizeRoutingNumber(value, INPUT_LIMITS.routingNumberUs),
+              (value) => form.setFieldValue("routingNumber", value),
+              INPUT_LIMITS.routingNumberUs,
+              "numeric"
+            )}
             error={form.errors.routingNumber as string | undefined}
           />
         ) : null}

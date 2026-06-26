@@ -12,13 +12,16 @@ import type { NigerianBanksListResponse } from "@/app/_lib/api/types";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { useBankAccountLookup } from "@/app/(customer)/_hooks/use-bank-account-lookup";
 import type { AddBankAccountInput } from "@/app/(customer)/_utils/customer-bank-accounts";
+import { digitsFieldSchema, INPUT_LIMITS, sanitizeSearchQuery } from "@/app/_lib/input-field-rules";
 
 const addBankSchema = z.object({
   bankName: z.string().min(1, "Select a bank"),
-  accountNumber: z
-    .string()
-    .length(10, "Account number must be exactly 10 digits")
-    .regex(/^\d{10}$/, "Account number must contain digits only"),
+  accountNumber: digitsFieldSchema({
+    label: "Account number",
+    min: INPUT_LIMITS.ngnAccountNumber,
+    max: INPUT_LIMITS.ngnAccountNumber,
+    exact: INPUT_LIMITS.ngnAccountNumber,
+  }),
   accountName: z.string().min(1, "Resolve account name before saving"),
 });
 
@@ -148,7 +151,7 @@ export function AddBankAccountModal({
             value={lookup.bankName || null}
             onChange={(value) => lookup.setBankName(value ?? "")}
             searchValue={bankSearch}
-            onSearchChange={setBankSearch}
+            onSearchChange={(value) => setBankSearch(sanitizeSearchQuery(value))}
             nothingFoundMessage={banksLoading ? "Loading banks…" : "No banks found"}
             rightSection={
               banksLoading ? (

@@ -1,45 +1,52 @@
 import { z } from "zod";
-
-function validateSwiftCode(swift: string, ctx: z.RefinementCtx) {
-  const trimmed = swift.trim();
-  if (!trimmed) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["swiftCode"],
-      message: "SWIFT code is required",
-    });
-    return;
-  }
-  if (trimmed.length < 8 || trimmed.length > 11) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["swiftCode"],
-      message: "SWIFT code must be 8–11 characters",
-    });
-  } else if (!/^[A-Za-z0-9]+$/.test(trimmed)) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["swiftCode"],
-      message: "SWIFT code must be alphanumeric",
-    });
-  }
-}
+import {
+  INPUT_LIMITS,
+  INPUT_PATTERNS,
+  constrainedTextFieldSchema,
+  digitsFieldSchema,
+  sanitizeBankAccountNumber,
+  sanitizeBankName,
+  sanitizePersonName,
+  sanitizePostalAddress,
+  sanitizeRoutingNumber,
+  sanitizeSwiftCode,
+  swiftCodeFieldSchema,
+} from "@/app/_lib/input-field-rules";
 
 export const domiciliaryAccountSchema = z
   .object({
-    domiciliaryAccountNumber: z
-      .string()
-      .trim()
-      .min(1, "Domiciliary account number is required")
-      .max(34, "Account number is too long"),
-    domiciliaryBankName: z.string().trim().min(1, "Domiciliary bank name is required"),
-    accountName: z.string().trim().min(1, "Account name is required"),
-    swiftCode: z.string().trim(),
-    routingNumber: z.string().trim().min(1, "Routing number is required"),
-    bankAddress: z.string().trim().min(1, "Bank address is required"),
-  })
-  .superRefine((data, ctx) => {
-    validateSwiftCode(data.swiftCode, ctx);
+    domiciliaryAccountNumber: digitsFieldSchema({
+      label: "Domiciliary account number",
+      min: INPUT_LIMITS.bankAccountNumberMin,
+      max: INPUT_LIMITS.bankAccountNumber,
+    }),
+    domiciliaryBankName: constrainedTextFieldSchema({
+      label: "Domiciliary bank name",
+      min: INPUT_LIMITS.bankNameMin,
+      max: INPUT_LIMITS.bankName,
+      pattern: INPUT_PATTERNS.bankName,
+      patternMessage: "Bank name can only contain letters, numbers, spaces, and . ' & -",
+    }),
+    accountName: constrainedTextFieldSchema({
+      label: "Account name",
+      min: INPUT_LIMITS.personNameMin,
+      max: INPUT_LIMITS.personName,
+      pattern: INPUT_PATTERNS.personName,
+      patternMessage: "Account name can only contain letters, spaces, and . ' -",
+    }),
+    swiftCode: swiftCodeFieldSchema(),
+    routingNumber: digitsFieldSchema({
+      label: "Routing number",
+      min: INPUT_LIMITS.routingNumberMin,
+      max: INPUT_LIMITS.routingNumberGeneric,
+    }),
+    bankAddress: constrainedTextFieldSchema({
+      label: "Bank address",
+      min: INPUT_LIMITS.postalAddressMin,
+      max: INPUT_LIMITS.postalAddress,
+      pattern: INPUT_PATTERNS.postalAddress,
+      patternMessage: "Bank address can only contain letters, numbers, spaces, and . , # / -",
+    }),
   });
 
 export type DomiciliaryAccountFormData = z.infer<typeof domiciliaryAccountSchema>;
@@ -48,11 +55,22 @@ export function domiciliaryAccountInitialValues(
   initial?: Partial<DomiciliaryAccountFormData>
 ): DomiciliaryAccountFormData {
   return {
-    domiciliaryAccountNumber: (initial?.domiciliaryAccountNumber ?? "").trim(),
-    domiciliaryBankName: (initial?.domiciliaryBankName ?? "").trim(),
-    accountName: (initial?.accountName ?? "").trim(),
-    swiftCode: (initial?.swiftCode ?? "").trim().toUpperCase(),
-    routingNumber: (initial?.routingNumber ?? "").trim(),
-    bankAddress: (initial?.bankAddress ?? "").trim(),
+    domiciliaryAccountNumber: sanitizeBankAccountNumber(initial?.domiciliaryAccountNumber ?? ""),
+    domiciliaryBankName: sanitizeBankName(initial?.domiciliaryBankName ?? ""),
+    accountName: sanitizePersonName(initial?.accountName ?? ""),
+    swiftCode: sanitizeSwiftCode(initial?.swiftCode ?? ""),
+    routingNumber: sanitizeRoutingNumber(initial?.routingNumber ?? ""),
+    bankAddress: sanitizePostalAddress(initial?.bankAddress ?? ""),
   };
 }
+
+// Re-export limits for UI maxLength props
+export {
+  INPUT_LIMITS as DOMICILIARY_INPUT_LIMITS,
+  sanitizeBankAccountNumber as sanitizeDomiciliaryAccountNumber,
+  sanitizeBankName as sanitizeDomiciliaryBankName,
+  sanitizePersonName as sanitizeDomiciliaryAccountName,
+  sanitizeSwiftCode as sanitizeDomiciliarySwiftCode,
+  sanitizeRoutingNumber as sanitizeDomiciliaryRoutingNumber,
+  sanitizePostalAddress as sanitizeDomiciliaryBankAddress,
+} from "@/app/_lib/input-field-rules";

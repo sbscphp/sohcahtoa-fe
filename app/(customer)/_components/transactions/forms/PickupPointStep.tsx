@@ -955,6 +955,18 @@ export default function PickupPointStep({
         <DomiciliaryAccountFields
           getInputProps={(field) => payoutMethodForm.getInputProps(field)}
           setFieldValue={(field, value) => payoutMethodForm.setFieldValue(field, value)}
+          clearFieldError={(field) => payoutMethodForm.clearFieldError(field)}
+          errors={payoutMethodForm.errors as Partial<
+            Record<
+              | "domiciliaryAccountNumber"
+              | "domiciliaryBankName"
+              | "accountName"
+              | "swiftCode"
+              | "routingNumber"
+              | "bankAddress",
+              string
+            >
+          >}
         />
       )}
 
