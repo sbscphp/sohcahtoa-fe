@@ -991,6 +991,8 @@ export interface TransactionDetailData {
     workPermitNumber: string | null;
   } | null;
   beneficiaryDetails?: Record<string, unknown> | null;
+  /** Local Nigerian bank account for refunds — mirrors create payload `refundBankDetails`. */
+  refundBankDetails?: Record<string, unknown> | null;
   bankAccounts?: TransactionDetailBankAccount[] | null;
   rejection: string | null;
   requiredDocuments: TransactionDetailRequiredDoc[];

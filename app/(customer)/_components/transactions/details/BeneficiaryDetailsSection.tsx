@@ -1,7 +1,13 @@
 "use client";
 
+import {
+  beneficiaryDetailSectionTitle,
+  hasDetailRecordEntries,
+} from "@/app/(customer)/_lib/resolve-transaction-payout-display";
 import LabelText from "./LabelText";
 import SectionBlock from "./SectionBlock";
+
+const HIDDEN_DETAIL_KEYS = new Set(["isDomiciliaryAccount"]);
 
 function formatFieldLabel(key: string): string {
   return key
@@ -25,19 +31,33 @@ function formatValue(value: unknown): string {
 
 interface BeneficiaryDetailsSectionProps {
   data: Record<string, unknown>;
+  title?: string;
 }
 
-export default function BeneficiaryDetailsSection({ data }: BeneficiaryDetailsSectionProps) {
+export default function BeneficiaryDetailsSection({
+  data,
+  title,
+}: Readonly<BeneficiaryDetailsSectionProps>) {
+  if (!hasDetailRecordEntries(data)) {
+    return null;
+  }
+
   const entries = Object.entries(data).filter(
-    ([, v]) => v !== null && v !== undefined && v !== ""
+    ([key, value]) =>
+      !HIDDEN_DETAIL_KEYS.has(key) &&
+      value !== null &&
+      value !== undefined &&
+      value !== "",
   );
 
   if (entries.length === 0) {
     return null;
   }
 
+  const sectionTitle = title ?? beneficiaryDetailSectionTitle(data);
+
   return (
-    <SectionBlock title="Beneficiary Details">
+    <SectionBlock title={sectionTitle}>
       {entries.map(([key, value]) => (
         <LabelText key={key} label={formatFieldLabel(key)} text={formatValue(value)} />
       ))}

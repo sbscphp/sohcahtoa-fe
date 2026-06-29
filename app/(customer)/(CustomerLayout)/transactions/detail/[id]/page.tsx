@@ -19,7 +19,7 @@ import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
-import { resolveTransactionPayoutDisplay } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
+import { resolveTransactionPayoutSections } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
 import { getCurrencyFlagUrl, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import {
   TransactionDetailsSection,
@@ -118,9 +118,10 @@ export default function TransactionDetailPage() {
     Number.isFinite(paymentAmountNgn) &&
     paymentAmountNgn > 0;
   const cashPickup = apiData?.cashPickup ?? null;
-  const payoutDisplay = resolveTransactionPayoutDisplay(
+  const payoutSections = resolveTransactionPayoutSections(
     apiData?.bankAccounts,
     apiData?.beneficiaryDetails,
+    apiData?.refundBankDetails,
   );
 
   return (
@@ -257,11 +258,17 @@ export default function TransactionDetailPage() {
       <div className="flex flex-col gap-4 pb-8">
         <TransactionDetailsSection data={payload.transactionDetails} />
         {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
-        {payoutDisplay.kind === "bankAccounts" ? (
-          <TransactionBankAccountsSection accounts={payoutDisplay.accounts} />
+        {payoutSections.beneficiary ? (
+          <BeneficiaryDetailsSection data={payoutSections.beneficiary} />
         ) : null}
-        {payoutDisplay.kind === "beneficiary" ? (
-          <BeneficiaryDetailsSection data={payoutDisplay.data} />
+        {payoutSections.refundBank ? (
+          <BeneficiaryDetailsSection
+            title="Refund Bank Details"
+            data={payoutSections.refundBank}
+          />
+        ) : null}
+        {payoutSections.payoutBankAccounts.length > 0 ? (
+          <TransactionBankAccountsSection accounts={payoutSections.payoutBankAccounts} />
         ) : null}
         <RequiredDocumentsSection
           data={payload.requiredDocuments}

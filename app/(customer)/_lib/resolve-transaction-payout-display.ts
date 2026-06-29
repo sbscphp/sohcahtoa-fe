@@ -1,39 +1,86 @@
 import type { TransactionDetailBankAccount } from "@/app/_lib/api/types";
 
-export type TransactionPayoutDisplay =
-  | { kind: "bankAccounts"; accounts: TransactionDetailBankAccount[] }
-  | { kind: "beneficiary"; data: Record<string, unknown> }
-  | { kind: "none" };
+/** Internal payload flags — not shown on detail UI. */
+const HIDDEN_DETAIL_KEYS = new Set(["isDomiciliaryAccount"]);
 
-function hasBeneficiaryEntries(
+export type TransactionPayoutSections = {
+  beneficiary: Record<string, unknown> | null;
+  refundBank: Record<string, unknown> | null;
+  /** Linked domestic account(s) for Sell FX payout when no refund snapshot is present. */
+  payoutBankAccounts: TransactionDetailBankAccount[];
+};
+
+export function hasDetailRecordEntries(
   data: Record<string, unknown> | null | undefined,
 ): boolean {
   if (!data || typeof data !== "object") return false;
 
   return Object.entries(data).some(
-    ([, value]) => value !== null && value !== undefined && value !== "",
+    ([key, value]) =>
+      !HIDDEN_DETAIL_KEYS.has(key) &&
+      value !== null &&
+      value !== undefined &&
+      value !== "",
   );
 }
 
+export function beneficiaryDetailSectionTitle(
+  data: Record<string, unknown>,
+): string {
+  if (data.isDomiciliaryAccount === true) {
+    return "Domiciliary Account Details";
+  }
+  return "Beneficiary Details";
+}
+
 /**
- * Picks a single payout section for transaction detail.
+ * Resolves payout / bank sections for transaction detail.
  *
- * - **bankAccounts** — linked domestic payout account(s) (Sell FX / electronic disbursement).
- *   Authoritative when present; beneficiaryDetails often duplicates the same fields.
- * - **beneficiaryDetails** — international payee (school / medical / pro) or inline wire details.
+ * - **beneficiary** — domiciliary payout or international payee (`beneficiaryDetails`).
+ * - **refundBank** — local NGN refund account (`refundBankDetails`).
+ * - **payoutBankAccounts** — linked accounts for Sell FX when refund snapshot is absent.
+ *   Skipped when `refundBankDetails` is present (attached refund account is the same data).
  */
+export function resolveTransactionPayoutSections(
+  bankAccounts: TransactionDetailBankAccount[] | null | undefined,
+  beneficiaryDetails: Record<string, unknown> | null | undefined,
+  refundBankDetails?: Record<string, unknown> | null | undefined,
+): TransactionPayoutSections {
+  const accounts = (bankAccounts ?? []).filter(Boolean);
+  const beneficiary = hasDetailRecordEntries(beneficiaryDetails)
+    ? beneficiaryDetails!
+    : null;
+  const refundBank = hasDetailRecordEntries(refundBankDetails)
+    ? refundBankDetails!
+    : null;
+  const payoutBankAccounts = refundBank ? [] : accounts;
+
+  return { beneficiary, refundBank, payoutBankAccounts };
+}
+
+/** @deprecated Use `resolveTransactionPayoutSections` — kept for gradual migration. */
+export type TransactionPayoutDisplay =
+  | { kind: "bankAccounts"; accounts: TransactionDetailBankAccount[] }
+  | { kind: "beneficiary"; data: Record<string, unknown> }
+  | { kind: "none" };
+
+/** @deprecated Use `resolveTransactionPayoutSections`. */
 export function resolveTransactionPayoutDisplay(
   bankAccounts: TransactionDetailBankAccount[] | null | undefined,
   beneficiaryDetails: Record<string, unknown> | null | undefined,
 ): TransactionPayoutDisplay {
-  const accounts = (bankAccounts ?? []).filter(Boolean);
+  const sections = resolveTransactionPayoutSections(
+    bankAccounts,
+    beneficiaryDetails,
+    null,
+  );
 
-  if (accounts.length > 0) {
-    return { kind: "bankAccounts", accounts };
+  if (sections.payoutBankAccounts.length > 0) {
+    return { kind: "bankAccounts", accounts: sections.payoutBankAccounts };
   }
 
-  if (hasBeneficiaryEntries(beneficiaryDetails)) {
-    return { kind: "beneficiary", data: beneficiaryDetails! };
+  if (sections.beneficiary) {
+    return { kind: "beneficiary", data: sections.beneficiary };
   }
 
   return { kind: "none" };

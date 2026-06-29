@@ -13,6 +13,10 @@ import type { ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
 import { adminRoutes } from "@/lib/adminRoutes";
+import {
+  beneficiaryDetailSectionTitle,
+  hasDetailRecordEntries,
+} from "@/app/(customer)/_lib/resolve-transaction-payout-display";
 
 type TransactionType =
   | "PTA"
@@ -250,6 +254,23 @@ function hasRecordValues(value: Record<string, unknown>): boolean {
   return Object.keys(value).length > 0;
 }
 
+const HIDDEN_DETAIL_KEYS = new Set(["isDomiciliaryAccount"]);
+
+function recordToOverviewFields(record: Record<string, unknown>): OverviewField[] {
+  return Object.entries(record)
+    .filter(
+      ([key, val]) =>
+        !HIDDEN_DETAIL_KEYS.has(key) &&
+        val !== null &&
+        val !== undefined &&
+        String(val).trim() !== ""
+    )
+    .map(([key, val]) => ({
+      label: toSentenceCase(key),
+      value: String(val),
+    }));
+}
+
 function buildHeaderData(data: AdminTransactionDetailsData, raw: Record<string, unknown>) {
   const transactionType = (data.transactionType || "") as TransactionType;
   return {
@@ -277,6 +298,9 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
       raw.beneficiaryDetails ||
       (raw?.steps as any[])?.[0]?.data?.beneficiaryDetails ||
       asRecord(firstStepDataRaw).beneficiaryDetails
+  );
+  const refundBank = asRecord(
+    raw.refundBankDetails || asRecord(firstStepDataRaw).refundBankDetails
   );
   const stepData = asRecord(asRecord(firstStepDataRaw));
   const personalInfo = asRecord(raw.personalInfo);
@@ -383,24 +407,25 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const needsBeneficiarySection = true;
 
   const beneficiarySection: OverviewSection = {
-    title: BENEFICIARY_SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Beneficiary Details`),
-      // transactionType === "SCHOOL_FEES"
-      //   ? "School Fee Beneficiary Details"
-      //   : transactionType === "MEDICAL"
-      //     ? "Medical Fee Beneficiary Details"
+    title:
+      hasDetailRecordEntries(beneficiary)
+        ? beneficiaryDetailSectionTitle(beneficiary)
+        : BENEFICIARY_SECTION_TITLE_BY_TYPE[transactionType] ??
+          toSentenceCase(`${transactionType} Beneficiary Details`),
+    fields: recordToOverviewFields(beneficiary),
+  };
 
-      //     : "Professional Fee Beneficiary Details",
-    fields: Object.entries(beneficiary)
-      .filter(([, val]) => val !== null && val !== undefined && String(val).trim() !== "")
-      .map(([key, val]) => ({
-        label: toSentenceCase(key),
-        value: String(val),
-      })),
+  const refundBankSection: OverviewSection = {
+    title: "Refund Bank Details",
+    fields: recordToOverviewFields(refundBank),
   };
 
   const sections = [primarySection];
   if (needsBeneficiarySection && beneficiarySection.fields.length > 0) {
     sections.push(beneficiarySection);
+  }
+  if (refundBankSection.fields.length > 0) {
+    sections.push(refundBankSection);
   }
 
   const nonEmptySections = sections.filter((section) => section.fields.length > 0);

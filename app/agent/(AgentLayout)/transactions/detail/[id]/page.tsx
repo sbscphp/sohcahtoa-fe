@@ -31,7 +31,7 @@ import AgentProceedToPaymentModal from "@/app/agent/_components/transactions/det
 import AgentRecordDisbursementModal from "@/app/agent/_components/transactions/details/AgentRecordDisbursementModal";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { buildAgentDetailPayloadFromApi } from "@/app/agent/_utils/agent-transaction-detail-payload";
-import { resolveTransactionPayoutDisplay } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
+import { resolveTransactionPayoutSections } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
 import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import Loader from "@/components/loader";
 import { Button } from "@mantine/core";
@@ -117,9 +117,10 @@ export default function AgentTransactionDetailPage() {
     ? Number(apiData.foreignAmount)
     : 0;
   const cashPickup = apiData?.cashPickup ?? null;
-  const payoutDisplay = resolveTransactionPayoutDisplay(
+  const payoutSections = resolveTransactionPayoutSections(
     apiData?.bankAccounts,
     apiData?.beneficiaryDetails,
+    apiData?.refundBankDetails,
   );
   const isReceivedPaymentStep =
     (apiData?.status ?? "").toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
@@ -346,11 +347,17 @@ export default function AgentTransactionDetailPage() {
           )}
           <TransactionDetailsSection data={payload.transactionDetails} />
           {cashPickup ? <CashPickupDetailsSection data={cashPickup} /> : null}
-          {payoutDisplay.kind === "bankAccounts" ? (
-            <TransactionBankAccountsSection accounts={payoutDisplay.accounts} />
+          {payoutSections.beneficiary ? (
+            <BeneficiaryDetailsSection data={payoutSections.beneficiary} />
           ) : null}
-          {payoutDisplay.kind === "beneficiary" ? (
-            <BeneficiaryDetailsSection data={payoutDisplay.data} />
+          {payoutSections.refundBank ? (
+            <BeneficiaryDetailsSection
+              title="Refund Bank Details"
+              data={payoutSections.refundBank}
+            />
+          ) : null}
+          {payoutSections.payoutBankAccounts.length > 0 ? (
+            <TransactionBankAccountsSection accounts={payoutSections.payoutBankAccounts} />
           ) : null}
           <RequiredDocumentsSection
             data={payload.requiredDocuments}
