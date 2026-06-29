@@ -61,12 +61,6 @@ export function useCashInventoryMovements() {
   const rawRows = data?.data ?? [];
   const totalPages = Math.max(1, data?.pagination?.totalPages ?? 1);
 
-  const currencyCode = useMemo(() => {
-    const first = rawRows[0];
-    if (!first?.currency_pair) return "NGN";
-    return first.currency_pair.split("/")[1] ?? "NGN";
-  }, [rawRows]);
-
   const displayRows = useMemo(
     () => filterMovementRowsByQuery(rawRows, table.searchValue),
     [rawRows, table.searchValue]
@@ -78,7 +72,6 @@ export function useCashInventoryMovements() {
     handleMovementTypeChange,
     rows: displayRows,
     totalPages,
-    currencyCode,
     isLoading,
     error,
     pageSize: limit,

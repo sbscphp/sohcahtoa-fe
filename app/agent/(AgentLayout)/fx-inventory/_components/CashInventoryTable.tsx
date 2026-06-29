@@ -32,7 +32,6 @@ export function CashInventoryTable() {
     handleMovementTypeChange,
     rows,
     totalPages,
-    currencyCode,
     isLoading,
     error,
     pageSize,
@@ -101,10 +100,9 @@ export function CashInventoryTable() {
     () =>
       buildCashInventoryColumns({
         movementType,
-        currencyCode,
         onOpenDetails: openDetails,
       }),
-    [movementType, currencyCode, openDetails]
+    [movementType, openDetails]
   );
 
   return (
@@ -159,7 +157,7 @@ export function CashInventoryTable() {
           amountLabel={
             movementType === "cash_disbursed" ? "Cash disbursed" : "Cash received"
           }
-          amountFormatted={movementAmountDisplay(selectedRow, movementType, currencyCode)}
+          amountFormatted={movementAmountDisplay(selectedRow, movementType)}
           currencyPair={selectedRow.currency_pair ?? undefined}
           transactionTypeLabel={formatTransactionTypeLabel(selectedRow.transaction_type ?? undefined)}
           transactionDate={formatMovementDate(selectedRow.transaction_date)}

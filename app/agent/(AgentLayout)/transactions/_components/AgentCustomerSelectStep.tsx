@@ -1,11 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TextInput, Button, Skeleton } from "@mantine/core";
+import { useEffect, useMemo, useState } from "react";
+import { TextInput, Button, Skeleton, Pagination } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { Search } from "lucide-react";
 import { useFetchData } from "@/app/_lib/api/hooks";
+import { agentKeys } from "@/app/_lib/api/query-keys";
+import type { AgentCustomerSummary } from "@/app/_lib/api/types";
+import { sanitizeSearchQuery } from "@/app/_lib/input-field-rules";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { CustomerInterface } from "../constant";
+
+const PAGE_SIZE = 10;
 
 interface AgentCustomerSelectStepProps {
   onSubmit: (customer: CustomerInterface) => void;
@@ -13,8 +19,19 @@ interface AgentCustomerSelectStepProps {
   selectedCustomer?: CustomerInterface | null;
 }
 
-function getCustomerKey(item: any): string {
+function getCustomerKey(item: Pick<CustomerInterface, "userId">): string {
   return (item?.userId ?? "").toString();
+}
+
+function toCustomerInterface(item: AgentCustomerSummary): CustomerInterface {
+  return {
+    userId: item.userId,
+    fullName: item.fullName,
+    customerType: item.customerType,
+    lastTransactionType: item.lastTransactionType ?? "",
+    registeredAt: item.registeredAt,
+    kycStatus: item.kycStatus,
+  };
 }
 
 export function AgentCustomerSelectStep({
@@ -22,43 +39,52 @@ export function AgentCustomerSelectStep({
   onAddCustomer,
   selectedCustomer,
 }: Readonly<AgentCustomerSelectStepProps>) {
-  const [selectedKey, setSelectedKey] = useState<string | null>(
-    selectedCustomer ? getCustomerKey(selectedCustomer) : null
+  const [pickedCustomer, setPickedCustomer] = useState<CustomerInterface | null>(
+    selectedCustomer ?? null
   );
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [debouncedSearch] = useDebouncedValue(search, 300);
 
-  const { data, isLoading } = useFetchData(
-    ["agent", "customers"],
-    () => agentApi.customers.list(),
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    setPickedCustomer(selectedCustomer ?? null);
+  }, [selectedCustomer]);
+
+  const listParams = useMemo(
+    () => ({
+      page,
+      limit: 5,
+      search: debouncedSearch.trim() || undefined,
+    }),
+    [debouncedSearch, page]
+  );
+
+  const { data, isLoading, isFetching } = useFetchData(
+    [...agentKeys.customers.list(listParams)],
+    () => agentApi.customers.list(listParams),
     true
   );
 
-  const customers = useMemo(() => {
-    const list = ((data?.data as unknown[]) || []) as CustomerInterface[];
-    const safe = list.filter((c) => !!c?.userId);
-    if (!search.trim()) return list;
-    const term = search.toLowerCase();
-    return safe.filter((item) => {
-      return (
-        (item.fullName ?? "").toLowerCase().includes(term) ||
-        (item.userId ?? "").toLowerCase().includes(term)
-      );
-    });
-  }, [data?.data, search]);
+  const customers = useMemo(
+    () => (data?.data ?? []).map(toCustomerInterface),
+    [data?.data]
+  );
 
-  const effectiveSelectedKey =
-    selectedKey ?? (selectedCustomer ? getCustomerKey(selectedCustomer) : null);
+  const pagination = data?.metadata?.pagination;
+  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
+  const effectiveSelectedKey = pickedCustomer ? getCustomerKey(pickedCustomer) : null;
 
   const handleSelect = () => {
-    if (!effectiveSelectedKey) return;
-    const customer = customers.find((item) => getCustomerKey(item) === effectiveSelectedKey);
-    if (!customer) return;
-    onSubmit(customer);
+    if (!pickedCustomer) return;
+    onSubmit(pickedCustomer);
   };
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-[736px] mx-auto">
-      {/* Header text */}
       <div className="flex flex-col items-center gap-1 text-center max-w-xl">
         <h2 className="text-body-heading-300 text-2xl md:text-3xl font-semibold">
           Select Customer
@@ -69,26 +95,25 @@ export function AgentCustomerSelectStep({
         </p>
       </div>
 
-      {/* Content cards */}
       <div className="flex flex-col gap-6 w-full">
-        {/* Search card */}
         <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)] p-4 md:p-6">
           <p className="text-[#6C6969] text-sm md:text-base">Search Customer</p>
           <TextInput
             value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            onChange={(e) => setSearch(sanitizeSearchQuery(e.currentTarget.value))}
             leftSection={<Search className="w-4 h-4 text-[#DD4F05]" />}
-            placeholder="Search by name, or transaction ID..."
+            placeholder="Search by name or customer ID..."
             size="md"
             radius="md"
           />
         </div>
 
-        {/* List card */}
         <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)] p-4 md:p-6">
           <p className="text-[#6C6969] text-sm md:text-base">Select Customer</p>
 
-          <div className="flex flex-col gap-3">
+          <div
+            className={`flex flex-col gap-3 ${isFetching && !isLoading ? "opacity-60" : ""}`}
+          >
             {isLoading && (
               <div className="flex flex-col gap-3">
                 <Skeleton height={60} width="100%" />
@@ -107,17 +132,15 @@ export function AgentCustomerSelectStep({
                 const key = getCustomerKey(item);
                 const isActive = effectiveSelectedKey === key;
                 const name = item.fullName || "Unnamed";
-                const userId = item.userId || "";
                 const customerType = item.customerType || "Resident";
                 const lastTransactionLabel = "Last Transaction";
-                const lastTransactionDate =
-                  item.lastTransactionType || "—";
+                const lastTransactionDate = item.lastTransactionType || "—";
 
                 return (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setSelectedKey(isActive ? null : key)}
+                    onClick={() => setPickedCustomer(isActive ? null : item)}
                     className={`flex w-full flex-row items-start gap-4 rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
                       isActive
                         ? "border-primary-500 bg-[#FFF6F1]"
@@ -136,7 +159,7 @@ export function AgentCustomerSelectStep({
 
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-xs md:text-sm font-medium text-[#4D4B4B]">
-                          {lastTransactionLabel || "Last Transaction"}
+                          {lastTransactionLabel}
                         </span>
                         <span className="text-xs md:text-sm text-[#8F8B8B]">
                           {lastTransactionDate}
@@ -148,7 +171,18 @@ export function AgentCustomerSelectStep({
               })}
           </div>
 
-          {/* Add new customer button */}
+          {!isLoading && totalPages > 1 ? (
+            <div className="flex justify-center pt-2">
+              <Pagination
+                value={page}
+                onChange={setPage}
+                total={totalPages}
+                size="sm"
+                radius="md"
+              />
+            </div>
+          ) : null}
+
           <button
             type="button"
             onClick={onAddCustomer}
@@ -174,4 +208,3 @@ export function AgentCustomerSelectStep({
     </div>
   );
 }
-

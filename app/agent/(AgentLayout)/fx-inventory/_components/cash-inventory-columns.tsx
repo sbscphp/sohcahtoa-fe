@@ -14,6 +14,7 @@ import {
   formatTransactionTypeLabel,
   movementAmountDisplay,
   movementReceivedFromLabel,
+  movementRowCurrency,
 } from "../_lib/format-inventory";
 
 function RowAction({
@@ -42,10 +43,9 @@ function RowAction({
 
 export function buildCashInventoryColumns(options: {
   movementType: AgentPaymentMovementType;
-  currencyCode: string;
   onOpenDetails: (row: AgentPaymentMovementItem) => void;
 }): PaginatedTableColumn<AgentPaymentMovementItem>[] {
-  const { movementType, currencyCode, onOpenDetails } = options;
+  const { movementType, onOpenDetails } = options;
 
   if (movementType === "cash_disbursed") {
     return [
@@ -68,7 +68,10 @@ export function buildCashInventoryColumns(options: {
         label: "Cash Disbursed",
         render: (t) => (
           <p className="text-body-text-300 font-medium text-sm leading-5">
-            {formatCurrencyAmount(t.amount_disbursed, currencyCode)}
+            {formatCurrencyAmount(
+              t.amount_disbursed,
+              movementRowCurrency(t, "cash_disbursed"),
+            )}
           </p>
         ),
       },
@@ -86,7 +89,7 @@ export function buildCashInventoryColumns(options: {
           <p className="text-body-text-400 text-sm leading-5">
             {formatCurrencyAmount(
               typeof t.prepaid_amount === "number" ? t.prepaid_amount : null,
-              currencyCode
+              movementRowCurrency(t, "cash_disbursed"),
             )}
           </p>
         ),
@@ -141,7 +144,7 @@ export function buildCashInventoryColumns(options: {
       label: "Cash Received",
       render: (t) => (
         <p className="text-body-text-300 font-medium text-sm leading-5">
-          {movementAmountDisplay(t, movementType, currencyCode)}
+          {movementAmountDisplay(t, movementType)}
         </p>
       ),
     },
