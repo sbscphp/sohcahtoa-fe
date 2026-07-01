@@ -103,7 +103,7 @@ function formatTime(value?: string): string {
 
 function mapTransaction(item: ApiTransactionItem): AgentTransaction {
   return {
-    id: item.referenceNumber ?? "—",
+    id: item.transactionId ?? "—",
     actionDate: formatDate(item.createdAt),
     actionTime: formatTime(item.createdAt),
     type: item.type ?? "—",
@@ -215,7 +215,7 @@ export default function AgentTransactionsTable({
 
   const renderTransactionRow = (tx: AgentTransaction) => [
     <Text key="transactionId" size="sm" fw={500}>
-      {tx.id}
+      {tx.referenceNumber}
     </Text>,
     <div key="actionDate" className="flex flex-col">
       <Text size="sm">{tx.actionDate}</Text>
