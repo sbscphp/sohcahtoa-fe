@@ -9,9 +9,9 @@ import type { UserPermission } from "@/app/admin/_lib/atoms/admin-auth-atom";
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
   "/admin/dashboard": null,
   "/admin/transactions": "TRANSACTION",
-  "/admin/transient-wallets": null,
+  "/admin/transient-wallets": "TRANSIENT_WALLET",
   "/admin/settlement": "SETTLEMENT",
-  "/admin/agent": null,
+  "/admin/agent": "AGENT",
   "/admin/outlet": "OUTLET",
   "/admin/customer": "CUSTOMER",
   "/admin/tickets": "INCIDENCE",
