@@ -9,6 +9,7 @@ interface OtpFormProps {
   onOtpChange: (value: string) => void;
   onSubmit: () => void;
   onResend: () => void;
+  onBack: () => void;
   timeLeft: number;
   isLoading?: boolean;
   isResending?: boolean;
@@ -20,6 +21,7 @@ export function OtpForm({
   onOtpChange,
   onSubmit,
   onResend,
+  onBack,
   timeLeft,
   isLoading = false,
   isResending = false,
@@ -109,6 +111,18 @@ export function OtpForm({
           className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
         >
           Continue →
+        </CustomButton>
+
+        <CustomButton
+          buttonType="secondary"
+          type="button"
+          size="lg"
+          radius="xl"
+          fullWidth
+          onClick={onBack}
+          disabled={isLoading}
+        >
+          ← Back
         </CustomButton>
       </div>
     </div>

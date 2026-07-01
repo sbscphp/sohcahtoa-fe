@@ -103,7 +103,7 @@ function formatTime(value?: string): string {
 
 function mapTransaction(item: ApiTransactionItem): AgentTransaction {
   return {
-    id: item.transactionId ?? "—",
+    id: item.referenceNumber ?? "—",
     actionDate: formatDate(item.createdAt),
     actionTime: formatTime(item.createdAt),
     type: item.type ?? "—",
