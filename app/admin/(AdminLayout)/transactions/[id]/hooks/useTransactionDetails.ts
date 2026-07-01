@@ -543,8 +543,8 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
     {
       label: "Settlement Structure (Cash)",
       value:
-        pickString(cashPickup.amount) !== "--"
-          ? `${pickString(cashPickup.amount)} ${pickString(cashPickup.currency)}`
+        cashPickup.amount && cashPickup.currency && (pickString(cashPickup.amount) !== "--") && (pickString(cashPickup.currency) !== "--")
+          ? formatCurrency(Number(cashPickup.amount), String(cashPickup.currency))
           : "--",
     },
     { label: "Settlement Structure (Prepaid Card)", value: prepaidCardSummary },

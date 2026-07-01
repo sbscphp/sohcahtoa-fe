@@ -87,9 +87,24 @@ export default function ResetPasswordPage() {
     setOtpSentModalOpened(false);
   };
 
+  const handleOtpSentModalBack = () => {
+    setOtpSentModalOpened(false);
+    setCurrentStep("email");
+  };
+
   const handleOtpSuccessModalClose = () => {
     setOtpSuccessModalOpened(false);
     setCurrentStep("password");
+  };
+
+  const handleOtpSuccessModalBack = () => {
+    setOtpSuccessModalOpened(false);
+    setCurrentStep("email");
+  };
+
+  const handlePasswordStepBack = () => {
+    setResetToken("");
+    setCurrentStep("email");
   };
 
   const handleResendOtp = () => {
@@ -133,6 +148,7 @@ export default function ResetPasswordPage() {
           onOtpChange={setOtp}
           onSubmit={handleOtpSubmit}
           onResend={handleResendOtp}
+          onBack={() => setCurrentStep("email")}
           timeLeft={timeLeft}
           isLoading={verifyOtp.isPending}
           isResending={requestPasswordReset.isPending}
@@ -143,6 +159,7 @@ export default function ResetPasswordPage() {
       {currentStep === "password" && (
         <CreatePasswordForm
           onSubmit={handlePasswordSubmit}
+          onBack={handlePasswordStepBack}
           isLoading={createNewPassword.isPending}
         />
       )}
@@ -155,6 +172,8 @@ export default function ResetPasswordPage() {
         message="A six digit OTP verification code has been sent to your email."
         primaryButtonText="Continue →"
         onPrimaryClick={handleOtpSentModalClose}
+        secondaryButtonText="← Back"
+        onSecondaryClick={handleOtpSentModalBack}
       />
 
       {/* Step 4: OTP Success Modal */}
@@ -165,6 +184,8 @@ export default function ResetPasswordPage() {
         message="You have successfully verified your email."
         primaryButtonText="Set Password"
         onPrimaryClick={handleOtpSuccessModalClose}
+        secondaryButtonText="← Back"
+        onSecondaryClick={handleOtpSuccessModalBack}
       />
 
       {/* Step 4: OTP Error Modal */}

@@ -260,7 +260,7 @@ export default function AgentTransactionDetailsPage() {
                 label="Equivalent Amount"
                 value={
                   txDetails?.equivalentAmount
-                    ? `${currencyCode} ${txDetails.equivalentAmount}`
+                    ? `${txDetails.equivalentAmount}`
                     : PLACEHOLDER
                 }
               />
@@ -347,7 +347,7 @@ export default function AgentTransactionDetailsPage() {
               <DetailItem
                 label="Transaction Receipt"
                 value={
-                  paymentDetails?.transactionReceipt ? (
+                  (paymentDetails?.transactionReceipt && (paymentDetails.transactionReceipt !== "") && (paymentDetails.transactionReceipt !== '—')) ? (
                     <a
                       href={paymentDetails.transactionReceipt}
                       target="_blank"
@@ -387,7 +387,7 @@ export default function AgentTransactionDetailsPage() {
               <DetailItem
                 label="Settlement Receipt"
                 value={
-                  settlement?.settlementReceipt ? (
+                  (settlement?.settlementReceipt && (settlement.settlementReceipt !== "") && (settlement.settlementReceipt !== '—')) ? (
                     <a
                       href={settlement.settlementReceipt}
                       target="_blank"

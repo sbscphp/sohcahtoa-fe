@@ -215,7 +215,7 @@ export default function AgentTransactionsTable({
 
   const renderTransactionRow = (tx: AgentTransaction) => [
     <Text key="transactionId" size="sm" fw={500}>
-      {tx.id}
+      {tx.referenceNumber}
     </Text>,
     <div key="actionDate" className="flex flex-col">
       <Text size="sm">{tx.actionDate}</Text>

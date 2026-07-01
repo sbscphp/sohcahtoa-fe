@@ -14,11 +14,13 @@ import {
 
 interface CreatePasswordFormProps {
   onSubmit: (values: CreatePasswordFormValues) => void;
+  onBack: () => void;
   isLoading?: boolean;
 }
 
 export function CreatePasswordForm({
   onSubmit,
+  onBack,
   isLoading = false,
 }: CreatePasswordFormProps) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -134,6 +136,18 @@ export function CreatePasswordForm({
           className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
         >
           Create Password →
+        </CustomButton>
+
+        <CustomButton
+          buttonType="secondary"
+          type="button"
+          size="lg"
+          radius="xl"
+          fullWidth
+          onClick={onBack}
+          disabled={isLoading}
+        >
+          ← Back
         </CustomButton>
       </form>
     </div>
