@@ -482,6 +482,7 @@ export default function AgentTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -526,6 +527,7 @@ export default function AgentTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -557,10 +559,12 @@ export default function AgentTransactionCreationPage() {
               initialValues={
                 uploadDocumentsData
                   ? (uploadDocumentsData as Partial<SchoolFeesUploadDocumentsFormData>)
-                  : undefined
+                  : (selectedCustomerKycPrefill as Partial<SchoolFeesUploadDocumentsFormData>)
               }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -597,6 +601,7 @@ export default function AgentTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -634,6 +639,7 @@ export default function AgentTransactionCreationPage() {
             onSubmit={handleUploadDocumentsSubmit}
             onBack={handleBack}
             lockKycPrefill={lockSelectedCustomerKyc}
+            omitLoggedInUserKyc
           />
         );
       case "amount":

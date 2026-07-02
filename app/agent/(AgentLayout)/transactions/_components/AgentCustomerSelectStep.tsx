@@ -31,6 +31,8 @@ function toCustomerInterface(item: AgentCustomerSummary): CustomerInterface {
     lastTransactionType: item.lastTransactionType ?? "",
     registeredAt: item.registeredAt,
     kycStatus: item.kycStatus,
+    nin: item.nin ?? null,
+    bvn: item.bvn ?? null,
   };
 }
 

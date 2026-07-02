@@ -500,8 +500,11 @@ export interface AgentCustomerSummary {
   fullName: string;
   customerType: string;
   lastTransactionType: string | null;
+  lastTransactionDate?: string | null;
   registeredAt: string;
   kycStatus: string;
+  nin?: string | null;
+  bvn?: string | null;
 }
 
 export interface AgentCustomerListResponse

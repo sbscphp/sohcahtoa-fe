@@ -214,6 +214,7 @@ interface SchoolFeesUploadDocumentsStepProps {
   onSubmit: (data: SchoolFeesUploadDocumentsFormData) => void;
   onBack?: () => void;
   lockKycPrefill?: boolean;
+  omitLoggedInUserKyc?: boolean;
 }
 
 export default function SchoolFeesUploadDocumentsStep({
@@ -221,10 +222,13 @@ export default function SchoolFeesUploadDocumentsStep({
   onSubmit,
   onBack,
   lockKycPrefill = false,
+  omitLoggedInUserKyc = false,
 }: SchoolFeesUploadDocumentsStepProps) {
   const [admissionType, setAdmissionType] = useState<string>(initialValues?.admissionType || "");
   const kyc = useCustomerProfileBvnNin();
-  const ninLocked = shouldLockKycPrefill(
+  const ninLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
     kyc.hasNinFromProfile,
     initialValues?.ninNumber,
     kyc.defaultNin
@@ -240,7 +244,8 @@ export default function SchoolFeesUploadDocumentsStep({
       studentPassportExpiryDate: initialValues?.studentPassportExpiryDate || "",
       formAId: initialValues?.formAId || "",
       admissionType: initialValues?.admissionType || "",
-      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
+      ninNumber:
+        initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       evidenceOfAdmissionFile: initialValues?.evidenceOfAdmissionFile ?? null,
       schoolInvoiceFile: initialValues?.schoolInvoiceFile ?? null,
       studentPassportFile:
@@ -255,12 +260,13 @@ export default function SchoolFeesUploadDocumentsStep({
   });
 
   useEffect(() => {
+    if (omitLoggedInUserKyc) return;
     const hasDraftNin =
       initialValues?.ninNumber != null && String(initialValues.ninNumber).trim() !== "";
     if (hasDraftNin || !kyc.defaultNin.trim()) return;
     if ((form.values.ninNumber ?? "").trim() !== "") return;
     form.setFieldValue("ninNumber", kyc.defaultNin);
-  }, [kyc.defaultNin, initialValues?.ninNumber, form]);
+  }, [kyc.defaultNin, initialValues?.ninNumber, form, omitLoggedInUserKyc]);
 
   useEffect(() => {
     const nextAdmissionType = initialValues?.admissionType?.trim();
