@@ -159,6 +159,10 @@ export default function AgentForgotPasswordPage() {
           onOtpChange={setOtp}
           onSubmit={handleOtpSubmit}
           onResend={handleResendOtp}
+          onBack={() => {
+            setOtp("");
+            setCurrentStep("email");
+          }}
           timeLeft={timeLeft}
           isLoading={otpLoading}
           isResending={resendLoading}
