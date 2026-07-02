@@ -143,6 +143,11 @@ export default function AgentForgotPasswordPage() {
     );
   };
 
+  const handlePasswordStepBack = () => {
+    setResetToken("");
+    setCurrentStep("email");
+  };
+
   return (
     <AgentAuthLayout>
       {currentStep === "email" && (
@@ -172,6 +177,7 @@ export default function AgentForgotPasswordPage() {
       {currentStep === "password" && (
         <CreatePasswordForm
           onSubmit={handlePasswordSubmit}
+          onBack={handlePasswordStepBack}
           isLoading={passwordLoading}
         />
       )}
