@@ -33,7 +33,7 @@ const FX_OPTIONS_BUY = [
   },
   {
     icon: Hospital,
-    title: "Seek Medical Treatment",
+    title: "Pay Medical Fees",
     description: "Pay for medical treatment or hospital bills abroad",
     href: "/transactions/medical",
   },

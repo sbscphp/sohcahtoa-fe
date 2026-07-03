@@ -114,7 +114,7 @@ export function getDocumentName(documentType: DocumentType): string {
     WORK_PERMIT: "Work Permit",
     PROOF_OF_FUNDS: "Proof of Funds",
     SOURCE_OF_FUNDS_DECLARATION: "Source of Funds Declaration",
-    DIGITAL_SIGNATURE: "Digital Signature",
+    DIGITAL_SIGNATURE: "DIGITAL SIGNATURE",
   };
   return names[documentType] || documentType;
 }

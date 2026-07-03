@@ -62,12 +62,12 @@ export default function SourceOfFundsDeclaration({
               : "text-[#8F8B8B] hover:text-[#4D4B4B]"
           }`}
         >
-          Upload signature
+          DIGITAL SIGNATURE
         </button>
       </div>
       {signatureMode === "initials" && (
         <TextInput
-          label="Your initials (signature on declaration)"
+          label="Your initials"
           required
           size="md"
           placeholder="e.g. J.D."
@@ -79,12 +79,12 @@ export default function SourceOfFundsDeclaration({
       )}
       {signatureMode === "upload" && (
         <FileUploadInput
-          label="Upload signature"
+          label="DIGITAL SIGNATURE"
           required
           value={signatureFile}
           onChange={onSignatureFileChange}
           error={signatureFileError}
-          placeholder="Click to upload signature image"
+          placeholder="Click to upload DIGITAL SIGNATURE"
         />
       )}
     </div>

@@ -51,6 +51,7 @@ import { useAgentBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts
 import {
   getCreatedTransactionId,
   getRefundBankAccountId,
+  mergeRefundBankIntoPickupData,
   toCreateBankAccountPayload,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
@@ -63,6 +64,7 @@ import {
 import {
   getStepsForTransactionType,
   STEP_LABELS,
+  getRefundBankStep,
   type TransactionStep,
 } from "@/app/(customer)/_utils/transaction-flow";
 import {
@@ -226,7 +228,7 @@ export default function AgentTransactionCreationPage() {
       | ProfessionalBodyBankDetailsFormData
   ) => {
     setBankDetailsData(data);
-    setConfirmationOpened(true);
+    setActiveStep("refund-bank-details");
   };
 
   const handlePickupPointSubmit = (
@@ -264,13 +266,10 @@ export default function AgentTransactionCreationPage() {
 
   const handleRefundBankSubmit = (bankAccount: BankAccount) => {
     setPickupPointData((prev) =>
-      prev
-        ? {
-            ...prev,
-            refundBankAccount: bankAccount,
-            selectedRefundBankId: bankAccount.id,
-          }
-        : null
+      mergeRefundBankIntoPickupData(
+        prev as Record<string, unknown> | null,
+        bankAccount
+      ) as PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
     );
     setConfirmationOpened(true);
   };
@@ -323,14 +322,14 @@ export default function AgentTransactionCreationPage() {
       setActiveStep("pickup-point");
       return;
     }
-    if (usesPayoutMethod && !pickupPointData?.refundBankAccount) {
+    if (!getRefundBankAccountId(pickupPointData as Record<string, unknown> | null)) {
       setConfirmationOpened(false);
       notifications.show({
         title: "Refund bank account required",
         message: "Select a local bank account for refunds before initiating the transaction.",
         color: "orange",
       });
-      setActiveStep("bank-details");
+      setActiveStep(getRefundBankStep(flowType));
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
@@ -398,6 +397,10 @@ export default function AgentTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "refund-bank-details") {
+      setActiveStep(
+        isSchoolFees || isMedical || isProfessionalBody ? "bank-details" : "pickup-point"
+      );
     } else if (activeStep === "bank-details" && usesPayoutMethod) {
       setActiveStep("pickup-point");
     } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
@@ -431,6 +434,9 @@ export default function AgentTransactionCreationPage() {
           selectedCustomer={selectedCustomer as any}
         />
       );
+    }
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
     }
     if (isTourist) {
       switch (activeStep) {

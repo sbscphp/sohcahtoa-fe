@@ -139,7 +139,9 @@ export default function CustomerLayoutShell({
       ];
     }
     if (!isTransactionPage || !transactionType) return undefined;
-    const stepMatch = pathname?.match(/\/(upload-documents|amount|pickup-point|bank-details)/);
+    const stepMatch = pathname?.match(
+      /\/(upload-documents|amount|pickup-point|bank-details|refund-bank-details)/
+    );
     const currentStep: TransactionStep = (stepMatch?.[1] as TransactionStep) || "upload-documents";
     const pathPrefix = isSellFlow ? "transactions/sell" : "transactions";
     return getTransactionBreadcrumbs(transactionType, currentStep, pathPrefix);

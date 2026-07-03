@@ -55,6 +55,18 @@ export function getCreatedTransactionId(created: unknown): string | undefined {
   return data?.transactionId ?? data?.id;
 }
 
+/** Merges a selected refund account into pickup / flow bag data (works when pickup is null). */
+export function mergeRefundBankIntoPickupData(
+  pickup: Record<string, unknown> | null | undefined,
+  bankAccount: BankAccount,
+): Record<string, unknown> {
+  return {
+    ...(pickup ?? {}),
+    refundBankAccount: bankAccount,
+    selectedRefundBankId: bankAccount.id,
+  };
+}
+
 /** Saved refund bank account id from payout flow form data. */
 export function getRefundBankAccountId(
   pickup: Record<string, unknown> | null | undefined,

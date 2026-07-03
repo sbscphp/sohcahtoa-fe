@@ -674,6 +674,7 @@ export interface CreateTransactionRequest {
   purpose: string;
   destinationCountry: string;
   studentName?: string;
+  studentNin?: string;
   studentPassportDocumentNumber?: string;
   studentPassportIssueDate?: string;
   studentPassportExpiryDate?: string;
@@ -862,6 +863,7 @@ export interface TransactionDetailStepData {
   passportExpiryDate: string | null;
   tinNumber: string | null;
   studentName: string | null;
+  studentNin: string | null;
   studentPassportDocumentNumber: string | null;
   studentPassportIssueDate: string | null;
   studentPassportExpiryDate: string | null;
@@ -881,6 +883,7 @@ export interface TransactionDetailStep {
   passportExpiryDate: string | null;
   tinNumber: string | null;
   studentName: string | null;
+  studentNin: string | null;
   studentPassportDocumentNumber: string | null;
   studentPassportIssueDate: string | null;
   studentPassportExpiryDate: string | null;
@@ -988,6 +991,7 @@ export interface TransactionDetailData {
     passportExpiryDate: string | null;
     tinNumber: string | null;
     studentName: string | null;
+    studentNin: string | null;
     studentPassportDocumentNumber: string | null;
     studentPassportIssueDate: string | null;
     studentPassportExpiryDate: string | null;

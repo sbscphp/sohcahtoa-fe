@@ -2,7 +2,7 @@
 export const CUSTOMER_BUY_FX_API_PURPOSE = {
   PTA: "Personal Travel Allowance",
   BTA: "Business Travel Allowance",
-  MEDICAL: "Medical Fee Payment",
+  MEDICAL: "Pay Medical Fees",
   PROFESSIONAL_BODY: "Professional Fees Payment",
   SCHOOL_FEES: "Pay School Fees",
   TOURIST_FX: "I am Touring Nigeria",

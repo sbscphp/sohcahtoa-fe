@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
@@ -43,6 +43,18 @@ import {
 } from "@/app/(customer)/_utils/transaction-payload";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
+import { useAgentBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
+import {
+  getCreatedTransactionId,
+  getPickupBankAccountId,
+  getRefundBankAccountId,
+  mergeRefundBankIntoPickupData,
+  toCreateBankAccountPayload,
+} from "@/app/(customer)/_utils/customer-bank-accounts";
+import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
+import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 
 const SELL_TYPE_MAP = {
   resident: "resident",
@@ -105,9 +117,17 @@ export default function AgentSellTransactionCreationPage() {
     | ExpatriatePickupPointFormData
     | null
   >(null);
+  const [addBankOpened, setAddBankOpened] = useState(false);
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
+  const {
+    accounts: bankAccounts,
+    isLoading: bankAccountsLoading,
+    addAccount,
+    isSaving: isSavingBankAccount,
+    attachToTransaction,
+  } = useAgentBankAccounts();
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -133,6 +153,28 @@ export default function AgentSellTransactionCreationPage() {
       | ExpatriatePickupPointFormData
   ) => {
     setPickupPointData(data);
+    setActiveStep("refund-bank-details");
+  };
+
+  const handleAddBank = useCallback(
+    async (data: AddBankAccountFormData) => {
+      try {
+        await addAccount(toCreateBankAccountPayload(data));
+      } catch (error) {
+        handleApiError(error);
+        throw error;
+      }
+    },
+    [addAccount],
+  );
+
+  const handleRefundBankSubmit = (bankAccount: BankAccount) => {
+    setPickupPointData((prev) =>
+      mergeRefundBankIntoPickupData(
+        prev as Record<string, unknown> | null,
+        bankAccount
+      ) as ResidentPickupPointFormData
+    );
     setConfirmationOpened(true);
   };
 
@@ -159,6 +201,27 @@ export default function AgentSellTransactionCreationPage() {
       pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
     };
 
+    if (!pickupPointData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Pickup location required",
+        message: "Choose a pickup location before confirming.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
+      return;
+    }
+    if (!getRefundBankAccountId(pickupPointData as Record<string, unknown>)) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Refund bank account required",
+        message: "Select a local bank account for refunds before initiating the transaction.",
+        color: "orange",
+      });
+      setActiveStep("refund-bank-details");
+      return;
+    }
+
     try {
       const spec = mergeDocumentUploadSpecs(
         getDocumentUploadSpec(transactionType, bag.uploadDocumentsData),
@@ -179,9 +242,25 @@ export default function AgentSellTransactionCreationPage() {
         userId: customerId,
       });
 
+      const transactionId = getCreatedTransactionId(created);
+      const bankAccountId =
+        getPickupBankAccountId(pickupPointData as Record<string, unknown>) ??
+        getRefundBankAccountId(pickupPointData as Record<string, unknown>);
+      if (transactionId && bankAccountId) {
+        try {
+          await attachToTransaction(transactionId, [bankAccountId]);
+        } catch (attachError) {
+          handleApiError(attachError);
+          notifications.show({
+            title: "Transaction created",
+            message:
+              "The request was submitted, but linking the bank account failed. You can retry from transaction details.",
+            color: "orange",
+          });
+        }
+      }
+
       setConfirmationOpened(false);
-      const transactionId = (created as unknown as { data: { transactionId: string } })?.data
-        ?.transactionId;
       router.push(
         transactionId
           ? `/agent/transactions/detail/${transactionId}`
@@ -196,10 +275,29 @@ export default function AgentSellTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") setActiveStep("upload-documents");
     else if (activeStep === "upload-documents") setActiveStep("select-customer");
+    else if (activeStep === "refund-bank-details") setActiveStep("pickup-point");
     else if (activeStep === "pickup-point") setActiveStep("amount");
   };
 
+  const renderRefundBankStep = () => (
+    <BankAccountSelectionStep
+      purpose="refund"
+      banks={bankAccounts}
+      isLoading={bankAccountsLoading}
+      initialSelectedBankId={
+        (pickupPointData as { selectedRefundBankId?: string } | null)?.selectedRefundBankId
+      }
+      onSubmit={handleRefundBankSubmit}
+      onBack={handleBack}
+      onAddBank={() => setAddBankOpened(true)}
+    />
+  );
+
   const renderFlowStep = () => {
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
+    }
+
     if (flowType === "touring-nigeria") {
       switch (activeStep) {
         case "upload-documents":
@@ -366,6 +464,13 @@ export default function AgentSellTransactionCreationPage() {
           />
         );
       })()}
+
+      <AddBankAccountModal
+        opened={addBankOpened}
+        onClose={() => setAddBankOpened(false)}
+        onAddAccount={handleAddBank}
+        isSubmitting={isSavingBankAccount}
+      />
 
       <AgentAddCustomerModal
         opened={addCustomerOpened}

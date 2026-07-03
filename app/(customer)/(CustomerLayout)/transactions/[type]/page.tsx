@@ -23,6 +23,7 @@ import {
   type TransactionStep,
   getStepsForTransactionType,
   STEP_LABELS,
+  getRefundBankStep,
 } from "@/app/(customer)/_utils/transaction-flow";
 import PTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import PTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
@@ -55,6 +56,7 @@ import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-ba
 import {
   getCreatedTransactionId,
   getRefundBankAccountId,
+  mergeRefundBankIntoPickupData,
   toCreateBankAccountPayload,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
@@ -236,13 +238,10 @@ export default function TransactionCreationPage() {
 
   const handleRefundBankSubmit = (bankAccount: BankAccount) => {
     setPickupPointData((prev) =>
-      prev
-        ? {
-            ...prev,
-            refundBankAccount: bankAccount,
-            selectedRefundBankId: bankAccount.id,
-          }
-        : null
+      mergeRefundBankIntoPickupData(
+        prev as Record<string, unknown> | null,
+        bankAccount
+      ) as PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
     );
     setConfirmationOpened(true);
   };
@@ -254,7 +253,7 @@ export default function TransactionCreationPage() {
       | ProfessionalBodyBankDetailsFormData
   ) => {
     setBankDetailsData(data);
-    setConfirmationOpened(true);
+    setActiveStep("refund-bank-details");
   };
 
   const handleConfirmInitiate = async () => {
@@ -302,14 +301,14 @@ export default function TransactionCreationPage() {
       setActiveStep("pickup-point");
       return;
     }
-    if (hasPickup && !pickupPointData?.refundBankAccount) {
+    if (!getRefundBankAccountId(pickupPointData as Record<string, unknown> | null)) {
       setConfirmationOpened(false);
       notifications.show({
         title: "Refund bank account required",
         message: "Select a local bank account for refunds before initiating your transaction.",
         color: "orange",
       });
-      setActiveStep("bank-details");
+      setActiveStep(getRefundBankStep(flowType));
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
@@ -374,6 +373,10 @@ export default function TransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "refund-bank-details") {
+      setActiveStep(
+        isSchoolFees || isMedical || isProfessionalBody ? "bank-details" : "pickup-point"
+      );
     } else if (activeStep === "bank-details" && usesPayoutMethod) {
       setActiveStep("pickup-point");
     } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
@@ -396,6 +399,10 @@ export default function TransactionCreationPage() {
   );
 
   const renderStepContent = () => {
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
+    }
+
     if (isTourist) {
       switch (activeStep) {
         case "upload-documents":

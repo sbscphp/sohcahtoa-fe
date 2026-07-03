@@ -194,8 +194,8 @@ export function getSellOver10kDocumentUploadSpec(
     "I declare that the source of funds/income stated in this form is true and correct to the best of my knowledge. I understand that providing false information may result in rejection of my transaction and reporting to the relevant authorities.",
     "",
     signature.mode === "upload"
-      ? `Signature: uploaded file (${signature.file?.name ?? "unknown"})`
-      : `Signature: initials (${signature.initials || "N/A"})`,
+      ? `DIGITAL SIGNATURE: uploaded file (${signature.file?.name ?? "unknown"})`
+      : `DIGITAL SIGNATURE: initials (${signature.initials || "N/A"})`,
     "",
   ].join("\n");
 

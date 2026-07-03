@@ -370,6 +370,10 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     { label: "Form A ID", value: pickString(raw.formAId) },
     { label: "Student Name", value: pickString(stepData.studentName, personalInfo.studentName) },
     {
+      label: "Student NIN",
+      value: pickString(stepData.studentNin, personalInfo.studentNin),
+    },
+    {
       label: "Student Int'l Passport Number",
       value: pickString(stepData.studentPassportDocumentNumber, personalInfo.studentPassportDocumentNumber),
     },

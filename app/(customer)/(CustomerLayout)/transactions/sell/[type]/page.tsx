@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
-import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
@@ -30,7 +29,15 @@ import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-ba
 import {
   getCreatedTransactionId,
   getPickupBankAccountId,
+  getRefundBankAccountId,
+  mergeRefundBankIntoPickupData,
+  toCreateBankAccountPayload,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
+import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
+import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
+import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
+import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
 import ResidentUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import ResidentTransactionAmountStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
 import ResidentPickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
@@ -91,11 +98,18 @@ export default function SellTransactionCreationPage() {
     | ExpatriatePickupPointFormData
     | null
   >(null);
+  const [addBankOpened, setAddBankOpened] = useState(false);
 
   const userProfile = useAtomValue(userProfileAtom);
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(customerApi.transactions.create);
-  const { attachToTransaction } = useCustomerBankAccounts();
+  const {
+    accounts: bankAccounts,
+    isLoading: bankAccountsLoading,
+    addAccount,
+    isSaving: isSavingBankAccount,
+    attachToTransaction,
+  } = useCustomerBankAccounts();
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -121,6 +135,28 @@ export default function SellTransactionCreationPage() {
       | ExpatriatePickupPointFormData
   ) => {
     setPickupPointData(data);
+    setActiveStep("refund-bank-details");
+  };
+
+  const handleAddBank = useCallback(
+    async (data: AddBankAccountFormData) => {
+      try {
+        await addAccount(toCreateBankAccountPayload(data));
+      } catch (error) {
+        handleApiError(error);
+        throw error;
+      }
+    },
+    [addAccount],
+  );
+
+  const handleRefundBankSubmit = (bankAccount: BankAccount) => {
+    setPickupPointData((prev) =>
+      mergeRefundBankIntoPickupData(
+        prev as Record<string, unknown> | null,
+        bankAccount
+      ) as ResidentPickupPointFormData
+    );
     setConfirmationOpened(true);
   };
 
@@ -147,6 +183,16 @@ export default function SellTransactionCreationPage() {
         color: "orange",
       });
       setActiveStep("pickup-point");
+      return;
+    }
+    if (!getRefundBankAccountId(pickupPointData as Record<string, unknown>)) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Refund bank account required",
+        message: "Select a local bank account for refunds before initiating your transaction.",
+        color: "orange",
+      });
+      setActiveStep("refund-bank-details");
       return;
     }
 
@@ -178,9 +224,9 @@ export default function SellTransactionCreationPage() {
  
       const created = await createTransaction.mutateAsync(payload);
       const transactionId = getCreatedTransactionId(created);
-      const bankAccountId = getPickupBankAccountId(
-        pickupPointData as Record<string, unknown> | null,
-      );
+      const bankAccountId =
+        getPickupBankAccountId(pickupPointData as Record<string, unknown>) ??
+        getRefundBankAccountId(pickupPointData as Record<string, unknown>);
       if (transactionId && bankAccountId) {
         try {
           await attachToTransaction(transactionId, [bankAccountId]);
@@ -209,6 +255,8 @@ export default function SellTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "refund-bank-details") {
+      setActiveStep("pickup-point");
     } else if (activeStep === "pickup-point") {
       setActiveStep("amount");
     } else {
@@ -216,7 +264,25 @@ export default function SellTransactionCreationPage() {
     }
   };
 
+  const renderRefundBankStep = () => (
+    <BankAccountSelectionStep
+      purpose="refund"
+      banks={bankAccounts}
+      isLoading={bankAccountsLoading}
+      initialSelectedBankId={
+        (pickupPointData as { selectedRefundBankId?: string } | null)?.selectedRefundBankId
+      }
+      onSubmit={handleRefundBankSubmit}
+      onBack={handleBack}
+      onAddBank={() => setAddBankOpened(true)}
+    />
+  );
+
   const renderStepContent = () => {
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
+    }
+
     if (flowType === "touring-nigeria") {
       switch (activeStep) {
         case "upload-documents":
@@ -367,6 +433,13 @@ default:
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
         loading={uploadDocuments.isPending || createTransaction.isPending}
+      />
+
+      <AddBankAccountModal
+        opened={addBankOpened}
+        onClose={() => setAddBankOpened(false)}
+        onAddAccount={handleAddBank}
+        isSubmitting={isSavingBankAccount}
       />
     </div>
   );

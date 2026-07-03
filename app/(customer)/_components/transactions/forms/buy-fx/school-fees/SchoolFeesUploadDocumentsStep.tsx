@@ -31,12 +31,24 @@ import UndergraduateForm, {
 
 function addSchoolFeesStudentPassportIssues(
   data: {
+    studentNinNumber?: string;
     studentPassportDocumentNumber?: string;
     studentPassportIssueDate?: string;
     studentPassportExpiryDate?: string;
   },
   ctx: z.RefinementCtx
 ) {
+  const studentNinResult = kycNinRequiredSchema.safeParse(
+    (data.studentNinNumber ?? "").toString().trim()
+  );
+  if (!studentNinResult.success) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["studentNinNumber"],
+      message: studentNinResult.error.issues[0]?.message ?? "Student NIN is required",
+    });
+  }
+
   const passportResult = passportNumberSchema.safeParse(
     (data.studentPassportDocumentNumber ?? "").toString().trim()
   );
@@ -147,6 +159,7 @@ function requireUndergraduateStyleFiles(
 
 const uploadDocumentsBaseSchema = z.object({
   studentName: z.string().trim().min(1, "Student name is required"),
+  studentNinNumber: z.string().optional(),
   studentPassportDocumentNumber: z.string().optional(),
   studentPassportIssueDate: z.string().optional(),
   studentPassportExpiryDate: z.string().optional(),
@@ -239,6 +252,7 @@ export default function SchoolFeesUploadDocumentsStep({
     mode: "controlled",
     initialValues: {
       studentName: initialValues?.studentName || "",
+      studentNinNumber: initialValues?.studentNinNumber || "",
       studentPassportDocumentNumber: initialValues?.studentPassportDocumentNumber || "",
       studentPassportIssueDate: initialValues?.studentPassportIssueDate || "",
       studentPassportExpiryDate: initialValues?.studentPassportExpiryDate || "",
@@ -282,6 +296,7 @@ export default function SchoolFeesUploadDocumentsStep({
       ...values,
       admissionType: values.admissionType?.trim() || admissionType,
       studentName: form.values.studentName?.trim() ?? values.studentName,
+      studentNinNumber: form.values.studentNinNumber ?? values.studentNinNumber,
       studentPassportDocumentNumber:
         form.values.studentPassportDocumentNumber?.trim() ?? values.studentPassportDocumentNumber,
       studentPassportIssueDate:
@@ -338,6 +353,23 @@ export default function SchoolFeesUploadDocumentsStep({
         placeholder="Enter student name"
         autoComplete="off"
         {...form.getInputProps("studentName")}
+      />
+
+      <TextInput
+        label="Student NIN"
+        required
+        size="md"
+        placeholder="Enter student NIN"
+        maxLength={11}
+        inputMode="numeric"
+        autoComplete="off"
+        {...form.getInputProps("studentNinNumber")}
+        onChange={(e) => {
+          const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+          e.currentTarget.value = raw;
+          form.setFieldValue("studentNinNumber", raw);
+        }}
+        error={form.errors.studentNinNumber as string}
       />
 
       <SchoolFeesStudentPassportFields

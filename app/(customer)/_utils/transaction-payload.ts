@@ -335,6 +335,7 @@ function buildSchoolFeesPayload(
     purpose: getCustomerFxPurposeForPayload("SCHOOL_FEES", "BUY"),
     destinationCountry: "United Kingdom",
     studentName: pickOptionalString(upload?.studentName),
+    studentNin: pickOptionalString(upload?.studentNinNumber),
     studentPassportDocumentNumber: pickOptionalString(upload?.studentPassportDocumentNumber),
     studentPassportIssueDate: pickOptionalString(upload?.studentPassportIssueDate),
     studentPassportExpiryDate: pickOptionalString(upload?.studentPassportExpiryDate),
@@ -347,6 +348,7 @@ function buildSchoolFeesPayload(
     passportIssueDate: pickOptionalString(upload?.passportIssueDate),
     passportExpiryDate: pickOptionalString(upload?.passportExpiryDate),
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
+    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
     documents,
   };
 }
@@ -375,6 +377,7 @@ function buildMedicalPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
+    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
     documents,
   };
 }
@@ -402,6 +405,7 @@ function buildProfessionalBodyPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
+    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
     documents,
   };
 }
@@ -430,6 +434,7 @@ function buildResidentFxPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
+    refundBankDetails: refundBankDetailsFromSelection(pickup),
   };
 }
 
@@ -454,6 +459,7 @@ function buildExpatriateFxPayload(
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
+    refundBankDetails: refundBankDetailsFromSelection(pickup),
   };
 }
 
