@@ -24,12 +24,13 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import { kycTinSchema } from "@/app/(customer)/_lib/kyc-tin-schema";
 
 /** TCC document number + TIN certificate file optional — not collected when inputs are hidden. */
 const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
   ninNumber: kycNinOptionalSchema,
-  tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
+  tinNumber: kycTinSchema,
   formAId: formAIdSchema,
   tccDocumentNumber: z.string().max(50, "Document number is too long"),
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
@@ -187,7 +188,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter TIN Number"
-          maxLength={8}
+          maxLength={30}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
         />

@@ -23,7 +23,7 @@ export interface ProofOfFundPromptProps {
 }
 
 /**
- * Shown when transaction amount (USD) meets or exceeds the flow threshold.
+ * Shown when transaction amount (USD) exceeds the flow threshold.
  * Prompts user to upload proof of fund; clicking the link typically opens ProofOfFundModal.
  */
 export default function ProofOfFundPrompt({

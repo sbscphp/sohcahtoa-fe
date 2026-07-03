@@ -23,12 +23,13 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import { kycTinSchema } from "@/app/(customer)/_lib/kyc-tin-schema";
 
 const uploadDocumentsSchema = z
   .object({
     bvn: kycBvnSchema,
     ninNumber: kycNinRequiredSchema,
-    tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
+    tinNumber: kycTinSchema,
     passportDocumentNumber: passportNumberSchema,
     passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
     passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),

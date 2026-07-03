@@ -36,7 +36,7 @@ export default function SourceOfFundsDeclaration({
   return (
     <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 space-y-4">
       <p className="text-body-heading-300 font-medium text-base">
-        Source of funds declaration (required for $10,000 and above)
+        Source of funds declaration (required for transactions over $10,000)
       </p>
       <p className="text-body-text-200 text-sm leading-relaxed">
         {DECLARATION_TEXT}

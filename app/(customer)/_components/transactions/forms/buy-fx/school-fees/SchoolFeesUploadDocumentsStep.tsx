@@ -326,7 +326,7 @@ export default function SchoolFeesUploadDocumentsStep({
 
       <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
         <p className="text-body-text-200">
-          Transactions of <strong>$10,000 USD or more</strong> require proof of funds
+          Transactions over <strong>$10,000 USD</strong> require proof of funds
           documentation on the amount step.
         </p>
       </Alert>

@@ -10,7 +10,7 @@ import {
   type AdminTransactionDetailsData,
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
-import { formatCurrency } from "@/app/utils/helper/formatCurrency";
+import { getCurrencyByCode } from "@/app/admin/_lib/currency";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
 import { adminRoutes } from "@/lib/adminRoutes";
 import {
@@ -211,27 +211,54 @@ function formatTime(value: unknown): string {
   });
 }
 
+function parseNumericAmount(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const direct = Number(trimmed);
+  if (!Number.isNaN(direct)) return direct;
+
+  const normalized = trimmed.replaceAll(/[^\d.-]/g, "");
+  if (!normalized) return null;
+
+  const parsed = Number(normalized);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
 function formatAmount(value: unknown, prefix = ""): string {
-  if (typeof value === "number") {
-    return `${prefix}${value.toLocaleString("en-US")}`;
+  const parsed = parseNumericAmount(value);
+  if (parsed !== null) {
+    return `${prefix}${parsed.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`;
   }
   if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    if (!Number.isNaN(parsed)) {
-      return `${prefix}${parsed.toLocaleString("en-US")}`;
-    }
     return `${prefix}${value}`;
   }
   return "--";
 }
 
 function formatAmountByCurrency(value: unknown, currency: unknown): string {
-  const amount = pickString(value);
-  if (amount === "--") return "--";
+  const parsed = parseNumericAmount(value);
+  if (parsed === null) {
+    const raw = pickString(value);
+    return raw === "--" ? "--" : raw;
+  }
 
   const code = pickString(currency);
-  const formatted = formatCurrency(amount, code === "--" ? undefined : code);
-  return formatted || "--";
+  const formatted = parsed.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  if (code === "--") return formatted;
+
+  const currencyEntry = getCurrencyByCode(code);
+  const prefix = currencyEntry?.symbol ?? `${code} `;
+  return `${prefix}${formatted}`;
 }
 
 function formatFileSize(value: unknown): string {
@@ -544,7 +571,7 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
       label: "Settlement Structure (Cash)",
       value:
         cashPickup.amount && cashPickup.currency && (pickString(cashPickup.amount) !== "--") && (pickString(cashPickup.currency) !== "--")
-          ? formatCurrency(Number(cashPickup.amount), String(cashPickup.currency))
+          ? formatAmountByCurrency(cashPickup.amount, cashPickup.currency)
           : "--",
     },
     { label: "Settlement Structure (Prepaid Card)", value: prepaidCardSummary },

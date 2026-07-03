@@ -76,9 +76,9 @@ function getStaticLimitNotice(flowType: BuyFxFlowType): TransactionNoticeItem {
       };
     case "school-fees":
       return {
-        title: "Proof of funds for $10,000 and above",
+        title: "Proof of funds over $10,000",
         description:
-          "Transactions of $10,000 USD or more require proof of funds documentation.",
+          "Transactions over $10,000 USD require proof of funds documentation.",
         icon: "currency",
       };
     case "medical":

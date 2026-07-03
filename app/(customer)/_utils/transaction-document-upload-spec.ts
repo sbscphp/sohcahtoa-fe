@@ -159,7 +159,7 @@ function readSignature(data: AmountStepData): {
 }
 
 /**
- * Additional documents for SELL transactions >= $10,000 (Resident/Expatriate/Tourist sell).
+ * Additional documents for SELL transactions over $10,000 (Resident/Expatriate/Tourist sell).
  * Reads from transaction amount step data.
  */
 export function getSellOver10kDocumentUploadSpec(
@@ -212,7 +212,7 @@ export function getSellOver10kDocumentUploadSpec(
 }
 
 /**
- * Additional proof-of-funds documents for BUY transactions when amount >= threshold.
+ * Additional proof-of-funds documents for BUY transactions when amount exceeds threshold.
  * Unlike sell flow, this does not include source-of-funds declaration/signature.
  */
 export function getBuyOverThresholdProofOfFundsUploadSpec(
