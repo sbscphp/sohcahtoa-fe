@@ -41,7 +41,6 @@ import type { TouristPickupPointFormData } from "@/app/(customer)/_components/tr
 import type { PickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
 import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
 import {
-  isCashPortionWithinLimit,
   payoutMethodRequiresDomiciliaryAccount,
 } from "@/app/(customer)/_lib/payout-method-utils";
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
@@ -91,23 +90,6 @@ const TRANSACTION_TYPE_MAP = {
   "professional-body": "professional-body",
   tourist: "tourist",
 } as const;
-
-function getRequestedForeignAmount(
-  data:
-    | TransactionAmountFormData
-    | BTATransactionAmountFormData
-    | TouristTransactionAmountFormData
-    | SchoolFeesTransactionAmountFormData
-    | MedicalTransactionAmountFormData
-    | ProfessionalBodyTransactionAmountFormData
-    | null
-) {
-  const record = data as Record<string, unknown> | null;
-  const rawAmount = record?.receiveAmount ?? record?.sendAmount ?? 0;
-  return typeof rawAmount === "number"
-    ? rawAmount
-    : Number.parseFloat(String(rawAmount)) || 0;
-}
 
 type AgentTransactionStep = "select-customer" | TransactionStep;
 
@@ -235,20 +217,6 @@ export default function AgentTransactionCreationPage() {
     data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
   ) => {
     setPickupPointData(data);
-
-    if (
-      data.payoutMethod &&
-      !isCashPortionWithinLimit(getRequestedForeignAmount(transactionAmountData), data.payoutMethod)
-    ) {
-      notifications.show({
-        title: "Cash limit exceeded",
-        message:
-          "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
-        color: "orange",
-      });
-      return;
-    }
-
     setActiveStep("bank-details");
   };
 
