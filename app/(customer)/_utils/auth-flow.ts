@@ -66,6 +66,7 @@ export const AUTH_STORAGE_KEYS = {
     "nationality",
     "otpDeliveryMethod",
     "userType",
+    "nibssSessionId",
   ],
   PASSWORD_RESET: [
     "resetEmail",

@@ -9,6 +9,14 @@ export const passportNumberSchema = z
   .max(9, "International Passport Number must be at most 9 characters")
   .regex(PASSPORT_NUMBER_REGEX, "International Passport Number must be alphanumeric");
 
+/** Non-Nigerian passports — alphanumeric, no fixed length (expatriate / tourist sell FX). */
+export const flexiblePassportDocumentNumberSchema = z
+  .string()
+  .trim()
+  .min(1, "International Passport Number is required")
+  .max(30, "International Passport Number is too long")
+  .regex(/^[A-Za-z0-9]+$/, "International Passport Number must be alphanumeric");
+
 export const requiredIsoDateSchema = (label: string) =>
   z
     .string()

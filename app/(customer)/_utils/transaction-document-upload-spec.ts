@@ -63,7 +63,6 @@ export function getDocumentUploadSpec(
       collectFileAndType(uploadStepData, "letterOfInvitationFile", "PARTNER_INVITATION_LETTER", spec);
       break;
     case "TOURIST_FX":
-      // Buy FX – Tourist FX
       collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);

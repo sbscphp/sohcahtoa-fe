@@ -42,6 +42,9 @@ import type {
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
   VerifyBvnRequest,
+  InitiateBvnConsentResponse,
+  BvnConsentStatusRequest,
+  BvnConsentStatusResponse,
   VerifyBvnResponse,
   VerifyPassportResponse,
   CalculateTransactionRateRequest,
@@ -312,8 +315,13 @@ export const agentApi = {
     },
     nigerian: {
       verifyBvn: (data: VerifyBvnRequest) =>
-        apiClient.post<VerifyBvnResponse>(
+        apiClient.post<InitiateBvnConsentResponse>(
           AGENT_API_ENDPOINTS.customerAuth.nigerian.verifyBvn,
+          data
+        ),
+      bvnConsentStatus: (data: BvnConsentStatusRequest) =>
+        apiClient.post<BvnConsentStatusResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.bvnConsentStatus,
           data
         ),
       sendOtp: (data: SendOtpRequestNigerian) =>

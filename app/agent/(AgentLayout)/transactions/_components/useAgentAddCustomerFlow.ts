@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { FileWithPath } from "@mantine/dropzone";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreateData } from "@/app/_lib/api/hooks";
@@ -8,6 +8,13 @@ import { agentKeys } from "@/app/_lib/api/query-keys";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { PASSPORT_NUMBER_REGEX } from "@/app/(customer)/_utils/input-validation";
+import { agentNigerianBvnConsentClient } from "@/app/_lib/nibss-bvn-consent/clients";
+import {
+  isValidEmail,
+  isValidNigerianPhoneNumber,
+  normalizeNigerianPhoneInput,
+} from "@/app/_lib/nibss-bvn-consent/phone-validation";
+import { useBvnConsentFlow } from "@/app/_lib/nibss-bvn-consent/use-bvn-consent-flow";
 
 export type AgentCustomerType = "resident" | "tourist" | "expatriate";
 export type AgentAddCustomerStep =
@@ -29,6 +36,8 @@ export function useAgentAddCustomerFlow() {
   const [step, setStep] = useState<AgentAddCustomerStep>("type-select");
   const [selectedType, setSelectedType] = useState<AgentCustomerType | null>(null);
   const [bvn, setBvn] = useState("");
+  const [residentEmail, setResidentEmail] = useState("");
+  const [residentPhone, setResidentPhone] = useState("");
   const [passportNumber, setPassportNumber] = useState("");
   const [passportFile, setPassportFile] = useState<FileWithPath | null>(null);
   const [email, setEmail] = useState("");
@@ -42,7 +51,6 @@ export function useAgentAddCustomerFlow() {
   const [otpDeliveryMethod, setOtpDeliveryMethod] = useState<OtpDeliveryMethod | null>(null);
   const [selectedOtpMethod, setSelectedOtpMethod] = useState<OtpDeliveryMethod | null>(null);
 
-  const verifyBvnMutation = useCreateData(agentApi.customerAuth.nigerian.verifyBvn);
   const sendOtpMutation = useCreateData(agentApi.customerAuth.nigerian.sendOtp);
   const resendOtpMutation = useCreateData(agentApi.customerAuth.nigerian.resendOtp);
   const validateOtpMutation = useCreateData(agentApi.customerAuth.nigerian.validateOtp);
@@ -58,6 +66,33 @@ export function useAgentAddCustomerFlow() {
   const resendExpatriateOtpMutation = useCreateData(agentApi.customerAuth.expatriate.resendOtp);
   const validateExpatriateOtpMutation = useCreateData(agentApi.customerAuth.expatriate.validateOtp);
   const createExpatriateAccountMutation = useCreateData(agentApi.customerAuth.expatriate.createAccount);
+
+  const handleBvnConsentCompleted = useCallback(
+    (data: { verificationToken?: string }) => {
+      if (!data.verificationToken) {
+        handleApiError(
+          { message: "Missing verification token", status: 400 },
+          { customMessage: "BVN consent completed but verification token is missing." }
+        );
+        return;
+      }
+
+      setVerificationToken(data.verificationToken);
+      setIsSubmitting(false);
+      setStep("otp-delivery");
+    },
+    []
+  );
+
+  const handleBvnConsentFailed = useCallback(() => {
+    setIsSubmitting(false);
+  }, []);
+
+  const bvnConsent = useBvnConsentFlow({
+    client: agentNigerianBvnConsentClient,
+    onCompleted: handleBvnConsentCompleted,
+    onFailed: handleBvnConsentFailed,
+  });
 
   const isSendingOtp =
     sendOtpMutation.isPending ||
@@ -79,6 +114,8 @@ export function useAgentAddCustomerFlow() {
     setStep("type-select");
     setSelectedType(null);
     setBvn("");
+    setResidentEmail("");
+    setResidentPhone("");
     setPassportNumber("");
     setPassportFile(null);
     setEmail("");
@@ -91,6 +128,7 @@ export function useAgentAddCustomerFlow() {
     setVerificationToken(null);
     setOtpDeliveryMethod(null);
     setSelectedOtpMethod(null);
+    bvnConsent.reset();
   };
 
   const handleCustomerCreated = () => {
@@ -176,30 +214,33 @@ export function useAgentAddCustomerFlow() {
   };
 
   const handleResidentBvnContinue = () => {
-    if (bvn.length !== 11) return;
+    const normalizedPhone = normalizeNigerianPhoneInput(residentPhone);
+
+    if (
+      bvn.length !== 11 ||
+      !isValidEmail(residentEmail) ||
+      !isValidNigerianPhoneNumber(normalizedPhone) ||
+      bvnConsent.isActive
+    ) {
+      return;
+    }
+
     setIsSubmitting(true);
-    verifyBvnMutation.mutate(
-      { bvn },
-      {
-        onSuccess: (response) => {
-          if (response.success && response.data?.verificationToken) {
-            setVerificationToken(response.data.verificationToken);
-            setIsSubmitting(false);
-            setStep("otp-delivery");
-          } else {
-            setIsSubmitting(false);
-            handleApiError(
-              { message: response.error?.message ?? "BVN verification failed", status: 400 },
-              { customMessage: response.error?.message ?? "BVN verification failed. Please check and try again." }
-            );
-          }
-        },
-        onError: (error) => {
-          setIsSubmitting(false);
-          handleApiError(error, { customMessage: "Failed to verify BVN. Please try again." });
-        },
-      }
-    );
+    void bvnConsent.startConsent({
+      bvn,
+      email: residentEmail.trim(),
+      phoneNumber: normalizedPhone,
+    });
+  };
+
+  const handleResidentPhoneChange = (value: string) => {
+    setResidentPhone(normalizeNigerianPhoneInput(value));
+  };
+
+  const handleBvnConsentCancel = () => {
+    bvnConsent.cancel();
+    bvnConsent.reset();
+    setIsSubmitting(false);
   };
 
   const handleOtpDeliveryContinue = (method: OtpDeliveryMethod) => {
@@ -541,6 +582,13 @@ export function useAgentAddCustomerFlow() {
     setSelectedType,
     bvn,
     setBvn,
+    residentEmail,
+    setResidentEmail,
+    residentPhone,
+    setResidentPhone,
+    handleResidentPhoneChange,
+    bvnConsent,
+    handleBvnConsentCancel,
     passportNumber,
     setPassportNumber,
     passportFile,

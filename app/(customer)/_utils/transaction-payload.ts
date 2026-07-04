@@ -190,6 +190,19 @@ function beneficiaryDetailsFromDomiciliaryAccount(
 function refundBankDetailsFromSelection(
   data: Record<string, unknown> | null | undefined
 ): Record<string, unknown> | undefined {
+  const domRefund = data?.refundDomiciliaryAccount as Record<string, unknown> | undefined;
+  if (domRefund) {
+    return {
+      accountNumber: domRefund.domiciliaryAccountNumber,
+      bankName: domRefund.domiciliaryBankName,
+      accountName: domRefund.accountName,
+      swiftCode: domRefund.swiftCode,
+      routingNumber: domRefund.routingNumber,
+      bankAddress: domRefund.bankAddress,
+      isDomiciliaryAccount: true,
+    };
+  }
+
   const refund = data?.refundBankAccount as Record<string, unknown> | undefined;
   if (!refund) return undefined;
 
@@ -312,7 +325,7 @@ function buildTouristPayload(
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     passportIssueDate: upload?.passportIssueDate ?? undefined,
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
-    returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
+    address: upload?.nigerianAddress ?? undefined,
     documents,
     ...payout,
     ...payoutBeneficiaryAndRefundDetails(pickup),

@@ -63,8 +63,8 @@ export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, Document
   MEDICAL: ["PASSPORT", "VISA", "RETURN_TICKET", "MEDICAL_LETTER", "OVERSEAS_MEDICAL_LETTER"],
   // Buy FX – Professional Body
   PROFESSIONAL_BODY: ["MEMBERSHIP_CARD", "INVOICE"],
-  // Buy FX – Tourist FX
-  TOURIST_FX: ["VISA", "PASSPORT", "RETURN_TICKET", "RECEIPT"],
+  // Tourist FX — receipt applies to buy only (validated in buy upload form)
+  TOURIST_FX: ["VISA", "PASSPORT", "RETURN_TICKET"],
   // Sell FX – Resident FX
   RESIDENT_FX: ["PASSPORT", "UTILITY_BILL"],
   // Sell FX – Expatriate FX

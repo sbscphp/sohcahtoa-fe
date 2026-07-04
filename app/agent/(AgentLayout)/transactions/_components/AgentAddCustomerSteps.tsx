@@ -15,6 +15,11 @@ import type {
   AgentCustomerType,
   OtpDeliveryMethod,
 } from "@/app/agent/(AgentLayout)/transactions/_components/useAgentAddCustomerFlow";
+import {
+  isValidEmail,
+  isValidNigerianPhoneNumber,
+  normalizeNigerianPhoneInput,
+} from "@/app/_lib/nibss-bvn-consent/phone-validation";
 
 interface BackButtonProps {
   onBack: () => void;
@@ -117,19 +122,32 @@ function CustomerTypeOption({
 
 interface ResidentBvnStepProps {
   bvn: string;
+  email: string;
+  phoneNumber: string;
   isSubmitting: boolean;
   onBvnChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onPhoneNumberChange: (value: string) => void;
   onContinue: () => void;
   onBack: () => void;
 }
 
 export function ResidentBvnStep({
   bvn,
+  email,
+  phoneNumber,
   isSubmitting,
   onBvnChange,
+  onEmailChange,
+  onPhoneNumberChange,
   onContinue,
   onBack,
 }: Readonly<ResidentBvnStepProps>) {
+  const isFormValid =
+    bvn.length === 11 &&
+    isValidEmail(email) &&
+    isValidNigerianPhoneNumber(normalizeNigerianPhoneInput(phoneNumber));
+
   return (
     <div className="space-y-6">
       <BackButton onBack={onBack} />
@@ -138,28 +156,62 @@ export function ResidentBvnStep({
           Add New Customer
         </h2>
         <p className="text-body-text-200 text-sm md:text-base">
-          Kindly input the BVN of the customer you are trying to onboard.
+          Enter the customer&apos;s BVN and contact details. They will complete
+          NIBSS consent before OTP verification.
         </p>
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="agent-customer-bvn" className="block text-heading-200 text-sm font-medium">
-          Enter BVN <span className="text-error-500">*</span>
-        </label>
-        <TextInput
-          id="agent-customer-bvn"
-          value={bvn}
-          onChange={(e) =>
-            onBvnChange(e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11))
-          }
-          placeholder="22234455555"
-          size="lg"
-        />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="agent-customer-bvn" className="block text-heading-200 text-sm font-medium">
+            Enter BVN <span className="text-error-500">*</span>
+          </label>
+          <TextInput
+            id="agent-customer-bvn"
+            value={bvn}
+            onChange={(e) =>
+              onBvnChange(e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11))
+            }
+            placeholder="22234455555"
+            size="lg"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="agent-customer-email" className="block text-heading-200 text-sm font-medium">
+            Email address <span className="text-error-500">*</span>
+          </label>
+          <TextInput
+            id="agent-customer-email"
+            value={email}
+            onChange={(e) => onEmailChange(e.currentTarget.value)}
+            placeholder="customer@email.com"
+            size="lg"
+            type="email"
+            autoComplete="email"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="agent-customer-phone" className="block text-heading-200 text-sm font-medium">
+            Phone number <span className="text-error-500">*</span>
+          </label>
+          <TextInput
+            id="agent-customer-phone"
+            value={phoneNumber}
+            onChange={(e) => onPhoneNumberChange(e.currentTarget.value)}
+            placeholder="+2348031234567"
+            size="lg"
+            type="tel"
+            maxLength={14}
+            autoComplete="tel"
+          />
+        </div>
       </div>
 
       <Button
         onClick={onContinue}
-        disabled={bvn.length !== 11 || isSubmitting}
+        disabled={!isFormValid || isSubmitting}
         loading={isSubmitting}
         fullWidth
         radius="xl"
@@ -167,7 +219,7 @@ export function ResidentBvnStep({
         rightSection={!isSubmitting && <ArrowUpRight size={18} />}
         className="bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] disabled:bg-primary-100 disabled:text-white disabled:cursor-not-allowed"
       >
-        {isSubmitting ? "Verifying..." : "Continue"}
+        {isSubmitting ? "Starting consent…" : "Continue to NIBSS consent"}
       </Button>
     </div>
   );

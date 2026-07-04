@@ -59,7 +59,9 @@ import type {
   ValidateOtpRequestTourist,
   ValidateOtpResponse,
   VerifyBvnRequest,
-  VerifyBvnResponse,
+  InitiateBvnConsentResponse,
+  BvnConsentStatusRequest,
+  BvnConsentStatusResponse,
   VerifyKycRequest,
   VerifyPassportResponse,
   VerifyResetOtpRequest,
@@ -133,7 +135,10 @@ export const customerApi = {
     // Nigerian signup flow
     nigerian: {
       verifyBvn: (data: VerifyBvnRequest) =>
-        apiClient.post<VerifyBvnResponse>(API_ENDPOINTS.auth.nigerian.verifyBvn, data, { skipAuth: true }),
+        apiClient.post<InitiateBvnConsentResponse>(API_ENDPOINTS.auth.nigerian.verifyBvn, data, { skipAuth: true }),
+
+      bvnConsentStatus: (data: BvnConsentStatusRequest) =>
+        apiClient.post<BvnConsentStatusResponse>(API_ENDPOINTS.auth.nigerian.bvnConsentStatus, data, { skipAuth: true }),
 
       sendOtp: (data: SendOtpRequestNigerian) =>
         apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.sendOtp, data, { skipAuth: true }),

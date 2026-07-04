@@ -3,6 +3,8 @@ import type {
   CustomerBankAccount,
 } from "@/app/_lib/api/types";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
+import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
+import type { DomiciliaryRefundAccount } from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
 export interface AddBankAccountInput {
   bankName: string;
   accountNumber: string;
@@ -64,6 +66,58 @@ export function mergeRefundBankIntoPickupData(
     ...(pickup ?? {}),
     refundBankAccount: bankAccount,
     selectedRefundBankId: bankAccount.id,
+  };
+}
+
+/** Merges sell FX domiciliary refund account details into pickup / flow bag data. */
+export function mergeRefundDomiciliaryIntoPickupData(
+  pickup: Record<string, unknown> | null | undefined,
+  account: DomiciliaryRefundAccount,
+): Record<string, unknown> {
+  return {
+    ...(pickup ?? {}),
+    refundDomiciliaryAccount: {
+      domiciliaryAccountNumber: account.domiciliaryAccountNumber,
+      domiciliaryBankName: account.domiciliaryBankName,
+      accountName: account.accountName,
+      swiftCode: account.swiftCode,
+      routingNumber: account.routingNumber,
+      bankAddress: account.bankAddress,
+    },
+    selectedRefundDomiciliaryId: account.id,
+  };
+}
+
+export function hasCompleteRefundDomiciliaryDetails(
+  pickup: Record<string, unknown> | null | undefined,
+): boolean {
+  const refund = pickup?.refundDomiciliaryAccount as Partial<DomiciliaryAccountFormData> | undefined;
+  if (!refund) return false;
+
+  return Boolean(
+    refund.domiciliaryAccountNumber?.trim() &&
+      refund.domiciliaryBankName?.trim() &&
+      refund.accountName?.trim() &&
+      refund.swiftCode?.trim() &&
+      refund.routingNumber?.trim() &&
+      refund.bankAddress?.trim(),
+  );
+}
+
+export function domiciliaryRefundAccountFromPickupData(
+  pickup: Record<string, unknown> | null | undefined,
+): DomiciliaryRefundAccount | undefined {
+  const refund = pickup?.refundDomiciliaryAccount as Partial<DomiciliaryAccountFormData> | undefined;
+  if (!hasCompleteRefundDomiciliaryDetails(pickup) || !refund) return undefined;
+
+  return {
+    id: String(pickup?.selectedRefundDomiciliaryId ?? "refund-domiciliary"),
+    domiciliaryAccountNumber: refund.domiciliaryAccountNumber!.trim(),
+    domiciliaryBankName: refund.domiciliaryBankName!.trim(),
+    accountName: refund.accountName!.trim(),
+    swiftCode: refund.swiftCode!.trim(),
+    routingNumber: refund.routingNumber!.trim(),
+    bankAddress: refund.bankAddress!.trim(),
   };
 }
 
