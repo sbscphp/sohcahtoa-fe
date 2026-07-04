@@ -137,7 +137,7 @@ export function getBuyFxInitiateNotices(
     case "professional-body":
       return [
         verify(
-          "You will be able to process your professional fee transaction once your documents are verified and approved."
+          "You will be able to process your professional fees transaction once your documents are verified and approved."
         ),
         amountNotice,
       ];

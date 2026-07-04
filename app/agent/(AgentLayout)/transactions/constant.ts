@@ -18,7 +18,7 @@ export const TX_FILTER_OPTIONS: TableFilterGroup[] = [
             { label: "BTA", value: "bta" },
             { label: "Tourist", value: "tourist" },
             { label: "School Fees", value: "school_fees" },
-            { label: "Professional Body", value: "professional_body" },
+            { label: "Professional Fees", value: "professional_body" },
             { label: "IMTO", value: "imto" },
             { label: "Medical", value: "medical" },
         ],

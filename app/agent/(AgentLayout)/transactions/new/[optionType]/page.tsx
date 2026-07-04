@@ -39,7 +39,7 @@ const FX_OPTIONS_BUY = [
   },
   {
     icon: Users,
-    title: "Pay a Professional Body",
+    title: "Pay Professional Fees",
     description: "E.g International membership fee",
     href: "/agent/transactions/professional-body",
   },
@@ -55,19 +55,19 @@ const FX_OPTIONS_SELL = [
   {
     icon: User,
     title: "Resident",
-    description: "Begin a new transaction for fx needs",
+    description: "I have FX and want Naira",
     href: "/agent/transactions/sell/resident",
   },
   {
     icon: Building2,
-    title: "I am Touring Nigeria",
-    description: "Sell FX from your visit to Nigeria",
+    title: "Tourist",
+    description: "I am touring Nigeria and want Naira",
     href: "/agent/transactions/sell/touring-nigeria",
   },
   {
     icon: GraduationCap,
-    title: "Expatriate; I am a foreigner who works in Nigeria",
-    description: "Sell FX to manage your living expenses easily",
+    title: "Expatriate",
+    description: "I am a foreigner living/working in Nigeria and want Naira",
     href: "/agent/transactions/sell/expatriate",
   },
 ] as const;
@@ -79,8 +79,8 @@ const OPTION_CONFIG = {
     options: FX_OPTIONS_BUY,
   },
   sell: {
-    heading: "How would you like to sell your FX?",
-    subheading: "Select seller type below",
+    heading: "Sell FX",
+    subheading: "Select an option below",
     options: FX_OPTIONS_SELL,
   },
   receive: {

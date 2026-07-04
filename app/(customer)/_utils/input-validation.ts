@@ -87,6 +87,47 @@ export function validatePassportDates(
   }
 }
 
+export function validateOptionalPassportFields(
+  data: {
+    passportDocumentNumber?: string;
+    passportIssueDate?: string;
+    passportExpiryDate?: string;
+  },
+  ctx: z.RefinementCtx
+) {
+  const passportNum = data.passportDocumentNumber?.trim() ?? "";
+  if (passportNum) {
+    const result = passportNumberSchema.safeParse(passportNum);
+    if (!result.success) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["passportDocumentNumber"],
+        message:
+          result.error.issues[0]?.message ?? "International Passport Number is invalid",
+      });
+    }
+  }
+
+  const issue = data.passportIssueDate?.trim() ?? "";
+  const expiry = data.passportExpiryDate?.trim() ?? "";
+  if (issue && !expiry) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["passportExpiryDate"],
+      message: "Passport Expiry Date is required when issue date is provided",
+    });
+  }
+  if (expiry && !issue) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["passportIssueDate"],
+      message: "Passport Issued Date is required when expiry date is provided",
+    });
+  }
+
+  validatePassportDates(data, ctx);
+}
+
 export function formatDateToIso(date: Date | string | null): string {
   if (date == null || date === "") return "";
   const d = typeof date === "string" ? new Date(date) : date;

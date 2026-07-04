@@ -20,9 +20,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
   formatDateToIso,
-  passportNumberSchema,
-  requiredIsoDateSchema,
-  validatePassportDates,
+  validateOptionalPassportFields,
 } from "@/app/(customer)/_utils/input-validation";
 
 const uploadDocumentsSchema = z
@@ -30,18 +28,22 @@ const uploadDocumentsSchema = z
     bvn: kycBvnSchema,
     ninNumber: kycNinRequiredSchema,
     formAId: formAIdSchema,
-    passportDocumentNumber: passportNumberSchema,
-    passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
-    passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
+    passportDocumentNumber: z.string().trim(),
+    passportIssueDate: z.string().trim(),
+    passportExpiryDate: z.string().trim(),
+    passportFile: z.custom<FileWithPath | null>().nullable().optional(),
     evidenceOfMembershipFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
       message: "Evidence of Membership is required",
     }),
-    evidenceOfMembershipNumber: z.string().min(1, "Evidence of Membership Number is required").max(50, "Evidence of Membership Number is too long"),
+    evidenceOfMembershipNumber: z
+      .string()
+      .min(1, "Membership/Registration Number is required")
+      .max(50, "Membership/Registration Number is too long"),
     invoiceFromProfessionalBodyFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
       message: "Invoice from Professional Body is required",
     }),
   })
-  .superRefine(validatePassportDates);
+  .superRefine(validateOptionalPassportFields);
 
 export type ProfessionalBodyUploadDocumentsFormData = z.infer<typeof uploadDocumentsSchema>;
 
@@ -90,6 +92,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
+      passportFile: initialValues?.passportFile ?? null,
       evidenceOfMembershipFile: initialValues?.evidenceOfMembershipFile ?? null,
       evidenceOfMembershipNumber: initialValues?.evidenceOfMembershipNumber || "",
       invoiceFromProfessionalBodyFile: initialValues?.invoiceFromProfessionalBodyFile ?? null,
@@ -110,7 +113,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
           Fill in all required information
         </h2>
         <p className="text-body-text-200 text-base max-w-md">
-        Create a new professional fee transaction and get access to foreign exchange for professional examination/subscription fees
+        Create a new professional fees transaction and get access to foreign exchange for professional examination/subscription fees
         </p>
       </div>
 
@@ -178,7 +181,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
 
       <TextInput
         label="International Passport Number"
-        required
         size="md"
         placeholder="Enter Passport Number"
         maxLength={9}
@@ -191,7 +193,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
         <DateInput
           placeholder="Select"
           label="Passport Issued Date"
-          required
           rightSectionPointerEvents="all"
           size="md"
           value={
@@ -208,7 +209,6 @@ export default function ProfessionalBodyUploadDocumentsStep({
         <DateInput
           placeholder="Select"
           label="Passport Expiry Date"
-          required
           size="md"
           rightSectionPointerEvents="all"
           minDate={new Date()}
@@ -226,6 +226,13 @@ export default function ProfessionalBodyUploadDocumentsStep({
       </div>
 
       <TransactionFileUploadInput
+        label="International Passport (optional)"
+        value={form.values.passportFile ?? null}
+        onChange={(file) => form.setFieldValue("passportFile", file)}
+        error={form.errors.passportFile as string}
+      />
+
+      <TransactionFileUploadInput
         label="Evidence of Membership or Registration"
         required
         value={form.values.evidenceOfMembershipFile}
@@ -234,7 +241,7 @@ export default function ProfessionalBodyUploadDocumentsStep({
       />
 
       <TextInput
-        label="Evidence of Membership or Registration"
+        label="Membership/Registration Number"
         required
         size="md"
         placeholder="Enter Number"

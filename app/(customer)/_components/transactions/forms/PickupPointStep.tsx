@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type FormEvent } from "react";
+import { useMemo, type FormEvent, type ReactNode } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -264,6 +264,11 @@ export type PreferenceMode = "pickup-only" | "pickup-or-bank";
 
 export interface PickupPointStepProps {
   preferenceMode?: PreferenceMode;
+  preferenceLabels?: {
+    pickup: string;
+    bank: string;
+  };
+  preferenceNotice?: ReactNode;
   /** Main heading, e.g. "Select Pick Up Point" or "Select Drop Off Point" */
   title?: string;
   subtitle?: string;
@@ -289,6 +294,11 @@ const DEFAULT_TITLE = "Select Pick Up Point";
 
 export default function PickupPointStep({
   preferenceMode = "pickup-only",
+  preferenceLabels = {
+    pickup: "I Prefer to Pickup",
+    bank: "I Prefer Bank Transfer",
+  },
+  preferenceNotice,
   title = DEFAULT_TITLE,
   subtitle = DEFAULT_SUBTITLE,
   submitLabel = "Next",
@@ -750,7 +760,7 @@ export default function PickupPointStep({
                 : "text-[#8F8B8B] hover:text-[#4D4B4B]"
             }`}
           >
-            I Prefer to Pickup
+            {preferenceLabels.pickup}
           </button>
           <button
             type="button"
@@ -761,10 +771,12 @@ export default function PickupPointStep({
                 : "text-[#8F8B8B] hover:text-[#4D4B4B]"
             }`}
           >
-            I Prefer Bank Transfer
+            {preferenceLabels.bank}
           </button>
         </div>
       )}
+
+      {isPickupOrBank && preferenceNotice}
 
       {showPickupForm && isPickupOrBank && (
         <>

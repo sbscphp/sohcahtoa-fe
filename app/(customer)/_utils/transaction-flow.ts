@@ -169,7 +169,7 @@ export function getTransactionTypeLabel(type: TransactionType): string {
     business: "Business Travel Allowance (BTA)",
     "school-fees": "School Fees",
     medical: "Medical Fee",
-    "professional-body": "Professional Fee",
+    "professional-body": "Professional Fees",
     tourist: "Tourist",
     resident: "Residents",
     "touring-nigeria": "Tourist",

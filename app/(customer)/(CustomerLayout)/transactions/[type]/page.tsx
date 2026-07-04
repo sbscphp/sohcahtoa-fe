@@ -590,7 +590,7 @@ export default function TransactionCreationPage() {
   };
 
   const confirmTitle = isProfessionalBody
-    ? "Initiate Professional Fee Transaction request?"
+    ? "Initiate Professional Fees Transaction request?"
     : isMedical
       ? "Initiate Medical Fee Transaction request?"
       : isSchoolFees

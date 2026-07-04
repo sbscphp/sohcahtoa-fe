@@ -92,9 +92,13 @@ export function getDocumentUploadSpec(
       collectFileAndType(uploadStepData, "letterFromOverseasDoctorFile", "OVERSEAS_MEDICAL_LETTER", spec);
       break;
     case "PROFESSIONAL_BODY":
-      // Buy FX – Professional Body
+      // Buy FX – Professional Fees
+      collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "evidenceOfMembershipFile", "MEMBERSHIP_CARD", spec);
       collectFileAndType(uploadStepData, "invoiceFromProfessionalBodyFile", "INVOICE", spec);
+      if (bankDetailsData && typeof bankDetailsData === "object") {
+        collectFileAndType(bankDetailsData, "invoiceFile", "BANK_VERIFICATION", spec);
+      }
       break;
     case "RESIDENT_FX":
       // Sell FX – Resident FX

@@ -410,6 +410,19 @@ function buildProfessionalBodyPayload(
   };
 }
 
+function disbursementOptionFromPickupOrBankPreference(
+  data: Record<string, unknown> | null | undefined
+): Pick<CreateTransactionRequest, "disbursementOption"> {
+  if (!data) return {};
+  if (data.preference === "bank") {
+    return { disbursementOption: "ELECTRONIC_TRANSFER" };
+  }
+  if (data.preference === "pickup") {
+    return { disbursementOption: "CARD" };
+  }
+  return {};
+}
+
 function buildResidentFxPayload(
   bag: TransactionFormDataBag,
   documents: TransactionDocument[]
@@ -435,6 +448,7 @@ function buildResidentFxPayload(
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
     refundBankDetails: refundBankDetailsFromSelection(pickup),
+    ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
 }
 
@@ -460,6 +474,7 @@ function buildExpatriateFxPayload(
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
     refundBankDetails: refundBankDetailsFromSelection(pickup),
+    ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
 }
 
