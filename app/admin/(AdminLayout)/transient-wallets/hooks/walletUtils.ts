@@ -56,6 +56,10 @@ export function mapLedgerType(type: "DEBIT" | "CREDIT"): "Debit" | "Credit" {
   return type === "CREDIT" ? "Credit" : "Debit";
 }
 
+export function isMatchedEntry(matchStatus: LedgerMatchDisplayStatus): boolean {
+  return matchStatus === "Matched";
+}
+
 const INVALID_LINK_TRANSACTION_STATUSES = new Set([
   "cancelled",
   "rejected",
@@ -107,16 +111,10 @@ export function hasLedgerLinkedTransaction(
  * snapshot is not in a terminal state (cancelled / rejected / declined).
  */
 export function canLinkLedgerEntry(
-  linkedTransactionId: string | null | undefined,
+  matchStatus: LedgerMatchDisplayStatus,
   linkedTransaction: LedgerLinkedTransactionRef
 ): boolean {
-  if (hasActiveLedgerLink(linkedTransactionId)) return false;
-
-  if (linkedTransaction?.id?.trim()) {
-    return isLinkableTransactionStatus(linkedTransaction.status);
-  }
-
-  return true;
+  return matchStatus === "Unmatched" && !hasActiveLedgerLink(linkedTransaction?.id);
 }
 
 /** Unlink clears an active link before payout/refund workflows start. */

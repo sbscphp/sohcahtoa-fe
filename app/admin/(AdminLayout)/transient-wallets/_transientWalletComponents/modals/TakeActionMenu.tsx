@@ -15,15 +15,15 @@ interface TakeActionMenuProps {
 
 export default function TakeActionMenu({
   onAction,
-  canLink = false,
-  canUnlink = false,
+  // canLink = false,
+  // canUnlink = false,
   canDisburse = false,
   canRefund = false,
   canFlag = true,
 }: Readonly<TakeActionMenuProps>) {
-  const showLink = canLink;
-  const showUnlink = canUnlink;
-  const showLinkSection = showLink || showUnlink;
+  // const showLink = canLink;
+  // const showUnlink = canUnlink;
+  // const showLinkSection = showLink || showUnlink;
 
   return (
     <Menu position="bottom-end" shadow="md" width={200}>
@@ -33,7 +33,7 @@ export default function TakeActionMenu({
         </Button>
       </Menu.Target>
       <Menu.Dropdown>
-        {showLinkSection ? (
+        {/* {showLinkSection ? (
           <>
             {showLink ? (
               <Menu.Item onClick={() => onAction("link")}>
@@ -47,7 +47,7 @@ export default function TakeActionMenu({
             ) : null}
             <Menu.Divider />
           </>
-        ) : null}
+        ) : null} */}
         {canFlag ? (
           <Menu.Item onClick={() => onAction("flag")}>
             Mark as flagged
