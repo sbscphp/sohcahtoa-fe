@@ -131,6 +131,7 @@ export default function InternationalBankDetailsFields({
             required
             size="md"
             placeholder="Enter"
+
             inputMode="tel"
             {...form.getInputProps("beneficiaryPhone")}
           />
@@ -167,6 +168,7 @@ export default function InternationalBankDetailsFields({
           />
           <TextInput
             label="Country"
+            
             required
             size="md"
             placeholder="Enter"
