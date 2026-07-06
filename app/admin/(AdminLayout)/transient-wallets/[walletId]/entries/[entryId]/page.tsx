@@ -76,20 +76,20 @@ export default function TransientWalletEntryDetailPage() {
     entry?.linkedTransaction
   );
   const isCreditEntry = entry?.type === "CREDIT";
-  const canLink = canLinkLedgerEntry(entry?.linkedTransactionId, entry?.linkedTransaction);
+  const canLink = canLinkLedgerEntry(entry?.matchDisplayStatus ?? "Unmatched", entry?.linkedTransaction);
   const canUnlink = canUnlinkLedgerEntry(
-    entry?.linkedTransactionId,
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
     entry?.refundStatus,
     entry?.disbursementStatus
   );
   const canDisburse = canDisburseLedgerEntry(
-    entry?.linkedTransactionId,
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
     isCreditEntry,
     entry?.linkedTransactionStatus,
     entry?.disbursementStatus
   );
   const canRefund = canRefundLedgerEntry(
-    entry?.linkedTransactionId,
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
     isCreditEntry,
     entry?.refundStatus
   );
