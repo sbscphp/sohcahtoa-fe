@@ -41,7 +41,8 @@ export const internationalBankDetailsSchema = z
     beneficiaryCity: z.string().trim().min(1, "City is required"),
     beneficiaryState: z.string().trim().min(1, "State is required"),
     beneficiaryCountry: z.string().trim().min(1, "Country is required"),
-    bankAccountName: z.string().trim().min(1, "Bank account name is required"),
+    bankName: z.string().trim().min(1, "Bank name is required"),
+    accountName: z.string().trim().min(1, "Account name is required"),
     bankAddress: z.string().trim().min(1, "Bank account address is required"),
     accountNumber: z
       .string()
@@ -58,8 +59,8 @@ export const internationalBankDetailsSchema = z
     ifscNumber: z.string(),
     purposeCode: z.string(),
     bsbCode: z.string(),
-    /** @deprecated Legacy field — kept for persisted drafts */
-    bankName: z.string().trim().optional(),
+    /** @deprecated Legacy field — migrated from bankAccountName in initialValues */
+    bankAccountName: z.string().trim().optional(),
     /** @deprecated Alias — mapped from organizationName in payload */
     beneficiaryName: z.string().trim().optional(),
     otherInformation: z.string().trim().max(2000),
@@ -168,9 +169,11 @@ export function internationalBankDetailsInitialValues(
   const organizationName = (
     initial?.organizationName ??
     initial?.beneficiaryName ??
-    initial?.accountName ??
     ""
   ).trim();
+
+  const bankName = (initial?.bankName ?? initial?.bankAccountName ?? "").trim();
+  const accountName = (initial?.accountName ?? "").trim();
 
   return {
     beneficiaryCountryRegion: inferredRegion,
@@ -181,7 +184,8 @@ export function internationalBankDetailsInitialValues(
     beneficiaryCity: (initial?.beneficiaryCity ?? "").trim(),
     beneficiaryState: (initial?.beneficiaryState ?? "").trim(),
     beneficiaryCountry: (initial?.beneficiaryCountry ?? "").trim(),
-    bankAccountName: (initial?.bankAccountName ?? initial?.accountName ?? organizationName).trim(),
+    bankName,
+    accountName,
     bankAddress: (initial?.bankAddress ?? "").trim(),
     accountNumber: (initial?.accountNumber ?? "").trim(),
     paymentReference: (initial?.paymentReference ?? "").trim(),
@@ -196,7 +200,7 @@ export function internationalBankDetailsInitialValues(
     correspondenceBankSwiftCode: (initial?.correspondenceBankSwiftCode ?? "")
       .trim()
       .toUpperCase(),
-    bankName: (initial?.bankName ?? "").trim(),
+    bankAccountName: bankName,
     beneficiaryName: organizationName,
     otherInformation: (initial?.otherInformation ?? "").trim(),
   };

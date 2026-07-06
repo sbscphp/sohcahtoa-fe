@@ -46,13 +46,13 @@ export function beneficiaryDetailsFromBankForm(
   const organizationName = (
     (bank.organizationName as string | undefined) ??
     (bank.beneficiaryName as string | undefined) ??
-    (bank.accountName as string | undefined)
+    (bank.schoolName as string | undefined)
   )?.trim();
-  const bankAccountName = (
-    (bank.bankAccountName as string | undefined) ??
-    (bank.accountName as string | undefined) ??
-    organizationName
+  const bankName = (
+    (bank.bankName as string | undefined) ??
+    (bank.bankAccountName as string | undefined)
   )?.trim();
+  const accountName = (bank.accountName as string | undefined)?.trim();
   const region = bank.beneficiaryCountryRegion;
   const otherInformation =
     typeof bank.otherInformation === "string" ? bank.otherInformation.trim() : "";
@@ -60,6 +60,7 @@ export function beneficiaryDetailsFromBankForm(
   const details: Record<string, unknown> = {
     name: organizationName,
     organizationName,
+    schoolName: organizationName,
     beneficiaryName: organizationName,
     beneficiaryPhone: bank.beneficiaryPhone,
     beneficiaryEmail: bank.beneficiaryEmail,
@@ -68,9 +69,9 @@ export function beneficiaryDetailsFromBankForm(
     beneficiaryState: bank.beneficiaryState,
     beneficiaryCountry: bank.beneficiaryCountry,
     beneficiaryCountryRegion: bank.beneficiaryCountryRegion,
-    bankAccountName,
-    accountName: bankAccountName,
-    bankName: bank.bankName,
+    bankName,
+    bankAccountName: bankName,
+    accountName,
     bankAddress: bank.bankAddress,
     accountNumber: bank.accountNumber,
     swiftCode: bank.swiftCode,

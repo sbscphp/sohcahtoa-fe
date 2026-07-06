@@ -17,9 +17,38 @@ import {
   sanitizeRoutingNumber,
 } from "@/app/_lib/input-field-rules";
 
+export type InternationalBankDetailsVariant = "default" | "school-fees";
+
+const VARIANT_LABELS: Record<
+  InternationalBankDetailsVariant,
+  {
+    beneficiarySection: string;
+    organizationName: string;
+    bankSection: string;
+    bankName: string;
+    accountName: string;
+  }
+> = {
+  default: {
+    beneficiarySection: "Beneficiary details",
+    organizationName: "Name of organization",
+    bankSection: "Beneficiary bank details",
+    bankName: "Bank name",
+    accountName: "Beneficiary account name",
+  },
+  "school-fees": {
+    beneficiarySection: "For the School (Beneficiary)",
+    organizationName: "School name",
+    bankSection: "Beneficiary bank details",
+    bankName: "Bank name",
+    accountName: "Account name (for the school)",
+  },
+};
+
 interface InternationalBankDetailsFieldsProps {
   form: UseFormReturnType<InternationalBankDetailsFormValues>;
   trailingFields?: ReactNode;
+  variant?: InternationalBankDetailsVariant;
 }
 
 function clearFieldsForRegionChange(
@@ -63,9 +92,11 @@ function hasPaymentIdentifierFields(region: BeneficiaryBankRegion): boolean {
 export default function InternationalBankDetailsFields({
   form,
   trailingFields,
+  variant = "default",
 }: Readonly<InternationalBankDetailsFieldsProps>) {
   const v = form.values;
   const region = v.beneficiaryCountryRegion as BeneficiaryBankRegion;
+  const labels = VARIANT_LABELS[variant];
 
   return (
     <div className="space-y-4">
@@ -86,9 +117,9 @@ export default function InternationalBankDetailsFields({
         rightSection={<HugeiconsIcon icon={ChevronDown} size={20} className="text-text-300" />}
       />
 
-      <BankDetailsFormSection title="Beneficiary details">
+      <BankDetailsFormSection title={labels.beneficiarySection}>
         <TextInput
-          label="Name of organization"
+          label={labels.organizationName}
           required
           size="md"
           placeholder="As on invoice or registration"
@@ -144,13 +175,20 @@ export default function InternationalBankDetailsFields({
         </div>
       </BankDetailsFormSection>
 
-      <BankDetailsFormSection title="Beneficiary bank details">
+      <BankDetailsFormSection title={labels.bankSection}>
         <TextInput
-          label="Bank account name"
+          label={labels.bankName}
+          required
+          size="md"
+          placeholder="Enter bank name"
+          {...form.getInputProps("bankName")}
+        />
+        <TextInput
+          label={labels.accountName}
           required
           size="md"
           placeholder="Name on the account"
-          {...form.getInputProps("bankAccountName")}
+          {...form.getInputProps("accountName")}
         />
         <Textarea
           label="Bank account address"
