@@ -63,7 +63,6 @@ export function getDocumentUploadSpec(
       collectFileAndType(uploadStepData, "letterOfInvitationFile", "PARTNER_INVITATION_LETTER", spec);
       break;
     case "TOURIST_FX":
-      // Buy FX – Tourist FX
       collectFileAndType(uploadStepData, "visaFile", "VISA", spec);
       collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "returnTicketFile", "RETURN_TICKET", spec);
@@ -92,9 +91,13 @@ export function getDocumentUploadSpec(
       collectFileAndType(uploadStepData, "letterFromOverseasDoctorFile", "OVERSEAS_MEDICAL_LETTER", spec);
       break;
     case "PROFESSIONAL_BODY":
-      // Buy FX – Professional Body
+      // Buy FX – Professional Fees
+      collectFileAndType(uploadStepData, "passportFile", "PASSPORT", spec);
       collectFileAndType(uploadStepData, "evidenceOfMembershipFile", "MEMBERSHIP_CARD", spec);
       collectFileAndType(uploadStepData, "invoiceFromProfessionalBodyFile", "INVOICE", spec);
+      if (bankDetailsData && typeof bankDetailsData === "object") {
+        collectFileAndType(bankDetailsData, "invoiceFile", "BANK_VERIFICATION", spec);
+      }
       break;
     case "RESIDENT_FX":
       // Sell FX – Resident FX
@@ -159,7 +162,7 @@ function readSignature(data: AmountStepData): {
 }
 
 /**
- * Additional documents for SELL transactions >= $10,000 (Resident/Expatriate/Tourist sell).
+ * Additional documents for SELL transactions over $10,000 (Resident/Expatriate/Tourist sell).
  * Reads from transaction amount step data.
  */
 export function getSellOver10kDocumentUploadSpec(
@@ -194,8 +197,8 @@ export function getSellOver10kDocumentUploadSpec(
     "I declare that the source of funds/income stated in this form is true and correct to the best of my knowledge. I understand that providing false information may result in rejection of my transaction and reporting to the relevant authorities.",
     "",
     signature.mode === "upload"
-      ? `Signature: uploaded file (${signature.file?.name ?? "unknown"})`
-      : `Signature: initials (${signature.initials || "N/A"})`,
+      ? `DIGITAL SIGNATURE: uploaded file (${signature.file?.name ?? "unknown"})`
+      : `DIGITAL SIGNATURE: initials (${signature.initials || "N/A"})`,
     "",
   ].join("\n");
 
@@ -212,7 +215,7 @@ export function getSellOver10kDocumentUploadSpec(
 }
 
 /**
- * Additional proof-of-funds documents for BUY transactions when amount >= threshold.
+ * Additional proof-of-funds documents for BUY transactions when amount exceeds threshold.
  * Unlike sell flow, this does not include source-of-funds declaration/signature.
  */
 export function getBuyOverThresholdProofOfFundsUploadSpec(

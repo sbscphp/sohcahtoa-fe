@@ -13,6 +13,7 @@ export interface RequiredDocumentsData {
   passportExpiryDate?: string;
   tinNumber?: string;
   studentName?: string;
+  studentNin?: string;
   studentPassportDocumentNumber?: string;
   studentPassportIssueDate?: string;
   studentPassportExpiryDate?: string;
@@ -40,6 +41,7 @@ interface RequiredDocumentsSectionProps {
 function hasRequiredDocumentsContent(data: RequiredDocumentsData): boolean {
   const textFields = [
     data.studentName,
+    data.studentNin,
     data.studentPassportDocumentNumber,
     data.studentPassportIssueDate,
     data.studentPassportExpiryDate,
@@ -96,6 +98,7 @@ export default function RequiredDocumentsSection({
   return (
     <SectionBlock title="Required Documents">
       <LabelText hideWhenEmpty label="Student Name" text={data.studentName} />
+      <LabelText hideWhenEmpty label="Student NIN" text={data.studentNin} />
       <LabelText
         hideWhenEmpty
         label="Student International Passport Number"

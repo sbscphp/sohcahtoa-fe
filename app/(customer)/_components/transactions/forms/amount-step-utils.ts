@@ -1,6 +1,6 @@
 /**
  * Returns the USD amount as a number when one of the currencies is USD.
- * Used for proof-of-fund prompts when amount meets or exceeds the flow-specific threshold.
+ * Used for proof-of-fund prompts when amount exceeds the flow-specific threshold.
  */
 export function getUsdAmount(
   receiveAmount: string,
@@ -31,5 +31,5 @@ export function isAmountOverRequiredAmount(
   sendCurrency: string,
   requiredAmount = 10000
 ): boolean {
-  return getUsdAmount(receiveAmount, receiveCurrency, sendAmount, sendCurrency) >= Number(requiredAmount);
+  return getUsdAmount(receiveAmount, receiveCurrency, sendAmount, sendCurrency) > Number(requiredAmount);
 }

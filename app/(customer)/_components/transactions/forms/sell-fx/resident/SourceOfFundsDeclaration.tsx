@@ -36,7 +36,7 @@ export default function SourceOfFundsDeclaration({
   return (
     <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 space-y-4">
       <p className="text-body-heading-300 font-medium text-base">
-        Source of funds declaration (required for $10,000 and above)
+        Source of funds declaration (required for transactions over $10,000)
       </p>
       <p className="text-body-text-200 text-sm leading-relaxed">
         {DECLARATION_TEXT}
@@ -62,12 +62,12 @@ export default function SourceOfFundsDeclaration({
               : "text-[#8F8B8B] hover:text-[#4D4B4B]"
           }`}
         >
-          Upload signature
+          DIGITAL SIGNATURE
         </button>
       </div>
       {signatureMode === "initials" && (
         <TextInput
-          label="Your initials (signature on declaration)"
+          label="Your initials"
           required
           size="md"
           placeholder="e.g. J.D."
@@ -79,12 +79,12 @@ export default function SourceOfFundsDeclaration({
       )}
       {signatureMode === "upload" && (
         <FileUploadInput
-          label="Upload signature"
+          label="DIGITAL SIGNATURE"
           required
           value={signatureFile}
           onChange={onSignatureFileChange}
           error={signatureFileError}
-          placeholder="Click to upload signature image"
+          placeholder="Click to upload DIGITAL SIGNATURE"
         />
       )}
     </div>

@@ -15,11 +15,17 @@ import {
   type InternationalBankDetailsFormValues,
 } from "@/app/(customer)/_lib/international-bank-details-schema";
 
-const schoolFeesBankDetailsSchema = internationalBankDetailsSchema.and(
-  z.object({
-    invoiceFile: z.custom<FileWithPath | null>().optional(),
+const schoolFeesBankDetailsSchema = internationalBankDetailsSchema
+  .omit({ organizationName: true, accountName: true })
+  .extend({
+    organizationName: z.string().trim().min(1, "School name is required"),
+    accountName: z.string().trim().min(1, "Account name (for the school) is required"),
   })
-);
+  .and(
+    z.object({
+      invoiceFile: z.custom<FileWithPath | null>().optional(),
+    }),
+  );
 
 export type SchoolFeesBankDetailsFormData = z.infer<typeof schoolFeesBankDetailsSchema>;
 
@@ -71,6 +77,7 @@ export default function SchoolFeesBankDetailsStep({
 
       <InternationalBankDetailsFields
         form={form as UseFormReturnType<InternationalBankDetailsFormValues>}
+        variant="school-fees"
         trailingFields={
           <FileUploadInput
             label="Upload invoice (optional – with beneficiary details for verification)"

@@ -19,3 +19,6 @@ export const DOMICILIARY_ACCOUNT_MESSAGE =
 
 export const REFUND_BANK_ACCOUNT_MESSAGE =
   "Select your local Nigerian bank account. This account will be used for refunds if your transaction cannot be processed.";
+
+export const SELL_REFUND_DOMICILIARY_MESSAGE =
+  "Select your domiciliary (foreign currency) bank account. This account will be used for refunds if your transaction cannot be processed.";

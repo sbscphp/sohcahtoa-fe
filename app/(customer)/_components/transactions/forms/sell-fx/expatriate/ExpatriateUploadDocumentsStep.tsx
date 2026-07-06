@@ -9,11 +9,12 @@ import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { MAX_DOCUMENT_FILE_MB } from "@/app/(customer)/_utils/document-upload";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
   formatDateToIso,
-  passportNumberSchema,
+  flexiblePassportDocumentNumberSchema,
   requiredIsoDateSchema,
   validatePassportDates,
 } from "@/app/(customer)/_utils/input-validation";
@@ -27,14 +28,14 @@ import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bv
 const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
   ninNumber: kycNinRequiredSchema,
-  passportDocumentNumber: passportNumberSchema,
+  passportDocumentNumber: flexiblePassportDocumentNumberSchema,
   internationalPassportFile: z
     .custom<FileWithPath | null>()
     .refine((file) => file !== null, {
       message: "International Passport is required",
     }),
   workPermitFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Work Permit is required",
+    message: "Work/Residence Permit is required",
   }),
   passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
   passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
@@ -168,10 +169,18 @@ export default function ExpatriateUploadDocumentsStep({
           label="International Passport Number"
           required
           size="md"
-          placeholder="Enter Passport Number"
-          maxLength={9}
+          placeholder="Enter passport number"
+          maxLength={30}
           autoComplete="off"
           {...form.getInputProps("passportDocumentNumber")}
+          onChange={(e) => {
+            const normalized = e.currentTarget.value
+              .replaceAll(/[^A-Za-z0-9]/g, "")
+              .toUpperCase()
+              .slice(0, 30);
+            e.currentTarget.value = normalized;
+            form.setFieldValue("passportDocumentNumber", normalized);
+          }}
         />
       </div>
 
@@ -184,7 +193,7 @@ export default function ExpatriateUploadDocumentsStep({
       />
 
       <TransactionFileUploadInput
-        label="Work Permit"
+        label="Work/Residence Permit"
         required
         value={form.values.workPermitFile}
         onChange={(file) => form.setFieldValue("workPermitFile", file)}
@@ -222,6 +231,7 @@ export default function ExpatriateUploadDocumentsStep({
       <TransactionFileUploadInput
         label="Utility Bill"
         required
+        supportingText={`Utility bill must not be more than 3 months. PDF, PNG, IMG, JPG supported. Max. size: ${MAX_DOCUMENT_FILE_MB} MB`}
         value={form.values.utilityBillFile}
         onChange={(file) => form.setFieldValue("utilityBillFile", file)}
         error={form.errors.utilityBillFile as string}

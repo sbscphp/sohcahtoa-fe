@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
 import { OTPDeliveryModal } from "@/app/(customer)/_components/modals/OTPDeliveryModal";
 import { VerifyBVNModal } from "@/app/(customer)/_components/modals/VerifyBVNModal";
+import { BvnConsentOverlay } from "@/app/_components/nibss-bvn-consent/BvnConsentOverlay";
 import { TextInput, Button } from "@mantine/core";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
 import { validateUserType, checkAndClearSessionIfUserTypeChanged } from "@/app/(customer)/_utils/auth-flow";
@@ -13,6 +14,14 @@ import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
+import { customerNigerianBvnConsentClient } from "@/app/_lib/nibss-bvn-consent/clients";
+import { persistVerificationProfile } from "@/app/_lib/nibss-bvn-consent/persist-verification-profile";
+import {
+  isValidEmail,
+  isValidNigerianPhoneNumber,
+  normalizeNigerianPhoneInput,
+} from "@/app/_lib/nibss-bvn-consent/phone-validation";
+import { useBvnConsentFlow } from "@/app/_lib/nibss-bvn-consent/use-bvn-consent-flow";
 
 export default function BVNPage() {
   const router = useRouter();
@@ -20,7 +29,8 @@ export default function BVNPage() {
   const userType = validateUserType(params.userType);
 
   const [bvn, setBvn] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [
     otpDeliveryOpened,
     { open: openOTPDelivery, close: closeOTPDelivery }
@@ -31,48 +41,46 @@ export default function BVNPage() {
     "phone" | "email" | null
   >(null);
 
-  const verifyBvnMutation = useCreateData(customerApi.auth.nigerian.verifyBvn);
+  const handleConsentCompleted = useCallback(
+    (data: Parameters<typeof persistVerificationProfile>[0]) => {
+      persistVerificationProfile(data, { bvn, userType: userType ?? undefined });
+      openOTPDelivery();
+    },
+    [bvn, openOTPDelivery, userType]
+  );
+
+  const bvnConsent = useBvnConsentFlow({
+    client: customerNigerianBvnConsentClient,
+    onCompleted: handleConsentCompleted,
+  });
 
   useEffect(() => {
     if (!userType || userType !== "citizen") {
       router.push("/auth/onboarding");
       return;
     }
-    
+
     checkAndClearSessionIfUserTypeChanged(userType);
   }, [userType, router]);
 
+  const isFormValid =
+    bvn.length === 11 &&
+    isValidEmail(email) &&
+    isValidNigerianPhoneNumber(phoneNumber);
+
   const handleVerify = () => {
-    if (bvn.length === 11 && userType && !isVerifying) {
-      setIsVerifying(true);
-      verifyBvnMutation.mutate({ bvn }, {
-        onSuccess: (response) => {
-          if (response.success && response.data) {
-            // Store verificationToken and user data for next steps
-            sessionStorage.setItem("verificationToken", response.data.verificationToken);
-            sessionStorage.setItem("bvn", bvn);
-            sessionStorage.setItem("userType", userType || "");
-            // Store user data from API response
-            if (response.data.email) sessionStorage.setItem("email", response.data.email);
-            if (response.data.fullName) sessionStorage.setItem("fullName", response.data.fullName);
-            if (response.data.phoneNumber) sessionStorage.setItem("phoneNumber", response.data.phoneNumber);
-            if (response.data.address) sessionStorage.setItem("address", response.data.address);
-            setIsVerifying(false);
-            openOTPDelivery();
-          } else {
-            setIsVerifying(false);
-            handleApiError(
-              { message: response.error?.message || "BVN verification failed", status: 400 },
-              { customMessage: response.error?.message || "BVN verification failed. Please check your BVN and try again." }
-            );
-          }
-        },
-        onError: (error) => {
-          setIsVerifying(false);
-          handleApiError(error, { customMessage: "Failed to verify BVN. Please try again." });
-        },
-      });
-    }
+    if (!isFormValid || !userType || bvnConsent.isActive) return;
+
+    void bvnConsent.startConsent({
+      bvn,
+      email: email.trim(),
+      phoneNumber: phoneNumber.trim(),
+    });
+  };
+
+  const handleConsentCancel = () => {
+    bvnConsent.cancel();
+    bvnConsent.reset();
   };
 
   const sendOtpMutation = useCreateData(customerApi.auth.nigerian.sendOtp);
@@ -90,8 +98,7 @@ export default function BVNPage() {
 
     setDeliveryMethod(method);
     sessionStorage.setItem("otpDeliveryMethod", method);
-    
-    // Send OTP to selected method (phone or email)
+
     sendOtpMutation.mutate(
       {
         verificationToken,
@@ -135,6 +142,9 @@ export default function BVNPage() {
     return null;
   }
 
+  const consentOverlayOpen =
+    bvnConsent.phase !== "idle" && bvnConsent.phase !== "completed";
+
   return (
     <>
       <div className="space-y-8">
@@ -151,47 +161,93 @@ export default function BVNPage() {
             Let&apos;s Get you Started.
           </h1>
           <p className="text-body-text-100 text-base">
-            Please enter your BVN. This is required for identity verification
-            and security. Your details are safe and will not be shared.
+            Enter your BVN and contact details. You&apos;ll complete a quick NIBSS
+            consent step before we verify your identity.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-body-text-100 text-base font-medium">
-            BVN
-          </label>
-          <TextInput
-            value={bvn}
-            onChange={(e) =>
-              setBvn(e.target.value.replace(/\D/g, "").slice(0, 11))
-            }
-            placeholder="Enter your BVN"
-            size="lg"
-            maxLength={11}
-          />
-          <p className="text-text-200 text-sm">
-            If you can&apos;t remember, please dial{" "}
-            <span className="font-semibold">*565*0#</span> with your registered
-            SIM to get started.
-          </p>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-body-text-100 text-base font-medium">
+              BVN
+            </label>
+            <TextInput
+              value={bvn}
+              onChange={(e) =>
+                setBvn(e.target.value.replace(/\D/g, "").slice(0, 11))
+              }
+              placeholder="Enter your BVN"
+              size="lg"
+              maxLength={11}
+            />
+            <p className="text-text-200 text-sm">
+              If you can&apos;t remember, please dial{" "}
+              <span className="font-semibold">*565*0#</span> with your registered
+              SIM to get started.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-body-text-100 text-base font-medium">
+              Email address
+            </label>
+            <TextInput
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              size="lg"
+              type="email"
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-body-text-100 text-base font-medium">
+              Phone number
+            </label>
+            <TextInput
+              value={phoneNumber}
+              onChange={(e) =>
+                setPhoneNumber(normalizeNigerianPhoneInput(e.target.value))
+              }
+              placeholder="+2348031234567"
+              size="lg"
+              type="tel"
+              maxLength={14}
+              autoComplete="tel"
+            />
+            <p className="text-text-200 text-sm">
+              Use the phone number linked to your BVN (+234 format).
+            </p>
+          </div>
         </div>
 
         <Button
           onClick={handleVerify}
-          disabled={bvn.length !== 11 || isVerifying}
-          loading={isVerifying}
+          disabled={!isFormValid || bvnConsent.isActive}
+          loading={bvnConsent.isActive}
           variant="filled"
           size="lg"
           className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
           fullWidth
           radius="xl"
-          rightSection={!isVerifying && <ArrowUpRight size={18} />}
+          rightSection={!bvnConsent.isActive && <ArrowUpRight size={18} />}
         >
-          {isVerifying ? "Verifying..." : "Verify BVN"}
+          {bvnConsent.isActive ? "Starting consent…" : "Continue to NIBSS consent"}
         </Button>
 
         <SecurityBadges />
       </div>
+
+      <BvnConsentOverlay
+        opened={consentOverlayOpen}
+        phase={bvnConsent.phase}
+        statusMessage={bvnConsent.statusMessage}
+        usedPopup={bvnConsent.usedPopup}
+        onOpenPortal={bvnConsent.openConsentPortal}
+        onRetry={() => void bvnConsent.retryPolling()}
+        onCancel={handleConsentCancel}
+      />
 
       <OTPDeliveryModal
         opened={otpDeliveryOpened}

@@ -41,7 +41,6 @@ import type { TouristPickupPointFormData } from "@/app/(customer)/_components/tr
 import type { PickupPointFormData } from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAPickupPointStep";
 import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
 import {
-  isCashPortionWithinLimit,
   payoutMethodRequiresDomiciliaryAccount,
 } from "@/app/(customer)/_lib/payout-method-utils";
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
@@ -51,6 +50,7 @@ import { useAgentBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts
 import {
   getCreatedTransactionId,
   getRefundBankAccountId,
+  mergeRefundBankIntoPickupData,
   toCreateBankAccountPayload,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
@@ -63,6 +63,7 @@ import {
 import {
   getStepsForTransactionType,
   STEP_LABELS,
+  getRefundBankStep,
   type TransactionStep,
 } from "@/app/(customer)/_utils/transaction-flow";
 import {
@@ -89,23 +90,6 @@ const TRANSACTION_TYPE_MAP = {
   "professional-body": "professional-body",
   tourist: "tourist",
 } as const;
-
-function getRequestedForeignAmount(
-  data:
-    | TransactionAmountFormData
-    | BTATransactionAmountFormData
-    | TouristTransactionAmountFormData
-    | SchoolFeesTransactionAmountFormData
-    | MedicalTransactionAmountFormData
-    | ProfessionalBodyTransactionAmountFormData
-    | null
-) {
-  const record = data as Record<string, unknown> | null;
-  const rawAmount = record?.receiveAmount ?? record?.sendAmount ?? 0;
-  return typeof rawAmount === "number"
-    ? rawAmount
-    : Number.parseFloat(String(rawAmount)) || 0;
-}
 
 type AgentTransactionStep = "select-customer" | TransactionStep;
 
@@ -226,27 +210,13 @@ export default function AgentTransactionCreationPage() {
       | ProfessionalBodyBankDetailsFormData
   ) => {
     setBankDetailsData(data);
-    setConfirmationOpened(true);
+    setActiveStep("refund-bank-details");
   };
 
   const handlePickupPointSubmit = (
     data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
   ) => {
     setPickupPointData(data);
-
-    if (
-      data.payoutMethod &&
-      !isCashPortionWithinLimit(getRequestedForeignAmount(transactionAmountData), data.payoutMethod)
-    ) {
-      notifications.show({
-        title: "Cash limit exceeded",
-        message:
-          "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
-        color: "orange",
-      });
-      return;
-    }
-
     setActiveStep("bank-details");
   };
 
@@ -264,13 +234,10 @@ export default function AgentTransactionCreationPage() {
 
   const handleRefundBankSubmit = (bankAccount: BankAccount) => {
     setPickupPointData((prev) =>
-      prev
-        ? {
-            ...prev,
-            refundBankAccount: bankAccount,
-            selectedRefundBankId: bankAccount.id,
-          }
-        : null
+      mergeRefundBankIntoPickupData(
+        prev as Record<string, unknown> | null,
+        bankAccount
+      ) as PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
     );
     setConfirmationOpened(true);
   };
@@ -323,14 +290,14 @@ export default function AgentTransactionCreationPage() {
       setActiveStep("pickup-point");
       return;
     }
-    if (usesPayoutMethod && !pickupPointData?.refundBankAccount) {
+    if (!getRefundBankAccountId(pickupPointData as Record<string, unknown> | null)) {
       setConfirmationOpened(false);
       notifications.show({
         title: "Refund bank account required",
         message: "Select a local bank account for refunds before initiating the transaction.",
         color: "orange",
       });
-      setActiveStep("bank-details");
+      setActiveStep(getRefundBankStep(flowType));
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
@@ -398,6 +365,10 @@ export default function AgentTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "refund-bank-details") {
+      setActiveStep(
+        isSchoolFees || isMedical || isProfessionalBody ? "bank-details" : "pickup-point"
+      );
     } else if (activeStep === "bank-details" && usesPayoutMethod) {
       setActiveStep("pickup-point");
     } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
@@ -431,6 +402,9 @@ export default function AgentTransactionCreationPage() {
           selectedCustomer={selectedCustomer as any}
         />
       );
+    }
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
     }
     if (isTourist) {
       switch (activeStep) {
@@ -482,6 +456,7 @@ export default function AgentTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -526,6 +501,7 @@ export default function AgentTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -557,10 +533,12 @@ export default function AgentTransactionCreationPage() {
               initialValues={
                 uploadDocumentsData
                   ? (uploadDocumentsData as Partial<SchoolFeesUploadDocumentsFormData>)
-                  : undefined
+                  : (selectedCustomerKycPrefill as Partial<SchoolFeesUploadDocumentsFormData>)
               }
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
+              lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -597,6 +575,7 @@ export default function AgentTransactionCreationPage() {
               onSubmit={handleUploadDocumentsSubmit}
               onBack={handleBack}
               lockKycPrefill={lockSelectedCustomerKyc}
+              omitLoggedInUserKyc
             />
           );
         case "amount":
@@ -634,6 +613,7 @@ export default function AgentTransactionCreationPage() {
             onSubmit={handleUploadDocumentsSubmit}
             onBack={handleBack}
             lockKycPrefill={lockSelectedCustomerKyc}
+            omitLoggedInUserKyc
           />
         );
       case "amount":
@@ -660,7 +640,7 @@ export default function AgentTransactionCreationPage() {
   };
 
   const confirmTitle = isProfessionalBody
-    ? "Initiate Professional Fee Transaction request?"
+    ? "Initiate Professional Fees Transaction request?"
     : isMedical
       ? "Initiate Medical Fee Transaction request?"
       : isSchoolFees

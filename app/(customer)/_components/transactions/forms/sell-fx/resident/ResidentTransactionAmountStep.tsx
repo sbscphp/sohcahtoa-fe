@@ -110,7 +110,7 @@ export default function ResidentTransactionAmountStep({
       setSourceOfFundsError(
         sourceOfFundsMode === "initials"
           ? "Please enter your initials for the source of funds declaration"
-          : "Please upload your signature for the source of funds declaration"
+          : "Please upload your DIGITAL SIGNATURE for the source of funds declaration"
       );
       return false;
     }

@@ -9,6 +9,14 @@ export const passportNumberSchema = z
   .max(9, "International Passport Number must be at most 9 characters")
   .regex(PASSPORT_NUMBER_REGEX, "International Passport Number must be alphanumeric");
 
+/** Non-Nigerian passports — alphanumeric, no fixed length (expatriate / tourist sell FX). */
+export const flexiblePassportDocumentNumberSchema = z
+  .string()
+  .trim()
+  .min(1, "International Passport Number is required")
+  .max(30, "International Passport Number is too long")
+  .regex(/^[A-Za-z0-9]+$/, "International Passport Number must be alphanumeric");
+
 export const requiredIsoDateSchema = (label: string) =>
   z
     .string()
@@ -85,6 +93,47 @@ export function validatePassportDates(
       message: "Passport Expiry Date must be after Passport Issued Date",
     });
   }
+}
+
+export function validateOptionalPassportFields(
+  data: {
+    passportDocumentNumber?: string;
+    passportIssueDate?: string;
+    passportExpiryDate?: string;
+  },
+  ctx: z.RefinementCtx
+) {
+  const passportNum = data.passportDocumentNumber?.trim() ?? "";
+  if (passportNum) {
+    const result = passportNumberSchema.safeParse(passportNum);
+    if (!result.success) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["passportDocumentNumber"],
+        message:
+          result.error.issues[0]?.message ?? "International Passport Number is invalid",
+      });
+    }
+  }
+
+  const issue = data.passportIssueDate?.trim() ?? "";
+  const expiry = data.passportExpiryDate?.trim() ?? "";
+  if (issue && !expiry) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["passportExpiryDate"],
+      message: "Passport Expiry Date is required when issue date is provided",
+    });
+  }
+  if (expiry && !issue) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["passportIssueDate"],
+      message: "Passport Issued Date is required when expiry date is provided",
+    });
+  }
+
+  validatePassportDates(data, ctx);
 }
 
 export function formatDateToIso(date: Date | string | null): string {

@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
     // Nigerian signup flow
     nigerian: {
       verifyBvn: "/api/auth/signup/nigerian/verify-bvn",
+      bvnConsentStatus: "/api/auth/signup/nigerian/bvn-consent-status",
       sendOtp: "/api/auth/signup/nigerian/send-otp",
       resendOtp: "/api/auth/signup/nigerian/resend-otp",
       validateOtp: "/api/auth/signup/nigerian/validate-otp",

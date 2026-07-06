@@ -29,6 +29,7 @@ export const AGENT_API_ENDPOINTS = {
     },
     nigerian: {
       verifyBvn: "/api/agent/customer-auth/verify-bvn",
+      bvnConsentStatus: "/api/agent/customer-auth/bvn-consent-status",
       sendOtp: "/api/agent/customer-auth/send-otp",
       resendOtp: "/api/agent/customer-auth/resend-otp",
       validateOtp: "/api/agent/customer-auth/validate-otp",

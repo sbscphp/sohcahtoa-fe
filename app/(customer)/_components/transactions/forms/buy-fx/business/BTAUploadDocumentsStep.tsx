@@ -24,12 +24,13 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import { kycTinSchema } from "@/app/(customer)/_lib/kyc-tin-schema";
 
 /** TCC document number + TIN certificate file optional — not collected when inputs are hidden. */
 const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
   ninNumber: kycNinOptionalSchema,
-  tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
+  tinNumber: kycTinSchema,
   formAId: formAIdSchema,
   tccDocumentNumber: z.string().max(50, "Document number is too long"),
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
@@ -66,6 +67,7 @@ interface BTAUploadDocumentsStepProps {
   onSubmit: (data: BTAUploadDocumentsFormData) => void;
   onBack?: () => void;
   lockKycPrefill?: boolean;
+  omitLoggedInUserKyc?: boolean;
 }
 
 export default function BTAUploadDocumentsStep({
@@ -73,14 +75,19 @@ export default function BTAUploadDocumentsStep({
   onSubmit,
   onBack,
   lockKycPrefill = false,
+  omitLoggedInUserKyc = false,
 }: Readonly<BTAUploadDocumentsStepProps>) {
   const kyc = useCustomerProfileBvnNin();
-  const bvnLocked = shouldLockKycPrefill(
+  const bvnLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
     kyc.hasBvnFromProfile,
     initialValues?.bvn,
     kyc.defaultBvn
   );
-  const ninLocked = shouldLockKycPrefill(
+  const ninLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
     kyc.hasNinFromProfile,
     initialValues?.ninNumber,
     kyc.defaultNin
@@ -91,8 +98,9 @@ export default function BTAUploadDocumentsStep({
   const form = useForm<BTAUploadDocumentsFormValues>({
     mode: "controlled",
     initialValues: {
-      bvn: initialValues?.bvn || kyc.defaultBvn || "",
-      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
+      bvn: initialValues?.bvn || (omitLoggedInUserKyc ? "" : kyc.defaultBvn) || "",
+      ninNumber:
+        initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       tinNumber: initialValues?.tinNumber || "",
       formAId: initialValues?.formAId || "",
       tccDocumentNumber: initialValues?.tccDocumentNumber || "",
@@ -110,7 +118,7 @@ export default function BTAUploadDocumentsStep({
     validate: zod4Resolver(uploadDocumentsSchema),
   });
 
-  useKycProfilePrefillEffect(form, initialValues, kyc);
+  useKycProfilePrefillEffect(form, initialValues, kyc, !omitLoggedInUserKyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as BTAUploadDocumentsFormData);
@@ -180,7 +188,7 @@ export default function BTAUploadDocumentsStep({
           required
           size="md"
           placeholder="Enter TIN Number"
-          maxLength={8}
+          maxLength={30}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
         />

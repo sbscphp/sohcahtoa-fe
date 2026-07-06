@@ -13,7 +13,8 @@ export type TransactionStep =
   | "upload-documents"
   | "amount"
   | "pickup-point"
-  | "bank-details";
+  | "bank-details"
+  | "refund-bank-details";
 
 /** Agent transaction flows prepend customer selection before document upload. */
 export type AgentTransactionFlowStep = "select-customer" | TransactionStep;
@@ -27,13 +28,13 @@ export interface BreadcrumbItem {
 const STEPS_BY_TYPE: Record<TransactionType, TransactionStep[]> = {
   pta: ["upload-documents", "amount", "pickup-point", "bank-details"],
   business: ["upload-documents", "amount", "pickup-point", "bank-details"],
-  "school-fees": ["upload-documents", "amount", "bank-details"],
-  medical: ["upload-documents", "amount", "bank-details"],
-  "professional-body": ["upload-documents", "amount", "bank-details"],
+  "school-fees": ["upload-documents", "amount", "bank-details", "refund-bank-details"],
+  medical: ["upload-documents", "amount", "bank-details", "refund-bank-details"],
+  "professional-body": ["upload-documents", "amount", "bank-details", "refund-bank-details"],
   tourist: ["upload-documents", "amount", "pickup-point", "bank-details"],
-  resident: ["upload-documents", "amount", "pickup-point"],
-  "touring-nigeria": ["upload-documents", "amount", "pickup-point"],
-  expatriate: ["upload-documents", "amount", "pickup-point"],
+  resident: ["upload-documents", "amount", "pickup-point", "refund-bank-details"],
+  "touring-nigeria": ["upload-documents", "amount", "pickup-point", "refund-bank-details"],
+  expatriate: ["upload-documents", "amount", "pickup-point", "refund-bank-details"],
 };
 
 export function getStepsForTransactionType(type: TransactionType): TransactionStep[] {
@@ -55,7 +56,17 @@ export const STEP_LABELS: Record<TransactionStep, string> = {
   amount: "Enter Amount",
   "pickup-point": "Payout Method",
   "bank-details": "Bank Details",
+  "refund-bank-details": "Refund Bank Details",
 };
+
+/** Flows where refund bank is a dedicated step (not the shared `bank-details` step used by PTA/BTA/tourist). */
+export function usesDedicatedRefundBankStep(type: TransactionType): boolean {
+  return getStepsForTransactionType(type).includes("refund-bank-details");
+}
+
+export function getRefundBankStep(type: TransactionType): TransactionStep {
+  return usesDedicatedRefundBankStep(type) ? "refund-bank-details" : "bank-details";
+}
 
 export const AGENT_SELECT_CUSTOMER_LABEL = "Select Customer";
 
@@ -158,7 +169,7 @@ export function getTransactionTypeLabel(type: TransactionType): string {
     business: "Business Travel Allowance (BTA)",
     "school-fees": "School Fees",
     medical: "Medical Fee",
-    "professional-body": "Professional Fee",
+    "professional-body": "Professional Fees",
     tourist: "Tourist",
     resident: "Residents",
     "touring-nigeria": "Tourist",

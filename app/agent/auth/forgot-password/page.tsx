@@ -143,6 +143,11 @@ export default function AgentForgotPasswordPage() {
     );
   };
 
+  const handlePasswordStepBack = () => {
+    setResetToken("");
+    setCurrentStep("email");
+  };
+
   return (
     <AgentAuthLayout>
       {currentStep === "email" && (
@@ -159,6 +164,10 @@ export default function AgentForgotPasswordPage() {
           onOtpChange={setOtp}
           onSubmit={handleOtpSubmit}
           onResend={handleResendOtp}
+          onBack={() => {
+            setOtp("");
+            setCurrentStep("email");
+          }}
           timeLeft={timeLeft}
           isLoading={otpLoading}
           isResending={resendLoading}
@@ -168,6 +177,7 @@ export default function AgentForgotPasswordPage() {
       {currentStep === "password" && (
         <CreatePasswordForm
           onSubmit={handlePasswordSubmit}
+          onBack={handlePasswordStepBack}
           isLoading={passwordLoading}
         />
       )}

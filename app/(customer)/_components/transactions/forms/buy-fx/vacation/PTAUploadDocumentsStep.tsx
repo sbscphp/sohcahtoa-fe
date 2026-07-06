@@ -61,6 +61,8 @@ interface PTAUploadDocumentsStepProps {
   onSubmit: (data: UploadDocumentsFormData) => void;
   onBack?: () => void;
   lockKycPrefill?: boolean;
+  /** Agent acting on behalf of a customer — do not use the logged-in user's BVN/NIN */
+  omitLoggedInUserKyc?: boolean;
 }
 
 export default function PTAUploadDocumentsStep({
@@ -68,14 +70,19 @@ export default function PTAUploadDocumentsStep({
   onSubmit,
   onBack,
   lockKycPrefill = false,
+  omitLoggedInUserKyc = false,
 }: Readonly<PTAUploadDocumentsStepProps>) {
   const kyc = useCustomerProfileBvnNin();
-  const bvnLocked = shouldLockKycPrefill(
+  const bvnLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
     kyc.hasBvnFromProfile,
     initialValues?.bvn,
     kyc.defaultBvn
   );
-  const ninLocked = shouldLockKycPrefill(
+  const ninLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
     kyc.hasNinFromProfile,
     initialValues?.ninNumber,
     kyc.defaultNin
@@ -87,8 +94,9 @@ export default function PTAUploadDocumentsStep({
     mode: "uncontrolled",
     // Backwards-compat: older PTA step stored passport number under `formADocumentNumber`
     initialValues: {
-      bvn: initialValues?.bvn || kyc.defaultBvn || "",
-      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
+      bvn: initialValues?.bvn || (omitLoggedInUserKyc ? "" : kyc.defaultBvn) || "",
+      ninNumber:
+        initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       formAId: initialValues?.formAId || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || initialValues?.formADocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
@@ -101,7 +109,7 @@ export default function PTAUploadDocumentsStep({
     validate: zod4Resolver(uploadDocumentsSchema),
   });
 
-  useKycProfilePrefillEffect(form, initialValues, kyc);
+  useKycProfilePrefillEffect(form, initialValues, kyc, !omitLoggedInUserKyc);
 
   const handleSubmit = form.onSubmit((values) => {
     onSubmit(values as UploadDocumentsFormData);

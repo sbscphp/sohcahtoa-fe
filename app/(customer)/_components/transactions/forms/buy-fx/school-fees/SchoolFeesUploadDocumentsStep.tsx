@@ -31,12 +31,24 @@ import UndergraduateForm, {
 
 function addSchoolFeesStudentPassportIssues(
   data: {
+    studentNinNumber?: string;
     studentPassportDocumentNumber?: string;
     studentPassportIssueDate?: string;
     studentPassportExpiryDate?: string;
   },
   ctx: z.RefinementCtx
 ) {
+  const studentNinResult = kycNinRequiredSchema.safeParse(
+    (data.studentNinNumber ?? "").toString().trim()
+  );
+  if (!studentNinResult.success) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["studentNinNumber"],
+      message: studentNinResult.error.issues[0]?.message ?? "Student NIN is required",
+    });
+  }
+
   const passportResult = passportNumberSchema.safeParse(
     (data.studentPassportDocumentNumber ?? "").toString().trim()
   );
@@ -147,6 +159,7 @@ function requireUndergraduateStyleFiles(
 
 const uploadDocumentsBaseSchema = z.object({
   studentName: z.string().trim().min(1, "Student name is required"),
+  studentNinNumber: z.string().optional(),
   studentPassportDocumentNumber: z.string().optional(),
   studentPassportIssueDate: z.string().optional(),
   studentPassportExpiryDate: z.string().optional(),
@@ -214,6 +227,7 @@ interface SchoolFeesUploadDocumentsStepProps {
   onSubmit: (data: SchoolFeesUploadDocumentsFormData) => void;
   onBack?: () => void;
   lockKycPrefill?: boolean;
+  omitLoggedInUserKyc?: boolean;
 }
 
 export default function SchoolFeesUploadDocumentsStep({
@@ -221,10 +235,13 @@ export default function SchoolFeesUploadDocumentsStep({
   onSubmit,
   onBack,
   lockKycPrefill = false,
+  omitLoggedInUserKyc = false,
 }: SchoolFeesUploadDocumentsStepProps) {
   const [admissionType, setAdmissionType] = useState<string>(initialValues?.admissionType || "");
   const kyc = useCustomerProfileBvnNin();
-  const ninLocked = shouldLockKycPrefill(
+  const ninLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
     kyc.hasNinFromProfile,
     initialValues?.ninNumber,
     kyc.defaultNin
@@ -235,12 +252,14 @@ export default function SchoolFeesUploadDocumentsStep({
     mode: "controlled",
     initialValues: {
       studentName: initialValues?.studentName || "",
+      studentNinNumber: initialValues?.studentNinNumber || "",
       studentPassportDocumentNumber: initialValues?.studentPassportDocumentNumber || "",
       studentPassportIssueDate: initialValues?.studentPassportIssueDate || "",
       studentPassportExpiryDate: initialValues?.studentPassportExpiryDate || "",
       formAId: initialValues?.formAId || "",
       admissionType: initialValues?.admissionType || "",
-      ninNumber: initialValues?.ninNumber || kyc.defaultNin || "",
+      ninNumber:
+        initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       evidenceOfAdmissionFile: initialValues?.evidenceOfAdmissionFile ?? null,
       schoolInvoiceFile: initialValues?.schoolInvoiceFile ?? null,
       studentPassportFile:
@@ -255,12 +274,13 @@ export default function SchoolFeesUploadDocumentsStep({
   });
 
   useEffect(() => {
+    if (omitLoggedInUserKyc) return;
     const hasDraftNin =
       initialValues?.ninNumber != null && String(initialValues.ninNumber).trim() !== "";
     if (hasDraftNin || !kyc.defaultNin.trim()) return;
     if ((form.values.ninNumber ?? "").trim() !== "") return;
     form.setFieldValue("ninNumber", kyc.defaultNin);
-  }, [kyc.defaultNin, initialValues?.ninNumber, form]);
+  }, [kyc.defaultNin, initialValues?.ninNumber, form, omitLoggedInUserKyc]);
 
   useEffect(() => {
     const nextAdmissionType = initialValues?.admissionType?.trim();
@@ -276,6 +296,7 @@ export default function SchoolFeesUploadDocumentsStep({
       ...values,
       admissionType: values.admissionType?.trim() || admissionType,
       studentName: form.values.studentName?.trim() ?? values.studentName,
+      studentNinNumber: form.values.studentNinNumber ?? values.studentNinNumber,
       studentPassportDocumentNumber:
         form.values.studentPassportDocumentNumber?.trim() ?? values.studentPassportDocumentNumber,
       studentPassportIssueDate:
@@ -320,7 +341,8 @@ export default function SchoolFeesUploadDocumentsStep({
 
       <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
         <p className="text-body-text-200">
-          Please note the maximum you can transact is <strong>$10,000 per year</strong>.
+          Transactions over <strong>$10,000 USD</strong> require proof of funds
+          documentation on the amount step.
         </p>
       </Alert>
 
@@ -331,6 +353,23 @@ export default function SchoolFeesUploadDocumentsStep({
         placeholder="Enter student name"
         autoComplete="off"
         {...form.getInputProps("studentName")}
+      />
+
+      <TextInput
+        label="Student NIN"
+        required
+        size="md"
+        placeholder="Enter student NIN"
+        maxLength={11}
+        inputMode="numeric"
+        autoComplete="off"
+        {...form.getInputProps("studentNinNumber")}
+        onChange={(e) => {
+          const raw = e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11);
+          e.currentTarget.value = raw;
+          form.setFieldValue("studentNinNumber", raw);
+        }}
+        error={form.errors.studentNinNumber as string}
       />
 
       <SchoolFeesStudentPassportFields

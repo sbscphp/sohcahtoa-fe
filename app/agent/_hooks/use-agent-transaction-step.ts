@@ -10,6 +10,7 @@ const VALID_STEPS = new Set<AgentTransactionFlowStep>([
   "amount",
   "pickup-point",
   "bank-details",
+  "refund-bank-details",
 ]);
 
 function parseStep(

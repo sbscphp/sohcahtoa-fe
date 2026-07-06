@@ -23,6 +23,7 @@ import {
   type TransactionStep,
   getStepsForTransactionType,
   STEP_LABELS,
+  getRefundBankStep,
 } from "@/app/(customer)/_utils/transaction-flow";
 import PTAUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTAUploadDocumentsStep";
 import PTATransactionAmountStep from "@/app/(customer)/_components/transactions/forms/buy-fx/vacation/PTATransactionAmountStep";
@@ -44,7 +45,6 @@ import TouristTransactionAmountStep from "@/app/(customer)/_components/transacti
 import TouristPickupPointStep from "@/app/(customer)/_components/transactions/forms/buy-fx/tourist/TouristPickupPointStep";
 import BankAccountSelectionStep from "@/app/(customer)/_components/transactions/forms/BankAccountSelectionStep";
 import {
-  isCashPortionWithinLimit,
   payoutMethodRequiresDomiciliaryAccount,
 } from "@/app/(customer)/_lib/payout-method-utils";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
@@ -55,6 +55,7 @@ import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-ba
 import {
   getCreatedTransactionId,
   getRefundBankAccountId,
+  mergeRefundBankIntoPickupData,
   toCreateBankAccountPayload,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { getBuyFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
@@ -87,23 +88,6 @@ const TRANSACTION_TYPE_MAP = {
   "professional-body": "professional-body",
   tourist: "tourist",
 } as const;
-
-function getRequestedForeignAmount(
-  data:
-    | TransactionAmountFormData
-    | BTATransactionAmountFormData
-    | TouristTransactionAmountFormData
-    | SchoolFeesTransactionAmountFormData
-    | MedicalTransactionAmountFormData
-    | ProfessionalBodyTransactionAmountFormData
-    | null
-) {
-  const record = data as Record<string, unknown> | null;
-  const rawAmount = record?.receiveAmount ?? record?.sendAmount ?? 0;
-  return typeof rawAmount === "number"
-    ? rawAmount
-    : Number.parseFloat(String(rawAmount)) || 0;
-}
 
 export default function TransactionCreationPage() {
   const router = useRouter();
@@ -205,20 +189,6 @@ export default function TransactionCreationPage() {
     data: PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
   ) => {
     setPickupPointData(data);
-
-    if (
-      data.payoutMethod &&
-      !isCashPortionWithinLimit(getRequestedForeignAmount(transactionAmountData), data.payoutMethod)
-    ) {
-      notifications.show({
-        title: "Cash limit exceeded",
-        message:
-          "The cash portion cannot exceed $500. Reduce the amount or choose another payout method.",
-        color: "orange",
-      });
-      return;
-    }
-
     setActiveStep("bank-details");
   };
 
@@ -236,13 +206,10 @@ export default function TransactionCreationPage() {
 
   const handleRefundBankSubmit = (bankAccount: BankAccount) => {
     setPickupPointData((prev) =>
-      prev
-        ? {
-            ...prev,
-            refundBankAccount: bankAccount,
-            selectedRefundBankId: bankAccount.id,
-          }
-        : null
+      mergeRefundBankIntoPickupData(
+        prev as Record<string, unknown> | null,
+        bankAccount
+      ) as PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData
     );
     setConfirmationOpened(true);
   };
@@ -254,7 +221,7 @@ export default function TransactionCreationPage() {
       | ProfessionalBodyBankDetailsFormData
   ) => {
     setBankDetailsData(data);
-    setConfirmationOpened(true);
+    setActiveStep("refund-bank-details");
   };
 
   const handleConfirmInitiate = async () => {
@@ -302,14 +269,14 @@ export default function TransactionCreationPage() {
       setActiveStep("pickup-point");
       return;
     }
-    if (hasPickup && !pickupPointData?.refundBankAccount) {
+    if (!getRefundBankAccountId(pickupPointData as Record<string, unknown> | null)) {
       setConfirmationOpened(false);
       notifications.show({
         title: "Refund bank account required",
         message: "Select a local bank account for refunds before initiating your transaction.",
         color: "orange",
       });
-      setActiveStep("bank-details");
+      setActiveStep(getRefundBankStep(flowType));
       return;
     }
     if ((isSchoolFees || isMedical || isProfessionalBody) && !bankDetailsData) {
@@ -374,6 +341,10 @@ export default function TransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") {
       setActiveStep("upload-documents");
+    } else if (activeStep === "refund-bank-details") {
+      setActiveStep(
+        isSchoolFees || isMedical || isProfessionalBody ? "bank-details" : "pickup-point"
+      );
     } else if (activeStep === "bank-details" && usesPayoutMethod) {
       setActiveStep("pickup-point");
     } else if (activeStep === "pickup-point" || activeStep === "bank-details") {
@@ -396,6 +367,10 @@ export default function TransactionCreationPage() {
   );
 
   const renderStepContent = () => {
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
+    }
+
     if (isTourist) {
       switch (activeStep) {
         case "upload-documents":
@@ -615,7 +590,7 @@ export default function TransactionCreationPage() {
   };
 
   const confirmTitle = isProfessionalBody
-    ? "Initiate Professional Fee Transaction request?"
+    ? "Initiate Professional Fees Transaction request?"
     : isMedical
       ? "Initiate Medical Fee Transaction request?"
       : isSchoolFees

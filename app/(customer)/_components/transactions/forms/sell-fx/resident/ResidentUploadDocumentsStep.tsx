@@ -9,6 +9,7 @@ import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
+import { MAX_DOCUMENT_FILE_MB } from "@/app/(customer)/_utils/document-upload";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import {
@@ -23,12 +24,13 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
+import { kycTinSchema } from "@/app/(customer)/_lib/kyc-tin-schema";
 
 const uploadDocumentsSchema = z
   .object({
     bvn: kycBvnSchema,
     ninNumber: kycNinRequiredSchema,
-    tinNumber: z.string().min(1, "TIN Number is required").max(30, "TIN Number is too long"),
+    tinNumber: kycTinSchema,
     passportDocumentNumber: passportNumberSchema,
     passportIssueDate: requiredIsoDateSchema("Passport Issued Date"),
     passportExpiryDate: requiredIsoDateSchema("Passport Expiry Date"),
@@ -238,6 +240,7 @@ export default function ResidentUploadDocumentsStep({
       <TransactionFileUploadInput
         label="Utility Bill"
         required
+        supportingText={`Utility bill must not be more than 3 months. PDF, PNG, IMG, JPG supported. Max. size: ${MAX_DOCUMENT_FILE_MB} MB`}
         value={form.values.utilityBillFile}
         onChange={(file) => form.setFieldValue("utilityBillFile", file)}
         error={form.errors.utilityBillFile as string}

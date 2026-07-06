@@ -77,7 +77,7 @@ export const FX_TRANSACTION_SUB_FILTERS: Record<FxDashboardTab, FxTransactionSub
     { value: "medical", label: "Medical", apiType: "MEDICAL", matches: (tx) => tx.type === "MEDICAL" },
     {
       value: "professional-body",
-      label: "Professional body",
+      label: "Professional fees",
       apiType: "PROFESSIONAL_BODY",
       matches: (tx) => tx.type === "PROFESSIONAL_BODY",
     },

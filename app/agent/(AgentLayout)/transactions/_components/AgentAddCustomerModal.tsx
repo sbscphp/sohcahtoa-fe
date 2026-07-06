@@ -2,6 +2,7 @@
 
 import { Modal } from "@mantine/core";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
+import { BvnConsentOverlay } from "@/app/_components/nibss-bvn-consent/BvnConsentOverlay";
 import {
   CustomerTypeStep,
   ExpatriateDetailsStep,
@@ -42,8 +43,12 @@ export function AgentAddCustomerModal({
         return (
           <ResidentBvnStep
             bvn={flow.bvn}
-            isSubmitting={flow.isSubmitting}
+            email={flow.residentEmail}
+            phoneNumber={flow.residentPhone}
+            isSubmitting={flow.isSubmitting || flow.bvnConsent.isActive}
             onBvnChange={flow.setBvn}
+            onEmailChange={flow.setResidentEmail}
+            onPhoneNumberChange={flow.handleResidentPhoneChange}
             onContinue={flow.handleResidentBvnContinue}
             onBack={flow.handleBack}
           />
@@ -113,6 +118,9 @@ export function AgentAddCustomerModal({
     }
   };
 
+  const consentOverlayOpen =
+    flow.bvnConsent.phase !== "idle" && flow.bvnConsent.phase !== "completed";
+
   return (
     <>
       <Modal
@@ -125,6 +133,16 @@ export function AgentAddCustomerModal({
       >
         <div className="p-4 md:p-6">{renderBody()}</div>
       </Modal>
+
+      <BvnConsentOverlay
+        opened={consentOverlayOpen}
+        phase={flow.bvnConsent.phase}
+        statusMessage={flow.bvnConsent.statusMessage}
+        usedPopup={flow.bvnConsent.usedPopup}
+        onOpenPortal={flow.bvnConsent.openConsentPortal}
+        onRetry={() => void flow.bvnConsent.retryPolling()}
+        onCancel={flow.handleBvnConsentCancel}
+      />
 
       <SuccessModal
         opened={opened && flow.step === "success"}

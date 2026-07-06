@@ -15,35 +15,16 @@ import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundMod
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
-const MAX_SCHOOL_FEES_AMOUNT = 10000;
+const PROOF_OF_FUNDS_THRESHOLD_USD = 10_000;
 
-function receiveAmountExceedsMaxMessage(maxValue: number): string {
-  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
-}
-
-function receiveAmountOverMax(raw: string): boolean {
-  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
-  return Number.isFinite(parsedAmount) && parsedAmount > MAX_SCHOOL_FEES_AMOUNT;
-}
-
-const transactionAmountSchema = z
-  .object({
-    receiveAmount: z.string().min(1, "Amount is required"),
-    receiveCurrency: z.string().min(1, "Currency is required"),
-    sendAmount: z.string().min(1, "Amount is required"),
-    sendCurrency: z.string().min(1, "Currency is required"),
-    exchangeRate: z.string().optional(),
-    proofOfFundsFiles: z.custom<File[]>().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (receiveAmountOverMax(data.receiveAmount)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["receiveAmount"],
-        message: receiveAmountExceedsMaxMessage(MAX_SCHOOL_FEES_AMOUNT),
-      });
-    }
-  });
+const transactionAmountSchema = z.object({
+  receiveAmount: z.string().min(1, "Amount is required"),
+  receiveCurrency: z.string().min(1, "Currency is required"),
+  sendAmount: z.string().min(1, "Amount is required"),
+  sendCurrency: z.string().min(1, "Currency is required"),
+  exchangeRate: z.string().optional(),
+  proofOfFundsFiles: z.custom<File[]>().optional(),
+});
 
 export type SchoolFeesTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -90,13 +71,12 @@ export default function SchoolFeesTransactionAmountStep({
     form.values.receiveCurrency,
     form.values.sendAmount,
     form.values.sendCurrency,
-    10000
+    PROOF_OF_FUNDS_THRESHOLD_USD
   );
 
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
-    receiveAmountOverMax(form.values.receiveAmount) ||
     (needsProofOfFund && proofOfFundsFiles.length === 0) ||
     !hasValidRate ||
     isCalculating;
@@ -146,13 +126,10 @@ export default function SchoolFeesTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <p className="text-body-text-200 text-sm w-full">
-            Maximum transaction amount is ${MAX_SCHOOL_FEES_AMOUNT.toLocaleString()} USD equivalent.
-          </p>
           <div className="w-full">
             <ProofOfFundPrompt
               show={needsProofOfFund}
-              thresholdUsd={10000}
+              thresholdUsd={PROOF_OF_FUNDS_THRESHOLD_USD}
               onUploadClick={() => setProofModalOpen(true)}
             />
           </div>

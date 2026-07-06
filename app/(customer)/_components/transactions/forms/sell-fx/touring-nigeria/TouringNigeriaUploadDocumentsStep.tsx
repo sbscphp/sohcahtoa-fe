@@ -9,12 +9,17 @@ import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 import VisaDocumentUploadInput from '../../../../forms/VisaDocumentUploadInput';
-import { passportNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
+import { flexiblePassportDocumentNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 
 const uploadDocumentsSchema = z.object({
-  passportDocumentNumber: passportNumberSchema,
+  passportDocumentNumber: flexiblePassportDocumentNumberSchema,
+  nigerianAddress: z
+    .string()
+    .trim()
+    .min(1, "Nigerian address is required")
+    .max(200, "Address is too long"),
   passportFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
     message: "International Passport file is required",
   }),
@@ -28,10 +33,6 @@ const uploadDocumentsSchema = z.object({
     .refine((file) => file !== null, {
       message: "Return Ticket file is required",
     }),
-  returnTicketDocumentNumber: z.string().min(1, "Return Ticket Number is required").max(50, "Return Ticket Number is too long"),
-  receiptForInitialNairaPurchaseFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
-    message: "Receipt for Initial Naira Purchase is required",
-  }),
 }).superRefine((data, ctx) => {
   validatePassportDates(
     { passportIssueDate: data.passportIssueDate, passportExpiryDate: data.passportExpiryDate },
@@ -60,13 +61,12 @@ export default function TouringNigeriaUploadDocumentsStep({
     mode: "uncontrolled",
     initialValues: {
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
+      nigerianAddress: initialValues?.nigerianAddress || "",
       passportFile: initialValues?.passportFile ?? null,
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
       visaFile: initialValues?.visaFile ?? null,
       returnTicketFile: initialValues?.returnTicketFile ?? null,
-      returnTicketDocumentNumber: initialValues?.returnTicketDocumentNumber || "",
-      receiptForInitialNairaPurchaseFile: initialValues?.receiptForInitialNairaPurchaseFile ?? null,
     },
     validate: zod4Resolver(uploadDocumentsSchema),
   });
@@ -104,10 +104,27 @@ export default function TouringNigeriaUploadDocumentsStep({
         label="International Passport Number"
         required
         size="md"
-        placeholder="Enter Passport Number"
-        maxLength={9}
+        placeholder="Enter passport number"
+        maxLength={30}
         autoComplete="off"
         {...form.getInputProps("passportDocumentNumber")}
+        onChange={(e) => {
+          const normalized = e.currentTarget.value
+            .replaceAll(/[^A-Za-z0-9]/g, "")
+            .toUpperCase()
+            .slice(0, 30);
+          form.setFieldValue("passportDocumentNumber", normalized);
+        }}
+      />
+
+      <TextInput
+        label="Nigerian Address"
+        required
+        size="md"
+        placeholder="Enter your address in Nigeria (e.g. hotel)"
+        maxLength={200}
+        autoComplete="street-address"
+        {...form.getInputProps("nigerianAddress")}
       />
 
       <TransactionFileUploadInput
@@ -168,24 +185,6 @@ export default function TouringNigeriaUploadDocumentsStep({
         value={form.values.returnTicketFile}
         onChange={(file) => form.setFieldValue("returnTicketFile", file)}
         error={form.errors.returnTicketFile as string}
-      />
-
-      <TextInput
-        label="Return Ticket Number"
-        required
-        size="md"
-        placeholder="Enter Number"
-        maxLength={50}
-        autoComplete="off"
-        {...form.getInputProps("returnTicketDocumentNumber")}
-      />
-
-      <TransactionFileUploadInput
-        label="Receipt for Initial Naira Purchase"
-        required
-        value={form.values.receiptForInitialNairaPurchaseFile}
-        onChange={(file) => form.setFieldValue("receiptForInitialNairaPurchaseFile", file)}
-        error={form.errors.receiptForInitialNairaPurchaseFile as string}
       />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">

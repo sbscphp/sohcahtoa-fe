@@ -132,17 +132,17 @@ function CashOverviewContent({
         <FxActionButton
           icon={<IconWallet className="size-5 text-gray-900" />}
           label="Buy FX"
-          onClick={() => router.push("/agent/transactions")}
+          onClick={() => router.push("/agent/transactions/new/buy")}
         />
         <FxActionButton
           icon={<IconWalletAdd className="size-5 text-gray-900" />}
           label="Sell FX"
-          onClick={() => router.push("/agent/transactions")}
+          onClick={() => router.push("/agent/transactions/new/sell")}
         />
         <FxActionButton
           icon={<IconRecieve className="size-5 text-gray-900" />}
           label="Receive money"
-          onClick={() => router.push("/agent/fx-inventory")}
+          onClick={() => router.push("/agent/transactions/new/receive")}
         />
       </div>
     </div>

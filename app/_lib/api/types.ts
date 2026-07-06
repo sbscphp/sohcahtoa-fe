@@ -36,8 +36,40 @@ export interface SignupRequest {
 
 export interface VerifyBvnRequest {
   bvn: string;
+  email: string;
+  phoneNumber: string;
 }
 
+/** Step 1a — NIBSS consent initiated (no verificationToken yet). */
+export interface InitiateBvnConsentResponseData {
+  sessionId: string;
+  consentUrl: string;
+  message?: string;
+}
+
+export type InitiateBvnConsentResponse = ApiResponseWrapper<InitiateBvnConsentResponseData>;
+
+export interface BvnConsentStatusRequest {
+  sessionId: string;
+}
+
+export type BvnConsentStatus = "PENDING" | "COMPLETED" | "FAILED";
+
+export interface BvnConsentStatusResponseData {
+  status: BvnConsentStatus;
+  message?: string;
+  verificationToken?: string;
+  email?: string;
+  fullName?: string;
+  phoneNumber?: string;
+  address?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export type BvnConsentStatusResponse = ApiResponseWrapper<BvnConsentStatusResponseData>;
+
+/** @deprecated Token is returned from bvn-consent-status when COMPLETED, not verify-bvn. */
 export interface VerifyBvnResponseData {
   verificationToken: string;
   message: string;
@@ -500,8 +532,11 @@ export interface AgentCustomerSummary {
   fullName: string;
   customerType: string;
   lastTransactionType: string | null;
+  lastTransactionDate?: string | null;
   registeredAt: string;
   kycStatus: string;
+  nin?: string | null;
+  bvn?: string | null;
 }
 
 export interface AgentCustomerListResponse
@@ -671,6 +706,7 @@ export interface CreateTransactionRequest {
   purpose: string;
   destinationCountry: string;
   studentName?: string;
+  studentNin?: string;
   studentPassportDocumentNumber?: string;
   studentPassportIssueDate?: string;
   studentPassportExpiryDate?: string;
@@ -682,6 +718,8 @@ export interface CreateTransactionRequest {
   passportDocumentNumber?: string;
   passportIssueDate?: string;
   passportExpiryDate?: string;
+  /** Temporary stay address in Nigeria (tourist sell FX). */
+  address?: string;
   visaDocumentNumber?: string;
   returnTicketDocumentNumber?: string;
   tinNumber?: string;
@@ -859,6 +897,7 @@ export interface TransactionDetailStepData {
   passportExpiryDate: string | null;
   tinNumber: string | null;
   studentName: string | null;
+  studentNin: string | null;
   studentPassportDocumentNumber: string | null;
   studentPassportIssueDate: string | null;
   studentPassportExpiryDate: string | null;
@@ -878,6 +917,7 @@ export interface TransactionDetailStep {
   passportExpiryDate: string | null;
   tinNumber: string | null;
   studentName: string | null;
+  studentNin: string | null;
   studentPassportDocumentNumber: string | null;
   studentPassportIssueDate: string | null;
   studentPassportExpiryDate: string | null;
@@ -985,6 +1025,7 @@ export interface TransactionDetailData {
     passportExpiryDate: string | null;
     tinNumber: string | null;
     studentName: string | null;
+    studentNin: string | null;
     studentPassportDocumentNumber: string | null;
     studentPassportIssueDate: string | null;
     studentPassportExpiryDate: string | null;

@@ -46,13 +46,13 @@ export function beneficiaryDetailsFromBankForm(
   const organizationName = (
     (bank.organizationName as string | undefined) ??
     (bank.beneficiaryName as string | undefined) ??
-    (bank.accountName as string | undefined)
+    (bank.schoolName as string | undefined)
   )?.trim();
-  const bankAccountName = (
-    (bank.bankAccountName as string | undefined) ??
-    (bank.accountName as string | undefined) ??
-    organizationName
+  const bankName = (
+    (bank.bankName as string | undefined) ??
+    (bank.bankAccountName as string | undefined)
   )?.trim();
+  const accountName = (bank.accountName as string | undefined)?.trim();
   const region = bank.beneficiaryCountryRegion;
   const otherInformation =
     typeof bank.otherInformation === "string" ? bank.otherInformation.trim() : "";
@@ -60,6 +60,7 @@ export function beneficiaryDetailsFromBankForm(
   const details: Record<string, unknown> = {
     name: organizationName,
     organizationName,
+    schoolName: organizationName,
     beneficiaryName: organizationName,
     beneficiaryPhone: bank.beneficiaryPhone,
     beneficiaryEmail: bank.beneficiaryEmail,
@@ -68,9 +69,9 @@ export function beneficiaryDetailsFromBankForm(
     beneficiaryState: bank.beneficiaryState,
     beneficiaryCountry: bank.beneficiaryCountry,
     beneficiaryCountryRegion: bank.beneficiaryCountryRegion,
-    bankAccountName,
-    accountName: bankAccountName,
-    bankName: bank.bankName,
+    bankName,
+    bankAccountName: bankName,
+    accountName,
     bankAddress: bank.bankAddress,
     accountNumber: bank.accountNumber,
     swiftCode: bank.swiftCode,
@@ -190,6 +191,19 @@ function beneficiaryDetailsFromDomiciliaryAccount(
 function refundBankDetailsFromSelection(
   data: Record<string, unknown> | null | undefined
 ): Record<string, unknown> | undefined {
+  const domRefund = data?.refundDomiciliaryAccount as Record<string, unknown> | undefined;
+  if (domRefund) {
+    return {
+      accountNumber: domRefund.domiciliaryAccountNumber,
+      bankName: domRefund.domiciliaryBankName,
+      accountName: domRefund.accountName,
+      swiftCode: domRefund.swiftCode,
+      routingNumber: domRefund.routingNumber,
+      bankAddress: domRefund.bankAddress,
+      isDomiciliaryAccount: true,
+    };
+  }
+
   const refund = data?.refundBankAccount as Record<string, unknown> | undefined;
   if (!refund) return undefined;
 
@@ -312,7 +326,7 @@ function buildTouristPayload(
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     passportIssueDate: upload?.passportIssueDate ?? undefined,
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
-    returnTicketDocumentNumber: upload?.returnTicketDocumentNumber ?? undefined,
+    address: upload?.nigerianAddress ?? undefined,
     documents,
     ...payout,
     ...payoutBeneficiaryAndRefundDetails(pickup),
@@ -335,6 +349,7 @@ function buildSchoolFeesPayload(
     purpose: getCustomerFxPurposeForPayload("SCHOOL_FEES", "BUY"),
     destinationCountry: "United Kingdom",
     studentName: pickOptionalString(upload?.studentName),
+    studentNin: pickOptionalString(upload?.studentNinNumber),
     studentPassportDocumentNumber: pickOptionalString(upload?.studentPassportDocumentNumber),
     studentPassportIssueDate: pickOptionalString(upload?.studentPassportIssueDate),
     studentPassportExpiryDate: pickOptionalString(upload?.studentPassportExpiryDate),
@@ -347,6 +362,7 @@ function buildSchoolFeesPayload(
     passportIssueDate: pickOptionalString(upload?.passportIssueDate),
     passportExpiryDate: pickOptionalString(upload?.passportExpiryDate),
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
+    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
     documents,
   };
 }
@@ -375,6 +391,7 @@ function buildMedicalPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
+    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
     documents,
   };
 }
@@ -402,8 +419,22 @@ function buildProfessionalBodyPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
+    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
     documents,
   };
+}
+
+function disbursementOptionFromPickupOrBankPreference(
+  data: Record<string, unknown> | null | undefined
+): Pick<CreateTransactionRequest, "disbursementOption"> {
+  if (!data) return {};
+  if (data.preference === "bank") {
+    return { disbursementOption: "ELECTRONIC_TRANSFER" };
+  }
+  if (data.preference === "pickup") {
+    return { disbursementOption: "CARD" };
+  }
+  return {};
 }
 
 function buildResidentFxPayload(
@@ -430,6 +461,8 @@ function buildResidentFxPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
+    refundBankDetails: refundBankDetailsFromSelection(pickup),
+    ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
 }
 
@@ -454,6 +487,8 @@ function buildExpatriateFxPayload(
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
+    refundBankDetails: refundBankDetailsFromSelection(pickup),
+    ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
 }
 

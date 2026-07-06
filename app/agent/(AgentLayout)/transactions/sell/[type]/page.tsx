@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
@@ -17,6 +17,7 @@ import TouringNigeriaDropOffPointStep from "@/app/(customer)/_components/transac
 import ExpatriateUploadDocumentsStep from "@/app/(customer)/_components/transactions/forms/sell-fx/expatriate/ExpatriateUploadDocumentsStep";
 import ExpatriatePickupPointStep from "@/app/(customer)/_components/transactions/forms/sell-fx/expatriate/ExpatriatePickupPointStep";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
+import { getSellFxInitiateNotices } from "@/app/(customer)/_lib/transaction-initiate-notices";
 import type { ResidentUploadDocumentsFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentUploadDocumentsStep";
 import type { ResidentTransactionAmountFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentTransactionAmountStep";
 import type { ResidentPickupPointFormData } from "@/app/(customer)/_components/transactions/forms/sell-fx/resident/ResidentPickupPointStep";
@@ -43,6 +44,19 @@ import {
 } from "@/app/(customer)/_utils/transaction-payload";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
+import { useAgentBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
+import {
+  getCreatedTransactionId,
+  getPickupBankAccountId,
+  hasCompleteRefundDomiciliaryDetails,
+  mergeRefundDomiciliaryIntoPickupData,
+  domiciliaryRefundAccountFromPickupData,
+} from "@/app/(customer)/_utils/customer-bank-accounts";
+import DomiciliaryRefundBankStep, {
+  type DomiciliaryRefundAccount,
+} from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
+import { AddDomiciliaryAccountModal } from "@/app/(customer)/_components/modals/AddDomiciliaryAccountModal";
+import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
 
 const SELL_TYPE_MAP = {
   resident: "resident",
@@ -105,9 +119,19 @@ export default function AgentSellTransactionCreationPage() {
     | ExpatriatePickupPointFormData
     | null
   >(null);
+  const [addBankOpened, setAddBankOpened] = useState(false);
+  const [domiciliaryRefundAccounts, setDomiciliaryRefundAccounts] = useState<
+    DomiciliaryRefundAccount[]
+  >(() => {
+    const existing = domiciliaryRefundAccountFromPickupData(
+      pickupPointData as Record<string, unknown> | null,
+    );
+    return existing ? [existing] : [];
+  });
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
+  const { attachToTransaction } = useAgentBankAccounts();
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -133,6 +157,24 @@ export default function AgentSellTransactionCreationPage() {
       | ExpatriatePickupPointFormData
   ) => {
     setPickupPointData(data);
+    setActiveStep("refund-bank-details");
+  };
+
+  const handleAddDomiciliaryAccount = useCallback((data: DomiciliaryAccountFormData) => {
+    const account: DomiciliaryRefundAccount = {
+      id: crypto.randomUUID(),
+      ...data,
+    };
+    setDomiciliaryRefundAccounts((prev) => [...prev, account]);
+  }, []);
+
+  const handleRefundBankSubmit = (account: DomiciliaryRefundAccount) => {
+    setPickupPointData((prev) =>
+      mergeRefundDomiciliaryIntoPickupData(
+        prev as Record<string, unknown> | null,
+        account,
+      ) as ResidentPickupPointFormData
+    );
     setConfirmationOpened(true);
   };
 
@@ -159,6 +201,27 @@ export default function AgentSellTransactionCreationPage() {
       pickupPointData: pickupPointData ? (pickupPointData as Record<string, unknown>) : null,
     };
 
+    if (!pickupPointData) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Pickup location required",
+        message: "Choose a pickup location before confirming.",
+        color: "orange",
+      });
+      setActiveStep("pickup-point");
+      return;
+    }
+    if (!hasCompleteRefundDomiciliaryDetails(pickupPointData as Record<string, unknown>)) {
+      setConfirmationOpened(false);
+      notifications.show({
+        title: "Refund bank account required",
+        message: "Select a domiciliary bank account for refunds before initiating the transaction.",
+        color: "orange",
+      });
+      setActiveStep("refund-bank-details");
+      return;
+    }
+
     try {
       const spec = mergeDocumentUploadSpecs(
         getDocumentUploadSpec(transactionType, bag.uploadDocumentsData),
@@ -179,9 +242,23 @@ export default function AgentSellTransactionCreationPage() {
         userId: customerId,
       });
 
+      const transactionId = getCreatedTransactionId(created);
+      const bankAccountId = getPickupBankAccountId(pickupPointData as Record<string, unknown>);
+      if (transactionId && bankAccountId) {
+        try {
+          await attachToTransaction(transactionId, [bankAccountId]);
+        } catch (attachError) {
+          handleApiError(attachError);
+          notifications.show({
+            title: "Transaction created",
+            message:
+              "The request was submitted, but linking the bank account failed. You can retry from transaction details.",
+            color: "orange",
+          });
+        }
+      }
+
       setConfirmationOpened(false);
-      const transactionId = (created as unknown as { data: { transactionId: string } })?.data
-        ?.transactionId;
       router.push(
         transactionId
           ? `/agent/transactions/detail/${transactionId}`
@@ -196,10 +273,28 @@ export default function AgentSellTransactionCreationPage() {
   const handleBack = () => {
     if (activeStep === "amount") setActiveStep("upload-documents");
     else if (activeStep === "upload-documents") setActiveStep("select-customer");
+    else if (activeStep === "refund-bank-details") setActiveStep("pickup-point");
     else if (activeStep === "pickup-point") setActiveStep("amount");
   };
 
+  const renderRefundBankStep = () => (
+    <DomiciliaryRefundBankStep
+      accounts={domiciliaryRefundAccounts}
+      initialSelectedAccountId={
+        (pickupPointData as { selectedRefundDomiciliaryId?: string } | null)
+          ?.selectedRefundDomiciliaryId
+      }
+      onSubmit={handleRefundBankSubmit}
+      onBack={handleBack}
+      onAddAccount={() => setAddBankOpened(true)}
+    />
+  );
+
   const renderFlowStep = () => {
+    if (activeStep === "refund-bank-details") {
+      return renderRefundBankStep();
+    }
+
     if (flowType === "touring-nigeria") {
       switch (activeStep) {
         case "upload-documents":
@@ -342,30 +437,31 @@ export default function AgentSellTransactionCreationPage() {
         <CustomStepper steps={steps} activeStep={activeStepIndex} className="mb-6" />
         <div className="bg-white rounded-xl md:p-4 p-2">{renderStepContent()}</div>
       </div>
-      {(() => {
-        let title = "Initiate Sell FX?";
-        let description = "Are you sure you want to initiate this sell transaction?";
-        if (flowType === "touring-nigeria") {
-          title = "Initiate Sell FX: Tourist?";
-          description = "Are you sure you want to initiate this tourist sell transaction?";
-        } else if (flowType === "expatriate") {
-          title = "Initiate Sell FX: Expatriate?";
-          description = "Are you sure you want to initiate this expatriate sell transaction?";
-        }
-        return (
-          <ConfirmationModal
+      <ConfirmationModal
         opened={confirmationOpened}
         onClose={() => setConfirmationOpened(false)}
-        title={title}
-        description={description}
+        title={
+          flowType === "touring-nigeria"
+            ? "Initiate Sell FX: Tourist?"
+            : flowType === "expatriate"
+              ? "Initiate Sell FX: Expatriate?"
+              : "Initiate Sell FX?"
+        }
+        notices={getSellFxInitiateNotices(flowType, {
+          amount: transactionAmountData,
+        })}
         requireInfoConfirmation
         confirmLabel="Create Transaction"
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
         loading={uploadDocuments.isPending || createTransaction.isPending}
-          />
-        );
-      })()}
+      />
+
+      <AddDomiciliaryAccountModal
+        opened={addBankOpened}
+        onClose={() => setAddBankOpened(false)}
+        onAddAccount={handleAddDomiciliaryAccount}
+      />
 
       <AgentAddCustomerModal
         opened={addCustomerOpened}
