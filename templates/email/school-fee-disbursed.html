@@ -8,7 +8,7 @@
   <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
   <meta name="color-scheme" content="light only" />
   <meta name="supported-color-schemes" content="light only" />
-  <title>Verify your email</title>
+  <title>Your school fee has been disbursed</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -27,22 +27,18 @@
     @media only screen and (max-width: 620px) {
       .email-container { width: 100% !important; }
       .card-padding { padding-left: 16px !important; padding-right: 16px !important; }
-      .otp-cell { padding: 0 4px !important; }
     }
   </style>
 </head>
 <body style="margin:0;padding:0;background-color:#FFFAF8;word-spacing:normal;">
   <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
-    Your SohCahToa verification code is ready. It expires in {{expiry_minutes}} minutes.
+    Your School Fee transaction (Ref: {{transaction_id}}) has been successfully processed.
   </div>
 
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#FFFAF8;">
     <tr>
       <td align="center" style="padding:0 0 40px 0;">
-
         <table role="presentation" class="email-container" width="640" cellspacing="0" cellpadding="0" border="0" style="width:640px;max-width:640px;margin:0 auto;">
-
-          <!-- Header -->
           <tr>
             <td>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#FFFFFF;border-bottom:1px solid #F2F4F7;">
@@ -56,65 +52,64 @@
               </table>
             </td>
           </tr>
-
           <tr><td style="height:60px;line-height:60px;font-size:60px;">&nbsp;</td></tr>
-
-          <!-- Card -->
           <tr>
             <td align="center" style="padding:0 32px;">
               <table role="presentation" width="576" cellspacing="0" cellpadding="0" border="0" style="width:576px;max-width:576px;border:1.5px solid #F8DCCD;box-shadow:0 6px 10px 4px rgba(11,10,10,0.05);">
-
-                <!-- Body -->
                 <tr>
                   <td class="card-padding" style="padding:32px 24px;background-color:#FFFFFF;border-radius:4px 4px 0 0;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-
                       <tr>
                         <td align="center" style="padding-bottom:24px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:24px;font-weight:600;line-height:32px;color:#DD4F05;text-align:center;letter-spacing:-0.032px;">
-                          Verify Email with OTP
+                          Your School Fee Has Been Disbursed
                         </td>
                       </tr>
-
                       <tr>
                         <td style="padding-bottom:24px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;color:#4D4B4B;">
                           <p style="margin:0 0 16px 0;">Hello {{first_name}},</p>
+                          <p style="margin:0 0 16px 0;">
+                            We are pleased to inform you that your School Fee transaction (Ref: <strong>{{transaction_id}}</strong>) has been successfully processed.
+                          </p>
+                          <p style="margin:0 0 8px 0;"><strong>&#9989; Disbursement Details</strong></p>
+                          <ul style="margin:0 0 16px 0;padding-left:20px;">
+                            <li style="margin-bottom:8px;"><strong>Amount:</strong> {{amount_display}}</li>
+                            <li style="margin-bottom:8px;"><strong>Beneficiary:</strong> {{beneficiary_name}}</li>
+                            <li style="margin-bottom:8px;"><strong>Account:</strong> {{beneficiary_account}}</li>
+                            <li style="margin-bottom:8px;"><strong>Date:</strong> {{disbursement_date}}</li>
+                          </ul>
+                          <p style="margin:0 0 16px 0;">
+                            The payment has been remitted directly to the school&apos;s account. The school should receive it in less than 24 hours.
+                          </p>
+                          <p style="margin:0 0 8px 0;">
+                            If you require an official transaction receipt, you can download it from your dashboard or by clicking the link below:
+                          </p>
+                          <p style="margin:0 0 16px 0;">
+                            &#128073; <a href="{{receipt_url}}" target="_blank" rel="noopener noreferrer" style="color:#DD4F05;text-decoration:underline;font-weight:600;">Download Receipt</a>
+                          </p>
+                          <p style="margin:0 0 16px 0;">
+                            If you have any questions, feel free to contact our support team at
+                            <a href="mailto:{{support_email}}" style="color:#DD4F05;text-decoration:underline;">{{support_email}}</a>,
+                            or call <a href="tel:{{support_phone}}" style="color:#DD4F05;text-decoration:underline;">{{support_phone}}</a>.
+                          </p>
+                          <p style="margin:0 0 4px 0;">Thank you for choosing us.</p>
                           <p style="margin:0;">
-                            Thank you for signing up to {{company_name}}. Please verify your email using the OTP code provided below to secure your account.
+                            Best regards,<br />
+                            {{support_agent_name}}<br />
+                            Customer Support Team
                           </p>
                         </td>
                       </tr>
-
-                      <tr>
-                        <td align="center" style="padding-bottom:24px;">
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
-                            <tr>
-                              <td class="otp-cell" style="padding:0 6px;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="40" height="40" style="width:40px;height:40px;border:1.5px solid #E36C2F;border-radius:2px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;line-height:40px;color:#4D4B4B;text-align:center;">{{otp_digit_1}}</td></tr></table></td>
-                              <td class="otp-cell" style="padding:0 6px;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="40" height="40" style="width:40px;height:40px;border:1.5px solid #E36C2F;border-radius:2px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;line-height:40px;color:#4D4B4B;text-align:center;">{{otp_digit_2}}</td></tr></table></td>
-                              <td class="otp-cell" style="padding:0 6px;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="40" height="40" style="width:40px;height:40px;border:1.5px solid #E36C2F;border-radius:2px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;line-height:40px;color:#4D4B4B;text-align:center;">{{otp_digit_3}}</td></tr></table></td>
-                              <td class="otp-cell" style="padding:0 6px;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="40" height="40" style="width:40px;height:40px;border:1.5px solid #E36C2F;border-radius:2px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;line-height:40px;color:#4D4B4B;text-align:center;">{{otp_digit_4}}</td></tr></table></td>
-                              <td class="otp-cell" style="padding:0 6px;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="40" height="40" style="width:40px;height:40px;border:1.5px solid #E36C2F;border-radius:2px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;line-height:40px;color:#4D4B4B;text-align:center;">{{otp_digit_5}}</td></tr></table></td>
-                              <td class="otp-cell" style="padding:0 6px;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="40" height="40" style="width:40px;height:40px;border:1.5px solid #E36C2F;border-radius:2px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;line-height:40px;color:#4D4B4B;text-align:center;">{{otp_digit_6}}</td></tr></table></td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-
                       <tr>
                         <td style="font-family:Inter,Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;color:#4D4B4B;">
-                          <p style="margin:0 0 12px 0;">This code will expire in {{expiry_minutes}} minutes.</p>
-                          <p style="margin:0 0 12px 0;">Do not share this code with anyone. We will never ask for this outside this email.</p>
                           <p style="margin:0;">
-                            Didn&apos;t request this? Ignore this mail or contact us
-                            <a href="mailto:{{support_email}}" style="color:#DD4F05;text-decoration:underline;">{{support_email}}</a>.
+                            Didn&apos;t request this? Ignore this mail or
+                            <a href="mailto:{{support_email}}" style="color:#DD4F05;text-decoration:underline;">contact us</a>.
                           </p>
                         </td>
                       </tr>
-
                     </table>
                   </td>
                 </tr>
-
-                <!-- Footer -->
                 <tr>
                   <td class="card-padding" style="padding:32px 24px 24px 24px;background-color:#FFFFFF;border-radius:0 0 4px 4px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -146,11 +141,9 @@
                     </table>
                   </td>
                 </tr>
-
               </table>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
