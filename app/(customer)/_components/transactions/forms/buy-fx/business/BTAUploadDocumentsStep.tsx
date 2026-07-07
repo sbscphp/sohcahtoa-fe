@@ -24,7 +24,7 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
-import { kycTinSchema } from "@/app/(customer)/_lib/kyc-tin-schema";
+import { kycTinSchema, sanitizeTinInput } from "@/app/(customer)/_lib/kyc-tin-schema";
 
 /** TCC document number + TIN certificate file optional — not collected when inputs are hidden. */
 const uploadDocumentsSchema = z.object({
@@ -185,12 +185,16 @@ export default function BTAUploadDocumentsStep({
         />
         <TextInput
           label="TIN Number"
-          required
           size="md"
           placeholder="Enter TIN Number"
-          maxLength={30}
+          maxLength={20}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
+          onChange={(e) => {
+            const raw = sanitizeTinInput(e.currentTarget.value);
+            e.currentTarget.value = raw;
+            form.setFieldValue("tinNumber", raw);
+          }}
         />
         <TextInput
           label="Form A ID"

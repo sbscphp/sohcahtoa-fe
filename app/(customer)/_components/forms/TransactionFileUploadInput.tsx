@@ -14,6 +14,8 @@ import {
 
 interface TransactionFileUploadInputProps {
   label: string;
+  /** Shown directly under the label (e.g. QA-required utility bill age note). */
+  description?: string;
   required?: boolean;
   value: FileWithPath | null;
   onChange: (file: FileWithPath | null) => void;
@@ -25,6 +27,7 @@ interface TransactionFileUploadInputProps {
 
 export default function TransactionFileUploadInput({
   label,
+  description,
   required = false,
   value,
   onChange,
@@ -94,6 +97,9 @@ export default function TransactionFileUploadInput({
       <label className="block text-body-text-100 text-sm font-medium">
         {label} {required && <span className="text-error-500">*</span>}
       </label>
+      {description ? (
+        <p className="text-xs text-body-text-200 leading-[140%]">{description}</p>
+      ) : null}
 
       {!value ? (
         <Dropzone

@@ -22,3 +22,6 @@ export const REFUND_BANK_ACCOUNT_MESSAGE =
 
 export const SELL_REFUND_DOMICILIARY_MESSAGE =
   "Select your domiciliary (foreign currency) bank account. This account will be used for refunds if your transaction cannot be processed.";
+
+export const UTILITY_BILL_AGE_REQUIREMENT =
+  "Utility bill must not be more than 3 months old.";

@@ -291,7 +291,7 @@ function buildBTAPayload(
     destinationCountry: "United States",
     bvn: typeof upload?.bvn === "string" ? upload.bvn : undefined,
     nin: typeof upload?.ninNumber === "string" ? upload.ninNumber : undefined,
-    tinNumber: typeof upload?.tinNumber === "string" ? upload.tinNumber : undefined,
+    tinNumber: pickOptionalString(upload?.tinNumber),
     formAId: typeof upload?.formAId === "string" ? upload.formAId : undefined,
     passportDocumentNumber:
       typeof upload?.passportDocumentNumber === "string" ? upload.passportDocumentNumber : undefined,
@@ -314,6 +314,25 @@ function buildTouristPayload(
   const upload = bag.uploadDocumentsData as Record<string, string | any> | null;
   const amount = bag.transactionAmountData;
   const pickup = bag.pickupPointData;
+
+  if (mode === "SELL") {
+    return {
+      type: "TOURIST_FX",
+      currency: getCurrency(amount),
+      amount: getAmount(amount),
+      purpose: getCustomerFxPurposeForPayload("TOURIST_FX", mode),
+      destinationCountry: "United States",
+      passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
+      passportIssueDate: upload?.passportIssueDate ?? undefined,
+      passportExpiryDate: upload?.passportExpiryDate ?? undefined,
+      address: upload?.nigerianAddress ?? undefined,
+      documents,
+      pickupLocation: buildPickupLocation(pickup ?? null),
+      refundBankDetails: refundBankDetailsFromSelection(pickup),
+      ...disbursementOptionFromPickupOrBankPreference(pickup),
+    };
+  }
+
   const payout = disbursementOptionFromSelection(pickup);
 
   return {
@@ -453,7 +472,7 @@ function buildResidentFxPayload(
     destinationCountry: "United States",
     bvn: upload?.bvn ?? undefined,
     nin: upload?.ninNumber ?? undefined,
-    tinNumber: upload?.tinNumber ?? undefined,
+    tinNumber: pickOptionalString(upload?.tinNumber),
     passportDocumentNumber: upload?.passportDocumentNumber ?? undefined,
     passportIssueDate:
       typeof upload?.passportIssueDate === "string" ? upload.passportIssueDate : undefined,

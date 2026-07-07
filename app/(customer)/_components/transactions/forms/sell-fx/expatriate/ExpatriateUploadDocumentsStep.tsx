@@ -7,7 +7,7 @@ import { Alert, Button, TextInput } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { Info } from "lucide-react";
 import { FileWithPath } from "@mantine/dropzone";
-import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
+import { APPROVAL_BEFORE_PAYMENT_MESSAGE, REVIEW_TIMELINE_MESSAGE, UTILITY_BILL_AGE_REQUIREMENT } from "@/app/(customer)/_lib/compliance-messaging";
 import TransactionFileUploadInput from '../../../../forms/TransactionFileUploadInput';
 import { MAX_DOCUMENT_FILE_MB } from "@/app/(customer)/_utils/document-upload";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -231,7 +231,8 @@ export default function ExpatriateUploadDocumentsStep({
       <TransactionFileUploadInput
         label="Utility Bill"
         required
-        supportingText={`Utility bill must not be more than 3 months. PDF, PNG, IMG, JPG supported. Max. size: ${MAX_DOCUMENT_FILE_MB} MB`}
+        description={UTILITY_BILL_AGE_REQUIREMENT}
+        supportingText={`${UTILITY_BILL_AGE_REQUIREMENT} PDF, PNG, IMG, JPG supported. Max. size: ${MAX_DOCUMENT_FILE_MB} MB`}
         value={form.values.utilityBillFile}
         onChange={(file) => form.setFieldValue("utilityBillFile", file)}
         error={form.errors.utilityBillFile as string}
