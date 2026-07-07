@@ -1,0 +1,52 @@
+<!--
+  Footer — variables:
+  {{recipient_email}}, {{unsubscribe_url}}, {{preferences_url}}
+  {{current_year}}, {{company_name}}, {{company_address}}
+  {{twitter_url}}, {{facebook_url}}, {{instagram_url}}
+  {{icon_twitter_url}}, {{icon_facebook_url}}, {{icon_instagram_url}}
+-->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#FFFFFF;border-radius:0 0 4px 4px;">
+  <tr>
+    <td class="card-padding" style="padding:32px 24px 24px 24px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+          <td align="center" style="font-family:Inter,Arial,Helvetica,sans-serif;font-size:14px;line-height:20px;color:#6C6969;text-align:center;">
+            <p style="margin:0 0 16px 0;">
+              This email was sent to <a href="mailto:{{recipient_email}}" style="color:#6C6969;text-decoration:underline;">{{recipient_email}}</a>.
+              If you&apos;d rather not receive this kind of email, you can
+              <a href="{{unsubscribe_url}}" target="_blank" rel="noopener noreferrer" style="color:#6C6969;text-decoration:underline;">unsubscribe</a>
+              or
+              <a href="{{preferences_url}}" target="_blank" rel="noopener noreferrer" style="color:#6C6969;text-decoration:underline;">manage your email preferences</a>.
+            </p>
+            <p style="margin:0 0 32px 0;">
+              &copy; {{current_year}} {{company_name}}, {{company_address}}. Licensed and Regulated by the Central Bank of Nigeria.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+              <tr>
+                <td style="padding:0 8px;">
+                  <a href="{{twitter_url}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+                    <img src="{{icon_twitter_url}}" width="20" height="20" alt="X (Twitter)" style="display:block;border:0;" />
+                  </a>
+                </td>
+                <td style="padding:0 8px;">
+                  <a href="{{facebook_url}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+                    <img src="{{icon_facebook_url}}" width="20" height="20" alt="Facebook" style="display:block;border:0;" />
+                  </a>
+                </td>
+                <td style="padding:0 8px;">
+                  <a href="{{instagram_url}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+                    <img src="{{icon_instagram_url}}" width="20" height="20" alt="Instagram" style="display:block;border:0;" />
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

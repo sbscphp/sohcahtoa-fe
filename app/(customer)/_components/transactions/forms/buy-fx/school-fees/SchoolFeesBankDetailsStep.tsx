@@ -11,16 +11,17 @@ import { INVOICE_BENEFICIARY_MESSAGE } from "@/app/(customer)/_lib/compliance-me
 import InternationalBankDetailsFields from "@/app/(customer)/_components/transactions/forms/InternationalBankDetailsFields";
 import {
   internationalBankDetailsInitialValues,
-  internationalBankDetailsSchema,
+  internationalBankDetailsBaseSchema,
+  refineInternationalBankDetails,
   type InternationalBankDetailsFormValues,
 } from "@/app/(customer)/_lib/international-bank-details-schema";
 
-const schoolFeesBankDetailsSchema = internationalBankDetailsSchema
-  .omit({ organizationName: true, accountName: true })
+const schoolFeesBankDetailsSchema = internationalBankDetailsBaseSchema
   .extend({
     organizationName: z.string().trim().min(1, "School name is required"),
     accountName: z.string().trim().min(1, "Account name (for the school) is required"),
   })
+  .superRefine(refineInternationalBankDetails)
   .and(
     z.object({
       invoiceFile: z.custom<FileWithPath | null>().optional(),
