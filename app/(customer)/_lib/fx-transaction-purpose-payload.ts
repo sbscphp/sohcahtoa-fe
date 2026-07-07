@@ -10,9 +10,9 @@ export const CUSTOMER_BUY_FX_API_PURPOSE = {
 
 /** `purpose` values sent to the backend on transaction create (Sell FX). */
 export const CUSTOMER_SELL_FX_API_PURPOSE = {
-  EXPATRIATE_FX: "I am a foreigner living or working in Nigeria(Expatriate)",
-  RESIDENT_FX: "I have FX and want Naira(resident)",
-  TOURIST_FX: "I am touring Nigeria and want Naira(Tourist)",
+  RESIDENT_FX: "Resident Selling FX",
+  TOURIST_FX: "Tourist Selling FX",
+  EXPATRIATE_FX: "Expatriate Selling FX",
 } as const;
 
 type BuyFxApiType = keyof typeof CUSTOMER_BUY_FX_API_PURPOSE;

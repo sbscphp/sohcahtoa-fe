@@ -80,7 +80,7 @@ describe("getSellOver10kDocumentUploadSpec", () => {
     receiveCurrency: "NGN",
   };
 
-  it("does not upload a separate DIGITAL_SIGNATURE file when signing with initials", () => {
+  it("uploads DIGITAL_SIGNATURE declaration text when signing with initials", () => {
     const spec = getSellOver10kDocumentUploadSpec("RESIDENT_FX", {
       ...over10kAmount,
       sourceOfFundsSignatureMode: "initials",
@@ -88,12 +88,12 @@ describe("getSellOver10kDocumentUploadSpec", () => {
     });
 
     expect(spec).not.toBeNull();
-    expect(spec!.documentTypes).toContain("SOURCE_OF_FUNDS_DECLARATION");
-    expect(spec!.documentTypes).not.toContain("DIGITAL_SIGNATURE");
-    expect(spec!.files.some((f) => f.name === "digital-signature.txt")).toBe(false);
+    expect(spec!.documentTypes).toEqual(["DIGITAL_SIGNATURE"]);
+    expect(spec!.files.some((f) => f.name === "digital-signature.txt")).toBe(true);
+    expect(spec!.files.some((f) => f.name === "signature.png")).toBe(false);
   });
 
-  it("uploads DIGITAL_SIGNATURE only when a signature file is provided", () => {
+  it("uploads DIGITAL_SIGNATURE text and file when a signature file is provided", () => {
     const signatureFile = new File(["sig"], "signature.png", { type: "image/png" });
 
     const spec = getSellOver10kDocumentUploadSpec("RESIDENT_FX", {
@@ -103,7 +103,8 @@ describe("getSellOver10kDocumentUploadSpec", () => {
     });
 
     expect(spec).not.toBeNull();
-    expect(spec!.documentTypes).toContain("DIGITAL_SIGNATURE");
+    expect(spec!.documentTypes).toEqual(["DIGITAL_SIGNATURE", "DIGITAL_SIGNATURE"]);
     expect(spec!.files).toContain(signatureFile);
+    expect(spec!.files.some((f) => f.name === "digital-signature.txt")).toBe(true);
   });
 });

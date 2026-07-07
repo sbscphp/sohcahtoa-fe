@@ -192,18 +192,18 @@ export function getSellOver10kDocumentUploadSpec(
   }
 
   const declarationBody = [
-    "SOURCE OF FUNDS DECLARATION",
+    "DIGITAL SIGNATURE",
     "",
     "I declare that the source of funds/income stated in this form is true and correct to the best of my knowledge. I understand that providing false information may result in rejection of my transaction and reporting to the relevant authorities.",
     "",
     signature.mode === "upload"
-      ? `DIGITAL SIGNATURE: uploaded file (${signature.file?.name ?? "unknown"})`
-      : `DIGITAL SIGNATURE: initials (${signature.initials || "N/A"})`,
+      ? `Signature: uploaded file (${signature.file?.name ?? "unknown"})`
+      : `Signature: initials (${signature.initials || "N/A"})`,
     "",
   ].join("\n");
 
-  spec.files.push(toTextFile("source-of-funds-declaration.txt", declarationBody));
-  spec.documentTypes.push("SOURCE_OF_FUNDS_DECLARATION");
+  spec.files.push(toTextFile("digital-signature.txt", declarationBody));
+  spec.documentTypes.push("DIGITAL_SIGNATURE");
 
   if (signature.mode === "upload" && signature.file) {
     spec.files.push(signature.file);

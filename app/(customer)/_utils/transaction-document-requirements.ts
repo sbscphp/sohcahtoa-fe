@@ -36,7 +36,6 @@ export type DocumentType =
   | "WORK_PERMIT"
   // Additional docs for SELL transactions >= $10,000
   | "PROOF_OF_FUNDS"
-  | "SOURCE_OF_FUNDS_DECLARATION"
   | "DIGITAL_SIGNATURE";
 
 export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, DocumentType[]> = {
