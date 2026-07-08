@@ -81,6 +81,7 @@ export interface TransactionWorkflowHistoryItemViewModel {
   time: string;
   comment: string;
   documentType: string;
+  action: string;
 }
 
 export interface TransactionApprovalUiViewModel {
@@ -691,6 +692,7 @@ function extractWorkflowHistory(
         time: formatTime(createdAt),
         comment: pickString(source.notes, "No notes provided"),
         documentType: pickString(formatEnum(metadata.documentType), "--"),
+        action: asString(source.action),
       };
     })
     .filter((item): item is TransactionWorkflowHistoryItemViewModel => Boolean(item));
