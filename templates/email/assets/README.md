@@ -7,9 +7,8 @@ Host these files on your CDN or object storage and point the template variables 
 | File | Suggested path | Size | Notes |
 |------|----------------|------|-------|
 | `logo.png` | `/assets/email/logo.png` | ~134×67 display | Export from brand kit; PNG only (no SVG in email) |
-| `icon-twitter.png` | `/assets/email/icon-twitter.png` | 20×20 | Gray `#98A2B3` |
-| `icon-facebook.png` | `/assets/email/icon-facebook.png` | 20×20 | Gray `#98A2B3` |
-| `icon-instagram.png` | `/assets/email/icon-instagram.png` | 20×20 | Gray `#98A2B3` |
+
+Social media links (X, Facebook, Instagram) are rendered as plain text links in the footer — no image assets required.
 
 The app logo source lives at `app/assets/svg/logo.svg` (embedded PNG). Export a clean PNG from design for best email results.
 
