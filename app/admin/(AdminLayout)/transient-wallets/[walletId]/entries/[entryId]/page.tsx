@@ -175,7 +175,7 @@ export default function TransientWalletEntryDetailPage() {
 
   const refundMutation = useCreateData(
     ({ transactionId, notes }: { transactionId: string; notes: string }) =>
-      adminApi.transactions.refund(transactionId, { reason: "", notes }),
+      adminApi.transactions.refund(transactionId, { reason: "", notes, walletId, entryId }),
     {
       onSuccess: async () => {
         await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
