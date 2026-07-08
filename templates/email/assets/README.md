@@ -1,18 +1,29 @@
-# Email assets
+# Email assets (app-hosted)
 
-Host these files on your CDN or object storage and point the template variables at the public HTTPS URLs.
+These files are served by the Next.js app from `public/email/` — no separate CDN required.
 
-## Required files
+| File | URL path |
+|------|----------|
+| `logo.png` | `{APP_ORIGIN}/email/logo.png` |
+| `icon-x.png` | `{APP_ORIGIN}/email/icon-x.png` |
+| `icon-facebook.png` | `{APP_ORIGIN}/email/icon-facebook.png` |
+| `icon-instagram.png` | `{APP_ORIGIN}/email/icon-instagram.png` |
 
-| File | Suggested path | Size | Notes |
-|------|----------------|------|-------|
-| `logo.png` | `/assets/email/logo.png` | ~134×67 display | Export from brand kit; PNG only (no SVG in email) |
+Templates reference them via `{{app_url}}/email/...`. Backend only needs to pass `app_url` (your deployed frontend origin, e.g. `https://app.sohcahtoa.com`).
 
-Social media links (X, Facebook, Instagram) are rendered as plain text links in the footer — no image assets required.
+**Email requirement:** URLs must still be absolute HTTPS — email clients fetch images over the internet. “Internal” here means hosted on your app domain, not a third-party CDN.
 
-The app logo source lives at `app/assets/svg/logo.svg` (embedded PNG). Export a clean PNG from design for best email results.
+## Updating the logo
 
-## Deliverability tips
+Replace `public/email/logo.png` (exported from `app/assets/svg/logo.svg`). Re-run extraction if the SVG changes:
 
-- Serve assets from the same root domain as your sending domain when possible.
-- Do not hotlink from localhost or signed URLs that expire quickly (receipt links are the exception — those should be short-lived signed URLs generated per send).
+```bash
+python3 - <<'PY'
+import re, base64, pathlib
+svg = pathlib.Path("app/assets/svg/logo.svg").read_text()
+data = re.search(r'xlink:href="data:image/png;base64,([^"]+)"', svg).group(1)
+pathlib.Path("public/email/logo.png").write_bytes(base64.b64decode(data))
+PY
+```
+
+SVG sources for social icons are also in this folder; PNGs are used in emails for Outlook compatibility.

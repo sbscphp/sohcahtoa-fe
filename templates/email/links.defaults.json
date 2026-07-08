@@ -6,11 +6,18 @@
   "support_phone": "+234XXXXXXXXXX",
   "support_agent_name": "Mary Adeola",
   "app_url": "https://YOUR_APP_DOMAIN",
-  "logo_url": "https://YOUR_CDN/assets/email/logo.png",
-  "twitter_url": "https://twitter.com/YOUR_HANDLE",
-  "facebook_url": "https://facebook.com/YOUR_PAGE",
-  "instagram_url": "https://instagram.com/YOUR_HANDLE",
+  "x_url": "https://x.com/sohcahtoa",
+  "facebook_url": "https://facebook.com/sohcahtoa",
+  "instagram_url": "https://instagram.com/sohcahtoa",
   "unsubscribe_url": "https://YOUR_APP_DOMAIN/unsubscribe?token={{unsubscribe_token}}",
   "preferences_url": "https://YOUR_APP_DOMAIN/settings/notifications",
-  "expiry_minutes": "10"
+  "expiry_minutes": "10",
+  "provide_bank_details_url": "https://YOUR_APP_DOMAIN/transactions/{{transaction_id}}/refund-bank-details",
+  "_asset_paths": {
+    "logo": "/email/logo.png",
+    "icon_x": "/email/icon-x.png",
+    "icon_facebook": "/email/icon-facebook.png",
+    "icon_instagram": "/email/icon-instagram.png",
+    "note": "Templates use {{app_url}}/email/... — files live in public/email/"
+  }
 }

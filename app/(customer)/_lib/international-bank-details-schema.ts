@@ -35,7 +35,7 @@ export const internationalBankDetailsBaseSchema = z.object({
   beneficiaryCountryRegion: z.enum(["UK", "US_CA", "IN", "AU", "NG", "OTHER"]),
   organizationName: z.string().trim().min(1, "Name of organization is required"),
   beneficiaryPhone: z.string().trim().min(1, "Phone number is required"),
-  beneficiaryEmail: z.string().trim().email("Enter a valid email address"),
+  beneficiaryEmail: z.email().min(1, "Email address is required"),
   beneficiaryAddress: z.string().trim().min(1, "Address is required"),
   beneficiaryCity: z.string().trim().min(1, "City is required"),
   beneficiaryState: z.string().trim().min(1, "State is required"),
