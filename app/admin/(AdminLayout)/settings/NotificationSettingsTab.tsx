@@ -162,7 +162,8 @@ function NotificationCard({
   isMarkingRead: boolean
 }) {
   const isUnread = notification.status === "unread"
-  const isClickable = Boolean(notification.transactionId)
+  const isClickable = Boolean(notification.transactionId);
+  
   const handleClick = () => {
     if (!notification.transactionId) return
     onNavigate(notification.transactionId)
@@ -185,7 +186,7 @@ function NotificationCard({
         }
       }}
     >
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 grow">
         <h4 className="text-sm font-semibold text-foreground">
           {notification.title}
         </h4>
@@ -222,10 +223,10 @@ function NotificationCard({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      {isClickable && <div className="flex items-center gap-3">
 
         <ChevronRight className="h-4 w-4 text-foreground/30" />
-      </div>
+      </div>}
     </div>
   )
 }
