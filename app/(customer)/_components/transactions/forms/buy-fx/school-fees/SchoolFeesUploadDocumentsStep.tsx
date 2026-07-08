@@ -15,10 +15,9 @@ import {
 import { passportNumberSchema, validatePassportDates } from "@/app/(customer)/_utils/input-validation";
 import { ChevronDown } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Alert, Button, Select, TextInput } from "@mantine/core";
+import { Button, Select, TextInput } from "@mantine/core";
 import { FileWithPath } from "@mantine/dropzone";
 import { useForm } from "@mantine/form";
-import { Info } from "lucide-react";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -338,13 +337,6 @@ export default function SchoolFeesUploadDocumentsStep({
           for school fees.
         </p>
       </div>
-
-      <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
-        <p className="text-body-text-200">
-          Transactions over <strong>$10,000 USD</strong> require proof of funds
-          documentation on the amount step.
-        </p>
-      </Alert>
 
       <TextInput
         label="Student Name"

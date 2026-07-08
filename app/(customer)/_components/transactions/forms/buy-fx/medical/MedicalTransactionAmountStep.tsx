@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -9,9 +8,6 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
-import ProofOfFundPrompt from "../../ProofOfFundPrompt";
-import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
@@ -33,7 +29,6 @@ const transactionAmountSchema = z
     sendAmount: z.string().min(1, "Amount is required"),
     sendCurrency: z.string().min(1, "Currency is required"),
     exchangeRate: z.string().optional(),
-    proofOfFundsFiles: z.custom<File[]>().optional(),
   })
   .superRefine((data, ctx) => {
     if (receiveAmountOverMax(data.receiveAmount)) {
@@ -60,10 +55,6 @@ export default function MedicalTransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: MedicalTransactionAmountStepProps) {
-  const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(
-    initialValues?.proofOfFundsFiles ?? []
-  );
   const form = useForm<MedicalTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -72,7 +63,6 @@ export default function MedicalTransactionAmountStep({
       sendAmount: initialValues?.sendAmount || "",
       sendCurrency: initialValues?.sendCurrency || "NGN",
       exchangeRate: initialValues?.exchangeRate || exchangeRate,
-      proofOfFundsFiles: initialValues?.proofOfFundsFiles ?? [],
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
@@ -93,20 +83,8 @@ export default function MedicalTransactionAmountStep({
     isCalculating;
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit({
-      ...values,
-      proofOfFundsFiles,
-    });
+    onSubmit(values);
   });
-
-  const handleSwap = () => {
-    form.setValues({
-      receiveAmount: form.values.sendAmount,
-      receiveCurrency: form.values.sendCurrency,
-      sendAmount: form.values.receiveAmount,
-      sendCurrency: form.values.receiveCurrency,
-    });
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -145,27 +123,7 @@ export default function MedicalTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          {/* <div className="w-full">
-            <ProofOfFundPrompt
-              show={isAmountOverRequiredAmount(
-                form.values.receiveAmount,
-                form.values.receiveCurrency,
-                form.values.sendAmount,
-                form.values.sendCurrency
-              )}
-              onUploadClick={() => setProofModalOpen(true)}
-            />
-          </div> */}
         </div>
-
-        {/* <ProofOfFundModal
-          opened={proofModalOpen}
-          onClose={() => setProofModalOpen(false)}
-          onAttach={(files: File[]) => {
-            setProofOfFundsFiles(files);
-            setProofModalOpen(false);
-          }}
-        /> */}
 
         <div className="flex justify-center -my-4 relative z-10">
           <button

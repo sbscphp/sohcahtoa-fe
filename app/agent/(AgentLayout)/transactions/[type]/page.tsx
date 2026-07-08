@@ -56,9 +56,7 @@ import {
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { mapUITypeToAPIType } from "@/app/(customer)/_utils/transaction-document-requirements";
 import {
-  getBuyOverThresholdProofOfFundsUploadSpec,
   getDocumentUploadSpec,
-  mergeDocumentUploadSpecs,
 } from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   getStepsForTransactionType,
@@ -312,13 +310,10 @@ export default function AgentTransactionCreationPage() {
     }
 
     try {
-      const spec = mergeDocumentUploadSpecs(
-        getDocumentUploadSpec(
-          transactionType,
-          bag.uploadDocumentsData,
-          bag.bankDetailsData
-        ),
-        getBuyOverThresholdProofOfFundsUploadSpec(bag.transactionAmountData)
+      const spec = getDocumentUploadSpec(
+        transactionType,
+        bag.uploadDocumentsData,
+        bag.bankDetailsData
       );
       const uploaded = spec
         ? await uploadDocuments.mutateAsync({

@@ -1,6 +1,5 @@
 import {
   getDocumentUploadSpec,
-  getBuyOverThresholdProofOfFundsUploadSpec,
   getSellOver10kDocumentUploadSpec,
   mergeDocumentUploadSpecs,
 } from "../transaction-document-upload-spec";
@@ -53,22 +52,6 @@ describe("getDocumentUploadSpec", () => {
 
     expect(spec?.documentTypes).toContain("STUDENT_PASSPORT");
     expect(spec?.files).toContain(legacyPassportFile);
-  });
-});
-
-describe("getBuyOverThresholdProofOfFundsUploadSpec", () => {
-  it("uploads proof-of-funds files when amount is over threshold", () => {
-    const proofFile = new File(["proof"], "proof.pdf", { type: "application/pdf" });
-    const spec = getBuyOverThresholdProofOfFundsUploadSpec({
-      receiveAmount: "15000",
-      receiveCurrency: "USD",
-      sendAmount: "",
-      sendCurrency: "NGN",
-      proofOfFundsFiles: [proofFile],
-    });
-
-    expect(spec?.documentTypes).toEqual(["PROOF_OF_FUNDS"]);
-    expect(spec?.files).toEqual([proofFile]);
   });
 });
 

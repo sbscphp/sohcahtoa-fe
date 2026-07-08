@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -9,9 +8,6 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
-import ProofOfFundPrompt from "../../ProofOfFundPrompt";
-import ProofOfFundModal from "../../../../modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
@@ -21,7 +17,6 @@ const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
   sendCurrency: z.string().min(1, "Currency is required"),
   exchangeRate: z.string().optional(),
-  proofOfFundsFiles: z.custom<File[]>().optional(),
 });
 
 export type TouristTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
@@ -39,10 +34,6 @@ export default function TouristTransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: TouristTransactionAmountStepProps) {
-  const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(
-    initialValues?.proofOfFundsFiles ?? []
-  );
   const form = useForm<TouristTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -51,7 +42,6 @@ export default function TouristTransactionAmountStep({
       sendAmount: initialValues?.sendAmount || "",
       sendCurrency: initialValues?.sendCurrency || "NGN",
       exchangeRate: initialValues?.exchangeRate || exchangeRate,
-      proofOfFundsFiles: initialValues?.proofOfFundsFiles ?? [],
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
@@ -70,20 +60,8 @@ export default function TouristTransactionAmountStep({
     isCalculating;
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit({
-      ...values,
-      proofOfFundsFiles,
-    });
+    onSubmit(values);
   });
-
-  const handleSwap = () => {
-    form.setValues({
-      receiveAmount: form.values.sendAmount,
-      receiveCurrency: form.values.sendCurrency,
-      sendAmount: form.values.receiveAmount,
-      sendCurrency: form.values.receiveCurrency,
-    });
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,22 +92,11 @@ export default function TouristTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <ProofOfFundPrompt
-            show={isAmountOverRequiredAmount(
-              form.values.receiveAmount,
-              form.values.receiveCurrency,
-              form.values.sendAmount,
-              form.values.sendCurrency
-            )}
-            onUploadClick={() => setProofModalOpen(true)}
-          />
         </div>
-
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            // onClick={handleSwap}
             onClick={() => {
               notifications.show({
                 title: "Swap currencies",
@@ -190,16 +157,6 @@ export default function TouristTransactionAmountStep({
           Next
         </Button>
       </div>
-
-
-      <ProofOfFundModal
-          opened={proofModalOpen}
-          onClose={() => setProofModalOpen(false)}
-          onAttach={(files: File[]) => {
-            setProofOfFundsFiles(files);
-            setProofModalOpen(false);
-          }}
-        />
     </form>
   );
 }

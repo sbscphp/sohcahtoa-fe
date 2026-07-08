@@ -9,9 +9,7 @@ import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
-  getBuyOverThresholdProofOfFundsUploadSpec,
   getDocumentUploadSpec,
-  mergeDocumentUploadSpecs,
 } from "@/app/(customer)/_utils/transaction-document-upload-spec";
 import {
   buildTransactionPayload,
@@ -291,13 +289,10 @@ export default function TransactionCreationPage() {
     }
 
     try {
-      const combinedSpec = mergeDocumentUploadSpecs(
-        getDocumentUploadSpec(
-          transactionType,
-          bag.uploadDocumentsData,
-          bag.bankDetailsData
-        ),
-        getBuyOverThresholdProofOfFundsUploadSpec(bag.transactionAmountData)
+      const combinedSpec = getDocumentUploadSpec(
+        transactionType,
+        bag.uploadDocumentsData,
+        bag.bankDetailsData
       );
       const uploaded = combinedSpec
         ? await uploadDocuments.mutateAsync({

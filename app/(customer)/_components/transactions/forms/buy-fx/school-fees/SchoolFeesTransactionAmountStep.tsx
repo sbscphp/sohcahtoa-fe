@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
@@ -9,13 +8,8 @@ import CurrencyAmountInput from "../../../../forms/CurrencyAmountInput";
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
-import ProofOfFundPrompt from "../../ProofOfFundPrompt";
-import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
-
-const PROOF_OF_FUNDS_THRESHOLD_USD = 10_000;
 
 const transactionAmountSchema = z.object({
   receiveAmount: z.string().min(1, "Amount is required"),
@@ -23,7 +17,6 @@ const transactionAmountSchema = z.object({
   sendAmount: z.string().min(1, "Amount is required"),
   sendCurrency: z.string().min(1, "Currency is required"),
   exchangeRate: z.string().optional(),
-  proofOfFundsFiles: z.custom<File[]>().optional(),
 });
 
 export type SchoolFeesTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
@@ -41,10 +34,6 @@ export default function SchoolFeesTransactionAmountStep({
   onBack,
   exchangeRate = "USD1 - NGN1500",
 }: SchoolFeesTransactionAmountStepProps) {
-  const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [proofOfFundsFiles, setProofOfFundsFiles] = useState<File[]>(
-    initialValues?.proofOfFundsFiles ?? []
-  );
   const form = useForm<SchoolFeesTransactionAmountFormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -53,7 +42,6 @@ export default function SchoolFeesTransactionAmountStep({
       sendAmount: initialValues?.sendAmount || "",
       sendCurrency: initialValues?.sendCurrency || "NGN",
       exchangeRate: initialValues?.exchangeRate || exchangeRate,
-      proofOfFundsFiles: initialValues?.proofOfFundsFiles ?? [],
     },
     validate: zod4Resolver(transactionAmountSchema),
   });
@@ -66,36 +54,15 @@ export default function SchoolFeesTransactionAmountStep({
     defaultLabel: exchangeRate,
   });
 
-  const needsProofOfFund = isAmountOverRequiredAmount(
-    form.values.receiveAmount,
-    form.values.receiveCurrency,
-    form.values.sendAmount,
-    form.values.sendCurrency,
-    PROOF_OF_FUNDS_THRESHOLD_USD
-  );
-
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
-    (needsProofOfFund && proofOfFundsFiles.length === 0) ||
     !hasValidRate ||
     isCalculating;
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit({
-      ...values,
-      proofOfFundsFiles,
-    });
+    onSubmit(values);
   });
-
-  const handleSwap = () => {
-    form.setValues({
-      receiveAmount: form.values.sendAmount,
-      receiveCurrency: form.values.sendCurrency,
-      sendAmount: form.values.receiveAmount,
-      sendCurrency: form.values.receiveCurrency,
-    });
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -126,28 +93,11 @@ export default function SchoolFeesTransactionAmountStep({
             placeholder="0"
             error={form.errors.receiveAmount?.toString() || undefined}
           />
-          <div className="w-full">
-            <ProofOfFundPrompt
-              show={needsProofOfFund}
-              thresholdUsd={PROOF_OF_FUNDS_THRESHOLD_USD}
-              onUploadClick={() => setProofModalOpen(true)}
-            />
-          </div>
         </div>
-
-        <ProofOfFundModal
-          opened={proofModalOpen}
-          onClose={() => setProofModalOpen(false)}
-          onAttach={(files: File[]) => {
-            setProofOfFundsFiles(files);
-            setProofModalOpen(false);
-          }}
-        />
 
         <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
-            // onClick={handleSwap}
             onClick={() => {
               notifications.show({
                 title: "Swap currencies",
