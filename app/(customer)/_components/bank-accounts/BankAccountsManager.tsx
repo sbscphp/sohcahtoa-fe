@@ -8,7 +8,7 @@ import { BankAccountsList } from "@/app/(customer)/_components/bank-accounts/Ban
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import { ConfirmationModal } from "@/app/(customer)/_components/modals/ConfirmationModal";
-import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
+import { useLocalBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
 import { toCreateBankAccountPayload } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 
@@ -26,7 +26,7 @@ export function BankAccountsManager() {
     isSaving,
     setDefaultAccount,
     removeAccount,
-  } = useCustomerBankAccounts();
+  } = useLocalBankAccounts();
 
   const defaultAccountId = useMemo(
     () => savedAccounts.find((a) => a.isDefault)?.id,

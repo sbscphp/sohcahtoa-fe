@@ -78,7 +78,8 @@ export const customerKeys = {
   
   bankAccounts: {
     all: ["customer", "bank-accounts"] as const,
-    list: () => [...customerKeys.bankAccounts.all, "list"] as const,
+    list: (currency?: string) =>
+      [...customerKeys.bankAccounts.all, "list", currency ?? "all"] as const,
     banks: (q?: string) => [...customerKeys.bankAccounts.all, "banks", q ?? ""] as const,
     forTransaction: (transactionId: string) =>
       [...customerKeys.bankAccounts.all, "transaction", transactionId] as const,

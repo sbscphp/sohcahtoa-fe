@@ -93,6 +93,7 @@ import type {
   NigerianBanksListResponse,
   BankAccountLookupResponse,
   CustomerBankAccountsListResponse,
+  ListCustomerBankAccountsParams,
   CreateCustomerBankAccountRequest,
   CreateCustomerBankAccountResponse,
   AttachBankAccountsToTransactionRequest,
@@ -432,8 +433,10 @@ export const customerApi = {
   },
 
   bankAccounts: {
-    list: () =>
-      apiClient.get<CustomerBankAccountsListResponse>(API_ENDPOINTS.bankAccounts.list),
+    list: (params?: ListCustomerBankAccountsParams) =>
+      apiClient.get<CustomerBankAccountsListResponse>(API_ENDPOINTS.bankAccounts.list, {
+        params: params as ApiRequestConfig["params"],
+      }),
 
     listBanks: (params?: { q?: string }) =>
       apiClient.get<NigerianBanksListResponse>(API_ENDPOINTS.bankAccounts.banks, {

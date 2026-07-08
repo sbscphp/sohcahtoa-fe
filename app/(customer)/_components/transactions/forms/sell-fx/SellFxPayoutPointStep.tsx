@@ -8,7 +8,7 @@ import PickupPointStep, {
 } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
-import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
+import { useLocalBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
 import { toCreateBankAccountPayload } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 
@@ -28,7 +28,7 @@ export default function SellFxPayoutPointStep({
 }: Readonly<SellFxPayoutPointStepProps>) {
   const [addBankOpened, setAddBankOpened] = useState(false);
   const { accounts: banks, isLoading: banksLoading, addAccount, isSaving } =
-    useCustomerBankAccounts();
+    useLocalBankAccounts();
 
   const handleAddBank = useCallback(
     async (data: AddBankAccountFormData) => {

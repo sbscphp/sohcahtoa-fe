@@ -141,6 +141,7 @@ export default function AgentTransactionCreationPage() {
     addAccount,
     isSaving: isSavingBankAccount,
     attachToTransaction,
+    invalidate: invalidateBankAccounts,
   } = useAgentBankAccounts();
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
 
@@ -344,6 +345,9 @@ export default function AgentTransactionCreationPage() {
             color: "orange",
           });
         }
+      }
+      if (bankDetailsData) {
+        await invalidateBankAccounts();
       }
       setConfirmationOpened(false);
       router.push(

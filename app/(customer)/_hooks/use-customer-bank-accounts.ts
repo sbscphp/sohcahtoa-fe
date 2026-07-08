@@ -10,19 +10,45 @@ import type {
   CustomerBankAccountsListResponse,
 } from "@/app/_lib/api/types";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
-import { mapCustomerBankAccountToUi } from "@/app/(customer)/_utils/customer-bank-accounts";
+import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
+import type { DomiciliaryRefundAccount } from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
+import {
+  type BankAccountListFilter,
+  filterAccountsByCurrency,
+  isCompleteDomiciliaryRefundAccount,
+  mapCustomerBankAccountToDomiciliaryRefund,
+  mapCustomerBankAccountToUi,
+  toBankAccountListParams,
+  toCreateDomiciliaryBankAccountPayload,
+} from "@/app/(customer)/_utils/customer-bank-accounts";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 
-export function useCustomerBankAccounts(enabled = true) {
+export interface UseCustomerBankAccountsOptions {
+  /** `LOCAL` = NGN accounts; `FOREIGN` = domiciliary accounts. */
+  currency?: BankAccountListFilter;
+  enabled?: boolean;
+}
+
+function listQueryKey(currency?: BankAccountListFilter) {
+  return [...customerKeys.bankAccounts.list(currency)];
+}
+
+export function useCustomerBankAccounts(options?: UseCustomerBankAccountsOptions) {
+  const currency = options?.currency;
+  const enabled = options?.enabled ?? true;
   const queryClient = useQueryClient();
+  const listParams = toBankAccountListParams(currency);
 
   const { data, isLoading, refetch } = useFetchData<CustomerBankAccountsListResponse>(
-    [...customerKeys.bankAccounts.list()],
-    () => customerApi.bankAccounts.list(),
+    listQueryKey(currency),
+    () => customerApi.bankAccounts.list(listParams),
     enabled,
   );
 
-  const savedAccounts: CustomerBankAccount[] = data?.data ?? [];
+  const savedAccounts: CustomerBankAccount[] = useMemo(() => {
+    const raw = data?.data ?? [];
+    return currency ? filterAccountsByCurrency(raw, currency) : raw;
+  }, [currency, data?.data]);
 
   const accounts: BankAccount[] = useMemo(
     () => savedAccounts.map((account) => mapCustomerBankAccountToUi(account)),
@@ -46,6 +72,20 @@ export function useCustomerBankAccounts(enabled = true) {
     }
     await invalidate();
     return mapCustomerBankAccountToUi(saved);
+  };
+
+  const addDomiciliaryAccount = async (
+    formData: DomiciliaryAccountFormData,
+  ): Promise<DomiciliaryRefundAccount> => {
+    const response = await createMutation.mutateAsync(
+      toCreateDomiciliaryBankAccountPayload(formData),
+    );
+    const saved = response.data;
+    if (!saved) {
+      throw new Error("Domiciliary bank account was not returned after save.");
+    }
+    await invalidate();
+    return mapCustomerBankAccountToDomiciliaryRefund(saved, formData);
   };
 
   const setDefaultAccount = async (bankAccountId: string) => {
@@ -74,10 +114,39 @@ export function useCustomerBankAccounts(enabled = true) {
     isLoading,
     refetch,
     addAccount,
+    addDomiciliaryAccount,
     isSaving: createMutation.isPending,
     setDefaultAccount,
     isSettingDefault: setDefaultMutation.isPending,
     removeAccount,
     attachToTransaction,
+    invalidate,
+  };
+}
+
+/** Local NGN bank accounts for refunds and electronic payouts. */
+export function useLocalBankAccounts(enabled = true) {
+  return useCustomerBankAccounts({ currency: "LOCAL", enabled });
+}
+
+/** Domiciliary (foreign currency) bank accounts. */
+export function useDomiciliaryBankAccounts(enabled = true) {
+  const result = useCustomerBankAccounts({ currency: "FOREIGN", enabled });
+
+  const domiciliaryAccounts: DomiciliaryRefundAccount[] = useMemo(
+    () =>
+      result.savedAccounts.map((account) => mapCustomerBankAccountToDomiciliaryRefund(account)),
+    [result.savedAccounts],
+  );
+
+  const selectableDomiciliaryAccounts = useMemo(
+    () => domiciliaryAccounts.filter(isCompleteDomiciliaryRefundAccount),
+    [domiciliaryAccounts],
+  );
+
+  return {
+    ...result,
+    domiciliaryAccounts,
+    selectableDomiciliaryAccounts,
   };
 }

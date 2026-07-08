@@ -44,13 +44,16 @@ import {
 } from "@/app/(customer)/_utils/transaction-payload";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
-import { useAgentBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
+import {
+  useCustomerBankAccounts,
+  useDomiciliaryBankAccounts,
+} from "@/app/agent/_hooks/use-agent-bank-accounts";
 import {
   getCreatedTransactionId,
   getPickupBankAccountId,
+  getRefundDomiciliaryBankAccountId,
   hasCompleteRefundDomiciliaryDetails,
   mergeRefundDomiciliaryIntoPickupData,
-  domiciliaryRefundAccountFromPickupData,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
 import DomiciliaryRefundBankStep, {
   type DomiciliaryRefundAccount,
@@ -118,18 +121,19 @@ export default function AgentSellTransactionCreationPage() {
     | null
   >(null);
   const [addBankOpened, setAddBankOpened] = useState(false);
-  const [domiciliaryRefundAccounts, setDomiciliaryRefundAccounts] = useState<
-    DomiciliaryRefundAccount[]
-  >(() => {
-    const existing = domiciliaryRefundAccountFromPickupData(
-      pickupPointData as Record<string, unknown> | null,
-    );
-    return existing ? [existing] : [];
-  });
+
+  const domiciliaryAccountsEnabled =
+    activeStep === "refund-bank-details" || addBankOpened;
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
-  const { attachToTransaction } = useAgentBankAccounts();
+  const { attachToTransaction } = useCustomerBankAccounts({ enabled: false });
+  const {
+    selectableDomiciliaryAccounts,
+    isLoading: domiciliaryAccountsLoading,
+    addDomiciliaryAccount,
+    isSaving: isSavingDomiciliaryAccount,
+  } = useDomiciliaryBankAccounts(domiciliaryAccountsEnabled);
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -158,13 +162,17 @@ export default function AgentSellTransactionCreationPage() {
     setActiveStep("refund-bank-details");
   };
 
-  const handleAddDomiciliaryAccount = useCallback((data: DomiciliaryAccountFormData) => {
-    const account: DomiciliaryRefundAccount = {
-      id: crypto.randomUUID(),
-      ...data,
-    };
-    setDomiciliaryRefundAccounts((prev) => [...prev, account]);
-  }, []);
+  const handleAddDomiciliaryAccount = useCallback(
+    async (data: DomiciliaryAccountFormData) => {
+      try {
+        await addDomiciliaryAccount(data);
+      } catch (error) {
+        handleApiError(error);
+        throw error;
+      }
+    },
+    [addDomiciliaryAccount],
+  );
 
   const handleRefundBankSubmit = (account: DomiciliaryRefundAccount) => {
     setPickupPointData((prev) =>
@@ -241,10 +249,13 @@ export default function AgentSellTransactionCreationPage() {
       });
 
       const transactionId = getCreatedTransactionId(created);
-      const bankAccountId = getPickupBankAccountId(pickupPointData as Record<string, unknown>);
-      if (transactionId && bankAccountId) {
+      const bankAccountIds = [
+        getPickupBankAccountId(pickupPointData as Record<string, unknown>),
+        getRefundDomiciliaryBankAccountId(pickupPointData as Record<string, unknown>),
+      ].filter((id): id is string => Boolean(id));
+      if (transactionId && bankAccountIds.length) {
         try {
-          await attachToTransaction(transactionId, [bankAccountId]);
+          await attachToTransaction(transactionId, bankAccountIds);
         } catch (attachError) {
           handleApiError(attachError);
           notifications.show({
@@ -277,7 +288,8 @@ export default function AgentSellTransactionCreationPage() {
 
   const renderRefundBankStep = () => (
     <DomiciliaryRefundBankStep
-      accounts={domiciliaryRefundAccounts}
+      accounts={selectableDomiciliaryAccounts}
+      isLoading={domiciliaryAccountsLoading}
       initialSelectedAccountId={
         (pickupPointData as { selectedRefundDomiciliaryId?: string } | null)
           ?.selectedRefundDomiciliaryId
@@ -459,6 +471,7 @@ export default function AgentSellTransactionCreationPage() {
         opened={addBankOpened}
         onClose={() => setAddBankOpened(false)}
         onAddAccount={handleAddDomiciliaryAccount}
+        isSubmitting={isSavingDomiciliaryAccount}
       />
 
       <AgentAddCustomerModal

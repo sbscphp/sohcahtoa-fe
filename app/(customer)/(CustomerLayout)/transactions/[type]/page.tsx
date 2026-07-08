@@ -49,7 +49,7 @@ import { ConfirmationModal } from "@/app/(customer)/_components/modals/Confirmat
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
-import { useCustomerBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
+import { useLocalBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
 import {
   getCreatedTransactionId,
   getRefundBankAccountId,
@@ -130,7 +130,8 @@ export default function TransactionCreationPage() {
     addAccount,
     isSaving: isSavingBankAccount,
     attachToTransaction,
-  } = useCustomerBankAccounts();
+    invalidate: invalidateBankAccounts,
+  } = useLocalBankAccounts();
   const [bankDetailsData, setBankDetailsData] = useState<
     | SchoolFeesBankDetailsFormData
     | MedicalBankDetailsFormData
@@ -320,6 +321,9 @@ export default function TransactionCreationPage() {
             color: "orange",
           });
         }
+      }
+      if (bankDetailsData) {
+        await invalidateBankAccounts();
       }
       setConfirmationOpened(false);
       if (transactionId) {

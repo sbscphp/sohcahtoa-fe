@@ -1,10 +1,14 @@
 import type {
   CreateCustomerBankAccountRequest,
   CustomerBankAccount,
+  ListCustomerBankAccountsParams,
 } from "@/app/_lib/api/types";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
 import type { DomiciliaryRefundAccount } from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
+
+export type BankAccountListFilter = "LOCAL" | "FOREIGN";
+
 export interface AddBankAccountInput {
   bankName: string;
   accountNumber: string;
@@ -14,6 +18,33 @@ export interface AddBankAccountInput {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/** Maps UI filter to API query param. */
+export function toBankAccountListParams(
+  filter?: BankAccountListFilter,
+): ListCustomerBankAccountsParams | undefined {
+  if (!filter) return undefined;
+  return { currency: filter === "FOREIGN" ? "FOREIGN" : "NGN" };
+}
+
+export function isDomiciliaryBankAccount(account: CustomerBankAccount): boolean {
+  return account.currency === "FOREIGN";
+}
+
+export function isLocalBankAccount(account: CustomerBankAccount): boolean {
+  return !isDomiciliaryBankAccount(account);
+}
+
+/** Client-side filter until the API query param is fully enforced. */
+export function filterAccountsByCurrency(
+  accounts: CustomerBankAccount[],
+  filter: BankAccountListFilter,
+): CustomerBankAccount[] {
+  if (filter === "FOREIGN") {
+    return accounts.filter(isDomiciliaryBankAccount);
+  }
+  return accounts.filter(isLocalBankAccount);
+}
+
 /** POST /api/customer/bank-accounts body — bank name must match banks list label. */
 export function toCreateBankAccountPayload(
   data: AddBankAccountInput,
@@ -22,6 +53,21 @@ export function toCreateBankAccountPayload(
     bankName: data.bankName.trim(),
     accountNumber: data.accountNumber.trim(),
     accountName: data.accountName.trim(),
+  };
+}
+
+/** POST body for domiciliary (foreign currency) accounts. */
+export function toCreateDomiciliaryBankAccountPayload(
+  data: DomiciliaryAccountFormData,
+): CreateCustomerBankAccountRequest {
+  return {
+    bankName: data.domiciliaryBankName.trim(),
+    accountNumber: data.domiciliaryAccountNumber.trim(),
+    accountName: data.accountName.trim(),
+    currency: "FOREIGN",
+    swiftCode: data.swiftCode.trim(),
+    routingNumber: data.routingNumber.trim(),
+    bankAddress: data.bankAddress.trim(),
   };
 }
 
@@ -46,6 +92,34 @@ export function mapCustomerBankAccountToUi(account: CustomerBankAccount): BankAc
     accountNumber: account.accountNumber,
     accountName: account.accountName,
   };
+}
+
+export function mapCustomerBankAccountToDomiciliaryRefund(
+  account: CustomerBankAccount,
+  extras?: Partial<DomiciliaryAccountFormData>,
+): DomiciliaryRefundAccount {
+  return {
+    id: account.id,
+    domiciliaryAccountNumber: account.accountNumber,
+    domiciliaryBankName: account.bankName,
+    accountName: account.accountName,
+    swiftCode: extras?.swiftCode?.trim() ?? account.swiftCode?.trim() ?? "",
+    routingNumber: extras?.routingNumber?.trim() ?? account.routingNumber?.trim() ?? "",
+    bankAddress: extras?.bankAddress?.trim() ?? account.bankAddress?.trim() ?? "",
+  };
+}
+
+export function isCompleteDomiciliaryRefundAccount(
+  account: DomiciliaryRefundAccount,
+): boolean {
+  return Boolean(
+    account.domiciliaryAccountNumber.trim() &&
+      account.domiciliaryBankName.trim() &&
+      account.accountName.trim() &&
+      account.swiftCode.trim() &&
+      account.routingNumber.trim() &&
+      account.bankAddress.trim(),
+  );
 }
 
 export function isSavedBankAccountId(id: string): boolean {
@@ -135,6 +209,20 @@ export function getRefundBankAccountId(
   const selectedRefundBankId = String(pickup.selectedRefundBankId ?? "").trim();
   if (selectedRefundBankId && isSavedBankAccountId(selectedRefundBankId)) {
     return selectedRefundBankId;
+  }
+
+  return undefined;
+}
+
+/** Saved domiciliary refund bank account id from sell FX payout flow. */
+export function getRefundDomiciliaryBankAccountId(
+  pickup: Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!pickup) return undefined;
+
+  const selectedId = String(pickup.selectedRefundDomiciliaryId ?? "").trim();
+  if (selectedId && isSavedBankAccountId(selectedId)) {
+    return selectedId;
   }
 
   return undefined;

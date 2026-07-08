@@ -1269,25 +1269,42 @@ export interface BankAccountLookupData {
 
 export type BankAccountLookupResponse = ApiResponseWrapper<BankAccountLookupData>;
 
+/** `FOREIGN` = domiciliary; `null` / omitted = local NGN account. */
+export type CustomerBankAccountCurrency = "FOREIGN" | null;
+
 export interface CustomerBankAccount {
   id: string;
-  userId: string;
+  userId?: string;
   bankName: string;
   accountNumber: string;
   accountName: string;
+  currency?: CustomerBankAccountCurrency;
+  swiftCode?: string | null;
+  routingNumber?: string | null;
+  bankAddress?: string | null;
   isVerified: boolean;
   isDefault: boolean;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export type CustomerBankAccountsListResponse =
   ApiResponseWrapper<CustomerBankAccount[]>;
 
+export interface ListCustomerBankAccountsParams {
+  /** Pass `FOREIGN` for domiciliary accounts; `NGN` or `LOCAL` for local accounts. */
+  currency?: "FOREIGN" | "NGN" | "LOCAL";
+}
+
 export interface CreateCustomerBankAccountRequest {
   bankName: string;
   accountNumber: string;
   accountName: string;
+  /** Set to `FOREIGN` when saving a domiciliary account. */
+  currency?: "FOREIGN";
+  swiftCode?: string;
+  routingNumber?: string;
+  bankAddress?: string;
 }
 
 export type CreateCustomerBankAccountResponse =

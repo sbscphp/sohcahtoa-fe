@@ -12,6 +12,7 @@ export type DomiciliaryRefundAccount = DomiciliaryAccountFormData & { id: string
 
 interface DomiciliaryRefundBankStepProps {
   accounts: DomiciliaryRefundAccount[];
+  isLoading?: boolean;
   initialSelectedAccountId?: string;
   onSubmit: (account: DomiciliaryRefundAccount) => void;
   onBack?: () => void;
@@ -29,6 +30,7 @@ function toListAccount(account: DomiciliaryRefundAccount): BankAccount {
 
 export default function DomiciliaryRefundBankStep({
   accounts,
+  isLoading = false,
   initialSelectedAccountId,
   onSubmit,
   onBack,
@@ -54,6 +56,7 @@ export default function DomiciliaryRefundBankStep({
 
       <BankAccountsList
         accounts={listAccounts}
+        isLoading={isLoading}
         searchable
         selectedId={selectedAccountId}
         onSelect={setSelectedAccountId}
