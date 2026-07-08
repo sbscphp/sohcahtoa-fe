@@ -115,22 +115,16 @@ describe("BVN Page - Citizen Onboarding", () => {
     sessionStorage.clear();
   });
 
-  const fillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
-    await user.type(screen.getByPlaceholderText(/example@email.com/i), "test@example.com");
-    await user.type(screen.getByPlaceholderText(/\+2348031234567/i), "+2348031234567");
-  };
-
-  it("renders BVN, email, and phone fields", async () => {
+  it("renders BVN field only", async () => {
     render(<BVNPage />);
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
     });
-    expect(screen.getByPlaceholderText(/example@email.com/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/\+2348031234567/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/example@email.com/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/\+2348031234567/i)).not.toBeInTheDocument();
   });
 
-  it("disables continue button until BVN, email, and phone are valid", async () => {
+  it("disables continue button until BVN is valid", async () => {
     const user = userEvent.setup();
     render(<BVNPage />);
     await waitFor(() => {
@@ -141,33 +135,23 @@ describe("BVN Page - Citizen Onboarding", () => {
     expect(button).toBeDisabled();
 
     await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
-    expect(button).toBeDisabled();
-
-    await user.type(screen.getByPlaceholderText(/example@email.com/i), "test@example.com");
-    expect(button).toBeDisabled();
-
-    await user.type(screen.getByPlaceholderText(/\+2348031234567/i), "+2348031234567");
     await waitFor(() => {
       expect(button).toBeEnabled();
     });
   });
 
-  it("starts NIBSS consent with bvn, email, and phone", async () => {
+  it("starts NIBSS consent with bvn only", async () => {
     const user = userEvent.setup();
     render(<BVNPage />);
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
     });
 
-    await fillValidForm(user);
+    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
     await user.click(screen.getByRole("button", { name: /continue to nibss consent/i }));
 
     await waitFor(() => {
-      expect(mockStartConsent).toHaveBeenCalledWith({
-        bvn: "12345678901",
-        email: "test@example.com",
-        phoneNumber: "+2348031234567",
-      });
+      expect(mockStartConsent).toHaveBeenCalledWith({ bvn: "12345678901" });
     });
   });
 
@@ -178,7 +162,7 @@ describe("BVN Page - Citizen Onboarding", () => {
       expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
     });
 
-    await fillValidForm(user);
+    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
     await user.click(screen.getByRole("button", { name: /continue to nibss consent/i }));
 
     await waitFor(() => {
@@ -198,7 +182,7 @@ describe("BVN Page - Citizen Onboarding", () => {
       expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
     });
 
-    await fillValidForm(user);
+    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
     await user.click(screen.getByRole("button", { name: /continue to nibss consent/i }));
 
     await waitFor(() => {

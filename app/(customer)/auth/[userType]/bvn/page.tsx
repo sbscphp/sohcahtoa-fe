@@ -16,11 +16,6 @@ import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
 import { customerNigerianBvnConsentClient } from "@/app/_lib/nibss-bvn-consent/clients";
 import { persistVerificationProfile } from "@/app/_lib/nibss-bvn-consent/persist-verification-profile";
-import {
-  isValidEmail,
-  isValidNigerianPhoneNumber,
-  normalizeNigerianPhoneInput,
-} from "@/app/_lib/nibss-bvn-consent/phone-validation";
 import { useBvnConsentFlow } from "@/app/_lib/nibss-bvn-consent/use-bvn-consent-flow";
 
 export default function BVNPage() {
@@ -29,8 +24,6 @@ export default function BVNPage() {
   const userType = validateUserType(params.userType);
 
   const [bvn, setBvn] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [
     otpDeliveryOpened,
     { open: openOTPDelivery, close: closeOTPDelivery }
@@ -63,19 +56,12 @@ export default function BVNPage() {
     checkAndClearSessionIfUserTypeChanged(userType);
   }, [userType, router]);
 
-  const isFormValid =
-    bvn.length === 11 &&
-    isValidEmail(email) &&
-    isValidNigerianPhoneNumber(phoneNumber);
+  const isFormValid = bvn.length === 11;
 
   const handleVerify = () => {
     if (!isFormValid || !userType || bvnConsent.isActive) return;
 
-    void bvnConsent.startConsent({
-      bvn,
-      email: email.trim(),
-      phoneNumber: phoneNumber.trim(),
-    });
+    void bvnConsent.startConsent({ bvn });
   };
 
   const handleConsentCancel = () => {
@@ -161,8 +147,8 @@ export default function BVNPage() {
             Let&apos;s Get you Started.
           </h1>
           <p className="text-body-text-100 text-base">
-            Enter your BVN and contact details. You&apos;ll complete a quick NIBSS
-            consent step before we verify your identity.
+            Please enter your BVN. You&apos;ll complete a quick NIBSS consent step
+            before we verify your identity.
           </p>
         </div>
 
@@ -184,40 +170,6 @@ export default function BVNPage() {
               If you can&apos;t remember, please dial{" "}
               <span className="font-semibold">*565*0#</span> with your registered
               SIM to get started.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-body-text-100 text-base font-medium">
-              Email address
-            </label>
-            <TextInput
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@email.com"
-              size="lg"
-              type="email"
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-body-text-100 text-base font-medium">
-              Phone number
-            </label>
-            <TextInput
-              value={phoneNumber}
-              onChange={(e) =>
-                setPhoneNumber(normalizeNigerianPhoneInput(e.target.value))
-              }
-              placeholder="+2348031234567"
-              size="lg"
-              type="tel"
-              maxLength={14}
-              autoComplete="tel"
-            />
-            <p className="text-text-200 text-sm">
-              Use the phone number linked to your BVN (+234 format).
             </p>
           </div>
         </div>

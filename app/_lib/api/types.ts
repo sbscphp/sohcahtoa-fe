@@ -36,8 +36,8 @@ export interface SignupRequest {
 
 export interface VerifyBvnRequest {
   bvn: string;
-  email: string;
-  phoneNumber: string;
+  email?: string;
+  phoneNumber?: string;
 }
 
 /** Step 1a — NIBSS consent initiated (no verificationToken yet). */
