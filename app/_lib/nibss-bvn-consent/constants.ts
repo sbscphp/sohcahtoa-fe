@@ -7,6 +7,6 @@ export const NIBSS_POLL_BACKOFF_MULTIPLIER = 1.5;
 export const NIBSS_POLL_MAX_DURATION_MS = 10 * 60 * 1_000;
 
 /** Allowed NIBSS consent portal hostnames (exact or subdomain). */
-export const NIBSS_ALLOWED_CONSENT_HOSTS = ["consent.nibss-plc.com.ng"] as const;
+export const NIBSS_ALLOWED_CONSENT_HOSTS = ["nibss-plc.com.ng"] as const;
 
 export const NIBSS_SESSION_STORAGE_KEY = "nibssSessionId";

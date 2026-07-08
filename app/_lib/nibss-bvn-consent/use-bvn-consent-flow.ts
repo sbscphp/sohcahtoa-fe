@@ -7,6 +7,7 @@ import {
   openNibssConsentPortal,
   redirectToNibssConsentPortal,
 } from "@/app/_lib/nibss-bvn-consent/open-consent-portal";
+import { isAllowedNibssConsentUrl } from "@/app/_lib/nibss-bvn-consent/validate-consent-url";
 import {
   BvnConsentPollError,
   pollBvnConsentStatus,
@@ -152,6 +153,19 @@ export function useBvnConsentFlow({
 
         const { sessionId: nextSessionId, consentUrl: nextConsentUrl, message } =
           response.data;
+
+        if (!isAllowedNibssConsentUrl(nextConsentUrl)) {
+          const invalidUrlMessage =
+            "We received an invalid NIBSS consent link. Please try again or contact support.";
+          setPhase("failed");
+          setStatusMessage(invalidUrlMessage);
+          onFailedRef.current?.(invalidUrlMessage);
+          handleApiError(
+            { message: invalidUrlMessage, status: 400 },
+            { customMessage: invalidUrlMessage },
+          );
+          return;
+        }
 
         persistNibssSessionId(nextSessionId);
         setSessionId(nextSessionId);
