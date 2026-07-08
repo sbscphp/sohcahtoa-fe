@@ -104,7 +104,7 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
       description: (value) => {
         const trimmed = value.trim();
         if (!trimmed.length) return "Description is required";
-        if (trimmed.length > 32) return "Description must not exceed 32 characters";
+        if (trimmed.length > 64) return "Description must not exceed 64 characters";
         return null;
       },
       branch: (value) => (value ? null : "Branch is required"),
@@ -325,7 +325,7 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
                   {...form.getInputProps("description")}
                 />
                 <Text size="xs" c="dimmed">
-                  Not more than 32 character counts
+                  Not more than 64 character counts
                 </Text>
               </Stack>
             </Group>
