@@ -504,13 +504,13 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
         }}
         title="New Changes Saved"
         message="New Changes has been successfully Saved and Updated"
-        primaryButtonText="Manage User"
+        primaryButtonText="Manage Roles"
         onPrimaryClick={() => {
           setIsSuccessOpen(false);
           handleClose();
           router.push(adminRoutes.adminUserManagement());
         }}
-        secondaryButtonText="No, Close"
+        secondaryButtonText="Close"
       />
     </>
   );

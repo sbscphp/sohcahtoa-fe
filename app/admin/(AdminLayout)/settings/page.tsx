@@ -19,7 +19,6 @@ const BASE_SETTING_TABS = [
   { value: "account", label: "Account Information" },
   { value: "password", label: "Password" },
   { value: "notifications", label: "Notifications" },
-  { value: "pickup-stations", label: "Pick-Up Stations" },
 ] as const;
 
 const RATE_TAB = { value: "rates", label: "Rate Management" } as const;
@@ -27,11 +26,13 @@ const WORKFLOW_CONFIGURATION_TAB = {
   value: "workflow-configuration",
   label: "Workflow Configuration",
 } as const;
+const PICKUP_STATIONS_TAB = { value: "pickup-stations", label: "Pick-Up Stations" } as const;
 
 export type TabId =
   | (typeof BASE_SETTING_TABS)[number]["value"]
   | "rates"
-  | "workflow-configuration";
+  | "workflow-configuration"
+  | "pickup-stations";
 
 const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
 
@@ -48,14 +49,16 @@ export default function SettingsPage() {
   const userPermissions = adminUser?.userPermissions ?? EMPTY_USER_PERMISSIONS;
   const hasRateAccess = hasModuleAccess(userPermissions, "RATE");
   const hasWorkflowAccess = hasModuleAccess(userPermissions, "WORKFLOW");
+  const hasPickUpStationsAccess = hasModuleAccess(userPermissions, "PICKUP_STATIONS");
 
   const visibleTabs = useMemo(
     () => [
       ...BASE_SETTING_TABS,
+      ...(hasPickUpStationsAccess ? [PICKUP_STATIONS_TAB] : []),
       ...(hasRateAccess ? [RATE_TAB] : []),
       ...(hasWorkflowAccess ? [WORKFLOW_CONFIGURATION_TAB] : []),
     ],
-    [hasRateAccess, hasWorkflowAccess]
+    [hasRateAccess, hasWorkflowAccess, hasPickUpStationsAccess]
   );
 
   const validTabValues = useMemo(

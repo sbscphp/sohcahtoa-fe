@@ -7,7 +7,7 @@ import type { UserPermission } from "@/app/admin/_lib/atoms/admin-auth-atom";
  * A value of `null` means the route is open to all authenticated users.
  */
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
-  "/admin/dashboard": null,
+  "/admin/dashboard": "DASHBOARD",
   "/admin/transactions": "TRANSACTION",
   "/admin/transient-wallets": "TRANSIENT_WALLET",
   "/admin/settlement": "SETTLEMENT",
