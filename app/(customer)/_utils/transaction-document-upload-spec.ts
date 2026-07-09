@@ -133,10 +133,12 @@ function isSellFxType(transactionType: TransactionType): boolean {
   );
 }
 
+
 function getStringField(data: AmountStepData, key: string): string {
   const v = data[key];
   return typeof v === "string" ? v : "";
 }
+
 
 function readSignature(data: AmountStepData): {
   mode: "initials" | "upload";
