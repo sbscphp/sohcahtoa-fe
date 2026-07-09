@@ -12,6 +12,7 @@ import type {
   TransactionActionDocumentViewModel,
   TransactionOverviewViewModel,
   TransactionWorkflowHistoryItemViewModel,
+  PendingWorkflowStageViewModel,
   OverviewSection,
   OverviewField,
 } from "./hooks/useTransactionDetails";
@@ -20,6 +21,7 @@ interface OverviewProps {
   transaction: TransactionOverviewViewModel | null;
   actionDocuments?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -67,6 +69,7 @@ export default function Overview({
   transaction,
   actionDocuments = [],
   workflowHistory = [],
+  pendingWorkflowStages = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -112,6 +115,7 @@ export default function Overview({
           }
           documents={actionDocuments}
           workflowHistory={workflowHistory}
+          pendingWorkflowStages={pendingWorkflowStages}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}

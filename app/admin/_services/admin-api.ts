@@ -1171,6 +1171,7 @@ export interface AdminTransactionApprovalProcess {
   pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;
   approvalState?: string;
+  currentOrder?: number | null;
 }
 
 export interface AdminTransactionDetailsData {
@@ -2298,7 +2299,7 @@ export const adminApi = {
         data
       ),
 
-    refund: (id: string, data: { reason: string; notes: string }) =>
+    refund: (id: string, data: { reason: string; notes: string, walletId: string, entryId: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.refund(id),
         data

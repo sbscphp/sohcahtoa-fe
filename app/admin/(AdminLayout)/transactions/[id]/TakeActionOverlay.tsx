@@ -29,6 +29,7 @@ import {
   isRefundApprovalType,
   type TransactionActionDocumentViewModel,
   type TransactionWorkflowHistoryItemViewModel,
+  type PendingWorkflowStageViewModel,
 } from "./hooks/useTransactionDetails";
 import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
 import React, { useRef, useEffect } from "react";
@@ -50,6 +51,7 @@ interface TakeActionOverlayProps {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  pendingWorkflowStages?: PendingWorkflowStageViewModel[];
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -99,6 +101,7 @@ export default function TakeActionOverlay({
   approvalState,
   approvalProcessName,
   approvalType,
+  pendingWorkflowStages = [],
 }: TakeActionOverlayProps) {
   const isRefundWorkflow = isRefundApprovalType(approvalType);
   // const router = useRouter();
@@ -154,8 +157,8 @@ export default function TakeActionOverlay({
     document.addEventListener("mousedown", handleMouseDown, true); // capture phase
     return () => document.removeEventListener("mousedown", handleMouseDown, true);
   }, [takeActionPopoverKey]);
-  
-  
+
+
   const handleMutationError = (error: Error, defaultMessage: string) => {
     const apiResponse = (error as unknown as ApiError).data as
       | ApiResponse
@@ -394,6 +397,13 @@ export default function TakeActionOverlay({
   //   setTransactionRejectSuccessOpen(false);
   // };
 
+  const documentWorkflowItems = workflowHistory.filter((item) =>
+    item.action.toUpperCase().startsWith("DOCUMENT")
+  );
+  const generalWorkflowItems = workflowHistory.filter(
+    (item) => !item.action.toUpperCase().startsWith("DOCUMENT")
+  );
+
   return (
     <>
       <Drawer
@@ -452,11 +462,11 @@ export default function TakeActionOverlay({
               </Tabs.List>
 
               <Tabs.Panel value="overview" className="flex-1 overflow-y-auto pb-4 pt-4">
-              <Flex className="mb-4" align="center" gap="sm">
-                <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
-                <Text size="sm" className="text-body-text-200">{approvalState}</Text>
-              </Flex>
-                {workflowHistory.length === 0 ? (
+                <Flex className="mb-4" align="center" gap="sm">
+                  <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
+                  <Text size="sm" className="text-body-text-200">{approvalState}</Text>
+                </Flex>
+                {generalWorkflowItems.length === 0 && pendingWorkflowStages.length === 0 ? (
                   <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
                     <Text fw={600} className="text-body-heading-300">
                       No workflow history available
@@ -467,7 +477,71 @@ export default function TakeActionOverlay({
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    {workflowHistory.map((item, index) => (
+                    {/* Pending Stage Items */}
+                    {pendingWorkflowStages.map((stage, index) => (
+                      <React.Fragment key={stage.stageId}>
+                        <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+                          {/* Header Row */}
+                          <Group justify="space-between" align="flex-start" wrap="nowrap">
+                            <Group align="flex-start" gap="sm" wrap="nowrap">
+                              <Avatar radius="xl" size="md" color="#B0B0B0">
+                                {stage.assigneeName.slice(0, 2).toUpperCase()}
+                              </Avatar>
+
+                              <div className="min-w-0 space-y-1">
+                                <Text fw={500} className="text-body-heading-300 break-all">
+                                  {stage.assigneeName}
+                                </Text>
+                                <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                  {stage.stageName}
+                                  {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""}
+                                </Text>
+
+                                {/* Date & Time */}
+                                <Group gap={6} mt={4}>
+                                  <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+                                  >
+                                    📅 --
+                                  </Text>
+                                  <Text size="xs" c="dimmed" className="text-body-text-200">
+                                    ⏰ --
+                                  </Text>
+                                </Group>
+                              </div>
+                            </Group>
+
+                            {/* Status */}
+                            <div className="text-right shrink-0">
+                              <StatusBadge status="Pending" size="xs" />
+                              <Text
+                                size="xs"
+                                c="dimmed"
+                                className="text-body-text-50! block mt-1"
+                              >
+                                Awaiting Action
+                              </Text>
+                            </div>
+                          </Group>
+
+                          {/* Comment Box */}
+                          {/* <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+                            <Text size="xs" className="text-body-text-200 leading-relaxed">
+                              Awaiting action
+                            </Text>
+                          </div> */}
+                        </div>
+
+                        {/* Connector */}
+                        {(index < pendingWorkflowStages.length - 1 || generalWorkflowItems.length > 0) && (
+                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
+                        )}
+                      </React.Fragment>
+                    ))}
+
+                    {generalWorkflowItems.map((item, index) => (
                       <React.Fragment key={item.id}>
                         <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
                           {/* Header Row */}
@@ -525,7 +599,7 @@ export default function TakeActionOverlay({
                         </div>
 
                         {/* Connector */}
-                        {index < workflowHistory.length - 1 && (
+                        {index < generalWorkflowItems.length - 1 && (
                           <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
                         )}
                       </React.Fragment>
@@ -545,209 +619,283 @@ export default function TakeActionOverlay({
                     </Text>
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-[#E1E0E0] overflow-hidden divide-y divide-[#E1E0E0]">
-                    {documents.map((doc) => {
-                      const docKey = doc.id;
-                      const docActionsHidden = isDocumentVerificationApproved(
-                        doc.verificationStatus
-                      );
-                      const badgeStyle = getDocumentStatusBadgeStyle(
-                        doc.verificationStatus
-                      );
-                      return (
-                        <Group
-                          key={doc.id}
-                          justify="space-between"
-                          className="px-4 py-3 bg-white"
-                          wrap="nowrap"
-                        >
-                          <div className="flex flex-col gap-1 min-w-0 flex-1">
-                            <Text size="sm" fw={500} className="text-body-heading-300 truncate!">
-                              {toSentenceCase(doc.documentType)}
-                            </Text>
-                            <Text size="xs" c="dimmed" className="text-body-text-50!">
-                              {doc.fileSize}
-                            </Text>
+                  <>
+                    <div className="rounded-lg border border-[#E1E0E0] overflow-hidden divide-y divide-[#E1E0E0]">
+                      {documents.map((doc) => {
+                        const docKey = doc.id;
+                        const docActionsHidden = isDocumentVerificationApproved(
+                          doc.verificationStatus
+                        );
+                        const badgeStyle = getDocumentStatusBadgeStyle(
+                          doc.verificationStatus
+                        );
+                        return (
+                          <Group
+                            key={doc.id}
+                            justify="space-between"
+                            className="px-4 py-3 bg-white"
+                            wrap="nowrap"
+                          >
+                            <div className="flex flex-col gap-1 min-w-0 flex-1">
+                              <Text size="sm" fw={500} className="text-body-heading-300 truncate!">
+                                {toSentenceCase(doc.documentType)}
+                              </Text>
+                              <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                {doc.fileSize}
+                              </Text>
 
-                            <a
-                              href={doc.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="cursor-pointer flex items-center gap-1 underline text-body-text-200 hover:text-primary-400 mt-2 text-xs"
-                            >
-                              View Document
-                              <ArrowUpRight size={14} className="text-primary-400" />
-                            </a>
-                          </div>
-
-                          <div className="text-right flex flex-col items-end gap-3 shrink-0">
-                            <StatusBadge
-                              variant="light"
-                              radius="xl"
-                              bg={badgeStyle.bg}
-                              color={badgeStyle.color}
-                              status={doc.verificationStatus}
-                            />
-
-                            {!docActionsHidden && isApprovalOfficer && (
-                              <Popover
-                                width={360}
-                                position="bottom-end"
-                                shadow="md"
-                                withinPortal
-                                zIndex={3200}
-                                closeOnClickOutside={true}
-                                closeOnEscape={true}
-                                opened={
-                                  takeActionPopoverKey === docKey &&
-                                  selectedDocumentId !== null
-                                }
-                                onClose={() => setTakeActionPopoverKey(null)}
+                              <a
+                                href={doc.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="cursor-pointer flex items-center gap-1 underline text-body-text-200 hover:text-primary-400 mt-2 text-xs"
                               >
-                                <Popover.Target>
-                                  <Text
-                                    component="span"
-                                    size="xs"
-                                    className="cursor-pointer underline flex items-center gap-1 text-body-text-200 hover:text-primary-400"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedDocumentId(doc.id);
-                                      setTakeActionPopoverKey((k) =>
-                                        k === docKey ? null : docKey
-                                      );
-                                    }}
-                                  >
-                                    Take Action{" "}
-                                    <ChevronDown
-                                      size={14}
-                                      className="text-primary-400"
-                                    />
-                                  </Text>
-                                </Popover.Target>
+                                View Document
+                                <ArrowUpRight size={14} className="text-primary-400" />
+                              </a>
+                            </div>
 
-                                <Popover.Dropdown
-                                  p={0}
-                                  ref={popoverDropdownRef}
-                                  className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
+                            <div className="text-right flex flex-col items-end gap-3 shrink-0">
+                              <StatusBadge
+                                variant="light"
+                                radius="xl"
+                                bg={badgeStyle.bg}
+                                color={badgeStyle.color}
+                                status={doc.verificationStatus}
+                              />
+
+                              {!docActionsHidden && isApprovalOfficer && (
+                                <Popover
+                                  width={360}
+                                  position="bottom-end"
+                                  shadow="md"
+                                  withinPortal
+                                  zIndex={3200}
+                                  closeOnClickOutside={true}
+                                  closeOnEscape={true}
+                                  opened={
+                                    takeActionPopoverKey === docKey &&
+                                    selectedDocumentId !== null
+                                  }
+                                  onClose={() => setTakeActionPopoverKey(null)}
                                 >
-                                  {/* Header */}
-                                  <div className="px-5 py-4 border-b border-[#EAECF0]">
-                                    <Text fw={700} className="text-body-heading-300">
-                                      Take Action
-                                    </Text>
+                                  <Popover.Target>
                                     <Text
-                                      size="sm"
-                                      className="text-body-text-200! mt-0.5"
+                                      component="span"
+                                      size="xs"
+                                      className="cursor-pointer underline flex items-center gap-1 text-body-text-200 hover:text-primary-400"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDocumentId(doc.id);
+                                        setTakeActionPopoverKey((k) =>
+                                          k === docKey ? null : docKey
+                                        );
+                                      }}
                                     >
-                                      Take action with ease
+                                      Take Action{" "}
+                                      <ChevronDown
+                                        size={14}
+                                        className="text-primary-400"
+                                      />
                                     </Text>
+                                  </Popover.Target>
+
+                                  <Popover.Dropdown
+                                    p={0}
+                                    ref={popoverDropdownRef}
+                                    className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
+                                  >
+                                    {/* Header */}
+                                    <div className="px-5 py-4 border-b border-[#EAECF0]">
+                                      <Text fw={700} className="text-body-heading-300">
+                                        Take Action
+                                      </Text>
+                                      <Text
+                                        size="sm"
+                                        className="text-body-text-200! mt-0.5"
+                                      >
+                                        Take action with ease
+                                      </Text>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="divide-y divide-[#EAECF0]">
+                                      {/* Complete Approval */}
+                                      <button
+                                        type="button"
+                                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                        onClick={openCompleteApprovalFlow}
+                                      >
+                                        <span
+                                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                                          style={{
+                                            borderRadius:
+                                              "30% 70% 60% 40% / 40% 40% 60% 60%",
+                                          }}
+                                        >
+                                          <Check
+                                            className="h-5 w-5 text-[#DD4F05]"
+                                            strokeWidth={2.5}
+                                          />
+                                        </span>
+                                        <span className="min-w-0 pt-0.5">
+                                          <Text fw={600} className="text-body-heading-300">
+                                            Complete Approval
+                                          </Text>
+                                          <Text
+                                            size="sm"
+                                            className="text-body-text-200! mt-1 leading-relaxed"
+                                          >
+                                            Accept the document as valid and move the application
+                                            forward in the workflow.
+                                          </Text>
+                                        </span>
+                                      </button>
+
+                                      {/* Request Resubmission */}
+                                      <button
+                                        type="button"
+                                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                        onClick={openResubmissionFlow}
+                                      >
+                                        <span
+                                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                                          style={{
+                                            borderRadius:
+                                              "40% 60% 70% 30% / 60% 40% 60% 40%",
+                                          }}
+                                        >
+                                          <Info
+                                            className="h-5 w-5 text-[#DD4F05]"
+                                            strokeWidth={2.5}
+                                          />
+                                        </span>
+                                        <span className="min-w-0 pt-0.5">
+                                          <Text fw={600} className="text-body-heading-300">
+                                            Request Resubmission
+                                          </Text>
+                                          <Text
+                                            size="sm"
+                                            className="text-body-text-200! mt-1 leading-relaxed"
+                                          >
+                                            Send the application back to the customer for correction
+                                            or replacement of the document.
+                                          </Text>
+                                        </span>
+                                      </button>
+
+                                      {/* Reject Document */}
+                                      <button
+                                        type="button"
+                                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                                        onClick={openRejectFlow}
+                                      >
+                                        <span
+                                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
+                                          style={{
+                                            borderRadius:
+                                              "50% 50% 40% 60% / 40% 60% 40% 60%",
+                                          }}
+                                        >
+                                          <X
+                                            className="h-5 w-5 text-[#F04438]"
+                                            strokeWidth={2.5}
+                                          />
+                                        </span>
+                                        <span className="min-w-0 pt-0.5">
+                                          <Text fw={600} className="text-body-heading-300">
+                                            Reject Document
+                                          </Text>
+                                          <Text
+                                            size="sm"
+                                            className="text-body-text-200! mt-1 leading-relaxed"
+                                          >
+                                            Decline the document if it fails compliance/requirements.
+                                          </Text>
+                                        </span>
+                                      </button>
+                                    </div>
+                                  </Popover.Dropdown>
+                                </Popover>
+                              )}
+                            </div>
+                          </Group>
+                        );
+                      })}
+                    </div>
+
+                    {/* Document Workflow History */}
+                    {documentWorkflowItems.length > 0 && (
+                      <div className="mt-6 space-y-5">
+                        <Text fw={600} size="sm" className="text-body-heading-300" mb={10}>
+                          Document Activity
+                        </Text>
+                        {documentWorkflowItems.map((item, index) => (
+                          <React.Fragment key={item.id}>
+                            <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+                              {/* Header Row */}
+                              <Group justify="space-between" align="flex-start" wrap="nowrap">
+                                <Group align="flex-start" gap="sm" wrap="nowrap">
+                                  <Avatar radius="xl" size="md" color="#F5B89C">
+                                    {item.actorLabel.slice(0, 2).toUpperCase()}
+                                  </Avatar>
+
+                                  <div className="min-w-0 space-y-1">
+                                    <Text fw={500} className="text-body-heading-300 break-all">
+                                      {item.actorLabel}
+                                    </Text>
+                                    <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                      {item.documentType === "--"
+                                        ? item.actionLabel
+                                        : `${item.documentType} • ${item.actionLabel}`}
+                                    </Text>
+
+                                    {/* Date & Time */}
+                                    <Group gap={6} mt={4}>
+                                      <Text
+                                        size="xs"
+                                        c="dimmed"
+                                        className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+                                      >
+                                        📅 {item.date}
+                                      </Text>
+                                      <Text size="xs" c="dimmed" className="text-body-text-200">
+                                        ⏰ {item.time}
+                                      </Text>
+                                    </Group>
                                   </div>
+                                </Group>
 
-                                  {/* Actions */}
-                                  <div className="divide-y divide-[#EAECF0]">
-                                    {/* Complete Approval */}
-                                    <button
-                                      type="button"
-                                      className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                      onClick={openCompleteApprovalFlow}
-                                    >
-                                      <span
-                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
-                                        style={{
-                                          borderRadius:
-                                            "30% 70% 60% 40% / 40% 40% 60% 60%",
-                                        }}
-                                      >
-                                        <Check
-                                          className="h-5 w-5 text-[#DD4F05]"
-                                          strokeWidth={2.5}
-                                        />
-                                      </span>
-                                      <span className="min-w-0 pt-0.5">
-                                        <Text fw={600} className="text-body-heading-300">
-                                          Complete Approval
-                                        </Text>
-                                        <Text
-                                          size="sm"
-                                          className="text-body-text-200! mt-1 leading-relaxed"
-                                        >
-                                          Accept the document as valid and move the application
-                                          forward in the workflow.
-                                        </Text>
-                                      </span>
-                                    </button>
+                                {/* Status */}
+                                <div className="text-right shrink-0">
+                                  <StatusBadge status={item.statusLabel} size="xs" />
+                                  <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    className="text-body-text-50! block mt-1"
+                                  >
+                                    Action Taken
+                                  </Text>
+                                </div>
+                              </Group>
 
-                                    {/* Request Resubmission */}
-                                    <button
-                                      type="button"
-                                      className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                      onClick={openResubmissionFlow}
-                                    >
-                                      <span
-                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
-                                        style={{
-                                          borderRadius:
-                                            "40% 60% 70% 30% / 60% 40% 60% 40%",
-                                        }}
-                                      >
-                                        <Info
-                                          className="h-5 w-5 text-[#DD4F05]"
-                                          strokeWidth={2.5}
-                                        />
-                                      </span>
-                                      <span className="min-w-0 pt-0.5">
-                                        <Text fw={600} className="text-body-heading-300">
-                                          Request Resubmission
-                                        </Text>
-                                        <Text
-                                          size="sm"
-                                          className="text-body-text-200! mt-1 leading-relaxed"
-                                        >
-                                          Send the application back to the customer for correction
-                                          or replacement of the document.
-                                        </Text>
-                                      </span>
-                                    </button>
+                              {/* Comment Box */}
+                              <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+                                <Text size="xs" className="text-body-text-200 leading-relaxed">
+                                  {item.comment}
+                                </Text>
+                              </div>
+                            </div>
 
-                                    {/* Reject Document */}
-                                    <button
-                                      type="button"
-                                      className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                                      onClick={openRejectFlow}
-                                    >
-                                      <span
-                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
-                                        style={{
-                                          borderRadius:
-                                            "50% 50% 40% 60% / 40% 60% 40% 60%",
-                                        }}
-                                      >
-                                        <X
-                                          className="h-5 w-5 text-[#F04438]"
-                                          strokeWidth={2.5}
-                                        />
-                                      </span>
-                                      <span className="min-w-0 pt-0.5">
-                                        <Text fw={600} className="text-body-heading-300">
-                                          Reject Document
-                                        </Text>
-                                        <Text
-                                          size="sm"
-                                          className="text-body-text-200! mt-1 leading-relaxed"
-                                        >
-                                          Decline the document if it fails compliance/requirements.
-                                        </Text>
-                                      </span>
-                                    </button>
-                                  </div>
-                                </Popover.Dropdown>
-                              </Popover>
+                            {/* Connector */}
+                            {index < documentWorkflowItems.length - 1 && (
+                              <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
                             )}
-                          </div>
-                        </Group>
-                      );
-                    })}
-                  </div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </Tabs.Panel>
             </Tabs>

@@ -12,12 +12,14 @@ import type {
   TransactionActionDocumentViewModel,
   TransactionSettlementViewModel,
   TransactionWorkflowHistoryItemViewModel,
+  PendingWorkflowStageViewModel,
 } from "./hooks/useTransactionDetails";
 
 interface SettlementProps {
   transaction: TransactionSettlementViewModel | null;
   actionDocuments?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -44,6 +46,7 @@ export default function Settlement({
   transaction,
   actionDocuments = [],
   workflowHistory = [],
+  pendingWorkflowStages = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -83,6 +86,7 @@ export default function Settlement({
           }
           documents={actionDocuments}
           workflowHistory={workflowHistory}
+          pendingWorkflowStages={pendingWorkflowStages}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}

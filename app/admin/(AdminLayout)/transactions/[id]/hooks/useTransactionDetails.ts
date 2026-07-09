@@ -81,6 +81,15 @@ export interface TransactionWorkflowHistoryItemViewModel {
   time: string;
   comment: string;
   documentType: string;
+  action: string;
+}
+
+export interface PendingWorkflowStageViewModel {
+  stageId: string;
+  stageName: string;
+  order: number;
+  assigneeName: string;
+  assigneeRole: string;
 }
 
 export interface TransactionApprovalUiViewModel {
@@ -691,9 +700,34 @@ function extractWorkflowHistory(
         time: formatTime(createdAt),
         comment: pickString(source.notes, "No notes provided"),
         documentType: pickString(formatEnum(metadata.documentType), "--"),
+        action: asString(source.action),
       };
     })
     .filter((item): item is TransactionWorkflowHistoryItemViewModel => Boolean(item));
+}
+
+function extractPendingWorkflowStages(
+  ap: AdminTransactionApprovalProcess | null
+): PendingWorkflowStageViewModel[] {
+  if (!ap) return [];
+  const currentOrder = typeof ap.currentOrder === "number" ? ap.currentOrder : null;
+  if (currentOrder === null) return [];
+  const stages = ap.workflowStages ?? [];
+  return stages
+    .filter((s) => typeof s.order === "number" && s.order >= currentOrder)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((s): PendingWorkflowStageViewModel | null => {
+      const firstAssignee = s.assignees?.[0];
+      if (!firstAssignee) return null;
+      return {
+        stageId: s.stageId ?? "",
+        stageName: s.name ?? "Pending Stage",
+        order: s.order ?? 0,
+        assigneeName: firstAssignee.adminName ?? "Unknown",
+        assigneeRole: firstAssignee.roleName ?? "",
+      };
+    })
+    .filter((item): item is PendingWorkflowStageViewModel => Boolean(item));
 }
 
 function resolveApprovalProcess(
@@ -811,12 +845,18 @@ export function useTransactionDetails(
     [query.data?.data, options?.adminUserId]
   );
 
+  const pendingWorkflowStages = useMemo(
+    () => extractPendingWorkflowStages(resolveApprovalProcess(query.data?.data ?? null)),
+    [query.data?.data]
+  );
+
   return {
     overview,
     receipt,
     settlement,
     actionDocuments,
     workflowHistory,
+    pendingWorkflowStages,
     isApprovalOfficer: approvalUi.isApprovalOfficer,
     approvalState: approvalUi.approvalState,
     approvalProcessName: approvalUi.approvalProcessName,

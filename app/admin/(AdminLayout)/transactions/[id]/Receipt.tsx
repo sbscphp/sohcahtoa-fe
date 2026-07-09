@@ -12,12 +12,14 @@ import type {
   TransactionActionDocumentViewModel,
   TransactionReceiptViewModel,
   TransactionWorkflowHistoryItemViewModel,
+  PendingWorkflowStageViewModel,
 } from "./hooks/useTransactionDetails";
 
 interface ReceiptProps {
   transaction: TransactionReceiptViewModel | null;
   actionDocuments?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -39,6 +41,7 @@ export default function Receipt({
   transaction,
   actionDocuments = [],
   workflowHistory = [],
+  pendingWorkflowStages = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -78,6 +81,7 @@ export default function Receipt({
           }
           documents={actionDocuments}
           workflowHistory={workflowHistory}
+          pendingWorkflowStages={pendingWorkflowStages}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}

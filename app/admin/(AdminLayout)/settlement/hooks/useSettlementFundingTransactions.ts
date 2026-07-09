@@ -6,10 +6,14 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 
 export interface SettlementFundingTransactionListItem {
   id: string;
-  amount: string;
+  transactionId: string;
+  referenceId: string;
+  amount: number;
+  currency: string;
   date: string;
   time: string;
-  status: string;
+  paymentMethod: string;
+  receiptNumber: string | null;
 }
 
 interface Pagination {
@@ -36,20 +40,13 @@ function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : String(value);
 }
 
-function toDisplayAmount(raw: unknown): string {
-  if (raw === null || raw === undefined) return "--";
-
+function toNumericAmount(raw: unknown): number {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
   if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    return trimmed || "--";
+    const parsed = parseFloat(raw.replace(/,/g, ""));
+    if (Number.isFinite(parsed)) return parsed;
   }
-
-  if (typeof raw === "number") {
-    if (!Number.isFinite(raw)) return "--";
-    return raw.toLocaleString("en-NG");
-  }
-
-  return asString(raw, "--");
+  return 0;
 }
 
 function formatDateTime(iso: string): { date: string; time: string } {
@@ -72,76 +69,45 @@ function formatDateTime(iso: string): { date: string; time: string } {
   };
 }
 
-function normalizeStatus(raw: unknown): string {
-  const s = asString(raw).trim().toLowerCase();
-  if (!s) return "Pending approval";
-
-  if (
-    s.includes("confirmed") ||
-    s.includes("approved") ||
-    s.includes("success") ||
-    s.includes("completed") ||
-    s === "true"
-  ) {
-    return "Confirmed";
-  }
-
-  return "Pending approval";
-}
 
 function parseFundingTransaction(
   raw: Record<string, unknown>
 ): SettlementFundingTransactionListItem {
-  const idRaw =
-    raw.id ??
-    raw.referenceId ??
-    raw.reference ??
-    raw.transactionId ??
-    raw.fundingId ??
-    raw.fundId;
-  const id = asString(idRaw, "--") || "--";
+  const id = asString(raw.id, "--") || "--";
+  const transactionId = asString(raw.transactionId, "--") || "--";
+  const referenceId = asString(raw.referenceId ?? raw.reference, "--") || "--";
 
-  const amountRaw =
-    raw.amount ??
-    raw.value ??
-    raw.transactionValue ??
-    raw.total ??
-    raw.amountSent ??
-    raw.fundingAmount;
-  const amount = toDisplayAmount(amountRaw);
+  const amountRaw = raw.amount ?? raw.value ?? raw.transactionValue ?? raw.total;
+  const amount = toNumericAmount(amountRaw);
 
-  const status = normalizeStatus(raw.status ?? raw.state);
+  const currency = asString(raw.currency, "NGN");
+
+  const paymentMethod = asString(raw.paymentMethod ?? raw.method, "--");
+
+  const receiptNumber =
+    raw.receiptNumber === null || raw.receiptNumber === undefined
+      ? null
+      : asString(raw.receiptNumber);
 
   const dateTimeIso =
-    asString(raw.dateTime) ||
+    asString(raw.fundDate) ||
     asString(raw.fundedAt) ||
-    asString(raw.fundDateTime) ||
+    asString(raw.dateTime) ||
     asString(raw.createdAt) ||
-    asString(raw.dateTimeCreated) ||
-    asString(raw.updatedAt) ||
-    asString(raw.transactionDateTime);
-
-  const dateFromFields = asString(raw.date);
-  const timeFromFields = asString(raw.time);
-
-  if (dateFromFields && timeFromFields) {
-    return {
-      id,
-      amount,
-      date: dateFromFields,
-      time: timeFromFields,
-      status,
-    };
-  }
+    asString(raw.updatedAt);
 
   const { date, time } = formatDateTime(dateTimeIso);
 
   return {
     id,
+    transactionId,
+    referenceId,
     amount,
+    currency,
     date,
     time,
-    status,
+    paymentMethod,
+    receiptNumber,
   };
 }
 

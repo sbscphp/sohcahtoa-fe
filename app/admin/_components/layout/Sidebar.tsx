@@ -45,9 +45,9 @@ const USER_MANAGEMENT_ACCORDION_ID = "sidebar-user-management-children";
 const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
 
 const menuItems: FlatMenuItem[] = [
-  { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard", module: null },
+  { icon: LayoutGrid, label: "Dashboard", href: "/admin/dashboard", module: "DASHBOARD" },
   { icon: BanknoteIcon, label: "Transactions", href: "/admin/transactions", module: "TRANSACTION" },
-  { icon: Wallet, label: "Transient Wallets", href: adminRoutes.adminTransientWallets(), module: null },
+  { icon: Wallet, label: "Transient Wallets", href: adminRoutes.adminTransientWallets(), module: "TRANSIENT_WALLET" },
   { icon: Database, label: "Settlement", href: "/admin/settlement", module: "SETTLEMENT" },
   { icon: Store, label: "Outlet", href: "/admin/outlet", module: "OUTLET" },
   { icon: Ticket, label: "Customer Support", href: "/admin/tickets", module: "INCIDENCE" },
@@ -70,7 +70,7 @@ const userManagementAccordion = {
     {
       label: "Agents",
       href: adminRoutes.adminAgent(),
-      module: null,
+      module: "AGENT",
     },
   ] satisfies SidebarLink[],
 };

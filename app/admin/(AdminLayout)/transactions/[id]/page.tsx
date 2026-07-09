@@ -30,6 +30,7 @@ export default function ViewTransactionPage() {
     settlement,
     actionDocuments,
     workflowHistory,
+    pendingWorkflowStages,
     isApprovalOfficer,
     canActOnTransactionFooter,
     approvalState,
@@ -59,6 +60,7 @@ export default function ViewTransactionPage() {
           transaction={overview}
           actionDocuments={actionDocuments}
           workflowHistory={workflowHistory}
+          pendingWorkflowStages={pendingWorkflowStages}
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
@@ -74,6 +76,7 @@ export default function ViewTransactionPage() {
           transaction={receipt}
           actionDocuments={actionDocuments}
           workflowHistory={workflowHistory}
+          pendingWorkflowStages={pendingWorkflowStages}
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
@@ -89,6 +92,7 @@ export default function ViewTransactionPage() {
           transaction={settlement}
           actionDocuments={actionDocuments}
           workflowHistory={workflowHistory}
+          pendingWorkflowStages={pendingWorkflowStages}
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}

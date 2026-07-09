@@ -6,6 +6,7 @@ import TakeActionOverlay from "../(AdminLayout)/transactions/[id]/TakeActionOver
 import type {
   TransactionActionDocumentViewModel,
   TransactionWorkflowHistoryItemViewModel,
+  PendingWorkflowStageViewModel,
 } from "../(AdminLayout)/transactions/[id]/hooks/useTransactionDetails";
 
 interface TakeActionButtonProps {
@@ -27,6 +28,7 @@ interface TakeActionButtonProps {
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
+  pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   /** When false, transaction-level footer actions (Complete Review / Take Action) are hidden. Default true (legacy). */
   canActOnTransactionFooter?: boolean;
   /** When true, per-document approval actions are shown (independent of assignee check). Default false. */
@@ -48,6 +50,7 @@ export default function TakeActionButton({
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
+  pendingWorkflowStages = [],
   canActOnTransactionFooter = true,
   isApprovalOfficer = false,
   approvalState,
@@ -85,6 +88,7 @@ export default function TakeActionButton({
         transactionStatusLabel={transactionStatusLabel}
         documents={documents}
         workflowHistory={workflowHistory}
+        pendingWorkflowStages={pendingWorkflowStages}
         canActOnTransactionFooter={canActOnTransactionFooter}
         isApprovalOfficer={isApprovalOfficer}
         approvalState={approvalState}
