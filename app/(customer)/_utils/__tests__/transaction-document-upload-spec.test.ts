@@ -30,28 +30,34 @@ describe("getDocumentUploadSpec", () => {
     const studentPassportFile = new File(["passport"], "student-passport.pdf", {
       type: "application/pdf",
     });
+    const applicantPassportFile = new File(["applicant"], "applicant-passport.pdf", {
+      type: "application/pdf",
+    });
 
     const spec = getDocumentUploadSpec("SCHOOL_FEES", {
       studentPassportFile,
+      passportFile: applicantPassportFile,
       evidenceOfAdmissionFile: new File(["admission"], "admission.pdf"),
       schoolInvoiceFile: new File(["invoice"], "invoice.pdf"),
     });
 
     expect(spec?.documentTypes).toContain("STUDENT_PASSPORT");
+    expect(spec?.documentTypes).toContain("PASSPORT");
     expect(spec?.files).toContain(studentPassportFile);
+    expect(spec?.files).toContain(applicantPassportFile);
   });
 
-  it("falls back to legacy passportFile for school fees drafts", () => {
-    const legacyPassportFile = new File(["passport"], "legacy-passport.pdf", {
+  it("maps applicant passport separately from student passport", () => {
+    const applicantPassportFile = new File(["applicant"], "applicant-passport.pdf", {
       type: "application/pdf",
     });
 
     const spec = getDocumentUploadSpec("SCHOOL_FEES", {
-      passportFile: legacyPassportFile,
+      passportFile: applicantPassportFile,
     });
 
-    expect(spec?.documentTypes).toContain("STUDENT_PASSPORT");
-    expect(spec?.files).toContain(legacyPassportFile);
+    expect(spec?.documentTypes).toEqual(["PASSPORT"]);
+    expect(spec?.files).toEqual([applicantPassportFile]);
   });
 });
 

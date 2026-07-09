@@ -91,6 +91,7 @@ function addSchoolFeesKycIssues(
     passportDocumentNumber?: string;
     passportIssueDate?: string;
     passportExpiryDate?: string;
+    passportFile?: FileWithPath | null;
   },
   ctx: z.RefinementCtx
 ) {
@@ -131,6 +132,14 @@ function addSchoolFeesKycIssues(
     },
     ctx
   );
+
+  if (!data.passportFile) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["passportFile"],
+      message: "Applicant International Passport file is required",
+    });
+  }
 }
 
 function requireUndergraduateStyleFiles(
@@ -167,6 +176,7 @@ const uploadDocumentsBaseSchema = z.object({
   evidenceOfAdmissionFile: z.custom<FileWithPath | null>().optional(),
   schoolInvoiceFile: z.custom<FileWithPath | null>().optional(),
   ninNumber: z.string().optional(),
+  passportFile: z.custom<FileWithPath | null>().optional(),
   studentPassportFile: z.custom<FileWithPath | null>().optional(),
   passportDocumentNumber: z.string().optional(),
   passportIssueDate: z.string().optional(),
@@ -216,10 +226,7 @@ export type SchoolFeesUploadDocumentsFormData = z.infer<typeof uploadDocumentsSc
 
 type SchoolFeesUploadDocumentsFormValues = z.infer<typeof uploadDocumentsBaseSchema>;
 
-/** Saved drafts may still use `passportFile` before student passport rename. */
-type SchoolFeesUploadDocumentsInitialValues = Partial<SchoolFeesUploadDocumentsFormValues> & {
-  passportFile?: FileWithPath | null;
-};
+type SchoolFeesUploadDocumentsInitialValues = Partial<SchoolFeesUploadDocumentsFormValues>;
 
 interface SchoolFeesUploadDocumentsStepProps {
   initialValues?: SchoolFeesUploadDocumentsInitialValues;
@@ -261,11 +268,11 @@ export default function SchoolFeesUploadDocumentsStep({
         initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
       evidenceOfAdmissionFile: initialValues?.evidenceOfAdmissionFile ?? null,
       schoolInvoiceFile: initialValues?.schoolInvoiceFile ?? null,
-      studentPassportFile:
-        initialValues?.studentPassportFile ?? initialValues?.passportFile ?? null,
+      studentPassportFile: initialValues?.studentPassportFile ?? null,
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
+      passportFile: initialValues?.passportFile ?? null,
       statementOfResultFile: initialValues?.statementOfResultFile ?? null,
       firstDegreeCertificateFile: initialValues?.firstDegreeCertificateFile ?? null,
     },
@@ -306,6 +313,7 @@ export default function SchoolFeesUploadDocumentsStep({
       passportDocumentNumber: form.values.passportDocumentNumber?.trim() ?? values.passportDocumentNumber,
       passportIssueDate: form.values.passportIssueDate ?? values.passportIssueDate,
       passportExpiryDate: form.values.passportExpiryDate ?? values.passportExpiryDate,
+      passportFile: form.values.passportFile ?? values.passportFile ?? null,
       ninNumber: form.values.ninNumber ?? values.ninNumber,
     } as SchoolFeesUploadDocumentsFormData);
   });
@@ -411,6 +419,7 @@ export default function SchoolFeesUploadDocumentsStep({
           passportDocumentNumber={form.values.passportDocumentNumber || ""}
           passportIssueDate={form.values.passportIssueDate || ""}
           passportExpiryDate={form.values.passportExpiryDate || ""}
+          passportFile={form.values.passportFile ?? null}
           onNinChange={(value) => form.setFieldValue("ninNumber", value)}
           onPassportNumberChange={(value) => {
             form.setFieldValue("passportDocumentNumber", value);
@@ -418,11 +427,13 @@ export default function SchoolFeesUploadDocumentsStep({
           }}
           onPassportIssueDateChange={(value) => form.setFieldValue("passportIssueDate", value)}
           onPassportExpiryDateChange={(value) => form.setFieldValue("passportExpiryDate", value)}
+          onPassportFileChange={(file) => form.setFieldValue("passportFile", file)}
           ninDisabled={ninLocked || forceNinLock}
           ninError={form.errors.ninNumber as string}
           passportNumberError={form.errors.passportDocumentNumber as string}
           passportIssueDateError={form.errors.passportIssueDate as string}
           passportExpiryDateError={form.errors.passportExpiryDate as string}
+          passportFileError={form.errors.passportFile as string}
         />
       )}
 

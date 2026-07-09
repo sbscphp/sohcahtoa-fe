@@ -52,6 +52,7 @@ export const TRANSACTION_DOCUMENT_REQUIREMENTS: Record<TransactionType, Document
   ],
   // Buy FX – School Fees
   SCHOOL_FEES: [
+    "PASSPORT",
     "STUDENT_PASSPORT",
     "SCHOOL_ADMISSION",
     "INVOICE",

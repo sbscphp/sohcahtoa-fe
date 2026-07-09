@@ -2,24 +2,29 @@
 
 import { TextInput } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
+import { FileWithPath } from "@mantine/dropzone";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CalendarIcon } from "@hugeicons/core-free-icons";
 import { formatDateToIso } from "@/app/(customer)/_utils/input-validation";
+import TransactionFileUploadInput from "../../../../../forms/TransactionFileUploadInput";
 
 interface SchoolFeesKycFieldsProps {
   ninNumber: string;
   passportDocumentNumber: string;
   passportIssueDate: string;
   passportExpiryDate: string;
+  passportFile: FileWithPath | null;
   onNinChange: (value: string) => void;
   onPassportNumberChange: (value: string) => void;
   onPassportIssueDateChange: (isoDate: string) => void;
   onPassportExpiryDateChange: (isoDate: string) => void;
+  onPassportFileChange: (file: FileWithPath | null) => void;
   ninDisabled?: boolean;
   ninError?: string;
   passportNumberError?: string;
   passportIssueDateError?: string;
   passportExpiryDateError?: string;
+  passportFileError?: string;
 }
 
 export default function SchoolFeesKycFields({
@@ -27,15 +32,18 @@ export default function SchoolFeesKycFields({
   passportDocumentNumber,
   passportIssueDate,
   passportExpiryDate,
+  passportFile,
   onNinChange,
   onPassportNumberChange,
   onPassportIssueDateChange,
   onPassportExpiryDateChange,
+  onPassportFileChange,
   ninDisabled = false,
   ninError,
   passportNumberError,
   passportIssueDateError,
   passportExpiryDateError,
+  passportFileError,
 }: Readonly<SchoolFeesKycFieldsProps>) {
   return (
     <div className="space-y-4 rounded-xl border border-[#E1E0E0] bg-white p-4">
@@ -104,6 +112,14 @@ export default function SchoolFeesKycFields({
           }
         />
       </div>
+
+      <TransactionFileUploadInput
+        label="Upload Applicant International Passport"
+        required
+        value={passportFile}
+        onChange={onPassportFileChange}
+        error={passportFileError}
+      />
     </div>
   );
 }
