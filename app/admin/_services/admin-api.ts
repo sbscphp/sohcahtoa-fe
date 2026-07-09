@@ -1171,6 +1171,7 @@ export interface AdminTransactionApprovalProcess {
   pendingAssignees?: AdminTransactionApprovalStageAssignee[] | null;
   isApprovalOfficer?: boolean;
   approvalState?: string;
+  currentOrder?: number | null;
 }
 
 export interface AdminTransactionDetailsData {

@@ -29,6 +29,7 @@ import {
   isRefundApprovalType,
   type TransactionActionDocumentViewModel,
   type TransactionWorkflowHistoryItemViewModel,
+  type PendingWorkflowStageViewModel,
 } from "./hooks/useTransactionDetails";
 import { ArrowUpRight, Check, ChevronDown, Info, X } from "lucide-react";
 import React, { useRef, useEffect } from "react";
@@ -50,6 +51,7 @@ interface TakeActionOverlayProps {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  pendingWorkflowStages?: PendingWorkflowStageViewModel[];
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -99,6 +101,7 @@ export default function TakeActionOverlay({
   approvalState,
   approvalProcessName,
   approvalType,
+  pendingWorkflowStages = [],
 }: TakeActionOverlayProps) {
   const isRefundWorkflow = isRefundApprovalType(approvalType);
   // const router = useRouter();
@@ -463,7 +466,7 @@ export default function TakeActionOverlay({
                   <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
                   <Text size="sm" className="text-body-text-200">{approvalState}</Text>
                 </Flex>
-                {generalWorkflowItems.length === 0 ? (
+                {generalWorkflowItems.length === 0 && pendingWorkflowStages.length === 0 ? (
                   <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
                     <Text fw={600} className="text-body-heading-300">
                       No workflow history available
@@ -474,6 +477,70 @@ export default function TakeActionOverlay({
                   </div>
                 ) : (
                   <div className="space-y-5">
+                    {/* Pending Stage Items */}
+                    {pendingWorkflowStages.map((stage, index) => (
+                      <React.Fragment key={stage.stageId}>
+                        <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+                          {/* Header Row */}
+                          <Group justify="space-between" align="flex-start" wrap="nowrap">
+                            <Group align="flex-start" gap="sm" wrap="nowrap">
+                              <Avatar radius="xl" size="md" color="#B0B0B0">
+                                {stage.assigneeName.slice(0, 2).toUpperCase()}
+                              </Avatar>
+
+                              <div className="min-w-0 space-y-1">
+                                <Text fw={500} className="text-body-heading-300 break-all">
+                                  {stage.assigneeName}
+                                </Text>
+                                <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                  {stage.stageName}
+                                  {stage.assigneeRole ? ` • ${stage.assigneeRole}` : ""}
+                                </Text>
+
+                                {/* Date & Time */}
+                                <Group gap={6} mt={4}>
+                                  <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+                                  >
+                                    📅 --
+                                  </Text>
+                                  <Text size="xs" c="dimmed" className="text-body-text-200">
+                                    ⏰ --
+                                  </Text>
+                                </Group>
+                              </div>
+                            </Group>
+
+                            {/* Status */}
+                            <div className="text-right shrink-0">
+                              <StatusBadge status="Pending" size="xs" />
+                              <Text
+                                size="xs"
+                                c="dimmed"
+                                className="text-body-text-50! block mt-1"
+                              >
+                                Awaiting Action
+                              </Text>
+                            </div>
+                          </Group>
+
+                          {/* Comment Box */}
+                          {/* <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+                            <Text size="xs" className="text-body-text-200 leading-relaxed">
+                              Awaiting action
+                            </Text>
+                          </div> */}
+                        </div>
+
+                        {/* Connector */}
+                        {(index < pendingWorkflowStages.length - 1 || generalWorkflowItems.length > 0) && (
+                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
+                        )}
+                      </React.Fragment>
+                    ))}
+
                     {generalWorkflowItems.map((item, index) => (
                       <React.Fragment key={item.id}>
                         <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
@@ -760,7 +827,7 @@ export default function TakeActionOverlay({
                     {/* Document Workflow History */}
                     {documentWorkflowItems.length > 0 && (
                       <div className="mt-6 space-y-5">
-                        <Text fw={600} size="sm" className="text-body-heading-300">
+                        <Text fw={600} size="sm" className="text-body-heading-300" mb={10}>
                           Document Activity
                         </Text>
                         {documentWorkflowItems.map((item, index) => (
