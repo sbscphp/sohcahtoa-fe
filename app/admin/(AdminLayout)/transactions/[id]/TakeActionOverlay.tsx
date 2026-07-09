@@ -494,7 +494,7 @@ export default function TakeActionOverlay({
                                 </Text>
                                 <Text size="xs" c="dimmed" className="text-body-text-50!">
                                   {stage.stageName}
-                                  {stage.assigneeRole ? ` • ${stage.assigneeRole}` : ""}
+                                  {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""}
                                 </Text>
 
                                 {/* Date & Time */}
