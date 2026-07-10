@@ -1,6 +1,7 @@
 export const TRANSACTION_STATUS_LABELS = {
   DRAFT: "Draft",
   AWAITING_VERIFICATION: "Awaiting verification",
+  AWAITING_REFUND_VERIFICATION: "Awaiting refund verification",
   VERIFICATION_IN_PROGRESS: "Verification in progress",
   VERIFICATION_COMPLETED: "Verification completed",
   AWAITING_DEPOSIT: "Awaiting deposit",

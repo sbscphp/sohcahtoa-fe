@@ -44,6 +44,7 @@ export function TransactionsByType({
               thickness={28}
               withLabelsLine={false}
               chartLabel={formatCurrency(total) || "$0"}
+              valueFormatter={(value) => formatCurrency(value)}
             />
             <div className="relative -top-34">
               <p className="text-xs">Total Amount</p>

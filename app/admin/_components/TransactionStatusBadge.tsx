@@ -6,6 +6,7 @@ type TransactionStatusKey = keyof typeof TRANSACTION_STATUS_LABELS;
 const transactionStatusColorMap: Record<TransactionStatusKey, string> = {
   DRAFT: "gray",
   AWAITING_VERIFICATION: "#B54708",
+  AWAITING_REFUND_VERIFICATION: "#B54708",
   VERIFICATION_IN_PROGRESS: "#B54708",
   VERIFICATION_COMPLETED: "#2563EB",
   AWAITING_DEPOSIT: "#B54708",

@@ -422,6 +422,14 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
         asRecord(stepData.pickupLocation).address
       ),
     },
+    {
+      label: "Pickup Date",
+      value: pickString(formatDate(cashPickup.scheduledPickupDate), formatDate(stepData.scheduledPickupDate)),
+    },
+    {
+      label: "Pickup Time",
+      value: pickString(formatTime(cashPickup.scheduledPickupTime), formatTime(stepData.scheduledPickupTime)),
+    },
   ];
 
   const documentFields: OverviewField[] = Array.isArray(raw.documents)
