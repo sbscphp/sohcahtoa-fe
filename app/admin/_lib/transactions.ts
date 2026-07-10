@@ -16,4 +16,10 @@ export const TRANSACTION_STATUS_LABELS = {
   REJECTED: "Rejected",
   CANCELLED: "Cancelled",
   AWAITING_DISBURSEMENT: "Awaiting disbursement",
+  // Settlement statuses
+  PENDING: "Pending",
+  AWAITING_CONFIRMATION: "Awaiting confirmation",
+  CONFIRMED: "Confirmed",
+  FAILED: "Failed",
+  REFUNDED: "Refunded",
 } as const;

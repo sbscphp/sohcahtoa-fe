@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Text, ActionIcon, Group, Select } from "@mantine/core";
+import { Card, Text, Group, Select } from "@mantine/core";
 import { TransactionStatusBadge } from "../../../_components/TransactionStatusBadge";
-import { ArrowUpRight, ChevronRight, ListFilter } from "lucide-react";
+import { ArrowUpRight, ListFilter } from "lucide-react";
 import DynamicTableSection from "../../../_components/DynamicTableSection";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useRouter } from "next/navigation";
@@ -46,7 +46,6 @@ export function RecentFundingTransactionsSection() {
     { label: "Payment Method", key: "paymentMethod" },
     { label: "Settlement Status", key: "status" },
     { label: "Transaction Status", key: "transactionStatus" },
-    { label: "", key: "action" },
   ];
 
   const renderItems = (item: SettlementFundingTransactionListItem) => [
@@ -88,19 +87,6 @@ export function RecentFundingTransactionsSection() {
       status={item.transactionStatus}
       size="md"
     />,
-    <ActionIcon
-      onClick={() =>
-        router.push(adminRoutes.adminTransactionDetails(item.transactionId))
-      }
-      key="action"
-      variant="subtle"
-      color="orange"
-      radius="xl"
-      size="sm"
-      className="bg-orange-50 text-orange-500"
-    >
-      <ChevronRight size={16} />
-    </ActionIcon>,
   ];
 
   return (
@@ -137,6 +123,9 @@ export function RecentFundingTransactionsSection() {
         data={transactions}
         loading={isLoading || isFetching}
         renderItems={renderItems}
+        onRowClick={(item) =>
+          router.push(adminRoutes.adminTransactionDetails(item.transactionId))
+        }
         pagination={{
           page,
           totalPages: safeTotalPages,
