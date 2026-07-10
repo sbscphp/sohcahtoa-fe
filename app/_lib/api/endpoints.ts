@@ -89,6 +89,17 @@ export const API_ENDPOINTS = {
     settlement: (transactionId: string) => `/api/payments/settlement/${transactionId}`,
     health: "/api/payments/health",
   },
+
+  // Simulate payments (dev/staging only)
+  simulate: {
+    payments: {
+      exact: "/api/simulate/payments/exact",
+      overpayment: "/api/simulate/payments/overpayment",
+      split: "/api/simulate/payments/split",
+      verify: (transactionId: string) =>
+        `/api/simulate/payments/verify/${transactionId}`,
+    },
+  },
   
   // Admin (if needed)
   admin: {
