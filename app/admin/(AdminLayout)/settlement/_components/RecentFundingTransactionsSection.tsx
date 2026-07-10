@@ -38,22 +38,67 @@ export function RecentFundingTransactionsSection() {
   const safeTotalPages = Math.max(totalPages, 1);
   
   const headers = [
+    { label: "Customer", key: "customer" },
     { label: "Reference ID", key: "referenceId" },
-    { label: "Amount Sent", key: "amount" },
-    { label: "Fund Date", key: "date" },
+    { label: "Transaction Type", key: "transactionType" },
+    { label: "Amount", key: "amount" },
+    { label: "Deposited At", key: "date" },
     { label: "Payment Method", key: "paymentMethod" },
+    { label: "Settlement Status", key: "status" },
+    { label: "Transaction Status", key: "transactionStatus" },
     { label: "", key: "action" },
   ];
 
   const renderItems = (item: SettlementFundingTransactionListItem) => [
-    <Text key="referenceId" size="sm" fw={600} c="gray.7">{item.referenceId}</Text>,
-    <Text key="amount" size="sm" fw={600} c="dark">{formatCurrency(item.amount)}</Text>,
-    <div key="date">
-      <Text size="sm" fw={500} c="dark">{item.date}</Text>
-      <Text size="xs" c="dimmed">{item.time}</Text>
+    <div key="customer">
+      <Text size="sm" fw={500}>
+        {item.customerName}
+      </Text>
+      <Text size="xs" c="dimmed">
+        {item.customerEmail}
+      </Text>
     </div>,
-    <TransactionStatusBadge key="paymentMethod" status={toSentenceCase(item.paymentMethod)} size="md" />,
-    <ActionIcon onClick={() => router.push(adminRoutes.adminTransactionDetails(item.transactionId))} key="action" variant="subtle" color="orange" radius="xl" size="sm" className="bg-orange-50 text-orange-500">
+    <Text key="referenceId" size="sm" fw={600} c="gray.7">
+      {item.referenceId}
+    </Text>,
+    <Text key="transactionType" size="sm">
+      {item.transactionType}
+    </Text>,
+    <Text key="amount" size="sm" fw={600} c="dark">
+      {formatCurrency(item.amount, item.currency)}
+    </Text>,
+    <div key="date">
+      <Text size="sm" fw={500} c="dark">
+        {item.date}
+      </Text>
+      <Text size="xs" c="dimmed">
+        {item.time}
+      </Text>
+    </div>,
+    <Text key="paymentMethod" size="sm">
+      {toSentenceCase(item.paymentMethod)}
+    </Text>,
+    <TransactionStatusBadge
+      key="status"
+      status={item.status}
+      size="md"
+    />,
+    <TransactionStatusBadge
+      key="transactionStatus"
+      status={item.transactionStatus}
+      size="md"
+    />,
+    <ActionIcon
+      onClick={() =>
+        router.push(adminRoutes.adminTransactionDetails(item.transactionId))
+      }
+      key="action"
+      variant="subtle"
+      color="orange"
+      radius="xl"
+      size="sm"
+      className="bg-orange-50 text-orange-500"
+    >
       <ChevronRight size={16} />
     </ActionIcon>,
   ];

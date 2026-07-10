@@ -26,13 +26,16 @@ export interface SettlementFundingTransactionListItem {
   id: string;
   transactionId: string;
   referenceId: string;
+  customerName: string;
+  customerEmail: string;
+  transactionType: string;
+  transactionStatus: string;
   amount: number;
   currency: string;
   date: string;
   time: string;
   paymentMethod: string;
   status: string;
-  receiptNumber: string | null;
 }
 
 interface Pagination {
@@ -90,6 +93,22 @@ function formatDateTime(iso: string): { date: string; time: string } {
 }
 
 
+function getCustomerField(
+  raw: Record<string, unknown>,
+  field: "name" | "email"
+): string {
+  const customer =
+    raw.customer && typeof raw.customer === "object"
+      ? (raw.customer as Record<string, unknown>)
+      : null;
+
+  if (field === "name") {
+    return asString(customer?.name) || asString(raw.customerName) || "--";
+  }
+
+  return asString(customer?.email) || asString(raw.customerEmail) || "--";
+}
+
 function parseFundingTransaction(
   raw: Record<string, unknown>
 ): SettlementFundingTransactionListItem {
@@ -98,6 +117,12 @@ function parseFundingTransaction(
   const referenceId =
     asString(raw.referenceNumber ?? raw.referenceId ?? raw.reference, "--") ||
     "--";
+  const customerName = getCustomerField(raw, "name");
+  const customerEmail = getCustomerField(raw, "email");
+  const transactionType = toSentenceCase(
+    asString(raw.transactionType ?? raw.type, "--")
+  );
+  const transactionStatus = asString(raw.transactionStatus, "--");
 
   const amountRaw = raw.amount ?? raw.value ?? raw.transactionValue ?? raw.total;
   const amount = toNumericAmount(amountRaw);
@@ -106,11 +131,6 @@ function parseFundingTransaction(
 
   const paymentMethod = asString(raw.paymentMethod ?? raw.method, "--");
   const status = asString(raw.status, "--");
-
-  const receiptNumber =
-    raw.receiptNumber === null || raw.receiptNumber === undefined
-      ? null
-      : asString(raw.receiptNumber);
 
   const dateTimeIso =
     asString(raw.depositedAt) ||
@@ -127,13 +147,16 @@ function parseFundingTransaction(
     id,
     transactionId,
     referenceId,
+    customerName,
+    customerEmail,
+    transactionType,
+    transactionStatus,
     amount,
     currency,
     date,
     time,
     paymentMethod,
     status,
-    receiptNumber,
   };
 }
 
