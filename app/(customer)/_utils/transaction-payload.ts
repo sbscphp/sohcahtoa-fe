@@ -149,7 +149,7 @@ export function mapUiPayoutMethodToDisbursementOption(
     case "card_75_cash_25":
       return "CARD_AND_CASH";
     case "electronic_75_cash_25":
-      return "ELECTRONIC_AND_CASH";
+      return "CASH_AND_TRANSFER";
     default:
       return undefined;
   }

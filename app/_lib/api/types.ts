@@ -684,7 +684,7 @@ export type DisbursementOption =
   | "ELECTRONIC_TRANSFER"
   | "CARD"
   | "CARD_AND_CASH"
-  | "ELECTRONIC_AND_CASH";
+  | "CASH_AND_TRANSFER";
 
 export interface PickupLocation {
   id: string;

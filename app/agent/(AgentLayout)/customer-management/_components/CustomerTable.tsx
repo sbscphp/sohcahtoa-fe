@@ -130,6 +130,7 @@ export default function CustomerTable({
       key="kycStatus"
       color={getKYCStatusColor(item.kycStatus)}
       variant="light"
+      
       size="sm"
     >
       {item.kycStatus}

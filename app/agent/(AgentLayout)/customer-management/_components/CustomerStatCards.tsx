@@ -34,7 +34,7 @@ export function CustomerStatCards({
         />
 
         <StatCard
-          title="Repeat Customers"
+          title="Returning Customers"
           value={repeatCustomers.toString()}
           icon={<Repeat className="h-5 w-5 text-pink-600" />}
           iconBg="bg-pink-100"
