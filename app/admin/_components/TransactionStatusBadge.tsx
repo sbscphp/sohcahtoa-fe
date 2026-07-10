@@ -6,6 +6,7 @@ type TransactionStatusKey = keyof typeof TRANSACTION_STATUS_LABELS;
 const transactionStatusColorMap: Record<TransactionStatusKey, string> = {
   DRAFT: "gray",
   AWAITING_VERIFICATION: "#B54708",
+  AWAITING_REFUND_VERIFICATION: "#B54708",
   VERIFICATION_IN_PROGRESS: "#B54708",
   VERIFICATION_COMPLETED: "#2563EB",
   AWAITING_DEPOSIT: "#B54708",
@@ -20,6 +21,12 @@ const transactionStatusColorMap: Record<TransactionStatusKey, string> = {
   REJECTED: "red",
   CANCELLED: "#6B7280",
   AWAITING_DISBURSEMENT: "#B54708",
+  // Settlement statuses
+  PENDING: "#B54708",
+  AWAITING_CONFIRMATION: "#B54708",
+  CONFIRMED: "#B54708",
+  FAILED: "red",
+  REFUNDED: "#6B7280",
 };
 
 interface TransactionStatusBadgeProps {

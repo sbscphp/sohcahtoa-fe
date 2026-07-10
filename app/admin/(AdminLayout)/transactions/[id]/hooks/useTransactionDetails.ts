@@ -177,9 +177,14 @@ function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+const EMPTY_API_PLACEHOLDERS = new Set(["—", "-", "n/a", "null"]);
+
 function pickString(...values: unknown[]): string {
   for (const value of values) {
-    if (typeof value === "string" && value.trim()) return value;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed && !EMPTY_API_PLACEHOLDERS.has(trimmed.toLowerCase())) return trimmed;
+    }
     if (typeof value === "number" && Number.isFinite(value)) return String(value);
   }
   return "--";
@@ -422,6 +427,14 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
         asRecord(stepData.pickupLocation).address
       ),
     },
+    {
+      label: "Pickup Date",
+      value: pickString(formatDate(cashPickup.scheduledPickupDate), formatDate(stepData.scheduledPickupDate)),
+    },
+    {
+      label: "Pickup Time",
+      value: pickString(formatTime(cashPickup.scheduledPickupTime), formatTime(stepData.scheduledPickupTime)),
+    },
   ];
 
   const documentFields: OverviewField[] = Array.isArray(raw.documents)
@@ -557,21 +570,33 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
   const details = asRecord(data.details);
   const cashPickup = asRecord(raw.cashPickup);
   const receipt = asRecord(raw.receipt);
+  const settlement = asRecord(
+    data.transactionSettlement ?? details.transactionSettlement ?? raw.transactionSettlement
+  );
   const header = buildHeaderData(data, raw);
 
   const prepaidCard = asRecord(raw.prepaidCard);
-  const prepaidCardSummary =
+  const prepaidCardFallback =
     pickString(prepaidCard.bankName) !== "--" ||
     pickString(prepaidCard.maskedPan) !== "--" ||
     pickString(prepaidCard.accountName) !== "--"
       ? `${pickString(prepaidCard.bankName)} | ${pickString(prepaidCard.maskedPan)} | ${pickString(prepaidCard.accountName)}`
       : "--";
 
+  const cashPickupFallback =
+    cashPickup.amount && cashPickup.currency
+      ? formatAmountByCurrency(cashPickup.amount, cashPickup.currency)
+      : "--";
+
+  const settlementDateRaw = pickString(settlement.settlementDate, cashPickup.pickedUpAt, cashPickup.updatedAt);
+  const settlementTimeRaw = pickString(settlement.settlementTime, cashPickup.pickedUpAt, cashPickup.updatedAt);
+  const settlementStatusRaw = pickString(settlement.settlementStatus, cashPickup.status, raw.status);
+
   const fields: OverviewField[] = [
-    { label: "Settlement ID", value: pickString(cashPickup.id, receipt.id) },
+    { label: "Settlement ID", value: pickString(settlement.settlementId, cashPickup.id, receipt.id) },
     { label: "Settled By", value: pickString(raw.settledBy, receipt.settledBy) },
-    { label: "Settlement Date", value: formatDate(cashPickup.pickedUpAt ?? cashPickup.updatedAt) },
-    { label: "Settlement Time", value: formatTime(cashPickup.pickedUpAt ?? cashPickup.updatedAt) },
+    { label: "Settlement Date", value: settlementDateRaw !== "--" ? formatDate(settlementDateRaw) : "--" },
+    { label: "Settlement Time", value: settlementTimeRaw !== "--" ? formatTime(settlementTimeRaw) : "--" },
     {
       label: "Total Settlement (FX)",
       value: formatAmountByCurrency(
@@ -582,24 +607,33 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
     { label: "Total Settlement (₦)", value: formatAmount(details.transactionValueNgn, "₦") },
     {
       label: "Settlement Structure (Cash)",
-      value:
-        cashPickup.amount && cashPickup.currency && (pickString(cashPickup.amount) !== "--") && (pickString(cashPickup.currency) !== "--")
-          ? formatAmountByCurrency(cashPickup.amount, cashPickup.currency)
-          : "--",
+      value: pickString(settlement.settlementStructureCash, cashPickupFallback),
     },
-    { label: "Settlement Structure (Prepaid Card)", value: prepaidCardSummary },
-    { label: "Settlement Status", value: formatEnum(cashPickup.status ?? raw.status) },
+    {
+      label: "Settlement Structure (Prepaid Card)",
+      value: pickString(settlement.settlementStructurePrepaidCard, prepaidCardFallback),
+    },
+    { label: "75% Paid Into", value: pickString(settlement.seventyFivePercentPaidInto) },
+    { label: "Settlement Status", value: settlementStatusRaw !== "--" ? formatEnum(settlementStatusRaw) : "--" },
   ].filter((item) => item.value !== "--");
 
+  const settlementReceiptUrl = pickString(settlement.settlementReceipt);
   const settlementReceipt: TransactionDocumentViewModel | null =
-    pickString(receipt.fileUrl) !== "--"
+    settlementReceiptUrl !== "--"
       ? {
           title: pickString(receipt.title, "Settlement Receipt"),
           fileName: pickString(receipt.fileName, "settlement-receipt"),
           fileSize: formatFileSize(receipt.fileSize),
-          url: pickString(receipt.fileUrl),
+          url: settlementReceiptUrl,
         }
-      : null;
+      : pickString(receipt.fileUrl) !== "--"
+        ? {
+            title: pickString(receipt.title, "Settlement Receipt"),
+            fileName: pickString(receipt.fileName, "settlement-receipt"),
+            fileSize: formatFileSize(receipt.fileSize),
+            url: pickString(receipt.fileUrl),
+          }
+        : null;
 
   const hasContent =
     fields.length > 0 || Boolean(settlementReceipt) || hasRecordValues(cashPickup);

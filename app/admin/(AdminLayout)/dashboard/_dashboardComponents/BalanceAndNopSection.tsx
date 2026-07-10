@@ -83,7 +83,7 @@ export function BalanceAndNopSection() {
             disabled={currencyCodes.length === 0}
           />
           <div>
-            <p className="text-sm text-gray-500">Total Balance</p>
+            <p className="text-sm text-gray-500">Total Transactions (Value)</p>
             <p className="text-lg font-semibold text-gray-900">
               {formatCurrency(balance, activeCurrency)}
             </p>

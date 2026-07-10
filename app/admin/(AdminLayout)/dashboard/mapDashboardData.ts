@@ -77,41 +77,65 @@ export const TRANSACTION_TYPE_FILTER_OPTIONS = [
   ...Object.entries(TYPE_DISPLAY).map(([value, label]) => ({ value, label })),
 ];
 
-// Warm spectrum from primary token palette (globals.css) — no two types share the same hue
-const TYPE_COLORS: Record<string, string> = {
-  PTA: "#dd4f05",           // primary-400  — signature orange
-  BTA: "#e88a58",           // primary-200  — light orange
-  SCHOOL_FEES: "#fdb022",   // warning-400  — amber
-  MEDICAL: "#b84204",       // primary-500  — dark orange
-  PROFESSIONAL_BODY: "#f79009", // warning-500 — orange-amber
-  TOURIST_FX: "#fec84b",    // warning-300  — golden yellow
-  RESIDENT_FX: "#6f2803",   // primary-700  — deep brown-orange
-  EXPATRIATE_FX: "#e36c2f", // primary-300  — mid orange
-  IMTO_REMITTANCE: "#933503", // primary-600 — burnt orange
-  CASH_REMITTANCE: "#eea782", // primary-100 — peach
-};
+export type DonutSegment = { name: string; value: number; color: string };
 
-// Fallback palette cycles through warm tones for any unknown future types
-const FALLBACK_COLORS = [
-  "#dd4f05", "#e88a58", "#fdb022", "#b84204", "#f79009",
-  "#fec84b", "#6f2803", "#e36c2f", "#933503", "#eea782",
+const TRANSACTION_TYPE_CATEGORIES: {
+  key: string;
+  label: string;
+  color: string;
+  match: (normalizedType: string) => boolean;
+}[] = [
+  { key: "PTA", label: "PTA", color: "#dd4f05", match: (t) => t.includes("PTA") },
+  { key: "BTA", label: "BTA", color: "#e88a58", match: (t) => t.includes("BTA") },
+  {
+    key: "SCHOOL_FEES",
+    label: "School Fees",
+    color: "#fdb022",
+    match: (t) => t.includes("SCHOOL"),
+  },
+  { key: "MEDICAL", label: "Medical", color: "#b84204", match: (t) => t.includes("MEDICAL") },
+  {
+    key: "PROFESSIONAL_BODY",
+    label: "Professional Body",
+    color: "#f79009",
+    match: (t) => t.includes("PROFESSIONAL"),
+  },
 ];
 
-export type DonutSegment = { name: string; value: number; color: string };
+const OTHERS_KEY = "OTHERS";
+const OTHERS_LABEL = "Others";
+const OTHERS_COLOR = "#933503";
+
+function normalizeTransactionType(type: string): string {
+  return (type ?? "").toUpperCase().replace(/[\s-]+/g, "_");
+}
 
 export function mapTransactionsByTypeDonut(
   block: AdminDashboardData["transactionsByType"]
 ): DonutSegment[] {
-  let fallbackIndex = 0;
-  return block.items.map((item) => {
-    const color =
-      TYPE_COLORS[item.type] ?? FALLBACK_COLORS[fallbackIndex++ % FALLBACK_COLORS.length];
-    return {
-      name: TYPE_DISPLAY[item.type] ?? item.type.replaceAll("_", " "),
-      value: item.amount,
-      color,
-    };
+  const totals = new Map<string, number>();
+  TRANSACTION_TYPE_CATEGORIES.forEach((c) => totals.set(c.key, 0));
+  totals.set(OTHERS_KEY, 0);
+
+  for (const item of block.items) {
+    const normalized = normalizeTransactionType(item.type);
+    const category = TRANSACTION_TYPE_CATEGORIES.find((c) => c.match(normalized));
+    const key = category?.key ?? OTHERS_KEY;
+    totals.set(key, (totals.get(key) ?? 0) + item.amount);
+  }
+
+  const segments: DonutSegment[] = TRANSACTION_TYPE_CATEGORIES.map((c) => ({
+    name: c.label,
+    value: totals.get(c.key) ?? 0,
+    color: c.color,
+  }));
+  segments.push({
+    name: OTHERS_LABEL,
+    value: totals.get(OTHERS_KEY) ?? 0,
+    color: OTHERS_COLOR,
   });
+
+  return segments;
 }
 
 export function mapRecentTransactions(

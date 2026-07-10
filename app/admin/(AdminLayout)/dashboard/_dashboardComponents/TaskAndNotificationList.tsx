@@ -4,11 +4,10 @@ import { Card, Group, Text, Stack, Skeleton } from "@mantine/core";
 import { ArrowUpRight, Calendar, Clock, Timer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { StatusBadge } from "../../../_components/StatusBadge";
 import EmptySection from "../../../_components/EmptySection";
 import { adminRoutes } from "@/lib/adminRoutes";
 import type { DashboardTaskRow } from "../mapDashboardData";
-import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 
 export function TaskAndNotificationList({
   data,
@@ -82,7 +81,7 @@ export function TaskAndNotificationList({
 
                 {/* Right: status + escalation */}
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <StatusBadge status={toSentenceCase(item.actionNeeded)} size="xs" />
+                  <TransactionStatusBadge status={item.actionNeeded} size="xs" />
                   <Group gap={4} wrap="nowrap">
                     <Timer
                       size={11}
