@@ -2482,7 +2482,11 @@ export const adminApi = {
         API_ENDPOINTS.admin.settlement.escrowAccounts
       ),
 
-    listFundingTransactions: (params?: { page?: number; limit?: number }) =>
+    listFundingTransactions: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+    }) =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.settlement.fundingTransactions,
         { params }

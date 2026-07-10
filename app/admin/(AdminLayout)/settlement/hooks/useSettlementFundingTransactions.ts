@@ -3,6 +3,24 @@
 import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
+
+export const SETTLEMENT_STATUS_FILTER_ORDER = [
+  "PENDING",
+  "AWAITING_CONFIRMATION",
+  "CONFIRMED",
+  "FAILED",
+  "REFUNDED",
+] as const;
+
+export type SettlementStatusFilter =
+  (typeof SETTLEMENT_STATUS_FILTER_ORDER)[number];
+
+export const SETTLEMENT_STATUS_FILTER_OPTIONS =
+  SETTLEMENT_STATUS_FILTER_ORDER.map((status) => ({
+    value: status,
+    label: toSentenceCase(status),
+  }));
 
 export interface SettlementFundingTransactionListItem {
   id: string;
@@ -13,6 +31,7 @@ export interface SettlementFundingTransactionListItem {
   date: string;
   time: string;
   paymentMethod: string;
+  status: string;
   receiptNumber: string | null;
 }
 
@@ -33,6 +52,7 @@ interface FundingTransactionsListResponse {
 export interface UseSettlementFundingTransactionsParams {
   page?: number;
   limit?: number;
+  status?: string;
 }
 
 function asString(value: unknown, fallback = ""): string {
@@ -75,7 +95,9 @@ function parseFundingTransaction(
 ): SettlementFundingTransactionListItem {
   const id = asString(raw.id, "--") || "--";
   const transactionId = asString(raw.transactionId, "--") || "--";
-  const referenceId = asString(raw.referenceId ?? raw.reference, "--") || "--";
+  const referenceId =
+    asString(raw.referenceNumber ?? raw.referenceId ?? raw.reference, "--") ||
+    "--";
 
   const amountRaw = raw.amount ?? raw.value ?? raw.transactionValue ?? raw.total;
   const amount = toNumericAmount(amountRaw);
@@ -83,6 +105,7 @@ function parseFundingTransaction(
   const currency = asString(raw.currency, "NGN");
 
   const paymentMethod = asString(raw.paymentMethod ?? raw.method, "--");
+  const status = asString(raw.status, "--");
 
   const receiptNumber =
     raw.receiptNumber === null || raw.receiptNumber === undefined
@@ -90,6 +113,8 @@ function parseFundingTransaction(
       : asString(raw.receiptNumber);
 
   const dateTimeIso =
+    asString(raw.depositedAt) ||
+    asString(raw.confirmedAt) ||
     asString(raw.fundDate) ||
     asString(raw.fundedAt) ||
     asString(raw.dateTime) ||
@@ -107,6 +132,7 @@ function parseFundingTransaction(
     date,
     time,
     paymentMethod,
+    status,
     receiptNumber,
   };
 }
@@ -161,18 +187,23 @@ export function useSettlementFundingTransactions(
 ) {
   const page = params.page ?? 1;
   const limit = params.limit ?? 10;
+  const status = params.status;
 
   const query = useFetchDataSeperateLoading<FundingTransactionsListResponse>(
-    [...adminKeys.settlement.fundingTransactions({ page, limit })],
+    [...adminKeys.settlement.fundingTransactions({ page, limit, status })],
     () =>
-      adminApi.settlement.listFundingTransactions({ page, limit }) as unknown as Promise<
-        FundingTransactionsListResponse
-      >,
+      adminApi.settlement.listFundingTransactions({
+        page,
+        limit,
+        status,
+      }) as unknown as Promise<FundingTransactionsListResponse>,
     true
   );
 
   const transactions = extractFundingTransactions(query.data?.data);
-  const pagination = query.data ? parsePagination(query.data, { page, limit }) : null;
+  const pagination = query.data
+    ? parsePagination(query.data, { page, limit, status })
+    : null;
 
   return {
     transactions,

@@ -1,25 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Text, ActionIcon, Group } from "@mantine/core";
+import { Card, Text, ActionIcon, Group, Select } from "@mantine/core";
 import { TransactionStatusBadge } from "../../../_components/TransactionStatusBadge";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, ListFilter } from "lucide-react";
 import DynamicTableSection from "../../../_components/DynamicTableSection";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useRouter } from "next/navigation";
-import { useSettlementFundingTransactions, type SettlementFundingTransactionListItem } from "../hooks/useSettlementFundingTransactions";
+import {
+  useSettlementFundingTransactions,
+  SETTLEMENT_STATUS_FILTER_OPTIONS,
+  type SettlementFundingTransactionListItem,
+} from "../hooks/useSettlementFundingTransactions";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import Link from "next/link";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
+
+const statusOptions = [
+  { value: "All", label: "Filter By" },
+  ...SETTLEMENT_STATUS_FILTER_OPTIONS,
+];
 
 export function RecentFundingTransactionsSection() {
   const router = useRouter();
 
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const { transactions, isLoading, isFetching, totalPages } =
-    useSettlementFundingTransactions({ page, limit: PAGE_SIZE });
+    useSettlementFundingTransactions({
+      page,
+      limit: PAGE_SIZE,
+      status: statusFilter !== "All" ? statusFilter : undefined,
+    });
 
   const safeTotalPages = Math.max(totalPages, 1);
   
@@ -47,12 +61,32 @@ export function RecentFundingTransactionsSection() {
   return (
     <Card padding="lg" radius="md" withBorder className="h-full bg-white">
       <Group justify="space-between" mb="lg">
-      <Text fw={700} size="lg" c="dark">Recent Funding Transactions</Text>
-      <Link href={adminRoutes.adminTransactions()} className="text-orange-600 cursor-pointer hover:text-orange-700 flex items-center gap-2">
-        <Text size="sm" fw={600}>View all</Text>
-        <ArrowUpRight size={16} />
-      </Link>
-    </Group>
+        <Text fw={700} size="lg" c="dark">
+          Recent Funding Transactions
+        </Text>
+        <Group gap="sm">
+          <Select
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value ?? "All");
+              setPage(1);
+            }}
+            data={statusOptions}
+            radius="xl"
+            w={180}
+            rightSection={<ListFilter size={16} />}
+          />
+          <Link
+            href={adminRoutes.adminTransactions()}
+            className="text-orange-600 cursor-pointer hover:text-orange-700 flex items-center gap-2"
+          >
+            <Text size="sm" fw={600}>
+              View all
+            </Text>
+            <ArrowUpRight size={16} />
+          </Link>
+        </Group>
+      </Group>
       <DynamicTableSection
         headers={headers}
         data={transactions}
