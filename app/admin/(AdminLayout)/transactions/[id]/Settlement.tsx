@@ -39,6 +39,7 @@ const loadingFields = [
   { label: "Total Settlement (₦)", value: "--" },
   { label: "Settlement Structure (Cash)", value: "--" },
   { label: "Settlement Structure (Prepaid Card)", value: "--" },
+  { label: "75% Paid Into", value: "--" },
   { label: "Settlement Status", value: "--" },
 ];
 

@@ -95,7 +95,7 @@ export function RecentTransactionsTable({
 
 
       <DynamicTableSection
-
+        height="510px"
         headers={[
           { label: "Customer Name", key: "customer" },
 

@@ -3,17 +3,39 @@
 import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
+
+export const SETTLEMENT_STATUS_FILTER_ORDER = [
+  "PENDING",
+  "AWAITING_CONFIRMATION",
+  "CONFIRMED",
+  "FAILED",
+  "REFUNDED",
+] as const;
+
+export type SettlementStatusFilter =
+  (typeof SETTLEMENT_STATUS_FILTER_ORDER)[number];
+
+export const SETTLEMENT_STATUS_FILTER_OPTIONS =
+  SETTLEMENT_STATUS_FILTER_ORDER.map((status) => ({
+    value: status,
+    label: toSentenceCase(status),
+  }));
 
 export interface SettlementFundingTransactionListItem {
   id: string;
   transactionId: string;
   referenceId: string;
+  customerName: string;
+  customerEmail: string;
+  transactionType: string;
+  transactionStatus: string;
   amount: number;
   currency: string;
   date: string;
   time: string;
   paymentMethod: string;
-  receiptNumber: string | null;
+  status: string;
 }
 
 interface Pagination {
@@ -33,6 +55,7 @@ interface FundingTransactionsListResponse {
 export interface UseSettlementFundingTransactionsParams {
   page?: number;
   limit?: number;
+  status?: string;
 }
 
 function asString(value: unknown, fallback = ""): string {
@@ -70,12 +93,36 @@ function formatDateTime(iso: string): { date: string; time: string } {
 }
 
 
+function getCustomerField(
+  raw: Record<string, unknown>,
+  field: "name" | "email"
+): string {
+  const customer =
+    raw.customer && typeof raw.customer === "object"
+      ? (raw.customer as Record<string, unknown>)
+      : null;
+
+  if (field === "name") {
+    return asString(customer?.name) || asString(raw.customerName) || "--";
+  }
+
+  return asString(customer?.email) || asString(raw.customerEmail) || "--";
+}
+
 function parseFundingTransaction(
   raw: Record<string, unknown>
 ): SettlementFundingTransactionListItem {
   const id = asString(raw.id, "--") || "--";
   const transactionId = asString(raw.transactionId, "--") || "--";
-  const referenceId = asString(raw.referenceId ?? raw.reference, "--") || "--";
+  const referenceId =
+    asString(raw.referenceNumber ?? raw.referenceId ?? raw.reference, "--") ||
+    "--";
+  const customerName = getCustomerField(raw, "name");
+  const customerEmail = getCustomerField(raw, "email");
+  const transactionType = toSentenceCase(
+    asString(raw.transactionType ?? raw.type, "--")
+  );
+  const transactionStatus = asString(raw.transactionStatus, "--");
 
   const amountRaw = raw.amount ?? raw.value ?? raw.transactionValue ?? raw.total;
   const amount = toNumericAmount(amountRaw);
@@ -83,13 +130,11 @@ function parseFundingTransaction(
   const currency = asString(raw.currency, "NGN");
 
   const paymentMethod = asString(raw.paymentMethod ?? raw.method, "--");
-
-  const receiptNumber =
-    raw.receiptNumber === null || raw.receiptNumber === undefined
-      ? null
-      : asString(raw.receiptNumber);
+  const status = asString(raw.status, "--");
 
   const dateTimeIso =
+    asString(raw.depositedAt) ||
+    asString(raw.confirmedAt) ||
     asString(raw.fundDate) ||
     asString(raw.fundedAt) ||
     asString(raw.dateTime) ||
@@ -102,12 +147,16 @@ function parseFundingTransaction(
     id,
     transactionId,
     referenceId,
+    customerName,
+    customerEmail,
+    transactionType,
+    transactionStatus,
     amount,
     currency,
     date,
     time,
     paymentMethod,
-    receiptNumber,
+    status,
   };
 }
 
@@ -161,18 +210,23 @@ export function useSettlementFundingTransactions(
 ) {
   const page = params.page ?? 1;
   const limit = params.limit ?? 10;
+  const status = params.status;
 
   const query = useFetchDataSeperateLoading<FundingTransactionsListResponse>(
-    [...adminKeys.settlement.fundingTransactions({ page, limit })],
+    [...adminKeys.settlement.fundingTransactions({ page, limit, status })],
     () =>
-      adminApi.settlement.listFundingTransactions({ page, limit }) as unknown as Promise<
-        FundingTransactionsListResponse
-      >,
+      adminApi.settlement.listFundingTransactions({
+        page,
+        limit,
+        status,
+      }) as unknown as Promise<FundingTransactionsListResponse>,
     true
   );
 
   const transactions = extractFundingTransactions(query.data?.data);
-  const pagination = query.data ? parsePagination(query.data, { page, limit }) : null;
+  const pagination = query.data
+    ? parsePagination(query.data, { page, limit, status })
+    : null;
 
   return {
     transactions,

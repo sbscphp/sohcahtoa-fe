@@ -3,7 +3,8 @@ export const formatCurrency = (amount?: number | string, currency?: string) => {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: currency || "NGN",
-    minimumFractionDigits: 0, // no decimals if whole number
-    maximumFractionDigits: 2, // allow up to 2 decimals
+    // minimumFractionDigits: Number(amount) % 1 === 0 ? 0 : 2,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(amount));
 };

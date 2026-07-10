@@ -1145,6 +1145,8 @@ export interface AdminTransactionDetailsPayload {
   bvnNumber?: string | null;
   numberOfDocuments?: number | string | null;
   pickupLocation?: string | null;
+  paymentDetails?: AgentTransactionPaymentDetails | null;
+  transactionSettlement?: AgentTransactionSettlementDetails | null;
 }
 
 /** Assignee on a transaction workflow stage (id shape may vary by API). */
@@ -1190,6 +1192,8 @@ export interface AdminTransactionDetailsData {
   details: AdminTransactionDetailsPayload | null;
   raw?: Record<string, unknown> | null;
   approvalProcess?: AdminTransactionApprovalProcess | null;
+  paymentDetails?: AgentTransactionPaymentDetails | null;
+  transactionSettlement?: AgentTransactionSettlementDetails | null;
 }
 
 export type FranchiseTransactionListParams = AdminTransactionListParams;
@@ -2478,7 +2482,11 @@ export const adminApi = {
         API_ENDPOINTS.admin.settlement.escrowAccounts
       ),
 
-    listFundingTransactions: (params?: { page?: number; limit?: number }) =>
+    listFundingTransactions: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+    }) =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.settlement.fundingTransactions,
         { params }
