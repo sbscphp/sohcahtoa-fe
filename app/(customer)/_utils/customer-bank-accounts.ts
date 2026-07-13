@@ -160,15 +160,18 @@ export function mergeRefundDomiciliaryIntoPickupData(
     },
   };
 
-  // Only keep a bank-account id when it came from a saved account; local Dom details
-  // are sent on the transaction payload and are not attached by id.
-  if (account.id && isSavedBankAccountId(account.id)) {
+  if (account.id) {
     next.selectedRefundDomiciliaryId = account.id;
   } else {
     delete next.selectedRefundDomiciliaryId;
   }
 
   return next;
+}
+
+/** Session-only id for Dom accounts added during the flow (not persisted). */
+export function createLocalDomiciliaryAccountId(): string {
+  return `local-dom-${Date.now()}`;
 }
 
 export function hasCompleteRefundDomiciliaryDetails(

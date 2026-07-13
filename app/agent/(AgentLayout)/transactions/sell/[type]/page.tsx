@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
@@ -44,14 +44,21 @@ import {
 } from "@/app/(customer)/_utils/transaction-payload";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
-import { useCustomerBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
 import {
+  useCustomerBankAccounts,
+  useDomiciliaryBankAccounts,
+} from "@/app/agent/_hooks/use-agent-bank-accounts";
+import {
+  createLocalDomiciliaryAccountId,
   getCreatedTransactionId,
   getPickupBankAccountId,
   hasCompleteRefundDomiciliaryDetails,
   mergeRefundDomiciliaryIntoPickupData,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
-import DomiciliaryRefundBankStep from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
+import DomiciliaryRefundBankStep, {
+  type DomiciliaryRefundAccount,
+} from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
+import { AddDomiciliaryAccountModal } from "@/app/(customer)/_components/modals/AddDomiciliaryAccountModal";
 import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
 
 const SELL_TYPE_MAP = {
@@ -113,10 +120,30 @@ export default function AgentSellTransactionCreationPage() {
     | ExpatriatePickupPointFormData
     | null
   >(null);
+  const [addBankOpened, setAddBankOpened] = useState(false);
+  const [localDomiciliaryAccounts, setLocalDomiciliaryAccounts] = useState<
+    DomiciliaryRefundAccount[]
+  >([]);
+  const [selectedDomiciliaryId, setSelectedDomiciliaryId] = useState("");
+
+  const domiciliaryAccountsEnabled =
+    activeStep === "refund-bank-details" || addBankOpened;
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
   const { attachToTransaction } = useCustomerBankAccounts({ enabled: false });
+  const {
+    domiciliaryAccounts: savedDomiciliaryAccounts,
+    isLoading: domiciliaryAccountsLoading,
+  } = useDomiciliaryBankAccounts(domiciliaryAccountsEnabled);
+
+  const domiciliaryAccounts = useMemo(() => {
+    const localIds = new Set(localDomiciliaryAccounts.map((account) => account.id));
+    const fromApi = savedDomiciliaryAccounts.filter(
+      (account) => account.id && !localIds.has(account.id),
+    );
+    return [...localDomiciliaryAccounts, ...fromApi];
+  }, [localDomiciliaryAccounts, savedDomiciliaryAccounts]);
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -145,7 +172,17 @@ export default function AgentSellTransactionCreationPage() {
     setActiveStep("refund-bank-details");
   };
 
-  const handleRefundBankSubmit = (account: DomiciliaryAccountFormData) => {
+  const handleAddDomiciliaryAccount = useCallback((data: DomiciliaryAccountFormData) => {
+    const account: DomiciliaryRefundAccount = {
+      ...data,
+      id: createLocalDomiciliaryAccountId(),
+    };
+    setLocalDomiciliaryAccounts((prev) => [account, ...prev]);
+    setSelectedDomiciliaryId(account.id);
+  }, []);
+
+  const handleRefundBankSubmit = (account: DomiciliaryRefundAccount) => {
+    setSelectedDomiciliaryId(account.id);
     setPickupPointData((prev) =>
       mergeRefundDomiciliaryIntoPickupData(
         prev as Record<string, unknown> | null,
@@ -192,7 +229,7 @@ export default function AgentSellTransactionCreationPage() {
       setConfirmationOpened(false);
       notifications.show({
         title: "Refund bank account required",
-        message: "Enter domiciliary bank account details for refunds before initiating the transaction.",
+        message: "Select a domiciliary bank account for refunds before initiating the transaction.",
         color: "orange",
       });
       setActiveStep("refund-bank-details");
@@ -257,15 +294,18 @@ export default function AgentSellTransactionCreationPage() {
     else if (activeStep === "pickup-point") setActiveStep("amount");
   };
 
-  const refundInitialValues = (
-    pickupPointData as { refundDomiciliaryAccount?: DomiciliaryAccountFormData } | null
-  )?.refundDomiciliaryAccount;
-
   const renderRefundBankStep = () => (
     <DomiciliaryRefundBankStep
-      initialValues={refundInitialValues}
+      accounts={domiciliaryAccounts}
+      isLoading={domiciliaryAccountsLoading}
+      initialSelectedAccountId={
+        selectedDomiciliaryId ||
+        (pickupPointData as { selectedRefundDomiciliaryId?: string } | null)
+          ?.selectedRefundDomiciliaryId
+      }
       onSubmit={handleRefundBankSubmit}
       onBack={handleBack}
+      onAddAccount={() => setAddBankOpened(true)}
     />
   );
 
@@ -434,6 +474,12 @@ export default function AgentSellTransactionCreationPage() {
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
         loading={uploadDocuments.isPending || createTransaction.isPending}
+      />
+
+      <AddDomiciliaryAccountModal
+        opened={addBankOpened}
+        onClose={() => setAddBankOpened(false)}
+        onAddAccount={handleAddDomiciliaryAccount}
       />
 
       <AgentAddCustomerModal
