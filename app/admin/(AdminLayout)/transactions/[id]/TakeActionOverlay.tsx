@@ -69,6 +69,10 @@ function getDocumentStatusBadgeStyle(status: string) {
     return { bg: "#FFFAEB", color: "#B54708" };
   }
 
+  if (normalized === "REJECTED") {
+    return { bg: "#FEF2F2", color: "#B42318" };
+  }
+
   // Fallback for unknown/new statuses from backend.
   return { bg: "#F2F4F7", color: "#344054" };
 }
