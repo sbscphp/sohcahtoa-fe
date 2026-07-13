@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, Group, Text, Stack, Skeleton } from "@mantine/core";
 import { ArrowUpRight, Calendar, Clock, Timer } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -8,6 +9,50 @@ import EmptySection from "../../../_components/EmptySection";
 import { adminRoutes } from "@/lib/adminRoutes";
 import type { DashboardTaskRow } from "../mapDashboardData";
 import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
+import {
+  formatEscalationCountdown,
+  getElapsedMinutesSince,
+} from "@/app/utils/helper/formatEscalationCountdown";
+
+function EscalationCountdown({
+  dateInitiatedAt,
+  fallbackMinutes,
+}: {
+  dateInitiatedAt: string;
+  fallbackMinutes: number;
+}) {
+  const [minutes, setMinutes] = useState(() =>
+    getElapsedMinutesSince(dateInitiatedAt, fallbackMinutes)
+  );
+
+  useEffect(() => {
+    const update = () =>
+      setMinutes(getElapsedMinutesSince(dateInitiatedAt, fallbackMinutes));
+
+    update();
+    const intervalId = window.setInterval(update, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [dateInitiatedAt, fallbackMinutes]);
+
+  const isUrgent = minutes <= 60;
+
+  return (
+    <Group gap={4} wrap="nowrap">
+      <Timer
+        size={11}
+        className={isUrgent ? "text-orange-500" : "text-gray-400"}
+      />
+      <Text
+        size="xs"
+        fw={500}
+        className={isUrgent ? "text-orange-500" : "text-gray-500"}
+      >
+        {formatEscalationCountdown(minutes)}
+      </Text>
+    </Group>
+  );
+}
 
 export function TaskAndNotificationList({
   data,
@@ -82,19 +127,10 @@ export function TaskAndNotificationList({
                 {/* Right: status + escalation */}
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
                   <TransactionStatusBadge status={item.actionNeeded} size="xs" />
-                  <Group gap={4} wrap="nowrap">
-                    <Timer
-                      size={11}
-                      className={item.escalationMinutes <= 60 ? "text-orange-500" : "text-gray-400"}
-                    />
-                    <Text
-                      size="xs"
-                      fw={500}
-                      className={item.escalationMinutes <= 60 ? "text-orange-500" : "text-gray-500"}
-                    >
-                      {item.escalationPeriod}
-                    </Text>
-                  </Group>
+                  <EscalationCountdown
+                    dateInitiatedAt={item.dateInitiatedAt}
+                    fallbackMinutes={item.escalationMinutes}
+                  />
                 </div>
               </Group>
             </div>
