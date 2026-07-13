@@ -148,7 +148,7 @@ export function getCreatedTransactionId(created: unknown): string | undefined {
   return data?.transactionId ?? data?.id;
 }
 
-/** Merges a selected refund account into pickup / flow bag data (works when pickup is null). */
+/** Merges a selected refund account into pickup data. */
 export function mergeRefundBankIntoPickupData(
   pickup: Record<string, unknown> | null | undefined,
   bankAccount: BankAccount,
