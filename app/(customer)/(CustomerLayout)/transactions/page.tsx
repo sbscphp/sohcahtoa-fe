@@ -90,6 +90,12 @@ export default function TransactionsPage() {
     true
   );
 
+  const { data: statsResponse } = useFetchData(
+    [...customerKeys.transactions.stats()],
+    () => customerApi.transactions.stats(),
+    true
+  );
+
   const tableRowsRaw: Transaction[] = useMemo(
     () => (apiResponse?.data ?? []).map(mapListItemToTransaction),
     [apiResponse?.data]
@@ -97,18 +103,11 @@ export default function TransactionsPage() {
 
   const tableRows: Transaction[] = tableRowsRaw;
 
-  const totalTransactions = apiResponse?.pagination?.total ?? 0;
   const totalPages = Math.max(1, apiResponse?.pagination?.totalPages ?? 1);
-  const completed = tableRows.filter(
-    (t) => t.status === "COMPLETED" || t.status === "APPROVED"
-  ).length;
-  const rejected = tableRows.filter((t) => t.status === "REJECTED").length;
-  const pending = tableRows.filter(
-    (t) =>
-      t.status !== "COMPLETED" &&
-      t.status !== "APPROVED" &&
-      t.status !== "REJECTED"
-  ).length;
+  const totalTransactions = statsResponse?.data?.total ?? 0;
+  const completed = statsResponse?.data?.completed ?? 0;
+  const rejected = statsResponse?.data?.rejected ?? 0;
+  const pending = statsResponse?.data?.pending ?? 0;
 
   const handleRowClick = (transaction: Transaction) => {
     router.push(`/transactions/detail/${transaction.id}`);

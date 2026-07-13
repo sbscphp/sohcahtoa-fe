@@ -77,6 +77,7 @@ import type {
   SupportTicketDetailResponse,
   TransactionOverviewRequest,
   TransactionOverviewResponse,
+  CustomerTransactionStatsResponse,
   TransactionRatesListResponse,
   CalculateTransactionRateRequest,
   CalculateTransactionRateResponse,
@@ -244,6 +245,9 @@ export const customerApi = {
 
     overview: (data?: TransactionOverviewRequest) =>
       apiClient.post<TransactionOverviewResponse>(API_ENDPOINTS.transactions.overview, data),
+
+    stats: () =>
+      apiClient.get<CustomerTransactionStatsResponse>(API_ENDPOINTS.transactions.stats),
 
     export: (params?: TransactionListParams) =>
       apiClient.download(API_ENDPOINTS.transactions.export, {

@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
     list: "/api/customer/transactions",
     create: "/api/customer/transactions",
     overview: "/api/customer/transactions/totals",
+    stats: "/api/customer/transactions/stats",
     getById: (id: string) => `/api/customer/transactions/${id}`,
     update: (id: string) => `/api/customer/transactions/${id}`,
     uploadDocuments: (id: string) => `/api/customer/transactions/${id}/documents`,

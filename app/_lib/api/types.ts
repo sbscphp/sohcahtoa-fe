@@ -826,6 +826,16 @@ export interface TransactionOverviewResponse {
   data: TransactionOverviewData;
 }
 
+export interface CustomerTransactionStatsData {
+  total: number;
+  pending: number;
+  completed: number;
+  rejected: number;
+}
+
+export type CustomerTransactionStatsResponse =
+  ApiResponseWrapper<CustomerTransactionStatsData>;
+
 export interface TransactionOverviewCustomRate {
   currency: string;
   rate: number;
