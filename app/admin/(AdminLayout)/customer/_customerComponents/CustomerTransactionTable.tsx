@@ -18,6 +18,7 @@ import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import { resolveAdminTransactionListGroup } from "@/app/(customer)/_lib/transaction-list-params";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 
 /* --------------------------------------------
  Types
@@ -246,7 +247,7 @@ export default function CustomerTransactionsTable({
       </Text>
     </div>,
     <Text key="type" size="sm">
-      {item.type}
+      {formatTransactionTypeForTables(item.type)}
     </Text>,
     <Text key="stage" size="sm">
       {item.stage}

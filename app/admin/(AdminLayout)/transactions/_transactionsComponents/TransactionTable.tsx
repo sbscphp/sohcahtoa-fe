@@ -93,7 +93,7 @@ export default function TransactionsTable() {
 
   const transactionHeaders = [
     { label: "Customer Name", key: "customer" },
-    { label: "Date and ID", key: "date" },
+    { label: "Date and Time", key: "date" },
     { label: "Transaction Type", key: "type" },
     { label: "Transaction Stage", key: "stage" },
     // { label: "Workflow Stage", key: "workflow" },
@@ -108,14 +108,14 @@ export default function TransactionsTable() {
         {item.customerName}
       </Text>
       <Text size="xs" c="dimmed">
-        ID:{item.id || "--"}
+        TXN REF:{item.reference || "--"}
       </Text>
     </div>,
 
     <div key="date">
       <Text size="sm">{item.date}</Text>
       <Text size="xs" c="dimmed">
-        Ref:{item.reference || "--"}
+        {item.time}
       </Text>
     </div>,
 

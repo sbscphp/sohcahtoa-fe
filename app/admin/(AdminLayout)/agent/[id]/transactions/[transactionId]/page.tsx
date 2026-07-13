@@ -25,6 +25,7 @@ import { getCurrencyFlagUrl } from "@/app/admin/_lib/currency";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { getAgentRequiredDocumentDisplayItems } from "@/app/admin/_utils/agent-transaction-required-documents";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 const PLACEHOLDER = "—";
 
@@ -288,7 +289,7 @@ export default function AgentTransactionDetailsPage() {
               />
               <DetailItem
                 label="Disbursement Method"
-                value={txDetails?.disbursementMethod ?? PLACEHOLDER}
+                value={toSentenceCase(txDetails?.disbursementMethod ?? PLACEHOLDER)}
               />
             </div>
           </section>

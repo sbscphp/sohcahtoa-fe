@@ -4,6 +4,7 @@ import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 
 export const SETTLEMENT_STATUS_FILTER_ORDER = [
   "PENDING",
@@ -119,7 +120,7 @@ function parseFundingTransaction(
     "--";
   const customerName = getCustomerField(raw, "name");
   const customerEmail = getCustomerField(raw, "email");
-  const transactionType = toSentenceCase(
+  const transactionType = formatTransactionTypeForTables(
     asString(raw.transactionType ?? raw.type, "--")
   );
   const transactionStatus = asString(raw.transactionStatus, "--");

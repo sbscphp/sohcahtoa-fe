@@ -3,6 +3,8 @@
 import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi, type AdminTransactionListParams } from "@/app/admin/_services/admin-api";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
+import { formatShortTime } from "@/app/utils/helper/formatLocalDate";
 
 interface Pagination {
   total: number;
@@ -24,6 +26,7 @@ export interface TransactionListItem {
   customerName: string;
   id: string;
   date: string;
+  time: string;
   reference: string;
   type: string;
   stage: string;
@@ -98,12 +101,19 @@ function parseTransaction(raw: UnknownRecord): TransactionListItem {
     date: formatDate(
       dateAndId?.date ?? raw.createdAt ?? raw.date ?? raw.transactionDate ?? raw.updatedAt
     ),
+    time: formatShortTime(
+      asString(dateAndId?.date) ||
+      asString(raw.createdAt) ||
+      asString(raw.date) ||
+      asString(raw.transactionDate) ||
+      asString(raw.updatedAt)
+    ),
     reference:
       asString(dateAndId?.reference) ||
       asString(raw.reference) ||
       asString(raw.transactionReference) ||
       "--",
-    type: toSentenceCase(asString(raw.type) || asString(raw.transactionType) || "--"),
+    type: formatTransactionTypeForTables(asString(raw.type) || asString(raw.transactionType) || "--"),
     stage: toSentenceCase(asString(raw.step) || asString(raw.stage) || asString(raw.transactionStage) || "--"),
     workflow: toSentenceCase(asString(raw.workflow) || asString(raw.workflowStage) || "--"),
     amount: asNumber(raw.amount ?? raw.value ?? raw.transactionValue),
