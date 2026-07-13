@@ -36,6 +36,7 @@ import InitiateRefundModal from "../../../_transientWalletComponents/modals/Init
 import TakeActionMenu, {
   type TakeActionType,
 } from "../../../_transientWalletComponents/modals/TakeActionMenu";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 
 type SuccessVariant =
   | "note"
@@ -91,6 +92,7 @@ export default function TransientWalletEntryDetailPage() {
   const canRefund = canRefundLedgerEntry(
     (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
     isCreditEntry,
+    entry?.linkedTransactionStatus,
     entry?.refundStatus
   );
   const canFlag = !entry?.isFlagged;
@@ -450,7 +452,7 @@ export default function TransientWalletEntryDetailPage() {
               />
               <DetailItem
                 label="Transaction Type"
-                value={entry?.transactionType ?? "—"}
+                value={formatTransactionTypeForTables(entry?.transactionType ?? "—")}
                 loading={isLoading}
               />
               <DetailItem
