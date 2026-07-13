@@ -3,6 +3,10 @@ import type {
   DashboardTask,
   Transaction,
 } from "@/app/admin/_types/dashboard";
+import {
+  formatEscalationCountdown,
+  getElapsedMinutesSince,
+} from "@/app/utils/helper/formatEscalationCountdown";
 
 const STATUS_LABELS: Record<string, string> = {
   AWAITING_VERIFICATION: "Awaiting Verification",
@@ -165,6 +169,7 @@ export interface DashboardTaskRow {
   actionNeeded: string;
   dateInitiated: string;
   timeInitiated: string;
+  dateInitiatedAt: string;
   escalationPeriod: string;
   escalationMinutes: number;
   entityTitle: string;
@@ -172,8 +177,14 @@ export interface DashboardTaskRow {
 
 export function mapDashboardTasks(tasks: DashboardTask[]): DashboardTaskRow[] {
   return tasks.map((t) => {
-    const { date, time } = formatDateTime(t.dateInitiated ?? t.assignedAt ?? "");
+    const dateInitiatedAt = t.dateInitiated ?? t.assignedAt ?? "";
+    const { date, time } = formatDateTime(dateInitiatedAt);
     const escalationMinutes = Math.max(0, t.escalationMinutes ?? 0);
+    const elapsedMinutes = getElapsedMinutesSince(
+      dateInitiatedAt,
+      escalationMinutes
+    );
+
     return {
       id: t.id,
       title: t.title ?? t.entityTitle ?? "Task",
@@ -183,7 +194,8 @@ export function mapDashboardTasks(tasks: DashboardTask[]): DashboardTaskRow[] {
       actionNeeded: t.actionNeeded ?? "--",
       dateInitiated: date,
       timeInitiated: time,
-      escalationPeriod: `${escalationMinutes.toLocaleString("en-US")} mins`,
+      dateInitiatedAt,
+      escalationPeriod: formatEscalationCountdown(elapsedMinutes),
       escalationMinutes,
       entityTitle: t.entityTitle ?? "",
     };

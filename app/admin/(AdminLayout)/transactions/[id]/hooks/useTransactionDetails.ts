@@ -696,6 +696,9 @@ function getWorkflowStatusLabel(action: unknown): string {
   if (actionText.includes("REQUEST") || actionText.includes("MORE_INFO")) {
     return "Review Pending";
   }
+  if (actionText.includes("EMAIL")) {
+    return "Completed";
+  }
   return "Review Pending";
 }
 
@@ -713,8 +716,8 @@ function extractWorkflowHistory(
       aCreatedAt !== "--" ? new Date(aCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
     const bTs =
       bCreatedAt !== "--" ? new Date(bCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
-    return (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs) -
-      (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs);
+    return (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs) -
+      (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs);
   });
 
   return sortedHistory
@@ -727,7 +730,7 @@ function extractWorkflowHistory(
 
       return {
         id,
-        actorLabel: pickString(source.performedBy, "Unknown"),
+        actorLabel: pickString(source.performedBy, "System"),
         actionLabel: formatEnum(source.action),
         statusLabel: getWorkflowStatusLabel(source.action),
         date: formatDate(createdAt),

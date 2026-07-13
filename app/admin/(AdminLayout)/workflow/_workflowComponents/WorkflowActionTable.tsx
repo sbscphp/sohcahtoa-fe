@@ -19,6 +19,7 @@ import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { formatEscalationCountdown } from "@/app/utils/helper/formatEscalationCountdown";
 
 type FilterTab = "all" | "pending" | "completed" | "rejected";
 
@@ -107,7 +108,7 @@ export default function WorkflowActionTable() {
       fw={500}
       className={item.escalationMinutes <= 5 ? "text-orange-500" : ""}
     >
-      {item.escalationPeriod}
+      {formatEscalationCountdown(item.escalationMinutes)}
     </Text>,
     <Text key="module" size="sm">
       {item.title}

@@ -17,6 +17,7 @@ import { adminKeys } from "@/app/_lib/api/query-keys";
 import { notifications } from "@mantine/notifications";
 import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 
 interface AgentTransaction {
   id: string;
@@ -106,7 +107,7 @@ function mapTransaction(item: ApiTransactionItem): AgentTransaction {
     id: item.transactionId ?? "—",
     actionDate: formatDate(item.createdAt),
     actionTime: formatTime(item.createdAt),
-    type: item.type ?? "—",
+    type: formatTransactionTypeForTables(item.type ?? "—"),
     transactionValue: parseNumber(item.value),
     transactionCurrency: item.currency,
     referenceNumber: item.referenceNumber,

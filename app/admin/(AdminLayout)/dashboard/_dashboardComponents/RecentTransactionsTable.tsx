@@ -17,7 +17,7 @@ import DynamicTableSection from "../../../_components/DynamicTableSection";
 
 import { adminRoutes } from "@/lib/adminRoutes";
 
-import { toSentenceCase } from "@/app/utils/helper/toSentence";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 
 
 export function RecentTransactionsTable({
@@ -141,7 +141,7 @@ export function RecentTransactionsTable({
             </Text>,
 
             <Text key="type" size="sm">
-              {toSentenceCase(transaction.transactionType)}
+              {formatTransactionTypeForTables(transaction.transactionType)}
             </Text>,
 
             <div key="date">

@@ -6,6 +6,7 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 import type {
   BranchTransactionListParams,
 } from "@/app/admin/_services/admin-api";
+import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -96,7 +97,7 @@ function parseTransaction(raw: UnknownRecord): BranchTransactionListItem {
     transactionDate: date,
     transactionTime: time,
     customerName: asString(raw.customerName) || "--",
-    transactionType: toSentenceCase(asString(raw.transactionType) || asString(raw.type) || "--"),
+    transactionType: formatTransactionTypeForTables(asString(raw.transactionType) || asString(raw.type) || "--"),
     transactionStage: toSentenceCase(asString(raw.transactionStage) || "--"),
     workflowStage: toSentenceCase(asString(raw.workflowStage) || "--"),
     transactionValue,
