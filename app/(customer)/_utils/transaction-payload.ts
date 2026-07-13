@@ -418,6 +418,7 @@ function buildTouristPayload(
       address: upload?.nigerianAddress ?? undefined,
       documents,
       pickupLocation: buildPickupLocation(pickup ?? null),
+      digitalSignature: digitalSignatureFromAmount(amount),
       ...fxBeneficiaryAndRefundDetails("SELL", pickup, getCurrency(amount)),
       ...disbursementOptionFromPickupOrBankPreference(pickup),
     };
@@ -546,6 +547,19 @@ function disbursementOptionFromPickupOrBankPreference(
   return {};
 }
 
+/** Initials-only digital signature from the sell amount step (file signatures upload separately). */
+function digitalSignatureFromAmount(
+  amount: Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!amount) return undefined;
+  if (amount.sourceOfFundsSignatureMode === "upload") return undefined;
+  const initials =
+    typeof amount.sourceOfFundsInitials === "string"
+      ? amount.sourceOfFundsInitials.trim()
+      : "";
+  return initials || undefined;
+}
+
 function buildResidentFxPayload(
   bag: TransactionFormDataBag,
   documents: TransactionDocument[]
@@ -570,6 +584,7 @@ function buildResidentFxPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
+    digitalSignature: digitalSignatureFromAmount(amount),
     ...fxBeneficiaryAndRefundDetails("SELL", pickup, getCurrency(amount)),
     ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
@@ -596,6 +611,7 @@ function buildExpatriateFxPayload(
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
+    digitalSignature: digitalSignatureFromAmount(amount),
     ...fxBeneficiaryAndRefundDetails("SELL", pickup, getCurrency(amount)),
     ...disbursementOptionFromPickupOrBankPreference(pickup),
   };

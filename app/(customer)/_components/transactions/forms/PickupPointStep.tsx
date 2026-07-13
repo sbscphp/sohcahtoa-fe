@@ -242,7 +242,9 @@ export type PickupPointFormData = z.infer<typeof pickupOnlySchema> &
     };
   };
 
-export type PickupOrBankFormData = z.infer<typeof pickupOrBankSchema>;
+export type PickupOrBankFormData = z.infer<typeof pickupOrBankSchema> & {
+  bankAccount?: BankAccount;
+};
 
 export interface BankAccount {
   id: string;
@@ -534,7 +536,11 @@ export default function PickupPointStep({
 
   const submitPickupOrBankSuccess = (v: PickupOrBankFormData) => {
     if (v.preference !== "pickup") {
-      onSubmit(v);
+      const bankAccount = banks.find((bank) => bank.id === v.selectedBankId);
+      onSubmit({
+        ...v,
+        ...(bankAccount ? { bankAccount } : {}),
+      });
       return;
     }
     const selectedLocation = locationsFilteredData.find((location) => location.id === v.locationId);

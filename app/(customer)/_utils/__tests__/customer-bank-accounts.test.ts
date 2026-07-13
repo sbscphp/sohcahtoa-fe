@@ -1,6 +1,5 @@
 import {
   filterAccountsByCurrency,
-  isCompleteDomiciliaryRefundAccount,
   isDomiciliaryBankAccount,
   isLocalBankAccount,
   mapCustomerBankAccountToDomiciliaryRefund,
@@ -93,8 +92,9 @@ describe("domiciliary account mapping", () => {
     const mapped = mapCustomerBankAccountToDomiciliaryRefund(domiciliaryAccount);
     expect(mapped.id).toBe("usd-1");
     expect(mapped.domiciliaryBankName).toBe("Citibank");
+    expect(mapped.domiciliaryAccountNumber).toBe("1234567890");
+    expect(mapped.accountName).toBe("FX User");
     expect(mapped.swiftCode).toBe("CITIUS33");
-    expect(isCompleteDomiciliaryRefundAccount(mapped)).toBe(true);
   });
 
   it("prefers form extras when API omits extended fields", () => {
@@ -104,6 +104,7 @@ describe("domiciliary account mapping", () => {
       bankAddress: "1 Main St",
     });
     expect(mapped.swiftCode).toBe("ABCDUS33");
-    expect(isCompleteDomiciliaryRefundAccount(mapped)).toBe(true);
+    expect(mapped.routingNumber).toBe("111111111");
+    expect(mapped.bankAddress).toBe("1 Main St");
   });
 });

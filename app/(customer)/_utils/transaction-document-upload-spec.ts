@@ -117,10 +117,6 @@ export function getDocumentUploadSpec(
 
 type AmountStepData = Record<string, unknown>;
 
-function toTextFile(name: string, content: string): File {
-  return new File([content], name, { type: "text/plain" });
-}
-
 function hasFileArray(value: unknown): value is File[] {
   return Array.isArray(value) && value.length > 0 && value.every((v) => isUploadableFile(v));
 }
@@ -190,20 +186,8 @@ export function getSellOver10kDocumentUploadSpec(
     }
   }
 
-  const declarationBody = [
-    "DIGITAL SIGNATURE",
-    "",
-    "I declare that the source of funds/income stated in this form is true and correct to the best of my knowledge. I understand that providing false information may result in rejection of my transaction and reporting to the relevant authorities.",
-    "",
-    signature.mode === "upload"
-      ? `Signature: uploaded file (${signature.file?.name ?? "unknown"})`
-      : `Signature: initials (${signature.initials || "N/A"})`,
-    "",
-  ].join("\n");
-
-  spec.files.push(toTextFile("digital-signature.txt", declarationBody));
-  spec.documentTypes.push("DIGITAL_SIGNATURE");
-
+  // Initials go on the transaction payload as `digitalSignature` (text field).
+  // Only upload an actual signature file as DIGITAL_SIGNATURE.
   if (signature.mode === "upload" && signature.file) {
     spec.files.push(signature.file);
     spec.documentTypes.push("DIGITAL_SIGNATURE");

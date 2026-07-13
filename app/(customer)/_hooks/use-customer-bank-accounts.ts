@@ -15,7 +15,6 @@ import type { DomiciliaryRefundAccount } from "@/app/(customer)/_components/tran
 import {
   type BankAccountListFilter,
   filterAccountsByCurrency,
-  isCompleteDomiciliaryRefundAccount,
   mapCustomerBankAccountToDomiciliaryRefund,
   mapCustomerBankAccountToUi,
   toBankAccountListParams,
@@ -144,15 +143,10 @@ export function useDomiciliaryBankAccounts(
     [result.savedAccounts],
   );
 
-  const selectableDomiciliaryAccounts = useMemo(
-    () => domiciliaryAccounts.filter(isCompleteDomiciliaryRefundAccount),
-    [domiciliaryAccounts],
-  );
-
   return {
     ...result,
     currency,
     domiciliaryAccounts,
-    selectableDomiciliaryAccounts,
+    selectableDomiciliaryAccounts: domiciliaryAccounts,
   };
 }

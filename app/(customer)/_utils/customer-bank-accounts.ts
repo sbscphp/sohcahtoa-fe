@@ -139,20 +139,6 @@ export function mapCustomerBankAccountToDomiciliaryRefund(
   };
 }
 
-export function isCompleteDomiciliaryRefundAccount(
-  account: DomiciliaryRefundAccount,
-): boolean {
-  return Boolean(
-    account.domiciliaryAccountNumber.trim() &&
-      account.domiciliaryBankName.trim()
-  );
-}
-
-  // account.accountName.trim() &&
-  // account.swiftCode.trim() &&
-  // account.routingNumber.trim() &&
-  // account.bankAddress.trim(),
-
 export function isSavedBankAccountId(id: string): boolean {
   return UUID_RE.test(id);
 }
@@ -211,13 +197,11 @@ export function hasCompleteRefundDomiciliaryDetails(
   const refund = pickup?.refundDomiciliaryAccount as Partial<DomiciliaryAccountFormData> | undefined;
   if (!refund) return false;
 
+  // Backend list/create returns accountNumber, bankName, accountName (mapped into these fields).
   return Boolean(
     refund.domiciliaryAccountNumber?.trim() &&
       refund.domiciliaryBankName?.trim() &&
-      refund.accountName?.trim() &&
-      refund.swiftCode?.trim() &&
-      refund.routingNumber?.trim() &&
-      refund.bankAddress?.trim(),
+      refund.accountName?.trim(),
   );
 }
 
@@ -232,9 +216,9 @@ export function domiciliaryRefundAccountFromPickupData(
     domiciliaryAccountNumber: refund.domiciliaryAccountNumber!.trim(),
     domiciliaryBankName: refund.domiciliaryBankName!.trim(),
     accountName: refund.accountName!.trim(),
-    swiftCode: refund.swiftCode!.trim(),
-    routingNumber: refund.routingNumber!.trim(),
-    bankAddress: refund.bankAddress!.trim(),
+    swiftCode: refund.swiftCode?.trim() ?? "",
+    routingNumber: refund.routingNumber?.trim() ?? "",
+    bankAddress: refund.bankAddress?.trim() ?? "",
   };
 }
 

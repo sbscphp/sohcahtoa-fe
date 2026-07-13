@@ -7,7 +7,6 @@ import { BankAccountsList } from "@/app/(customer)/_components/bank-accounts/Ban
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 import { SELL_REFUND_DOMICILIARY_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
-import { isCompleteDomiciliaryRefundAccount } from "@/app/(customer)/_utils/customer-bank-accounts";
 
 /** Local (unsaved) or API-mapped domiciliary refund account. */
 export type DomiciliaryRefundAccount = DomiciliaryAccountFormData & { id: string };
@@ -49,9 +48,6 @@ export default function DomiciliaryRefundBankStep({
   }, [initialSelectedAccountId]);
 
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
-  const canProceed = Boolean(
-    selectedAccount && isCompleteDomiciliaryRefundAccount(selectedAccount),
-  );
   const listAccounts = useMemo(() => accounts.map(toListAccount), [accounts]);
 
   return (
@@ -79,11 +75,9 @@ export default function DomiciliaryRefundBankStep({
         emptyTitle="No domiciliary accounts yet"
         emptyDescription="Add a domiciliary account for refunds"
         selectionError={
-          selectedAccount && !isCompleteDomiciliaryRefundAccount(selectedAccount)
-            ? "This account is missing details. Add a complete domiciliary account to continue."
-            : !selectedAccountId && accounts.length > 0
-              ? "Please select a domiciliary bank account"
-              : undefined
+          !selectedAccountId && accounts.length > 0
+            ? "Please select a domiciliary bank account"
+            : undefined
         }
       />
 
@@ -105,9 +99,9 @@ export default function DomiciliaryRefundBankStep({
           variant="filled"
           size="md"
           radius="xl"
-          disabled={!canProceed}
+          disabled={!selectedAccount}
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
-          onClick={() => selectedAccount && canProceed && onSubmit(selectedAccount)}
+          onClick={() => selectedAccount && onSubmit(selectedAccount)}
         >
           Next
         </Button>

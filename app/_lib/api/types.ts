@@ -731,6 +731,8 @@ export interface CreateTransactionRequest {
   beneficiaryDetails?: Record<string, unknown>;
   /** Local Nigerian bank account for refunds when disbursement cannot be completed. */
   refundBankDetails?: Record<string, unknown>;
+  /** Source-of-funds signature initials (sell over-threshold); file signatures upload as DIGITAL_SIGNATURE. */
+  digitalSignature?: string;
   pickupLocation?: PickupLocation;
   documents?: TransactionDocument[];
 }
