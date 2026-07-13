@@ -149,11 +149,13 @@ export function canDisburseLedgerEntry(
 export function canRefundLedgerEntry(
   linkedTransactionId: string | null | undefined,
   isCreditEntry: boolean,
+  linkedTransactionStatus: string | null | undefined,
   refundStatus: string | null | undefined
 ): boolean {
   return (
     hasActiveLedgerLink(linkedTransactionId) &&
     isCreditEntry &&
+    isLinkableTransactionStatus(linkedTransactionStatus) &&
     !hasLedgerWorkflowStatus(refundStatus)
   );
 }

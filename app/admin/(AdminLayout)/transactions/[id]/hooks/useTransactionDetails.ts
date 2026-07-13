@@ -696,6 +696,9 @@ function getWorkflowStatusLabel(action: unknown): string {
   if (actionText.includes("REQUEST") || actionText.includes("MORE_INFO")) {
     return "Review Pending";
   }
+if (actionText.includes("INITIATED")) {
+    return "Completed";
+  }
   if (actionText.includes("EMAIL")) {
     return "Completed";
   }
