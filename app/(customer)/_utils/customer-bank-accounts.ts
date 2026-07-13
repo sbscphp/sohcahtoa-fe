@@ -144,13 +144,14 @@ export function isCompleteDomiciliaryRefundAccount(
 ): boolean {
   return Boolean(
     account.domiciliaryAccountNumber.trim() &&
-      account.domiciliaryBankName.trim() &&
-      account.accountName.trim() &&
-      account.swiftCode.trim() &&
-      account.routingNumber.trim() &&
-      account.bankAddress.trim(),
+      account.domiciliaryBankName.trim()
   );
 }
+
+  // account.accountName.trim() &&
+  // account.swiftCode.trim() &&
+  // account.routingNumber.trim() &&
+  // account.bankAddress.trim(),
 
 export function isSavedBankAccountId(id: string): boolean {
   return UUID_RE.test(id);
