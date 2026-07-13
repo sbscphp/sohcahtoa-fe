@@ -27,7 +27,12 @@ export function hasDetailRecordEntries(
 export function beneficiaryDetailSectionTitle(
   data: Record<string, unknown>,
 ): string {
-  if (data.isDomiciliaryAccount === true) {
+  const currency =
+    typeof data.currency === "string" ? data.currency.trim().toUpperCase() : "";
+  if (
+    data.isDomiciliaryAccount === true ||
+    (currency && currency !== "NGN" && currency !== "LOCAL")
+  ) {
     return "Domiciliary Account Details";
   }
   return "Beneficiary Details";
@@ -36,10 +41,10 @@ export function beneficiaryDetailSectionTitle(
 /**
  * Resolves payout / bank sections for transaction detail.
  *
- * - **beneficiary** — domiciliary payout or international payee (`beneficiaryDetails`).
- * - **refundBank** — local NGN refund account (`refundBankDetails`).
- * - **payoutBankAccounts** — linked accounts for Sell FX when refund snapshot is absent.
- *   Skipped when `refundBankDetails` is present (attached refund account is the same data).
+ * - **beneficiary** — BUY Dom / international payee, or SELL local NGN payout (`beneficiaryDetails`).
+ * - **refundBank** — BUY local NGN refund, or SELL Dom refund (`refundBankDetails`).
+ * - **payoutBankAccounts** — linked accounts when refund snapshot is absent.
+ *   Skipped when `refundBankDetails` is present.
  */
 export function resolveTransactionPayoutSections(
   bankAccounts: TransactionDetailBankAccount[] | null | undefined,

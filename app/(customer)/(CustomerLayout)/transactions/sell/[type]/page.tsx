@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { useCreateData } from "@/app/_lib/api/hooks";
@@ -109,6 +109,8 @@ export default function SellTransactionCreationPage() {
 
   const domiciliaryAccountsEnabled =
     activeStep === "refund-bank-details" || addBankOpened;
+  const selectedCurrency =
+    (transactionAmountData?.sendCurrency ?? "USD").trim().toUpperCase() || "USD";
 
   const userProfile = useAtomValue(userProfileAtom);
   const uploadDocuments = useUploadDocuments();
@@ -117,7 +119,7 @@ export default function SellTransactionCreationPage() {
   const {
     domiciliaryAccounts: savedDomiciliaryAccounts,
     isLoading: domiciliaryAccountsLoading,
-  } = useDomiciliaryBankAccounts(domiciliaryAccountsEnabled);
+  } = useDomiciliaryBankAccounts(selectedCurrency, domiciliaryAccountsEnabled);
 
   const domiciliaryAccounts = useMemo(() => {
     const localIds = new Set(localDomiciliaryAccounts.map((account) => account.id));
@@ -126,6 +128,12 @@ export default function SellTransactionCreationPage() {
     );
     return [...localDomiciliaryAccounts, ...fromApi];
   }, [localDomiciliaryAccounts, savedDomiciliaryAccounts]);
+
+  // Drop in-session Dom accounts when FX currency changes so the list stays currency-scoped.
+  useEffect(() => {
+    setLocalDomiciliaryAccounts([]);
+    setSelectedDomiciliaryId("");
+  }, [selectedCurrency]);
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 

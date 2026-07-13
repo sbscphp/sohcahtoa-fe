@@ -18,7 +18,7 @@ describe("resolveTransactionPayoutSections", () => {
     swiftCode: "CHASUS33",
     routingNumber: "021000021",
     bankAddress: "1 Wall St",
-    isDomiciliaryAccount: true,
+    currency: "USD",
   };
 
   const refundBank = {

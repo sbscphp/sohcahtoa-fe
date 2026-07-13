@@ -171,10 +171,103 @@ function disbursementOptionFromSelection(
   return { disbursementOption };
 }
 
-function beneficiaryDetailsFromDomiciliaryAccount(
-  data: Record<string, unknown> | null | undefined
-): Record<string, unknown> | undefined {
-  const dom = data?.domAccountDetails as Record<string, unknown> | undefined;
+/** Set by the buy vs sell route / agent flow — not inferred from currency fields. */
+export type TransactionPayloadMode = "BUY" | "SELL";
+
+function normalizeFxCurrency(currency?: string): string | undefined {
+  if (typeof currency !== "string") return undefined;
+  const normalized = currency.trim().toUpperCase();
+  return normalized || undefined;
+}
+
+type LocalNgnBankDetails = {
+  bankName: unknown;
+  accountNumber: unknown;
+  accountName: unknown;
+};
+
+type DomiciliaryBankDetails = {
+  accountNumber: unknown;
+  bankName: unknown;
+  accountName: unknown;
+  swiftCode: unknown;
+  routingNumber: unknown;
+  bankAddress: unknown;
+  currency: string;
+};
+
+/** Local NGN account from the dedicated buy refund step. */
+function localRefundBankDetailsFromPickup(
+  data: Record<string, unknown> | null | undefined,
+): LocalNgnBankDetails | undefined {
+  if (!data) return undefined;
+
+  const refund = data.refundBankAccount as
+    | { bankName?: unknown; accountNumber?: unknown; accountName?: unknown }
+    | undefined;
+  if (refund?.bankName && refund.accountNumber && refund.accountName) {
+    return {
+      bankName: refund.bankName,
+      accountNumber: refund.accountNumber,
+      accountName: refund.accountName,
+    };
+  }
+
+  return undefined;
+}
+
+/** Local NGN payout account — only when electronic transfer was selected. */
+function localPayoutBankDetailsFromPickup(
+  data: Record<string, unknown> | null | undefined,
+): LocalNgnBankDetails | undefined {
+  if (!data || !usesElectronicLocalPayout(data)) return undefined;
+
+  const payoutBank = data.bankAccount as
+    | { bankName?: unknown; accountNumber?: unknown; accountName?: unknown }
+    | undefined;
+  if (payoutBank?.bankName && payoutBank.accountNumber && payoutBank.accountName) {
+    return {
+      bankName: payoutBank.bankName,
+      accountNumber: payoutBank.accountNumber,
+      accountName: payoutBank.accountName,
+    };
+  }
+
+  return undefined;
+}
+
+/** Sell prepaid-card vs electronic-transfer, or buy payout methods that pay to a local NGN account. */
+function usesElectronicLocalPayout(
+  data: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!data) return false;
+  if (data.preference === "bank") return true;
+  if (data.preference === "pickup") return false;
+
+  const payoutMethod =
+    typeof data.payoutMethod === "string" ? data.payoutMethod.trim() : "";
+  return (
+    payoutMethod === "electronic_transfer_100" ||
+    payoutMethod === "electronic_75_cash_25"
+  );
+}
+
+/**
+ * Domiciliary account details.
+ * Buy payout: `domAccountDetails` (only present when payout method needs Dom).
+ * Sell refund: `refundDomiciliaryAccount`.
+ */
+function domiciliaryBankDetailsFromPickup(
+  data: Record<string, unknown> | null | undefined,
+  currency?: string,
+): DomiciliaryBankDetails | undefined {
+  if (!data) return undefined;
+
+  const sellRefundDom = data.refundDomiciliaryAccount as
+    | DomiciliaryAccountFormFields
+    | undefined;
+  const buyPayoutDom = data.domAccountDetails as DomiciliaryAccountFormFields | undefined;
+  const dom = sellRefundDom ?? buyPayoutDom;
   if (!dom) return undefined;
 
   return {
@@ -184,47 +277,44 @@ function beneficiaryDetailsFromDomiciliaryAccount(
     swiftCode: dom.swiftCode,
     routingNumber: dom.routingNumber,
     bankAddress: dom.bankAddress,
-    isDomiciliaryAccount: true,
+    currency: normalizeFxCurrency(currency) ?? "USD",
   };
 }
 
-function refundBankDetailsFromSelection(
-  data: Record<string, unknown> | null | undefined
-): Record<string, unknown> | undefined {
-  const domRefund = data?.refundDomiciliaryAccount as Record<string, unknown> | undefined;
-  if (domRefund) {
+type DomiciliaryAccountFormFields = {
+  domiciliaryAccountNumber?: unknown;
+  domiciliaryBankName?: unknown;
+  accountName?: unknown;
+  swiftCode?: unknown;
+  routingNumber?: unknown;
+  bankAddress?: unknown;
+};
+
+/**
+ * Single FX bank-details mapping (follows selected payout method):
+ * - BUY: beneficiary = Dom when payout needs it (+ currency); refund = local NGN
+ * - SELL: beneficiary = local NGN only for electronic transfer; refund = Dom (+ currency)
+ *   Prepaid card / pickup → no local beneficiaryDetails
+ */
+function fxBeneficiaryAndRefundDetails(
+  mode: TransactionPayloadMode,
+  pickup: Record<string, unknown> | null | undefined,
+  currency?: string,
+): Pick<CreateTransactionRequest, "beneficiaryDetails" | "refundBankDetails"> {
+  const domiciliary = domiciliaryBankDetailsFromPickup(pickup, currency);
+
+  if (mode === "SELL") {
     return {
-      accountNumber: domRefund.domiciliaryAccountNumber,
-      bankName: domRefund.domiciliaryBankName,
-      accountName: domRefund.accountName,
-      swiftCode: domRefund.swiftCode,
-      routingNumber: domRefund.routingNumber,
-      bankAddress: domRefund.bankAddress,
-      isDomiciliaryAccount: true,
+      beneficiaryDetails: localPayoutBankDetailsFromPickup(pickup),
+      refundBankDetails: domiciliary,
     };
   }
 
-  const refund = data?.refundBankAccount as Record<string, unknown> | undefined;
-  if (!refund) return undefined;
-
   return {
-    bankName: refund.bankName,
-    accountNumber: refund.accountNumber,
-    accountName: refund.accountName,
+    beneficiaryDetails: domiciliary,
+    refundBankDetails: localRefundBankDetailsFromPickup(pickup),
   };
 }
-
-function payoutBeneficiaryAndRefundDetails(
-  pickup: Record<string, unknown> | null | undefined
-): Pick<CreateTransactionRequest, "beneficiaryDetails" | "refundBankDetails"> {
-  return {
-    beneficiaryDetails: beneficiaryDetailsFromDomiciliaryAccount(pickup),
-    refundBankDetails: refundBankDetailsFromSelection(pickup),
-  };
-}
-
-/** Set by the buy vs sell route / agent flow — not inferred from currency fields. */
-export type TransactionPayloadMode = "BUY" | "SELL";
 
 function buildPickupLocation(data: Record<string, unknown> | null): PickupLocation | undefined {
   if (!data || typeof data.locationId !== "string" || !data.locationId.trim()) {
@@ -269,7 +359,7 @@ function buildPTAPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     ...payout,
-    ...payoutBeneficiaryAndRefundDetails(pickup),
+    ...fxBeneficiaryAndRefundDetails("BUY", pickup, getCurrency(amount)),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -301,7 +391,7 @@ function buildBTAPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     ...payout,
-    ...payoutBeneficiaryAndRefundDetails(pickup),
+    ...fxBeneficiaryAndRefundDetails("BUY", pickup, getCurrency(amount)),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -328,7 +418,7 @@ function buildTouristPayload(
       address: upload?.nigerianAddress ?? undefined,
       documents,
       pickupLocation: buildPickupLocation(pickup ?? null),
-      refundBankDetails: refundBankDetailsFromSelection(pickup),
+      ...fxBeneficiaryAndRefundDetails("SELL", pickup, getCurrency(amount)),
       ...disbursementOptionFromPickupOrBankPreference(pickup),
     };
   }
@@ -348,7 +438,7 @@ function buildTouristPayload(
     address: upload?.nigerianAddress ?? undefined,
     documents,
     ...payout,
-    ...payoutBeneficiaryAndRefundDetails(pickup),
+    ...fxBeneficiaryAndRefundDetails("BUY", pickup, getCurrency(amount)),
     pickupLocation: buildPickupLocation(pickup ?? null),
   };
 }
@@ -381,7 +471,7 @@ function buildSchoolFeesPayload(
     passportIssueDate: pickOptionalString(upload?.passportIssueDate),
     passportExpiryDate: pickOptionalString(upload?.passportExpiryDate),
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
-    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
+    refundBankDetails: localRefundBankDetailsFromPickup(bag.pickupPointData),
     documents,
   };
 }
@@ -410,7 +500,7 @@ function buildMedicalPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
-    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
+    refundBankDetails: localRefundBankDetailsFromPickup(bag.pickupPointData),
     documents,
   };
 }
@@ -438,7 +528,7 @@ function buildProfessionalBodyPayload(
     passportExpiryDate:
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     beneficiaryDetails: beneficiaryDetailsFromBankForm(bank),
-    refundBankDetails: refundBankDetailsFromSelection(bag.pickupPointData),
+    refundBankDetails: localRefundBankDetailsFromPickup(bag.pickupPointData),
     documents,
   };
 }
@@ -480,7 +570,7 @@ function buildResidentFxPayload(
       typeof upload?.passportExpiryDate === "string" ? upload.passportExpiryDate : undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
-    refundBankDetails: refundBankDetailsFromSelection(pickup),
+    ...fxBeneficiaryAndRefundDetails("SELL", pickup, getCurrency(amount)),
     ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
 }
@@ -506,7 +596,7 @@ function buildExpatriateFxPayload(
     passportExpiryDate: upload?.passportExpiryDate ?? undefined,
     documents,
     pickupLocation: buildPickupLocation(pickup ?? null),
-    refundBankDetails: refundBankDetailsFromSelection(pickup),
+    ...fxBeneficiaryAndRefundDetails("SELL", pickup, getCurrency(amount)),
     ...disbursementOptionFromPickupOrBankPreference(pickup),
   };
 }

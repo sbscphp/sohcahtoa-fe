@@ -24,7 +24,7 @@ import {
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
 
 export interface UseCustomerBankAccountsOptions {
-  /** `LOCAL` = NGN accounts; `FOREIGN` = domiciliary accounts. */
+  /** `LOCAL` = NGN accounts; FX code (e.g. USD) = domiciliary accounts for that currency. */
   currency?: BankAccountListFilter;
   enabled?: boolean;
 }
@@ -76,9 +76,10 @@ export function useCustomerBankAccounts(options?: UseCustomerBankAccountsOptions
 
   const addDomiciliaryAccount = async (
     formData: DomiciliaryAccountFormData,
+    accountCurrency: string,
   ): Promise<DomiciliaryRefundAccount> => {
     const response = await createMutation.mutateAsync(
-      toCreateDomiciliaryBankAccountPayload(formData),
+      toCreateDomiciliaryBankAccountPayload(formData, accountCurrency),
     );
     const saved = response.data;
     if (!saved) {
@@ -129,9 +130,13 @@ export function useLocalBankAccounts(enabled = true) {
   return useCustomerBankAccounts({ currency: "LOCAL", enabled });
 }
 
-/** Domiciliary (foreign currency) bank accounts. */
-export function useDomiciliaryBankAccounts(enabled = true) {
-  const result = useCustomerBankAccounts({ currency: "FOREIGN", enabled });
+/** Domiciliary bank accounts for a selected FX currency (e.g. USD). */
+export function useDomiciliaryBankAccounts(
+  selectedCurrency: string,
+  enabled = true,
+) {
+  const currency = selectedCurrency.trim().toUpperCase() || "USD";
+  const result = useCustomerBankAccounts({ currency, enabled });
 
   const domiciliaryAccounts: DomiciliaryRefundAccount[] = useMemo(
     () =>
@@ -146,6 +151,7 @@ export function useDomiciliaryBankAccounts(enabled = true) {
 
   return {
     ...result,
+    currency,
     domiciliaryAccounts,
     selectableDomiciliaryAccounts,
   };

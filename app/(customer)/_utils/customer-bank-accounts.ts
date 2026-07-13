@@ -7,7 +7,8 @@ import type { BankAccount } from "@/app/(customer)/_components/transactions/form
 import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
 import type { DomiciliaryRefundAccount } from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
 
-export type BankAccountListFilter = "LOCAL" | "FOREIGN";
+/** `LOCAL` = NGN; any other value is treated as an FX currency code (e.g. USD). */
+export type BankAccountListFilter = "LOCAL" | (string & {});
 
 export interface AddBankAccountInput {
   bankName: string;
@@ -18,16 +19,31 @@ export interface AddBankAccountInput {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const LOCAL_CURRENCY_CODES = new Set(["NGN", "LOCAL"]);
+
+export function normalizeBankAccountCurrency(
+  currency: string | null | undefined,
+): string | null {
+  if (currency == null) return null;
+  const normalized = currency.trim().toUpperCase();
+  if (!normalized || LOCAL_CURRENCY_CODES.has(normalized)) return null;
+  // Legacy API value — treat as unspecified FX until callers pass a real code.
+  if (normalized === "FOREIGN") return "FOREIGN";
+  return normalized;
+}
+
 /** Maps UI filter to API query param. */
 export function toBankAccountListParams(
   filter?: BankAccountListFilter,
 ): ListCustomerBankAccountsParams | undefined {
   if (!filter) return undefined;
-  return { currency: filter === "FOREIGN" ? "FOREIGN" : "NGN" };
+  if (filter === "LOCAL") return { currency: "NGN" };
+  const currency = normalizeBankAccountCurrency(filter);
+  return currency ? { currency } : { currency: "NGN" };
 }
 
 export function isDomiciliaryBankAccount(account: CustomerBankAccount): boolean {
-  return account.currency === "FOREIGN";
+  return normalizeBankAccountCurrency(account.currency) != null;
 }
 
 export function isLocalBankAccount(account: CustomerBankAccount): boolean {
@@ -39,10 +55,22 @@ export function filterAccountsByCurrency(
   accounts: CustomerBankAccount[],
   filter: BankAccountListFilter,
 ): CustomerBankAccount[] {
-  if (filter === "FOREIGN") {
-    return accounts.filter(isDomiciliaryBankAccount);
+  if (filter === "LOCAL") {
+    return accounts.filter(isLocalBankAccount);
   }
-  return accounts.filter(isLocalBankAccount);
+
+  const wanted = normalizeBankAccountCurrency(filter);
+  if (!wanted) return accounts.filter(isLocalBankAccount);
+
+  return accounts.filter((account) => {
+    const accountCurrency = normalizeBankAccountCurrency(account.currency);
+    if (!accountCurrency) return false;
+    // Match exact FX code; also keep legacy FOREIGN rows when requesting a real FX code.
+    return (
+      accountCurrency === wanted ||
+      (accountCurrency === "FOREIGN" && wanted !== "FOREIGN")
+    );
+  });
 }
 
 /** POST /api/customer/bank-accounts body — bank name must match banks list label. */
@@ -56,15 +84,17 @@ export function toCreateBankAccountPayload(
   };
 }
 
-/** POST body for domiciliary (foreign currency) accounts. */
+/** POST body for domiciliary accounts scoped to a selected FX currency. */
 export function toCreateDomiciliaryBankAccountPayload(
   data: DomiciliaryAccountFormData,
+  currency: string,
 ): CreateCustomerBankAccountRequest {
+  const normalizedCurrency = normalizeBankAccountCurrency(currency) ?? "USD";
   return {
     bankName: data.domiciliaryBankName.trim(),
     accountNumber: data.domiciliaryAccountNumber.trim(),
     accountName: data.accountName.trim(),
-    currency: "FOREIGN",
+    currency: normalizedCurrency === "FOREIGN" ? "USD" : normalizedCurrency,
     swiftCode: data.swiftCode.trim(),
     routingNumber: data.routingNumber.trim(),
     bankAddress: data.bankAddress.trim(),

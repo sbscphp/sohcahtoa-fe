@@ -21,11 +21,11 @@ const localAccount: CustomerBankAccount = {
 };
 
 const domiciliaryAccount: CustomerBankAccount = {
-  id: "foreign-1",
+  id: "usd-1",
   bankName: "Citibank",
   accountNumber: "1234567890",
   accountName: "FX User",
-  currency: "FOREIGN",
+  currency: "USD",
   swiftCode: "CITIUS33",
   routingNumber: "021000089",
   bankAddress: "388 Greenwich St",
@@ -34,9 +34,15 @@ const domiciliaryAccount: CustomerBankAccount = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
+const legacyForeignAccount: CustomerBankAccount = {
+  ...domiciliaryAccount,
+  id: "foreign-1",
+  currency: "FOREIGN",
+};
+
 describe("bank account currency helpers", () => {
   it("maps list filters to API params", () => {
-    expect(toBankAccountListParams("FOREIGN")).toEqual({ currency: "FOREIGN" });
+    expect(toBankAccountListParams("USD")).toEqual({ currency: "USD" });
     expect(toBankAccountListParams("LOCAL")).toEqual({ currency: "NGN" });
     expect(toBankAccountListParams(undefined)).toBeUndefined();
   });
@@ -47,29 +53,36 @@ describe("bank account currency helpers", () => {
     expect(isDomiciliaryBankAccount(domiciliaryAccount)).toBe(true);
   });
 
-  it("filters mixed account lists client-side", () => {
-    const mixed = [localAccount, domiciliaryAccount];
+  it("filters mixed account lists client-side by selected currency", () => {
+    const mixed = [localAccount, domiciliaryAccount, legacyForeignAccount];
     expect(filterAccountsByCurrency(mixed, "LOCAL")).toEqual([localAccount]);
-    expect(filterAccountsByCurrency(mixed, "FOREIGN")).toEqual([domiciliaryAccount]);
+    expect(filterAccountsByCurrency(mixed, "USD")).toEqual([
+      domiciliaryAccount,
+      legacyForeignAccount,
+    ]);
+    expect(filterAccountsByCurrency(mixed, "EUR")).toEqual([legacyForeignAccount]);
   });
 });
 
 describe("domiciliary account mapping", () => {
-  it("builds create payload with FOREIGN currency", () => {
+  it("builds create payload with selected FX currency", () => {
     expect(
-      toCreateDomiciliaryBankAccountPayload({
-        domiciliaryAccountNumber: "1234567890",
-        domiciliaryBankName: "Citibank",
-        accountName: "FX User",
-        swiftCode: "CITIUS33",
-        routingNumber: "021000089",
-        bankAddress: "388 Greenwich St",
-      }),
+      toCreateDomiciliaryBankAccountPayload(
+        {
+          domiciliaryAccountNumber: "1234567890",
+          domiciliaryBankName: "Citibank",
+          accountName: "FX User",
+          swiftCode: "CITIUS33",
+          routingNumber: "021000089",
+          bankAddress: "388 Greenwich St",
+        },
+        "usd",
+      ),
     ).toEqual({
       bankName: "Citibank",
       accountNumber: "1234567890",
       accountName: "FX User",
-      currency: "FOREIGN",
+      currency: "USD",
       swiftCode: "CITIUS33",
       routingNumber: "021000089",
       bankAddress: "388 Greenwich St",
@@ -78,7 +91,7 @@ describe("domiciliary account mapping", () => {
 
   it("maps API account to refund account using stored extras", () => {
     const mapped = mapCustomerBankAccountToDomiciliaryRefund(domiciliaryAccount);
-    expect(mapped.id).toBe("foreign-1");
+    expect(mapped.id).toBe("usd-1");
     expect(mapped.domiciliaryBankName).toBe("Citibank");
     expect(mapped.swiftCode).toBe("CITIUS33");
     expect(isCompleteDomiciliaryRefundAccount(mapped)).toBe(true);
