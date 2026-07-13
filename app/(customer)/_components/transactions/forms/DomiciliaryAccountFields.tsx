@@ -28,6 +28,8 @@ type DomiciliaryAccountFieldsProps = {
   setFieldValue: (field: DomiciliaryFieldName, value: string) => void;
   clearFieldError?: (field: DomiciliaryFieldName) => void;
   errors?: Partial<Record<DomiciliaryFieldName, ReactNode>>;
+  /** When false, skips the default payout info alert (caller may show its own). */
+  showInfoAlert?: boolean;
 };
 
 export default function DomiciliaryAccountFields({
@@ -35,13 +37,16 @@ export default function DomiciliaryAccountFields({
   setFieldValue,
   clearFieldError,
   errors = {},
+  showInfoAlert = true,
 }: Readonly<DomiciliaryAccountFieldsProps>) {
   const afterSanitize = (field: DomiciliaryFieldName) => () => clearFieldError?.(field);
   return (
     <div className="space-y-4">
-      <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
-        <p className="text-body-text-200 text-sm">{DOMICILIARY_ACCOUNT_MESSAGE}</p>
-      </Alert>
+      {showInfoAlert ? (
+        <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
+          <p className="text-body-text-200 text-sm">{DOMICILIARY_ACCOUNT_MESSAGE}</p>
+        </Alert>
+      ) : null}
 
       <TextInput
         label="Domiciliary Account Number"

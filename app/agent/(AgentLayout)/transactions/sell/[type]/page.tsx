@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
@@ -44,21 +44,14 @@ import {
 } from "@/app/(customer)/_utils/transaction-payload";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
-import {
-  useCustomerBankAccounts,
-  useDomiciliaryBankAccounts,
-} from "@/app/agent/_hooks/use-agent-bank-accounts";
+import { useCustomerBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
 import {
   getCreatedTransactionId,
   getPickupBankAccountId,
-  getRefundDomiciliaryBankAccountId,
   hasCompleteRefundDomiciliaryDetails,
   mergeRefundDomiciliaryIntoPickupData,
 } from "@/app/(customer)/_utils/customer-bank-accounts";
-import DomiciliaryRefundBankStep, {
-  type DomiciliaryRefundAccount,
-} from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
-import { AddDomiciliaryAccountModal } from "@/app/(customer)/_components/modals/AddDomiciliaryAccountModal";
+import DomiciliaryRefundBankStep from "@/app/(customer)/_components/transactions/forms/sell-fx/DomiciliaryRefundBankStep";
 import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
 
 const SELL_TYPE_MAP = {
@@ -120,20 +113,10 @@ export default function AgentSellTransactionCreationPage() {
     | ExpatriatePickupPointFormData
     | null
   >(null);
-  const [addBankOpened, setAddBankOpened] = useState(false);
-
-  const domiciliaryAccountsEnabled =
-    activeStep === "refund-bank-details" || addBankOpened;
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
   const { attachToTransaction } = useCustomerBankAccounts({ enabled: false });
-  const {
-    selectableDomiciliaryAccounts,
-    isLoading: domiciliaryAccountsLoading,
-    addDomiciliaryAccount,
-    isSaving: isSavingDomiciliaryAccount,
-  } = useDomiciliaryBankAccounts(domiciliaryAccountsEnabled);
 
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
@@ -162,19 +145,7 @@ export default function AgentSellTransactionCreationPage() {
     setActiveStep("refund-bank-details");
   };
 
-  const handleAddDomiciliaryAccount = useCallback(
-    async (data: DomiciliaryAccountFormData) => {
-      try {
-        await addDomiciliaryAccount(data);
-      } catch (error) {
-        handleApiError(error);
-        throw error;
-      }
-    },
-    [addDomiciliaryAccount],
-  );
-
-  const handleRefundBankSubmit = (account: DomiciliaryRefundAccount) => {
+  const handleRefundBankSubmit = (account: DomiciliaryAccountFormData) => {
     setPickupPointData((prev) =>
       mergeRefundDomiciliaryIntoPickupData(
         prev as Record<string, unknown> | null,
@@ -221,7 +192,7 @@ export default function AgentSellTransactionCreationPage() {
       setConfirmationOpened(false);
       notifications.show({
         title: "Refund bank account required",
-        message: "Select a domiciliary bank account for refunds before initiating the transaction.",
+        message: "Enter domiciliary bank account details for refunds before initiating the transaction.",
         color: "orange",
       });
       setActiveStep("refund-bank-details");
@@ -249,13 +220,13 @@ export default function AgentSellTransactionCreationPage() {
       });
 
       const transactionId = getCreatedTransactionId(created);
-      const bankAccountIds = [
-        getPickupBankAccountId(pickupPointData as Record<string, unknown>),
-        getRefundDomiciliaryBankAccountId(pickupPointData as Record<string, unknown>),
-      ].filter((id): id is string => Boolean(id));
-      if (transactionId && bankAccountIds.length) {
+      // Dom refund details are embedded in the create payload — only attach saved NGN payout accounts.
+      const bankAccountId = getPickupBankAccountId(
+        pickupPointData as Record<string, unknown>,
+      );
+      if (transactionId && bankAccountId) {
         try {
-          await attachToTransaction(transactionId, bankAccountIds);
+          await attachToTransaction(transactionId, [bankAccountId]);
         } catch (attachError) {
           handleApiError(attachError);
           notifications.show({
@@ -286,17 +257,15 @@ export default function AgentSellTransactionCreationPage() {
     else if (activeStep === "pickup-point") setActiveStep("amount");
   };
 
+  const refundInitialValues = (
+    pickupPointData as { refundDomiciliaryAccount?: DomiciliaryAccountFormData } | null
+  )?.refundDomiciliaryAccount;
+
   const renderRefundBankStep = () => (
     <DomiciliaryRefundBankStep
-      accounts={selectableDomiciliaryAccounts}
-      isLoading={domiciliaryAccountsLoading}
-      initialSelectedAccountId={
-        (pickupPointData as { selectedRefundDomiciliaryId?: string } | null)
-          ?.selectedRefundDomiciliaryId
-      }
+      initialValues={refundInitialValues}
       onSubmit={handleRefundBankSubmit}
       onBack={handleBack}
-      onAddAccount={() => setAddBankOpened(true)}
     />
   );
 
@@ -465,13 +434,6 @@ export default function AgentSellTransactionCreationPage() {
         cancelLabel="No, Close"
         onConfirm={handleConfirmInitiate}
         loading={uploadDocuments.isPending || createTransaction.isPending}
-      />
-
-      <AddDomiciliaryAccountModal
-        opened={addBankOpened}
-        onClose={() => setAddBankOpened(false)}
-        onAddAccount={handleAddDomiciliaryAccount}
-        isSubmitting={isSavingDomiciliaryAccount}
       />
 
       <AgentAddCustomerModal

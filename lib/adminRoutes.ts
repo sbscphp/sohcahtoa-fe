@@ -100,6 +100,9 @@ const adminTransientWalletEntryDetails = (
   entryId: string | number = ':entryId'
 ) => `${adminTransientWalletDetails(walletId)}/entries/${entryId}`;
 
+// DevOps / simulate payments (outside AdminLayout)
+const adminSimulatePayments = () => `${admin()}/simulate-payments`;
+
 
 export const adminRoutes = {
   // Base
@@ -188,4 +191,7 @@ export const adminRoutes = {
   adminTransientWallets,
   adminTransientWalletDetails,
   adminTransientWalletEntryDetails,
+
+  // Simulate payments (DevOps)
+  adminSimulatePayments,
 };

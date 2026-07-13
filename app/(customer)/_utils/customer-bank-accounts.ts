@@ -146,9 +146,9 @@ export function mergeRefundBankIntoPickupData(
 /** Merges sell FX domiciliary refund account details into pickup / flow bag data. */
 export function mergeRefundDomiciliaryIntoPickupData(
   pickup: Record<string, unknown> | null | undefined,
-  account: DomiciliaryRefundAccount,
+  account: DomiciliaryAccountFormData & { id?: string },
 ): Record<string, unknown> {
-  return {
+  const next: Record<string, unknown> = {
     ...(pickup ?? {}),
     refundDomiciliaryAccount: {
       domiciliaryAccountNumber: account.domiciliaryAccountNumber,
@@ -158,8 +158,17 @@ export function mergeRefundDomiciliaryIntoPickupData(
       routingNumber: account.routingNumber,
       bankAddress: account.bankAddress,
     },
-    selectedRefundDomiciliaryId: account.id,
   };
+
+  // Only keep a bank-account id when it came from a saved account; local Dom details
+  // are sent on the transaction payload and are not attached by id.
+  if (account.id && isSavedBankAccountId(account.id)) {
+    next.selectedRefundDomiciliaryId = account.id;
+  } else {
+    delete next.selectedRefundDomiciliaryId;
+  }
+
+  return next;
 }
 
 export function hasCompleteRefundDomiciliaryDetails(

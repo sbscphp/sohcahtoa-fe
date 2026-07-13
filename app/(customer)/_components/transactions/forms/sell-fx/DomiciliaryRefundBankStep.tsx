@@ -1,51 +1,46 @@
 "use client";
 
-import { Button, Alert } from "@mantine/core";
+import { Alert, Button } from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { zod4Resolver } from "mantine-form-zod-resolver";
 import { Info } from "lucide-react";
-import { useMemo, useState } from "react";
-import { BankAccountsList } from "@/app/(customer)/_components/bank-accounts/BankAccountsList";
-import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
+import DomiciliaryAccountFields from "@/app/(customer)/_components/transactions/forms/DomiciliaryAccountFields";
+import {
+  domiciliaryAccountInitialValues,
+  domiciliaryAccountSchema,
+  type DomiciliaryAccountFormData,
+} from "@/app/(customer)/_lib/domiciliary-account-schema";
 import { SELL_REFUND_DOMICILIARY_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
-import type { DomiciliaryAccountFormData } from "@/app/(customer)/_lib/domiciliary-account-schema";
 
-export type DomiciliaryRefundAccount = DomiciliaryAccountFormData & { id: string };
+/** Local (unsaved) or previously mapped domiciliary refund account. */
+export type DomiciliaryRefundAccount = DomiciliaryAccountFormData & { id?: string };
 
 interface DomiciliaryRefundBankStepProps {
-  accounts: DomiciliaryRefundAccount[];
-  isLoading?: boolean;
-  initialSelectedAccountId?: string;
-  onSubmit: (account: DomiciliaryRefundAccount) => void;
+  initialValues?: Partial<DomiciliaryAccountFormData>;
+  onSubmit: (account: DomiciliaryAccountFormData) => void;
   onBack?: () => void;
-  onAddAccount: () => void;
-}
-
-function toListAccount(account: DomiciliaryRefundAccount): BankAccount {
-  return {
-    id: account.id,
-    bankName: account.domiciliaryBankName,
-    accountNumber: account.domiciliaryAccountNumber,
-    accountName: account.accountName,
-  };
 }
 
 export default function DomiciliaryRefundBankStep({
-  accounts,
-  isLoading = false,
-  initialSelectedAccountId,
+  initialValues,
   onSubmit,
   onBack,
-  onAddAccount,
 }: Readonly<DomiciliaryRefundBankStepProps>) {
-  const [selectedAccountId, setSelectedAccountId] = useState(initialSelectedAccountId ?? "");
-  const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
-  const listAccounts = useMemo(() => accounts.map(toListAccount), [accounts]);
+  const form = useForm({
+    initialValues: domiciliaryAccountInitialValues(initialValues),
+    validate: zod4Resolver(domiciliaryAccountSchema),
+  });
+
+  const handleSubmit = form.onSubmit((values) => {
+    onSubmit(values);
+  });
 
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex flex-col gap-2 justify-center items-center">
         <h2 className="text-body-heading-300 text-2xl font-semibold">Refund Bank Details</h2>
         <p className="text-body-text-200 text-base max-w-md text-center">
-          Select your domiciliary (foreign currency) bank account for refunds if your transaction
+          Enter your domiciliary (foreign currency) bank account for refunds if your transaction
           cannot be processed.
         </p>
       </div>
@@ -54,18 +49,12 @@ export default function DomiciliaryRefundBankStep({
         <p className="text-body-text-200 text-sm">{SELL_REFUND_DOMICILIARY_MESSAGE}</p>
       </Alert>
 
-      <BankAccountsList
-        accounts={listAccounts}
-        isLoading={isLoading}
-        searchable
-        selectedId={selectedAccountId}
-        onSelect={setSelectedAccountId}
-        onAddBank={onAddAccount}
-        selectionError={
-          !selectedAccountId && accounts.length > 0
-            ? "Please select a domiciliary bank account"
-            : undefined
-        }
+      <DomiciliaryAccountFields
+        getInputProps={form.getInputProps}
+        setFieldValue={form.setFieldValue}
+        clearFieldError={form.clearFieldError}
+        errors={form.errors}
+        showInfoAlert={false}
       />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">
@@ -82,17 +71,15 @@ export default function DomiciliaryRefundBankStep({
           </Button>
         ) : null}
         <Button
-          type="button"
+          type="submit"
           variant="filled"
           size="md"
           radius="xl"
-          disabled={!selectedAccount}
           className="w-full sm:w-[188px]! min-h-[48px] h-[48px]!"
-          onClick={() => selectedAccount && onSubmit(selectedAccount)}
         >
           Next
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
