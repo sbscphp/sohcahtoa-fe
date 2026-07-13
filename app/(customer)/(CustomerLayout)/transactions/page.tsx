@@ -5,38 +5,108 @@ import TransactionSummaryCards from "@/app/(customer)/_components/transactions/T
 import TransactionTableOverview, { type Transaction } from "@/app/(customer)/_components/transactions/table/TransactionTableOverview";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { useTableState } from "@/app/_hooks/use-table-state";
+import {
+  mergeTableStateFromUrl,
+  readTableStateFromSearchParams,
+  useTableUrlSync,
+  type TableUrlSyncConfig,
+} from "@/app/_hooks/use-table-url-sync";
 import { useCreateData, useFetchData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { toCsvParam, toDateRangeParams } from "@/app/_lib/utils/query-format";
 import type { TransactionListParams } from "@/app/_lib/api/types";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { FILTER_OPTIONS, TX_FILTER_OPTIONS } from "./constant";
 import { mapListItemToTransaction } from "./helper";
 import {
+  TRANSACTION_GROUP_FILTER_OPTIONS,
   TRANSACTION_GROUP_TAB_ALL,
 } from "@/app/(customer)/_lib/transaction-group-tabs";
 import { buildTransactionListQueryParams } from "@/app/(customer)/_lib/transaction-list-params";
 
 const PAGE_SIZE = 10;
 
+type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
 
-export default function TransactionsPage() {
+const TX_URL_SYNC: TableUrlSyncConfig<TransactionSelectionKey> = {
+  tableName: "tx",
+  namespace: false,
+  sync: {
+    q: "q",
+    page: "page",
+    startDate: "startDate",
+    endDate: "endDate",
+    selections: {
+      status: "status",
+      transactionType: "transactionType",
+      currency: "currency",
+      stage: "stage",
+    },
+    params: {
+      type: "type",
+    },
+  },
+};
+
+const VALID_GROUP_TABS = new Set(
+  TRANSACTION_GROUP_FILTER_OPTIONS.map((opt) => opt.value)
+);
+
+function resolveGroupTab(value: string | undefined): string {
+  if (value && VALID_GROUP_TABS.has(value)) return value;
+  return TRANSACTION_GROUP_TAB_ALL;
+}
+
+function TransactionsPageContent() {
   const router = useRouter();
-  const [activeType, setActiveType] = useState<string>(TRANSACTION_GROUP_TAB_ALL);
+  const searchParams = useSearchParams();
 
-  type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
+  const initialFromUrl = useMemo(() => {
+    const fromUrl = readTableStateFromSearchParams(searchParams, TX_URL_SYNC);
+    return {
+      fromUrl,
+      table: mergeTableStateFromUrl(
+        {
+          q: "",
+          selections: {},
+          dateRange: null,
+          sortBy: "createdAt",
+          sortOrder: "desc",
+          page: 1,
+          limit: PAGE_SIZE,
+        },
+        fromUrl
+      ),
+      type: resolveGroupTab(fromUrl.params?.type),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once from the URL on mount / back
+  }, []);
+
+  const [activeType, setActiveType] = useState(initialFromUrl.type);
 
   const table = useTableState<TransactionSelectionKey>({
-    initial: {
-      q: "",
-      selections: {},
-      dateRange: null,
-      sortBy: "createdAt",
-      sortOrder: "desc",
-    }
+    initial: initialFromUrl.table,
   });
+
+  useTableUrlSync(
+    {
+      state: {
+        q: table.searchValue,
+        selections: table.selections,
+        dateRange: table.dateRange,
+        sortBy: table.sortBy,
+        sortOrder: table.sortOrder,
+        page: table.page,
+        params: {
+          type:
+            activeType === TRANSACTION_GROUP_TAB_ALL ? undefined : activeType,
+        },
+      },
+    },
+    TX_URL_SYNC
+  );
 
   const listParams = useMemo(() => {
     const status = toCsvParam(table.selections.status);
@@ -96,12 +166,10 @@ export default function TransactionsPage() {
     true
   );
 
-  const tableRowsRaw: Transaction[] = useMemo(
+  const tableRows: Transaction[] = useMemo(
     () => (apiResponse?.data ?? []).map(mapListItemToTransaction),
     [apiResponse?.data]
   );
-
-  const tableRows: Transaction[] = tableRowsRaw;
 
   const totalPages = Math.max(1, apiResponse?.pagination?.totalPages ?? 1);
   const totalTransactions = statsResponse?.data?.total ?? 0;
@@ -174,5 +242,13 @@ export default function TransactionsPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="space-y-6" />}>
+      <TransactionsPageContent />
+    </Suspense>
   );
 }

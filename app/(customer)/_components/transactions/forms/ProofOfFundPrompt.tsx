@@ -3,38 +3,47 @@
 import { PROOF_OF_FUNDS_TEMPLATE_URL } from "@/app/(customer)/_lib/constants";
 import { Anchor } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { DEFAULT_PROOF_OF_FUNDS_THRESHOLD } from "./amount-step-utils";
 
-function formatUsdThreshold(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
+function formatThresholdLabel(amount: number, currency: string): string {
+  const code = currency.trim().toUpperCase() || "USD";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${amount.toLocaleString("en-US")} ${code}`;
+  }
 }
 
 export interface ProofOfFundPromptProps {
   /** When true, shows the message and upload link. */
   show: boolean;
   onUploadClick: () => void;
-  /** USD threshold for the copy (e.g. 4000 for PTA/BTA, 10000 for school fees). */
-  thresholdUsd?: number;
+  /** Threshold amount in the selected FX currency (e.g. 10000). */
+  threshold?: number;
+  /** Selected foreign currency code used for the threshold label (e.g. USD, EUR). */
+  currency?: string;
   /** Overrides {@link PROOF_OF_FUNDS_TEMPLATE_URL} when the template URL is flow-specific. */
   templateDownloadUrl?: string;
 }
 
 /**
- * Shown when transaction amount (USD) exceeds the flow threshold.
+ * Shown when transaction amount is greater than the flow threshold.
  * Prompts user to upload proof of fund; clicking the link typically opens ProofOfFundModal.
  */
 export default function ProofOfFundPrompt({
   show,
   onUploadClick,
-  thresholdUsd = 10_000,
+  threshold = DEFAULT_PROOF_OF_FUNDS_THRESHOLD,
+  currency = "USD",
   templateDownloadUrl,
 }: Readonly<ProofOfFundPromptProps>) {
   if (!show) return null;
 
-  const label = formatUsdThreshold(thresholdUsd);
+  const label = formatThresholdLabel(threshold, currency);
   const templateUrl = templateDownloadUrl?.trim() || PROOF_OF_FUNDS_TEMPLATE_URL.trim();
 
   const handleTemplateDownload = () => {

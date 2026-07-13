@@ -87,8 +87,9 @@ export function getUsdAmount(
 }
 
 /**
- * Whether the FX amount exceeds the required proof-of-funds threshold.
- * Uses the foreign currency’s configured threshold, defaulting to 10_000.
+ * Whether the FX amount is greater than the proof-of-funds threshold
+ * (strictly `>`, matching “higher than / greater than” copy).
+ * Uses the selected foreign currency’s configured threshold, defaulting to 10_000.
  */
 export function isAmountOverRequiredAmount(
   receiveAmount: string,
@@ -107,6 +108,6 @@ export function isAmountOverRequiredAmount(
       receiveCurrency,
       sendAmount,
       sendCurrency
-    ) >= Number(threshold)
+    ) > Number(threshold)
   );
 }

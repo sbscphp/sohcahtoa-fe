@@ -9,7 +9,11 @@ import CurrencyAmountInput from "@/app/(customer)/_components/forms/CurrencyAmou
 import { CURRENCIES, getCurrencyByCode } from "@/app/(customer)/_lib/currency";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
-import { isAmountOverRequiredAmount } from "../../amount-step-utils";
+import {
+  getForeignCurrencyCode,
+  getProofOfFundsRequiredAmount,
+  isAmountOverRequiredAmount,
+} from "../../amount-step-utils";
 import ProofOfFundPrompt from "../../ProofOfFundPrompt";
 import ProofOfFundModal from "@/app/(customer)/_components/modals/ProofOfFundModal";
 import SourceOfFundsDeclaration from "./SourceOfFundsDeclaration";
@@ -91,6 +95,11 @@ export default function ResidentTransactionAmountStep({
     form.values.sendAmount,
     form.values.sendCurrency
   );
+  const proofOfFundsCurrency = getForeignCurrencyCode(
+    form.values.receiveCurrency,
+    form.values.sendCurrency
+  );
+  const proofOfFundsThreshold = getProofOfFundsRequiredAmount(proofOfFundsCurrency);
 
   const nextDisabled =
     !form.values.sendAmount?.trim() ||
@@ -176,6 +185,8 @@ export default function ResidentTransactionAmountStep({
             <ProofOfFundPrompt
               show={over10k}
               onUploadClick={() => setProofModalOpen(true)}
+              threshold={proofOfFundsThreshold}
+              currency={proofOfFundsCurrency}
             />
             {over10k && proofOfFundsError && (
               <p className="text-red-600 text-xs mt-1 text-right">
