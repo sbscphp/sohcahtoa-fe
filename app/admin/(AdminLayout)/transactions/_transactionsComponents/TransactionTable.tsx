@@ -108,7 +108,7 @@ export default function TransactionsTable() {
         {item.customerName}
       </Text>
       <Text size="xs" c="dimmed">
-        TXN REF:{item.reference || "--"}
+        TXN ID:{item.reference || "--"}
       </Text>
     </div>,
 
