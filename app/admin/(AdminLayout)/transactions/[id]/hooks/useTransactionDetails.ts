@@ -143,7 +143,9 @@ const LABEL_BY_TYPE: Partial<Record<TransactionType, string>> = {
   CASH_REMITTANCE: "Cash Remittance",
 };
 
-const BENEFICIARY_SECTION_TITLE_BY_TYPE: Partial<Record<TransactionType, string>> = {
+const BENEFICIARY_SECTION_TITLE_BY_TYPE: Partial<
+  Record<TransactionType, string>
+> = {
   PTA: "PTA Beneficiary Details",
   BTA: "BTA Beneficiary Details",
   SCHOOL_FEES: "School Fee Beneficiary Details",
@@ -170,7 +172,9 @@ const SECTION_TITLE_BY_TYPE: Partial<Record<TransactionType, string>> = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function asString(value: unknown): string {
@@ -183,9 +187,11 @@ function pickString(...values: unknown[]): string {
   for (const value of values) {
     if (typeof value === "string") {
       const trimmed = value.trim();
-      if (trimmed && !EMPTY_API_PLACEHOLDERS.has(trimmed.toLowerCase())) return trimmed;
+      if (trimmed && !EMPTY_API_PLACEHOLDERS.has(trimmed.toLowerCase()))
+        return trimmed;
     }
-    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+    if (typeof value === "number" && Number.isFinite(value))
+      return String(value);
   }
   return "--";
 }
@@ -297,14 +303,16 @@ function hasRecordValues(value: Record<string, unknown>): boolean {
 
 const HIDDEN_DETAIL_KEYS = new Set(["isDomiciliaryAccount"]);
 
-function recordToOverviewFields(record: Record<string, unknown>): OverviewField[] {
+function recordToOverviewFields(
+  record: Record<string, unknown>,
+): OverviewField[] {
   return Object.entries(record)
     .filter(
       ([key, val]) =>
         !HIDDEN_DETAIL_KEYS.has(key) &&
         val !== null &&
         val !== undefined &&
-        String(val).trim() !== ""
+        String(val).trim() !== "",
     )
     .map(([key, val]) => ({
       label: toSentenceCase(key),
@@ -312,18 +320,32 @@ function recordToOverviewFields(record: Record<string, unknown>): OverviewField[
     }));
 }
 
-function buildHeaderData(data: AdminTransactionDetailsData, raw: Record<string, unknown>) {
+function buildHeaderData(
+  data: AdminTransactionDetailsData,
+  raw: Record<string, unknown>,
+) {
   const transactionType = (data.transactionType || "") as TransactionType;
   return {
-    titlePrefix: pickString(data.fxType, formatEnum(raw.transactionMode), "Transaction"),
-    titleValue: LABEL_BY_TYPE[transactionType] ?? formatEnum(data.transactionType),
+    titlePrefix: pickString(
+      data.fxType,
+      formatEnum(raw.transactionMode),
+      "Transaction",
+    ),
+    titleValue:
+      LABEL_BY_TYPE[transactionType] ?? formatEnum(data.transactionType),
     dateLabel: formatDate(data.date),
     timeLabel: formatTime(data.time),
-    statusLabel: pickString(formatEnum(data.requestStatus), formatEnum(raw.status), "--"),
+    statusLabel: pickString(
+      formatEnum(data.requestStatus),
+      formatEnum(raw.status),
+      "--",
+    ),
   };
 }
 
-function buildOverview(data: AdminTransactionDetailsData | null): TransactionOverviewViewModel | null {
+function buildOverview(
+  data: AdminTransactionDetailsData | null,
+): TransactionOverviewViewModel | null {
   if (!data) return null;
 
   const transactionType = (data.transactionType || "") as TransactionType;
@@ -338,10 +360,10 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     raw.beneficiary ||
       raw.beneficiaryDetails ||
       (raw?.steps as any[])?.[0]?.data?.beneficiaryDetails ||
-      asRecord(firstStepDataRaw).beneficiaryDetails
+      asRecord(firstStepDataRaw).beneficiaryDetails,
   );
   const refundBank = asRecord(
-    raw.refundBankDetails || asRecord(firstStepDataRaw).refundBankDetails
+    raw.refundBankDetails || asRecord(firstStepDataRaw).refundBankDetails,
   );
   const stepData = asRecord(asRecord(firstStepDataRaw));
   const personalInfo = asRecord(raw.personalInfo);
@@ -359,81 +381,134 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     { label: "Workflow Stage", value: formatEnum(data.workflowStage) },
     {
       label: "Request Status",
-      value: pickString(formatEnum(data.requestStatus), formatEnum(raw.status), "--"),
+      value: pickString(
+        formatEnum(data.requestStatus),
+        formatEnum(raw.status),
+        "--",
+      ),
     },
     { label: "Customer Type", value: formatEnum(data.customerType) },
-    { label: "Transient Wallet ID", value: data.customerTransientWalletId ? data.customerTransientWalletId : "--", route: data.customerTransientWalletId ? adminRoutes.adminTransientWalletDetails(data.customerTransientWalletId) : undefined },
+    {
+      label: "Transient Wallet ID",
+      value: data.customerTransientWalletId
+        ? data.customerTransientWalletId
+        : "--",
+      route: data.customerTransientWalletId
+        ? adminRoutes.adminTransientWalletDetails(
+            data.customerTransientWalletId,
+          )
+        : undefined,
+    },
   ];
   const commonFields: OverviewField[] = [
     {
       label: "Transaction Value (FX)",
       value: formatAmountByCurrency(
         details.transactionValueFx,
-        pickString(raw.currency, details.transactionCurrency)
+        pickString(raw.currency, details.transactionCurrency),
       ),
     },
-    { label: "Transaction Value (₦)", value: formatAmount(details.transactionValueNgn, "₦") },
+    {
+      label: "Transaction Value (₦)",
+      value: formatAmount(details.transactionValueNgn, "₦"),
+    },
     { label: "Requestor Type", value: pickString(details.requesterType) },
     {
       label: "BVN Number",
       value: pickString(details.bvnNumber, stepData.bvn),
     },
     { label: "NIN", value: pickString(details.nin, stepData.nin) },
-    
-    { label: "TIN Number", value: pickString(raw.taxClearanceNumber, stepData.tin) },
+
+    {
+      label: "TIN Number",
+      value: pickString(raw.taxClearanceNumber, stepData.tin),
+    },
     { label: "Form A ID", value: pickString(raw.formAId) },
-    { label: "Student Name", value: pickString(stepData.studentName, personalInfo.studentName) },
+    {
+      label: "Student Name",
+      value: pickString(stepData.studentName, personalInfo.studentName),
+    },
     {
       label: "Student NIN",
       value: pickString(stepData.studentNin, personalInfo.studentNin),
     },
     {
       label: "Student Int'l Passport Number",
-      value: pickString(stepData.studentPassportDocumentNumber, personalInfo.studentPassportDocumentNumber),
+      value: pickString(
+        stepData.studentPassportDocumentNumber,
+        personalInfo.studentPassportDocumentNumber,
+      ),
     },
     {
       label: "Student Passport Issue Date",
-      value: pickString(stepData.studentPassportIssueDate, personalInfo.studentPassportIssueDate),
+      value: pickString(
+        stepData.studentPassportIssueDate,
+        personalInfo.studentPassportIssueDate,
+      ),
     },
     {
       label: "Student Passport Expiry Date",
-      value: pickString(stepData.studentPassportExpiryDate, personalInfo.studentPassportExpiryDate),
+      value: pickString(
+        stepData.studentPassportExpiryDate,
+        personalInfo.studentPassportExpiryDate,
+      ),
     },
     {
       label: "Applicant Int'l Passport Number",
-      value: pickString(stepData.passportDocumentNumber, personalInfo.passportDocumentNumber),
+      value: pickString(
+        stepData.passportDocumentNumber,
+        personalInfo.passportDocumentNumber,
+      ),
     },
     {
       label: "Applicant Passport Issue Date",
-      value: pickString(stepData.passportIssueDate, personalInfo.passportIssueDate),
+      value: pickString(
+        stepData.passportIssueDate,
+        personalInfo.passportIssueDate,
+      ),
     },
     {
       label: "Applicant Passport Expiry Date",
-      value: pickString(stepData.passportExpiryDate, personalInfo.passportExpiryDate),
+      value: pickString(
+        stepData.passportExpiryDate,
+        personalInfo.passportExpiryDate,
+      ),
     },
     { label: "No. of Documents", value: pickString(details.numberOfDocuments) },
     {
       label: "Admission Type",
       value: pickString(raw.admissionType, stepData.admissionType),
     },
-    { label: "Pick Up State", value: pickString(cashPickup.pickupState, stepData.pickupState) },
-    { label: "Pick Up City", value: pickString(cashPickup.pickupCity, stepData.pickupCity) },
+    {
+      label: "Pick Up State",
+      value: pickString(cashPickup.pickupState, stepData.pickupState),
+    },
+    {
+      label: "Pick Up City",
+      value: pickString(cashPickup.pickupCity, stepData.pickupCity),
+    },
     {
       label: "Pickup Location",
       value: pickString(
         details.pickupLocation,
         cashPickup.pickupLocation,
         asRecord(stepData.pickupLocation).name,
-        asRecord(stepData.pickupLocation).address
+        asRecord(stepData.pickupLocation).address,
       ),
     },
     {
       label: "Pickup Date",
-      value: pickString(formatDate(cashPickup.scheduledPickupDate), formatDate(stepData.scheduledPickupDate)),
+      value: pickString(
+        formatDate(cashPickup.scheduledPickupDate),
+        formatDate(stepData.scheduledPickupDate),
+      ),
     },
     {
       label: "Pickup Time",
-      value: pickString(formatTime(cashPickup.scheduledPickupTime), formatTime(stepData.scheduledPickupTime)),
+      value: pickString(
+        formatTime(cashPickup.scheduledPickupTime),
+        formatTime(stepData.scheduledPickupTime),
+      ),
     },
   ];
 
@@ -448,7 +523,9 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
         }))
     : [];
 
-  const baseTitle = SECTION_TITLE_BY_TYPE[transactionType] ?? toSentenceCase(`${transactionType} Transaction Details`);
+  const baseTitle =
+    SECTION_TITLE_BY_TYPE[transactionType] ??
+    toSentenceCase(`${transactionType} Transaction Details`);
   const primarySection: OverviewSection = {
     title: baseTitle,
     fields: [
@@ -460,11 +537,10 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   const needsBeneficiarySection = true;
 
   const beneficiarySection: OverviewSection = {
-    title:
-      hasDetailRecordEntries(beneficiary)
-        ? beneficiaryDetailSectionTitle(beneficiary)
-        : BENEFICIARY_SECTION_TITLE_BY_TYPE[transactionType] ??
-          toSentenceCase(`${transactionType} Beneficiary Details`),
+    title: hasDetailRecordEntries(beneficiary)
+      ? beneficiaryDetailSectionTitle(beneficiary)
+      : (BENEFICIARY_SECTION_TITLE_BY_TYPE[transactionType] ??
+        toSentenceCase(`${transactionType} Beneficiary Details`)),
     fields: recordToOverviewFields(beneficiary),
   };
 
@@ -481,7 +557,9 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
     sections.push(refundBankSection);
   }
 
-  const nonEmptySections = sections.filter((section) => section.fields.length > 0);
+  const nonEmptySections = sections.filter(
+    (section) => section.fields.length > 0,
+  );
 
   return {
     id: data.id || "--",
@@ -497,7 +575,9 @@ function buildOverview(data: AdminTransactionDetailsData | null): TransactionOve
   };
 }
 
-function extractReceiptDocument(raw: Record<string, unknown>): TransactionDocumentViewModel | null {
+function extractReceiptDocument(
+  raw: Record<string, unknown>,
+): TransactionDocumentViewModel | null {
   const receipt = asRecord(raw.receipt);
   const documents = Array.isArray(raw.documents)
     ? raw.documents.filter((item) => item && typeof item === "object")
@@ -506,11 +586,13 @@ function extractReceiptDocument(raw: Record<string, unknown>): TransactionDocume
   const receiptDocumentFromList =
     (documents
       .map((item) => asRecord(item))
-      .find((item) => asString(item.documentType).toUpperCase() === "RECEIPT") as
-      | Record<string, unknown>
-      | undefined) ?? null;
+      .find(
+        (item) => asString(item.documentType).toUpperCase() === "RECEIPT",
+      ) as Record<string, unknown> | undefined) ?? null;
 
-  const source = hasRecordValues(receipt) ? receipt : (receiptDocumentFromList ?? {});
+  const source = hasRecordValues(receipt)
+    ? receipt
+    : (receiptDocumentFromList ?? {});
   if (!hasRecordValues(source)) return null;
 
   const url = pickString(source.fileUrl, source.url);
@@ -524,7 +606,9 @@ function extractReceiptDocument(raw: Record<string, unknown>): TransactionDocume
   };
 }
 
-function buildReceipt(data: AdminTransactionDetailsData | null): TransactionReceiptViewModel | null {
+function buildReceipt(
+  data: AdminTransactionDetailsData | null,
+): TransactionReceiptViewModel | null {
   if (!data) return null;
 
   const raw = asRecord(data.raw);
@@ -543,7 +627,12 @@ function buildReceipt(data: AdminTransactionDetailsData | null): TransactionRece
     },
     {
       label: "Receipt Transaction ID",
-      value: pickString(receipt.transactionId, receipt.id, data.reference, data.id),
+      value: pickString(
+        receipt.transactionId,
+        receipt.id,
+        data.reference,
+        data.id,
+      ),
     },
     { label: "Date", value: formatDate(receipt.createdAt ?? data.date) },
     { label: "Time", value: formatTime(receipt.createdAt ?? data.time) },
@@ -563,7 +652,9 @@ function buildReceipt(data: AdminTransactionDetailsData | null): TransactionRece
   };
 }
 
-function buildSettlement(data: AdminTransactionDetailsData | null): TransactionSettlementViewModel | null {
+function buildSettlement(
+  data: AdminTransactionDetailsData | null,
+): TransactionSettlementViewModel | null {
   if (!data) return null;
 
   const raw = asRecord(data.raw);
@@ -571,7 +662,9 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
   const cashPickup = asRecord(raw.cashPickup);
   const receipt = asRecord(raw.receipt);
   const settlement = asRecord(
-    data.transactionSettlement ?? details.transactionSettlement ?? raw.transactionSettlement
+    data.transactionSettlement ??
+      details.transactionSettlement ??
+      raw.transactionSettlement,
   );
   const header = buildHeaderData(data, raw);
 
@@ -588,33 +681,70 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
       ? formatAmountByCurrency(cashPickup.amount, cashPickup.currency)
       : "--";
 
-  const settlementDateRaw = pickString(settlement.settlementDate, cashPickup.pickedUpAt, cashPickup.updatedAt);
-  const settlementTimeRaw = pickString(settlement.settlementTime, cashPickup.pickedUpAt, cashPickup.updatedAt);
-  const settlementStatusRaw = pickString(settlement.settlementStatus, cashPickup.status, raw.status);
+  const settlementDateRaw = pickString(
+    settlement.settlementDate,
+    cashPickup.pickedUpAt,
+    cashPickup.updatedAt,
+  );
+  const settlementTimeRaw = pickString(
+    settlement.settlementTime,
+    cashPickup.pickedUpAt,
+    cashPickup.updatedAt,
+  );
+  const settlementStatusRaw = pickString(
+    settlement.settlementStatus,
+    cashPickup.status,
+    raw.status,
+  );
 
   const fields: OverviewField[] = [
-    { label: "Settlement ID", value: pickString(settlement.settlementId, cashPickup.id, receipt.id) },
-    { label: "Settled By", value: pickString(raw.settledBy, receipt.settledBy) },
-    { label: "Settlement Date", value: settlementDateRaw !== "--" ? formatDate(settlementDateRaw) : "--" },
-    { label: "Settlement Time", value: settlementTimeRaw !== "--" ? formatTime(settlementTimeRaw) : "--" },
+    {
+      label: "Settlement ID",
+      value: pickString(settlement.settlementId, cashPickup.id, receipt.id),
+    },
+    {
+      label: "Settled By",
+      value: pickString(raw.settledBy, receipt.settledBy),
+    },
+    {
+      label: "Settlement Date",
+      value: settlementDateRaw !== "--" ? formatDate(settlementDateRaw) : "--",
+    },
+    {
+      label: "Settlement Time",
+      value: settlementTimeRaw !== "--" ? formatTime(settlementTimeRaw) : "--",
+    },
     {
       label: "Total Settlement (FX)",
       value: formatAmountByCurrency(
         details.transactionValueFx,
-        pickString(raw.currency, details.transactionCurrency)
+        pickString(raw.currency, details.transactionCurrency),
       ),
     },
-    { label: "Total Settlement (₦)", value: formatAmount(details.transactionValueNgn, "₦") },
+    {
+      label: "Total Settlement (₦)",
+      value: formatAmount(details.transactionValueNgn, "₦"),
+    },
     {
       label: "Settlement Structure (Cash)",
       value: pickString(settlement.settlementStructureCash, cashPickupFallback),
     },
     {
       label: "Settlement Structure (Prepaid Card)",
-      value: pickString(settlement.settlementStructurePrepaidCard, prepaidCardFallback),
+      value: pickString(
+        settlement.settlementStructurePrepaidCard,
+        prepaidCardFallback,
+      ),
     },
-    { label: "75% Paid Into", value: pickString(settlement.seventyFivePercentPaidInto) },
-    { label: "Settlement Status", value: settlementStatusRaw !== "--" ? formatEnum(settlementStatusRaw) : "--" },
+    {
+      label: "75% Paid Into",
+      value: pickString(settlement.seventyFivePercentPaidInto),
+    },
+    {
+      label: "Settlement Status",
+      value:
+        settlementStatusRaw !== "--" ? formatEnum(settlementStatusRaw) : "--",
+    },
   ].filter((item) => item.value !== "--");
 
   const settlementReceiptUrl = pickString(settlement.settlementReceipt);
@@ -636,7 +766,9 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
         : null;
 
   const hasContent =
-    fields.length > 0 || Boolean(settlementReceipt) || hasRecordValues(cashPickup);
+    fields.length > 0 ||
+    Boolean(settlementReceipt) ||
+    hasRecordValues(cashPickup);
 
   return {
     titlePrefix: header.titlePrefix,
@@ -651,7 +783,7 @@ function buildSettlement(data: AdminTransactionDetailsData | null): TransactionS
 }
 
 function extractActionDocuments(
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
 ): TransactionActionDocumentViewModel[] {
   const documents = Array.isArray(raw.documents)
     ? raw.documents.filter((item) => item && typeof item === "object")
@@ -671,7 +803,7 @@ function extractActionDocuments(
           source.documentName,
           source.fileName,
           source.documentType,
-          "Document"
+          "Document",
         ),
         fileName: pickString(source.fileName, source.documentName, "document"),
         fileSize: formatFileSize(source.fileSize),
@@ -680,11 +812,13 @@ function extractActionDocuments(
         verificationStatus: pickString(
           formatEnum(source.verificationStatus),
           formatEnum(source.status),
-          "No Action"
+          "No Action",
         ),
       };
     })
-    .filter((item): item is TransactionActionDocumentViewModel => Boolean(item));
+    .filter((item): item is TransactionActionDocumentViewModel =>
+      Boolean(item),
+    );
 }
 
 function getWorkflowStatusLabel(action: unknown): string {
@@ -696,7 +830,10 @@ function getWorkflowStatusLabel(action: unknown): string {
   if (actionText.includes("REQUEST") || actionText.includes("MORE_INFO")) {
     return "Review Pending";
   }
-if (actionText.includes("INITIATED")) {
+  if (actionText.includes("INITIATED")) {
+    return "Completed";
+  }
+  if (actionText.includes("CONFIRMED")) {
     return "Completed";
   }
   if (actionText.includes("EMAIL")) {
@@ -706,21 +843,29 @@ if (actionText.includes("INITIATED")) {
 }
 
 function extractWorkflowHistory(
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
 ): TransactionWorkflowHistoryItemViewModel[] {
   const history = Array.isArray(raw.history)
-    ? raw.history.filter((item) => item && typeof item === "object").map((item) => asRecord(item))
+    ? raw.history
+        .filter((item) => item && typeof item === "object")
+        .map((item) => asRecord(item))
     : [];
 
   const sortedHistory = history.sort((a, b) => {
     const aCreatedAt = pickString(a.createdAt);
     const bCreatedAt = pickString(b.createdAt);
     const aTs =
-      aCreatedAt !== "--" ? new Date(aCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
+      aCreatedAt !== "--"
+        ? new Date(aCreatedAt).getTime()
+        : Number.NEGATIVE_INFINITY;
     const bTs =
-      bCreatedAt !== "--" ? new Date(bCreatedAt).getTime() : Number.NEGATIVE_INFINITY;
-    return (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs) -
-      (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs);
+      bCreatedAt !== "--"
+        ? new Date(bCreatedAt).getTime()
+        : Number.NEGATIVE_INFINITY;
+    return (
+      (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs) -
+      (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs)
+    );
   });
 
   return sortedHistory
@@ -743,14 +888,17 @@ function extractWorkflowHistory(
         action: asString(source.action),
       };
     })
-    .filter((item): item is TransactionWorkflowHistoryItemViewModel => Boolean(item));
+    .filter((item): item is TransactionWorkflowHistoryItemViewModel =>
+      Boolean(item),
+    );
 }
 
 function extractPendingWorkflowStages(
-  ap: AdminTransactionApprovalProcess | null
+  ap: AdminTransactionApprovalProcess | null,
 ): PendingWorkflowStageViewModel[] {
   if (!ap) return [];
-  const currentOrder = typeof ap.currentOrder === "number" ? ap.currentOrder : null;
+  const currentOrder =
+    typeof ap.currentOrder === "number" ? ap.currentOrder : null;
   if (currentOrder === null) return [];
   const stages = ap.workflowStages ?? [];
   return stages
@@ -771,7 +919,7 @@ function extractPendingWorkflowStages(
 }
 
 function resolveApprovalProcess(
-  data: AdminTransactionDetailsData | null
+  data: AdminTransactionDetailsData | null,
 ): AdminTransactionApprovalProcess | null {
   if (!data) return null;
   if (data.approvalProcess && typeof data.approvalProcess === "object") {
@@ -794,7 +942,7 @@ function pickAssigneeId(assignee: unknown): string | null {
 
 export function buildTransactionApprovalUi(
   data: AdminTransactionDetailsData | null,
-  adminUserId: string | undefined
+  adminUserId: string | undefined,
 ): TransactionApprovalUiViewModel {
   const legacy: TransactionApprovalUiViewModel = {
     isApprovalOfficer: false,
@@ -857,7 +1005,7 @@ export function buildTransactionApprovalUi(
 
 export function useTransactionDetails(
   transactionId?: string,
-  options?: UseTransactionDetailsOptions
+  options?: UseTransactionDetailsOptions,
 ) {
   const query = useFetchData<ApiResponse<AdminTransactionDetailsData>>(
     [...adminKeys.transactions.detail(transactionId ?? "")],
@@ -865,29 +1013,45 @@ export function useTransactionDetails(
       adminApi.transactions.getById(transactionId ?? "") as unknown as Promise<
         ApiResponse<AdminTransactionDetailsData>
       >,
-    Boolean(transactionId)
+    Boolean(transactionId),
   );
 
-  const overview = useMemo(() => buildOverview(query.data?.data ?? null), [query.data?.data]);
-  const receipt = useMemo(() => buildReceipt(query.data?.data ?? null), [query.data?.data]);
-  const settlement = useMemo(() => buildSettlement(query.data?.data ?? null), [query.data?.data]);
+  const overview = useMemo(
+    () => buildOverview(query.data?.data ?? null),
+    [query.data?.data],
+  );
+  const receipt = useMemo(
+    () => buildReceipt(query.data?.data ?? null),
+    [query.data?.data],
+  );
+  const settlement = useMemo(
+    () => buildSettlement(query.data?.data ?? null),
+    [query.data?.data],
+  );
   const actionDocuments = useMemo(
     () => extractActionDocuments(asRecord(query.data?.data?.raw)),
-    [query.data?.data?.raw]
+    [query.data?.data?.raw],
   );
   const workflowHistory = useMemo(
     () => extractWorkflowHistory(asRecord(query.data?.data?.raw)),
-    [query.data?.data?.raw]
+    [query.data?.data?.raw],
   );
 
   const approvalUi = useMemo(
-    () => buildTransactionApprovalUi(query.data?.data ?? null, options?.adminUserId),
-    [query.data?.data, options?.adminUserId]
+    () =>
+      buildTransactionApprovalUi(
+        query.data?.data ?? null,
+        options?.adminUserId,
+      ),
+    [query.data?.data, options?.adminUserId],
   );
 
   const pendingWorkflowStages = useMemo(
-    () => extractPendingWorkflowStages(resolveApprovalProcess(query.data?.data ?? null)),
-    [query.data?.data]
+    () =>
+      extractPendingWorkflowStages(
+        resolveApprovalProcess(query.data?.data ?? null),
+      ),
+    [query.data?.data],
   );
 
   return {
