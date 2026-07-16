@@ -1416,7 +1416,7 @@ export const adminApi = {
 
   // ==================== Dashboard ====================
   dashboard: {
-    getStats: (params?: { year?: string; month?: string; range?: string; txnType?: string }) =>
+    getStats: (params?: { startDate?: string; endDate?: string; range?: string; txnType?: string }) =>
       apiClient.get<ApiResponse<AdminDashboardData>>(
         API_ENDPOINTS.admin.dashboard,
         { params }

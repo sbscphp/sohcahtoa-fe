@@ -1,5 +1,6 @@
 import type {
   AdminDashboardData,
+  AdminDashboardTransactionSummary,
   DashboardTask,
   Transaction,
 } from "@/app/admin/_types/dashboard";
@@ -7,6 +8,36 @@ import {
   formatEscalationCountdown,
   getElapsedMinutesSince,
 } from "@/app/utils/helper/formatEscalationCountdown";
+import dayjs from "dayjs";
+
+const RANGE_LABELS: Record<string, string> = {
+  last_7_days: "Last 7 days",
+  last_30_days: "Last 30 days",
+  last_90_days: "Last 90 days",
+  last_6_months: "Last 6 months",
+  last_12_months: "Last 12 months",
+};
+
+export function buildTransactionSummaryPeriodLabel(
+  summary: Pick<
+    AdminDashboardTransactionSummary,
+    "startDate" | "endDate" | "rangePreset"
+  >
+): string | null {
+  const { startDate, endDate, rangePreset } = summary;
+
+  if (rangePreset) {
+    return RANGE_LABELS[rangePreset] ?? rangePreset.replaceAll("_", " ");
+  }
+
+  if (startDate && endDate) {
+    const start = dayjs(startDate).format("MMM D");
+    const end = dayjs(endDate).format("MMM D, YYYY");
+    return `${start} – ${end}`;
+  }
+
+  return null;
+}
 
 const STATUS_LABELS: Record<string, string> = {
   AWAITING_VERIFICATION: "Awaiting Verification",

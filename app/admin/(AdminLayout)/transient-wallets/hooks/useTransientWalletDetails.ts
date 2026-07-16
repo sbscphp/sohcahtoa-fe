@@ -14,6 +14,8 @@ export interface TransientWalletDetail {
   walletId: string;
   customerId: string;
   customerName: string;
+  balance: number;
+  currency: string;
   totalDebit: number;
   totalCredit: number;
   dateCreated: string;
@@ -27,6 +29,8 @@ function mapWalletDetail(item: AdminWalletDetail): TransientWalletDetail {
     walletId: item.walletId,
     customerId: item.customerId ?? item.userId,
     customerName: item.customerName,
+    balance: item.balance,
+    currency: item.currency,
     totalDebit: item.totalDebits,
     totalCredit: item.totalCredits,
     dateCreated,

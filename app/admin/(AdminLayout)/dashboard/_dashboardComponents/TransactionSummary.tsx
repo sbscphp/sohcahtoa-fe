@@ -3,6 +3,7 @@
 import { Card, Text, Group, Skeleton } from "@mantine/core";
 import dynamic from "next/dynamic";
 import { HiCalendarDateRange } from "react-icons/hi2";
+import { buildTransactionSummaryPeriodLabel } from "../mapDashboardData";
 
 const BarChart = dynamic(
   () => import("@mantine/charts").then((m) => m.BarChart),
@@ -16,45 +17,24 @@ export type TransactionSummaryChartRow = {
   rejected: number;
 };
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-const RANGE_LABELS: Record<string, string> = {
-  last_7_days:    "Last 7 days",
-  last_30_days:   "Last 30 days",
-  last_90_days:   "Last 90 days",
-  last_6_months:  "Last 6 months",
-  last_12_months: "Last 12 months",
-};
-
-function buildPeriodLabel(
-  year: number | null,
-  month: number | null,
-  rangePreset: string | null
-): string | null {
-  if (rangePreset) return RANGE_LABELS[rangePreset] ?? rangePreset.replaceAll("_", " ");
-  if (month != null && year != null) return `${MONTH_NAMES[month - 1]} ${year}`;
-  if (month != null) return MONTH_NAMES[month - 1] ?? null;
-  if (year != null) return String(year);
-  return null;
-}
-
 export function TransactionSummary({
-  year,
-  month,
+  startDate,
+  endDate,
   rangePreset,
   chartData,
   loading = false,
 }: {
-  year: number | null;
-  month: number | null;
+  startDate: string | null;
+  endDate: string | null;
   rangePreset: string | null;
   chartData: TransactionSummaryChartRow[];
   loading?: boolean;
 }) {
-  const periodLabel = buildPeriodLabel(year, month, rangePreset);
+  const periodLabel = buildTransactionSummaryPeriodLabel({
+    startDate,
+    endDate,
+    rangePreset,
+  });
 
   return (
     <Card radius="md" padding="md" withBorder>
