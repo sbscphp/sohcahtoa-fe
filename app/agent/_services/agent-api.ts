@@ -462,6 +462,10 @@ export const agentApi = {
         apiClient.download(AGENT_API_ENDPOINTS.transactions.export, {
           params: params as ApiRequestConfig["params"],
         }),
+
+      downloadReceipt: (transactionId: string) =>
+        apiClient.download(AGENT_API_ENDPOINTS.transactions.receipt(transactionId)),
+
       stats: () =>
         apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
 

@@ -22,7 +22,7 @@ import {
   TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
-import { useFetchSingleData } from "@/app/_lib/api/hooks";
+import { useCreateData, useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
 import EmptyState from "@/app/admin/_components/EmptyState";
@@ -35,6 +35,7 @@ import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/ut
 import Loader from "@/components/loader";
 import { Button } from "@mantine/core";
 import type { FileWithPath } from "@mantine/dropzone";
+import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
 import Image from "next/image";
@@ -72,6 +73,38 @@ export default function AgentTransactionDetailPage() {
   const [recordDisbursementOpen, setRecordDisbursementOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
   const [documentViewer, setDocumentViewer] = useState<{ url: string; filename: string } | null>(null);
+
+  const downloadReceiptMutation = useCreateData(async () => {
+    const { blob, filename } = await agentApi.transactions.downloadReceipt(id);
+    return {
+      blob,
+      filename: filename ?? `receipt-${id}.pdf`,
+    };
+  });
+
+  const handleDownloadReceipt = () => {
+    if (!id || downloadReceiptMutation.isPending) return;
+    downloadReceiptMutation.mutate(undefined, {
+      onSuccess: ({ blob, filename }) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      },
+      onError: (error) => {
+        notifications.show({
+          title: "Download failed",
+          message: error.message || "Unable to download receipt. Please try again.",
+          color: "red",
+        });
+      },
+    });
+  };
+
   if (!payload) {
     if (apiLoading && id) {
       return (
@@ -192,7 +225,8 @@ export default function AgentTransactionDetailPage() {
                 radius="xl"
                 size="md"
                 className="border-[#E88A58] bg-[#FFF6F1] text-[#E36C2F] hover:bg-[#FFF6F1]/90 font-medium text-base"
-                onClick={() => {}}
+                loading={downloadReceiptMutation.isPending}
+                onClick={handleDownloadReceipt}
               >
                 Download Receipt
               </Button>
@@ -385,7 +419,7 @@ export default function AgentTransactionDetailPage() {
           {showSettlement && payload.settlement && (
             <TransactionSettlementSection
               data={payload.settlement}
-              onDownloadReceipt={() => {}}
+              onDownloadReceipt={handleDownloadReceipt}
             />
           )}
         </div>

@@ -63,6 +63,7 @@ export const API_ENDPOINTS = {
     rates: "/api/customer/transactions/rates",
     calculateRate: "/api/customer/transactions/rates/calculate",
     export: "/api/customer/transactions/export",
+    receipt: (id: string) => `/api/customer/transactions/${id}/receipt`,
     virtualAccount: (id: string) => `/api/customer/transactions/${id}/virtual-account`,
     depositInstructions: (id: string) => `/api/customer/transactions/${id}/deposit-instructions`,
     depositStatus: (id: string) => `/api/customer/transactions/${id}/deposit-status`,

@@ -254,6 +254,9 @@ export const customerApi = {
         params: params as ApiRequestConfig["params"],
       }),
 
+    downloadReceipt: (transactionId: string) =>
+      apiClient.download(API_ENDPOINTS.transactions.receipt(transactionId)),
+
     getVirtualAccount: (transactionId: string) =>
       apiClient.get<TransactionVirtualAccountResponse>(
         API_ENDPOINTS.transactions.virtualAccount(transactionId)

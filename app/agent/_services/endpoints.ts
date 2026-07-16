@@ -69,6 +69,7 @@ export const AGENT_API_ENDPOINTS = {
     checkLimits: "/api/agent/transactions/limits/check",
     health: "/api/agent/transactions/health",
     export: "/api/agent/transactions/export",
+    receipt: (id: string) => `/api/agent/transactions/${id}/receipt`,
     paymentsMovements: "/api/agent/transactions/payments/movements",
     paymentsMovementsExport: "/api/agent/transactions/payments/movements/export",
     pickupLocationTerminals: "/api/customer/transactions/pickup-locations/terminals",
