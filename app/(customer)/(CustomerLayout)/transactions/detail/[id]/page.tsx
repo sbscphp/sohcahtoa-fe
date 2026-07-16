@@ -274,7 +274,9 @@ export default function TransactionDetailPage() {
           data={payload.requiredDocuments}
           onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}
           onDownload={(docKey) => {
-            const file = payload.requiredDocuments.uploadedFiles.find((f) => f.documentType === docKey);
+            const file = payload.requiredDocuments.uploadedFiles.find(
+              (f) => f.id === docKey || f.documentType === docKey
+            );
             if (file?.url) window.open(file.url, "_blank");
           }}
         />

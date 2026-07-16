@@ -110,8 +110,8 @@ function getStaticLimitNotice(flowType: BuyFxFlowType): TransactionNoticeItem {
       };
     case "school-fees":
       return {
-        title: "School fees amount",
-        description: "Enter the exact foreign currency amount required for school fees.",
+        title: "Maximum of 10,000",
+        description: "The maximum you can get for school fees is 10,000 in the selected currency.",
         icon: "currency",
       };
     case "medical":

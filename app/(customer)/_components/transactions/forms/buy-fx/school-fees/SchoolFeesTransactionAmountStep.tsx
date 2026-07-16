@@ -11,13 +11,34 @@ import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-});
+const MAX_SCHOOL_FEES_AMOUNT = 10_000;
+
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_SCHOOL_FEES_AMOUNT;
+}
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (receiveAmountOverMax(data.receiveAmount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: receiveAmountExceedsMaxMessage(MAX_SCHOOL_FEES_AMOUNT),
+      });
+    }
+  });
 
 export type SchoolFeesTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -57,6 +78,7 @@ export default function SchoolFeesTransactionAmountStep({
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
+    receiveAmountOverMax(form.values.receiveAmount) ||
     !hasValidRate ||
     isCalculating;
 
@@ -82,6 +104,14 @@ export default function SchoolFeesTransactionAmountStep({
             value={form.values.receiveAmount}
             onChange={(value) => {
               form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError(
+                  "receiveAmount",
+                  receiveAmountExceedsMaxMessage(MAX_SCHOOL_FEES_AMOUNT)
+                );
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
               recalculate(value);
             }}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}

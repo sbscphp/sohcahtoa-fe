@@ -1,6 +1,5 @@
 "use client";
 
-import { getDocumentLabelForApiType } from "@/app/(customer)/_utils/transaction-validation";
 import LabelText, { isBlankDetailText } from "./LabelText";
 import SectionBlock from "./SectionBlock";
 
@@ -21,11 +20,16 @@ export interface RequiredDocumentsData {
   formAId: string;
   /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
   uploadedFiles: Array<{
+    /** Unique per uploaded file — required when multiple files share a document type. */
+    id: string;
     documentType: string;
+    /** Display label (e.g. "Proof of Funds 2" when multiple). */
+    label: string;
     filename: string;
     url?: string;
   }>;
   missingDocumentTypes?: Array<{
+    id: string;
     documentType: string;
     label: string;
   }>;
@@ -129,18 +133,18 @@ export default function RequiredDocumentsSection({
 
       {data.uploadedFiles.map((file) => (
         <LabelText
-          key={file.documentType}
-          label={getDocumentLabelForApiType(file.documentType)}
+          key={file.id}
+          label={file.label}
           hideWhenEmpty
           document={makeDoc(
             { filename: file.filename, url: file.url },
-            file.documentType
+            file.id
           )}
         />
       ))}
       {missingDocs.map((doc) => (
         <LabelText
-          key={`missing-${doc.documentType}`}
+          key={doc.id}
           label={doc.label}
           text="Not uploaded — use View Updates → Documentation to upload"
         />

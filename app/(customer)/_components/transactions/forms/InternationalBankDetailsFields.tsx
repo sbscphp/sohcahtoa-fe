@@ -122,7 +122,7 @@ export default function InternationalBankDetailsFields({
           label={labels.organizationName}
           required
           size="md"
-          placeholder="As on invoice or registration"
+          placeholder="School Name"
           {...form.getInputProps("organizationName")}
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

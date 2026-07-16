@@ -91,19 +91,45 @@ function shouldIncludeDocumentInDetailView(doc: TransactionDetailRequiredDoc): b
   return isRequiredDocEntry(doc) || doc.uploaded != null;
 }
 
+function countByDocumentType(docs: TransactionDetailRequiredDoc[]): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const doc of docs) {
+    totals.set(doc.type, (totals.get(doc.type) ?? 0) + 1);
+  }
+  return totals;
+}
+
+function documentDisplayLabel(
+  type: string,
+  occurrenceIndex: number,
+  totalForType: number
+): string {
+  const base = getDocumentDisplayName(type);
+  return totalForType > 1 ? `${base} ${occurrenceIndex}` : base;
+}
+
 function mapRequiredDocsToDocumentItems(
   requiredDocuments: TransactionDetailRequiredDoc[],
   comments: TransactionDetailComment[] = []
 ): TransactionDocumentItem[] {
   const statusOverrides = buildDocStatusOverrideMap(comments);
-  return requiredDocuments.filter(shouldIncludeDocumentInDetailView).map((doc) => {
+  const visibleDocs = requiredDocuments.filter(shouldIncludeDocumentInDetailView);
+  const totalsByType = countByDocumentType(visibleDocs);
+  const occurrenceByType = new Map<string, number>();
+
+  return visibleDocs.map((doc, index) => {
     const uploaded = doc.uploaded;
     const overrideStatus = statusOverrides.get(doc.type);
+    const occurrence = (occurrenceByType.get(doc.type) ?? 0) + 1;
+    occurrenceByType.set(doc.type, occurrence);
+    const totalForType = totalsByType.get(doc.type) ?? 1;
+    const name = documentDisplayLabel(doc.type, occurrence, totalForType);
 
     if (!uploaded) {
       return {
-        id: doc.type,
-        name: getDocumentDisplayName(doc.type),
+        id: `missing-${doc.type}-${index}`,
+        documentType: doc.type,
+        name,
         size: "—",
         status: overrideStatus ?? "Not uploaded",
         needsUpload: true,
@@ -118,8 +144,9 @@ function mapRequiredDocsToDocumentItems(
       : undefined;
 
     return {
-      id: doc.type,
-      name: getDocumentDisplayName(doc.type),
+      id: uploaded.id || `${doc.type}-${index}`,
+      documentType: doc.type,
+      name,
       size: "—",
       status: overrideStatus ?? formatStatusLabel(uploaded.status),
       lastUploadDate,
@@ -154,16 +181,30 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
       stepData?.studentPassportExpiryDate ?? api.personalInfo?.studentPassportExpiryDate ?? "",
     workPermitNumber: stepData?.workPermitNumber ?? api.personalInfo?.workPermitNumber ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
-    uploadedFiles: docs
-      .filter((d) => d.uploaded != null)
-      .map((d) => ({
-        documentType: d.type,
-        filename: d.uploaded!.fileName,
-        url: d.uploaded!.fileUrl,
-      })),
+    uploadedFiles: (() => {
+      const uploadedDocs = docs.filter((d) => d.uploaded != null);
+      const totalsByType = countByDocumentType(uploadedDocs);
+      const occurrenceByType = new Map<string, number>();
+
+      return uploadedDocs.map((d, index) => {
+        const uploaded = d.uploaded!;
+        const occurrence = (occurrenceByType.get(d.type) ?? 0) + 1;
+        occurrenceByType.set(d.type, occurrence);
+        const totalForType = totalsByType.get(d.type) ?? 1;
+
+        return {
+          id: uploaded.id || `${d.type}-${index}`,
+          documentType: d.type,
+          label: documentDisplayLabel(d.type, occurrence, totalForType),
+          filename: uploaded.fileName,
+          url: uploaded.fileUrl,
+        };
+      });
+    })(),
     missingDocumentTypes: docs
       .filter((d) => isRequiredDocEntry(d) && d.uploaded == null)
-      .map((d) => ({
+      .map((d, index) => ({
+        id: `missing-${d.type}-${index}`,
         documentType: d.type,
         label: getDocumentDisplayName(d.type),
       })),

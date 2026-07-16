@@ -20,7 +20,10 @@ export function documentsIncludeRequiresManualReview(
 }
 
 export interface TransactionDocumentItem {
+  /** Unique row id (prefer uploaded file id; never reuse document type alone). */
   id: string;
+  /** API document type used when uploading / resubmitting (e.g. PROOF_OF_FUNDS). */
+  documentType: string;
   name: string;
   size: string;
   /** Raw status label we show to the user (e.g. "Pending", "Approved", "Resubmit Document"). */
@@ -131,7 +134,9 @@ export default function DocumentDetail({
     const selected = uploadableDocs
       .map((doc) => {
         const file = reuploadFiles[doc.id];
-        return file ? { documentType: doc.id, file } : null;
+        return file
+          ? { documentType: doc.documentType || doc.id, file }
+          : null;
       })
       .filter((item): item is { documentType: string; file: FileWithPath } => item !== null);
 

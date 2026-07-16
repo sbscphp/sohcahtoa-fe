@@ -46,15 +46,69 @@ describe("buildDetailPayloadFromApi documents", () => {
       ],
     } as TransactionDetailData);
 
-    expect(payload.documentsForSheet?.map((d) => d.id)).toEqual([
+    expect(payload.documentsForSheet?.map((d) => d.documentType)).toEqual([
       "PASSPORT",
       "BANK_VERIFICATION",
+    ]);
+    expect(payload.documentsForSheet?.map((d) => d.id)).toEqual([
+      "5a880452-4581-4d1d-b590-39c7a3e2d125",
+      "5a880452-4581-4d1d-b590-39c7a3e2d125",
     ]);
     expect(payload.requiredDocuments.uploadedFiles.map((f) => f.documentType)).toEqual([
       "PASSPORT",
       "BANK_VERIFICATION",
     ]);
     expect(payload.requiredDocuments.missingDocumentTypes).toEqual([]);
+  });
+
+  it("lists every proof of funds file when multiple share the same type", () => {
+    const proofOne = {
+      id: "pof-1",
+      fileName: "proof-a.pdf",
+      fileUrl: "https://example.com/proof-a.pdf",
+      status: "PENDING",
+      rejectionNotes: null,
+      uploadedAt: "2026-06-10T14:39:57.555Z",
+      verifiedAt: null,
+    };
+    const proofTwo = {
+      id: "pof-2",
+      fileName: "proof-b.pdf",
+      fileUrl: "https://example.com/proof-b.pdf",
+      status: "PENDING",
+      rejectionNotes: null,
+      uploadedAt: "2026-06-10T14:40:57.555Z",
+      verifiedAt: null,
+    };
+
+    const payload = buildDetailPayloadFromApi({
+      ...baseApi,
+      requiredDocuments: [
+        makeApiDoc("PROOF_OF_FUNDS", true, proofOne),
+        makeApiDoc("PROOF_OF_FUNDS", true, proofTwo),
+      ],
+    } as TransactionDetailData);
+
+    expect(payload.requiredDocuments.uploadedFiles).toEqual([
+      {
+        id: "pof-1",
+        documentType: "PROOF_OF_FUNDS",
+        label: "Proof of Funds 1",
+        filename: "proof-a.pdf",
+        url: "https://example.com/proof-a.pdf",
+      },
+      {
+        id: "pof-2",
+        documentType: "PROOF_OF_FUNDS",
+        label: "Proof of Funds 2",
+        filename: "proof-b.pdf",
+        url: "https://example.com/proof-b.pdf",
+      },
+    ]);
+    expect(payload.documentsForSheet?.map((d) => ({ id: d.id, name: d.name, documentType: d.documentType }))).toEqual([
+      { id: "pof-1", name: "Proof of Funds 1", documentType: "PROOF_OF_FUNDS" },
+      { id: "pof-2", name: "Proof of Funds 2", documentType: "PROOF_OF_FUNDS" },
+    ]);
   });
 
   it("still lists missing required documents only", () => {
@@ -66,9 +120,9 @@ describe("buildDetailPayloadFromApi documents", () => {
       ],
     } as TransactionDetailData);
 
-    expect(payload.documentsForSheet?.map((d) => d.id)).toEqual(["INVOICE"]);
+    expect(payload.documentsForSheet?.map((d) => d.documentType)).toEqual(["INVOICE"]);
     expect(payload.requiredDocuments.missingDocumentTypes).toEqual([
-      { documentType: "INVOICE", label: expect.any(String) },
+      { id: "missing-INVOICE-0", documentType: "INVOICE", label: expect.any(String) },
     ]);
     expect(payload.allowMissingDocumentUpload).toBe(true);
   });

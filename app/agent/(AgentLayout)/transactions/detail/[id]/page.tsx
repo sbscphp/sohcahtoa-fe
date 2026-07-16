@@ -1,7 +1,6 @@
 "use client";
 
 import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
-import type { RequiredDocumentsData } from "@/app/(customer)/_components/transactions/details";
 import {
   RequiredDocumentsSection,
   TransactionDetailsSection,
@@ -363,10 +362,10 @@ export default function AgentTransactionDetailPage() {
             data={payload.requiredDocuments}
             onViewDocument={(_, filename, url) => setDocumentViewer({ url, filename })}
             onDownload={(docKey) => {
-              const doc = payload.requiredDocuments[docKey as keyof RequiredDocumentsData];
-              if (doc && typeof doc === "object" && "url" in doc && (doc as { url?: string }).url) {
-                window.open((doc as { url: string }).url, "_blank");
-              }
+              const file = payload.requiredDocuments.uploadedFiles.find(
+                (f) => f.id === docKey || f.documentType === docKey
+              );
+              if (file?.url) window.open(file.url, "_blank");
             }}
           />
           <DocumentViewerModal
