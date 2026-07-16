@@ -60,8 +60,8 @@ export interface AdminDashboardCounters {
 }
 
 export interface AdminDashboardTransactionSummary {
-  year: number | null;
-  month: number | null;
+  startDate: string | null;
+  endDate: string | null;
   rangePreset: string | null;
   labels: string[];
   series: {

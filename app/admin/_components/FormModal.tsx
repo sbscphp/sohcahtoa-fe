@@ -227,6 +227,7 @@ export default function   FormModal({
         inputElement = (
           <NumberInput
             {...commonProps}
+            thousandSeparator=","
             value={formData[field.name] || ""}
             onChange={(value) => handleChange(field.name, value)}
             min={field.min}

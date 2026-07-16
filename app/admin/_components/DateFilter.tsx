@@ -1,7 +1,13 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import dayjs from "dayjs";
+import { DatePicker } from "@mantine/dates";
 
-export type DateFilterValue = { year: string; month: string; range: string };
+export type DateFilterValue = {
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  range: string;     // preset key (e.g. "last_7_days") or "custom"
+};
 
 type DateFilterProps = {
   onChange?: (filter: DateFilterValue) => void;
@@ -15,57 +21,64 @@ const RANGE_OPTIONS = [
   { value: "last_12_months", label: "Last 12 months" },
 ];
 
-const MONTHS = [
-  { value: "1",  label: "January" },
-  { value: "2",  label: "February" },
-  { value: "3",  label: "March" },
-  { value: "4",  label: "April" },
-  { value: "5",  label: "May" },
-  { value: "6",  label: "June" },
-  { value: "7",  label: "July" },
-  { value: "8",  label: "August" },
-  { value: "9",  label: "September" },
-  { value: "10", label: "October" },
-  { value: "11", label: "November" },
-  { value: "12", label: "December" },
-];
+const DAYS_BACK: Record<string, number> = {
+  last_7_days:  6,
+  last_30_days: 29,
+  last_90_days: 89,
+};
 
-const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: 10 }, (_, i) => String(CURRENT_YEAR - i));
-const EMPTY_FILTER: DateFilterValue = { year: "", month: "", range: "" };
+const MONTHS_BACK: Record<string, number> = {
+  last_6_months:  6,
+  last_12_months: 12,
+};
+
+const EMPTY_FILTER: DateFilterValue = { startDate: "", endDate: "", range: "" };
 
 const TABS = [
-  { id: "range",      label: "Quick range" },
-  { id: "month_year", label: "Month / Year" },
+  { id: "range",  label: "Quick range" },
+  { id: "custom", label: "Custom range" },
 ];
 
+// Resolves a quick-range preset key into concrete YYYY-MM-DD boundaries,
+// anchored on "today".
+function resolvePreset(key: string): { startDate: string; endDate: string } {
+  const end = dayjs();
+  const start =
+    key in DAYS_BACK
+      ? end.subtract(DAYS_BACK[key], "day")
+      : end.subtract(MONTHS_BACK[key] ?? 0, "month");
+
+  return {
+    startDate: start.format("YYYY-MM-DD"),
+    endDate: end.format("YYYY-MM-DD"),
+  };
+}
+
 function buildSummary(filter: DateFilterValue): string | null {
-  const { year, month, range } = filter;
-  if (range) {
-    const opt = RANGE_OPTIONS.find((r) => r.value === range);
-    return opt ? opt.label : range;
+  if (!filter.range) return null;
+
+  if (filter.range === "custom") {
+    if (!filter.startDate || !filter.endDate) return null;
+    const start = dayjs(filter.startDate).format("MMM D");
+    const end   = dayjs(filter.endDate).format("MMM D, YYYY");
+    return `${start} – ${end}`;
   }
-  if (month && year) {
-    const m = MONTHS.find((mo) => mo.value === month);
-    return `${m?.label ?? month} ${year}`;
-  }
-  if (month) {
-    const m = MONTHS.find((mo) => mo.value === month);
-    return m?.label ?? month;
-  }
-  if (year) return year;
-  return null;
+
+  const opt = RANGE_OPTIONS.find((r) => r.value === filter.range);
+  return opt ? opt.label : filter.range;
 }
 
 function isActive(filter: DateFilterValue) {
-  return !!(filter.range || filter.month || filter.year);
+  return !!filter.range;
 }
 
 export default function DateFilter({ onChange }: DateFilterProps) {
   const [open, setOpen]           = useState(false);
   const [tab, setTab]             = useState("range");
   const [committed, setCommitted] = useState<DateFilterValue>(EMPTY_FILTER);
-  const [draft, setDraft]         = useState<DateFilterValue>(EMPTY_FILTER);
+
+  // Bound directly to Mantine's <DatePicker type="range" /> value shape.
+  const [customDraft, setCustomDraft] = useState<[string | null, string | null]>([null, null]);
 
   const panelRef   = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -75,30 +88,39 @@ export default function DateFilter({ onChange }: DateFilterProps) {
   const commitAndNotify = useCallback(
     (value: DateFilterValue) => {
       setCommitted(value);
-      setDraft(value);
-      setTimeout(() => onChange?.(value), 0);
+      const filter = {
+        startDate: value.startDate,
+        endDate: value.endDate,
+        range: value.startDate && value.endDate ? "" : value.range,
+      };
+      setTimeout(() => onChange?.(filter), 0);
     },
     [onChange]
   );
 
   function selectRange(value: string) {
-    commitAndNotify({ year: "", month: "", range: value });
+    const { startDate, endDate } = resolvePreset(value);
+    commitAndNotify({ startDate, endDate, range: value });
     setOpen(false);
   }
 
-  function applyMonthYear() {
-    if (!draft.month || !draft.year) return;
-    commitAndNotify(draft);
+  function applyCustomRange() {
+    const [start, end] = customDraft;
+    if (!start || !end) return;
+    commitAndNotify({ startDate: start, endDate: end, range: "custom" });
     setOpen(false);
   }
 
   function clearAll() {
     commitAndNotify(EMPTY_FILTER);
+    setCustomDraft([null, null]);
     setOpen(false);
   }
 
   const dismissPanel = useCallback(() => {
-    setDraft(committed);
+    setCustomDraft(
+      committed.range === "custom" ? [committed.startDate, committed.endDate] : [null, null]
+    );
     setOpen(false);
   }, [committed]);
 
@@ -120,7 +142,7 @@ export default function DateFilter({ onChange }: DateFilterProps) {
 
   const active   = isActive(committed);
   const summary  = buildSummary(committed);
-  const canApply = !!(draft.month && draft.year);
+  const canApply = !!(customDraft[0] && customDraft[1]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -132,7 +154,15 @@ export default function DateFilter({ onChange }: DateFilterProps) {
         ref={triggerRef}
         onClick={() => {
           setOpen((v) => {
-            if (!v) setDraft(committed);
+            if (!v) {
+              if (committed.range === "custom") {
+                setCustomDraft([committed.startDate, committed.endDate]);
+                setTab("custom");
+              } else {
+                setCustomDraft([null, null]);
+                setTab("range");
+              }
+            }
             return !v;
           });
         }}
@@ -233,78 +263,30 @@ export default function DateFilter({ onChange }: DateFilterProps) {
               </div>
             )}
 
-            {/* Month / Year tab */}
-            {tab === "month_year" && (
+            {/* Custom range tab */}
+            {tab === "custom" && (
               <div className="flex flex-col gap-3">
 
                 <p className="m-0 text-[12px] text-gray-400 leading-snug">
-                  Both month and year are required. Changes apply only when you press Apply.
+                  Pick a start and end date. Changes apply only when you press Apply.
                 </p>
 
-                {/* Month picker */}
-                <div>
-                  <label className="block text-[11px] font-medium uppercase tracking-[0.06em] text-gray-300 mb-1.5">
-                    Month
-                  </label>
-                  <div className="grid grid-cols-4 gap-1">
-                    {MONTHS.map((m) => (
-                      <button
-                        key={m.value}
-                        onClick={() =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            range: "",
-                            month: prev.month === m.value ? "" : m.value,
-                          }))
-                        }
-                        className={[
-                          "py-1.5 rounded-lg text-[12px] cursor-pointer transition-all border",
-                          draft.month === m.value
-                            ? "border-primary-400 bg-primary-500 text-white font-medium"
-                            : "border-gray-200 bg-white text-gray-700 hover:bg-primary-00 hover:border-primary-100",
-                        ].join(" ")}
-                      >
-                        {m.label.slice(0, 3)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Year picker */}
-                <div>
-                  <label className="block text-[11px] font-medium uppercase tracking-[0.06em] text-gray-300 mb-1.5">
-                    Year
-                  </label>
-                  <div className="grid grid-cols-5 gap-1">
-                    {YEARS.map((y) => (
-                      <button
-                        key={y}
-                        onClick={() =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            range: "",
-                            year: prev.year === y ? "" : y,
-                          }))
-                        }
-                        className={[
-                          "py-1.5 px-1 rounded-lg text-[12px] cursor-pointer transition-all border",
-                          draft.year === y
-                            ? "border-primary-400 bg-primary-500 text-white font-medium"
-                            : "border-gray-200 bg-white text-gray-700 hover:bg-primary-00 hover:border-primary-100",
-                        ].join(" ")}
-                      >
-                        {y}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex justify-center">
+                  <DatePicker
+                    type="range"
+                    value={customDraft}
+                    onChange={setCustomDraft}
+                    allowSingleDateInRange
+                    maxDate={dayjs().format("YYYY-MM-DD")}
+                    numberOfColumns={1}
+                    size="sm"
+                  />
                 </div>
 
                 {/* Validation hint */}
-                {(draft.month || draft.year) && !canApply && (
+                {(customDraft[0] || customDraft[1]) && !canApply && (
                   <p className="m-0 text-[12px] text-warning-400 leading-snug">
-                    {!draft.month
-                      ? "Please select a month to continue."
-                      : "Please select a year to continue."}
+                    Please select both a start and an end date.
                   </p>
                 )}
 
@@ -317,7 +299,7 @@ export default function DateFilter({ onChange }: DateFilterProps) {
                     Clear
                   </button>
                   <button
-                    onClick={applyMonthYear}
+                    onClick={applyCustomRange}
                     disabled={!canApply}
                     className={[
                       "py-2.5 rounded-[10px] border-none text-[13px] font-medium transition-all",

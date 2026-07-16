@@ -16,7 +16,7 @@ import DateFilter, { type DateFilterValue } from "@/app/admin/_components/DateFi
 import { BalanceAndNopSection } from "./_dashboardComponents/BalanceAndNopSection";
 
 export default function DashboardPageClient() {
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ year: "", month: "", range: "" });
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ startDate: "", endDate: "", range: "" });
   const [txnType, setTxnType] = useState("");
 
   const {
@@ -105,8 +105,8 @@ export default function DashboardPageClient() {
       <div className="my-5">
         <SimpleGrid cols={{ base: 1, lg: 2 }}>
           <TransactionSummary
-            year={transactionSummary?.year ?? null}
-            month={transactionSummary?.month ?? null}
+            startDate={transactionSummary?.startDate ?? null}
+            endDate={transactionSummary?.endDate ?? null}
             rangePreset={transactionSummary?.rangePreset ?? null}
             chartData={barChartData}
             loading={isLoading}

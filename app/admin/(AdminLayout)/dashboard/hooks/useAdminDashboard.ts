@@ -12,14 +12,14 @@ import {
   mapTransactionsByTypeDonut,
 } from "../mapDashboardData";
 
-type DashboardFilter = { year?: string; month?: string; range?: string; txnType?: string };
+type DashboardFilter = { startDate?: string; endDate?: string; range?: string; txnType?: string };
 
 export function useAdminDashboard(filter?: DashboardFilter) {
   const params =
-    filter?.year || filter?.month || filter?.range || filter?.txnType
+    filter?.startDate || filter?.endDate || filter?.range || filter?.txnType
       ? {
-          year: filter.year || undefined,
-          month: filter.month || undefined,
+          startDate: filter.startDate || undefined,
+          endDate: filter.endDate || undefined,
           range: filter.range || undefined,
           txnType: filter.txnType || undefined,
         }

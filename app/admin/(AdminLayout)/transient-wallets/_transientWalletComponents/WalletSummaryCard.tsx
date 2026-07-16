@@ -47,7 +47,7 @@ export default function WalletSummaryCard({
         <Divider className="my-2" />
 
         <section className="space-y-4">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <DetailItem
               label="Customer ID"
               value={<Link
@@ -61,6 +61,15 @@ export default function WalletSummaryCard({
             <DetailItem
               label="Customer Name"
               value={wallet?.customerName ?? "—"}
+              loading={isLoading}
+            />
+            <DetailItem
+              label="Balance"
+              value={
+                wallet ? formatCurrency(wallet.balance, wallet.currency) : (
+                  "—"
+                )
+              }
               loading={isLoading}
             />
             <DetailItem

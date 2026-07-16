@@ -561,8 +561,9 @@ export default function TakeActionOverlay({
                                   {stage.assigneeName}
                                 </Text>
                                 <Text size="xs" c="dimmed" className="text-body-text-50!">
+                                  {toSentenceCase(approvalType) + " Approval • "}
                                   {stage.stageName}
-                                  {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""}
+                                  {/* {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""} */}
                                 </Text>
 
                                 {/* Date & Time */}

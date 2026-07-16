@@ -543,6 +543,7 @@ export default function CreateWorkflowPage() {
                 <NumberInput
                   label="Minimum Amount"
                   placeholder="Enter minimum amount"
+                  thousandSeparator=","
                   value={form.values.minAmount}
                   onChange={(val) =>
                     form.setFieldValue("minAmount", typeof val === "number" ? val : "")
@@ -554,6 +555,7 @@ export default function CreateWorkflowPage() {
                 <NumberInput
                   label="Maximum Amount"
                   placeholder="Enter maximum amount"
+                  thousandSeparator=","
                   value={form.values.maxAmount}
                   onChange={(val) =>
                     form.setFieldValue("maxAmount", typeof val === "number" ? val : "")

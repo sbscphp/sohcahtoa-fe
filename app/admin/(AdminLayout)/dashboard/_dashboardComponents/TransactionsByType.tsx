@@ -28,7 +28,7 @@ export function TransactionsByType({
           <Skeleton height={28} width={120} radius="lg" />
         ) : (
           <Text size="xs" c="dimmed">
-            Last {windowDays} days
+            {windowDays} days
           </Text>
         )}
       </Group>
