@@ -194,7 +194,7 @@ class ApiClient {
   }
 
   /**
-   * Download endpoint that returns a file (e.g. CSV export).
+   * Download endpoint that returns a file (e.g. CSV, PDF, etc. export).
    * Uses the same auth + 401 logout behavior as other requests, but returns blob + filename from headers.
    */
   async download(url: string, config: Omit<ApiRequestConfig, "body"> = {}): Promise<ApiDownloadResponse> {
