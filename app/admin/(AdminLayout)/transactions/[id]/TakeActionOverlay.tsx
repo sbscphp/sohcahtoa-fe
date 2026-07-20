@@ -88,6 +88,12 @@ function isDocumentVerificationApproved(verificationStatus: string): boolean {
   return n === "VERIFIED" || n === "APPROVED";
 }
 
+function isDocumentVerificationRejected(verificationStatus: string): boolean {
+  const n = normalizeStatusForComparison(verificationStatus);
+  if (!n || n === "--") return false;
+  return n === "REJECTED";
+}
+
 function isTransationActionable(statusLabel: string | undefined): boolean {
   if (!statusLabel || statusLabel.trim() === "" || statusLabel === "--") return false;
   return normalizeStatusForComparison(statusLabel) === "PENDING" || normalizeStatusForComparison(statusLabel) === "UNDER_REVIEW";
@@ -630,7 +636,7 @@ export default function TakeActionOverlay({
                         const docKey = doc.id;
                         const docActionsHidden = isDocumentVerificationApproved(
                           doc.verificationStatus
-                        );
+                        ) || isDocumentVerificationRejected(doc.verificationStatus);
                         const badgeStyle = getDocumentStatusBadgeStyle(
                           doc.verificationStatus
                         );

@@ -7,6 +7,7 @@ import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi, type AdminProfileData } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
+import { toSentenceCase } from "@/app/utils/helper/toSentence";
 
 function formatDate(value?: string | null): string {
   if (!value) return "--";
@@ -85,7 +86,7 @@ export default function AccountInformationTab() {
           <InfoField label="Email Address" value={profile.email} />
           <InfoField label="Phone Number" value={profile.phoneNumber} />
           <InfoField label="Date Joined" value={formatDate(profile.createdAt)} />
-          <InfoField label="Role" value={profile.roleName} />
+          <InfoField label="Role" value={toSentenceCase(profile.roleName)} />
           <InfoField label="Department" value={profile.departmentName} />
           <InfoField label="Branch" value={profile.branch ?? "--"} />
           <InfoField label="Last Active" value={formatDate(profile.lastActive)} />
