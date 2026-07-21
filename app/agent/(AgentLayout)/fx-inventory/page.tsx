@@ -6,15 +6,13 @@ import { ListFilter } from "lucide-react";
 import { CurrencySelectorWithSearch } from "@/app/agent/(AgentLayout)/rate-calculator/_components/CurrencySelectorWithSearch";
 import {
   CURRENCIES,
+  formatCurrencyAmount,
   getCurrencyByCode,
   type Currency,
 } from "@/app/(customer)/_lib/currency";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
-import type {
-  AgentDashboardCashStatsPeriod,
-  AgentDashboardCashStatsResponse,
-} from "@/app/_lib/api/types";
+import type { AgentDashboardCashStatsPeriod } from "@/app/_lib/api/types";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import {
   AGENT_DASHBOARD_PERIOD_OPTIONS,
@@ -23,7 +21,13 @@ import {
 import { SummaryCards } from "./_components/SummaryCards";
 import { CashInventoryTable } from "./_components/CashInventoryTable";
 import { SELECT_WIDTH } from "../../utils/constants";
-import { formatCurrencyAmount } from "@/app/(customer)/_lib/currency";
+
+const EMPTY_SUMMARY = {
+  cashReceivedFromCustomer: "—",
+  cashReceivedFromAdmin: "—",
+  cashDisbursedToAgent: "—",
+  cashDisbursed: "—",
+} as const;
 
 export default function FXInventoryPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
@@ -45,30 +49,28 @@ export default function FXInventoryPage() {
     true,
   );
 
-  const stats = cashStatsData as AgentDashboardCashStatsResponse | undefined;
-  const s = stats?.data;
-  const currencyCode = s?.currency ?? selectedCurrency.code;
+  const stats = cashStatsData?.data;
+  const currencyCode = stats?.currency ?? selectedCurrency.code;
 
   const summary = useMemo(() => {
-    if (!s) {
-      return {
-        cashReceivedFromCustomer: "—",
-        cashReceivedFromAdmin: "—",
-        cashDisbursed: "—",
-      };
-    }
+    if (!stats) return EMPTY_SUMMARY;
+
     return {
       cashReceivedFromCustomer: formatCurrencyAmount(
-        s.totalCashReceivedFromCustomer,
+        stats.totalCashDisbursedFromCustomer,
         currencyCode,
       ),
       cashReceivedFromAdmin: formatCurrencyAmount(
-        s.totalCashReceivedFromAdmin,
+        stats.totalCashDisbursedFromAdmin,
         currencyCode,
       ),
-      cashDisbursed: formatCurrencyAmount(s.totalCashDisbursed, currencyCode),
+      cashDisbursedToAgent: formatCurrencyAmount(
+        stats.totalCashDisbursedToAgent,
+        currencyCode,
+      ),
+      cashDisbursed: formatCurrencyAmount(stats.totalCashDisbursed, currencyCode),
     };
-  }, [s, currencyCode]);
+  }, [stats, currencyCode]);
 
   return (
     <div className="space-y-6">
@@ -95,12 +97,7 @@ export default function FXInventoryPage() {
         />
       </Group>
 
-      <SummaryCards
-        cashReceivedFromCustomer={summary.cashReceivedFromCustomer}
-        cashReceivedFromAdmin={summary.cashReceivedFromAdmin}
-        cashDisbursed={summary.cashDisbursed}
-        isLoading={statsLoading}
-      />
+      <SummaryCards {...summary} isLoading={statsLoading} />
 
       <CashInventoryTable />
     </div>

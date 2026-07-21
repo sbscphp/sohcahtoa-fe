@@ -39,7 +39,6 @@ import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -187,15 +186,24 @@ export default function AgentTransactionDetailPage() {
     });
   }
 
+  const handleBackToTransactions = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/agent/transactions");
+  };
+
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 1142 }}>
-      <Link
-        href="/agent/transactions"
+      <button
+        type="button"
+        onClick={handleBackToTransactions}
         className="inline-flex items-center gap-1 text-body-text-100 text-sm font-medium hover:text-heading-200 transition-colors w-fit"
       >
         <ChevronLeft className="w-4 h-4 shrink-0" aria-hidden />
         Back to Transactions
-      </Link>
+      </button>
 
       <div className="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0px_1px_2px_rgba(16,24,40,0.05)] overflow-hidden">
         <div className="flex md:flex-row flex-col items-start justify-between gap-4 border-b border-[#F2F4F7] md:px-8 px-4 pt-8 pb-6">

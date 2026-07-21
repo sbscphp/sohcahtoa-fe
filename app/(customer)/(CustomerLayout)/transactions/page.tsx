@@ -9,7 +9,6 @@ import {
   mergeTableStateFromUrl,
   readTableStateFromSearchParams,
   useTableUrlSync,
-  type TableUrlSyncConfig,
 } from "@/app/_hooks/use-table-url-sync";
 import { useCreateData, useFetchData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
@@ -20,51 +19,24 @@ import { Suspense, useMemo, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { FILTER_OPTIONS, TX_FILTER_OPTIONS } from "./constant";
 import { mapListItemToTransaction } from "./helper";
-import {
-  TRANSACTION_GROUP_FILTER_OPTIONS,
-  TRANSACTION_GROUP_TAB_ALL,
-} from "@/app/(customer)/_lib/transaction-group-tabs";
+import { TRANSACTION_GROUP_TAB_ALL } from "@/app/(customer)/_lib/transaction-group-tabs";
 import { buildTransactionListQueryParams } from "@/app/(customer)/_lib/transaction-list-params";
-
-const PAGE_SIZE = 10;
-
-type TransactionSelectionKey = "status" | "transactionType" | "currency" | "stage";
-
-const TX_URL_SYNC: TableUrlSyncConfig<TransactionSelectionKey> = {
-  tableName: "tx",
-  namespace: false,
-  sync: {
-    q: "q",
-    page: "page",
-    startDate: "startDate",
-    endDate: "endDate",
-    selections: {
-      status: "status",
-      transactionType: "transactionType",
-      currency: "currency",
-      stage: "stage",
-    },
-    params: {
-      type: "type",
-    },
-  },
-};
-
-const VALID_GROUP_TABS = new Set(
-  TRANSACTION_GROUP_FILTER_OPTIONS.map((opt) => opt.value)
-);
-
-function resolveGroupTab(value: string | undefined): string {
-  if (value && VALID_GROUP_TABS.has(value)) return value;
-  return TRANSACTION_GROUP_TAB_ALL;
-}
+import {
+  TRANSACTION_LIST_PAGE_SIZE,
+  TRANSACTION_LIST_URL_SYNC,
+  resolveTransactionListGroupTab,
+  type TransactionListSelectionKey,
+} from "@/app/(customer)/_lib/transaction-list-url-sync";
 
 function TransactionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const initialFromUrl = useMemo(() => {
-    const fromUrl = readTableStateFromSearchParams(searchParams, TX_URL_SYNC);
+    const fromUrl = readTableStateFromSearchParams(
+      searchParams,
+      TRANSACTION_LIST_URL_SYNC
+    );
     return {
       fromUrl,
       table: mergeTableStateFromUrl(
@@ -75,18 +47,18 @@ function TransactionsPageContent() {
           sortBy: "createdAt",
           sortOrder: "desc",
           page: 1,
-          limit: PAGE_SIZE,
+          limit: TRANSACTION_LIST_PAGE_SIZE,
         },
         fromUrl
       ),
-      type: resolveGroupTab(fromUrl.params?.type),
+      type: resolveTransactionListGroupTab(fromUrl.params?.type),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once from the URL on mount / back
   }, []);
 
   const [activeType, setActiveType] = useState(initialFromUrl.type);
 
-  const table = useTableState<TransactionSelectionKey>({
+  const table = useTableState<TransactionListSelectionKey>({
     initial: initialFromUrl.table,
   });
 
@@ -105,7 +77,7 @@ function TransactionsPageContent() {
         },
       },
     },
-    TX_URL_SYNC
+    TRANSACTION_LIST_URL_SYNC
   );
 
   const listParams = useMemo(() => {
@@ -127,7 +99,7 @@ function TransactionsPageContent() {
       sortBy: table.sortBy,
       sortOrder: table.sortOrder,
       page: table.page ?? 1,
-      limit: table.limit ?? PAGE_SIZE,
+      limit: table.limit ?? TRANSACTION_LIST_PAGE_SIZE,
     });
   }, [
     activeType,
@@ -234,7 +206,7 @@ function TransactionsPageContent() {
           onExportClick={handleExportClick}
           transactions={tableRows}
           page={table.page ?? 1}
-          pageSize={PAGE_SIZE}
+          pageSize={TRANSACTION_LIST_PAGE_SIZE}
           totalPages={totalPages}
           onPageChange={table.setPage}
           onRowClick={handleRowClick}

@@ -445,8 +445,9 @@ export interface AgentDashboardCashStatsData {
     start: string;
     end: string;
   };
-  totalCashReceivedFromCustomer: number;
-  totalCashReceivedFromAdmin: number;
+  totalCashDisbursedFromCustomer: number;
+  totalCashDisbursedFromAdmin: number;
+  totalCashDisbursedToAgent: number;
   totalCashDisbursed: number;
 }
 

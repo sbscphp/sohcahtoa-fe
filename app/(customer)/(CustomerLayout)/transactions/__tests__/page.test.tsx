@@ -3,9 +3,10 @@ import { render, screen } from "@/test-utils";
 import TransactionPage from "../page";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn() }),
   usePathname: () => "/transactions",
   useParams: () => ({}),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 describe("Transactions page", () => {

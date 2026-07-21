@@ -2,38 +2,57 @@
 
 import { Card, Text, SimpleGrid, Skeleton } from "@mantine/core";
 
-interface SummaryCardsProps {
+export interface FxInventorySummaryCardValues {
   cashReceivedFromCustomer: string;
   cashReceivedFromAdmin: string;
+  cashDisbursedToAgent: string;
   cashDisbursed: string;
+}
+
+interface SummaryCardsProps extends FxInventorySummaryCardValues {
   isLoading?: boolean;
 }
+
+const CARD_CONFIG: ReadonlyArray<{
+  key: keyof FxInventorySummaryCardValues;
+  title: string;
+}> = [
+  {
+    key: "cashReceivedFromCustomer",
+    title: "Cash received from customer",
+  },
+  {
+    key: "cashReceivedFromAdmin",
+    title: "Cash received from admin",
+  },
+  {
+    key: "cashDisbursedToAgent",
+    title: "Cash disbursed to agent",
+  },
+  {
+    key: "cashDisbursed",
+    title: "Cash disbursed",
+  },
+];
 
 export function SummaryCards({
   cashReceivedFromCustomer,
   cashReceivedFromAdmin,
+  cashDisbursedToAgent,
   cashDisbursed,
   isLoading = false,
-}: SummaryCardsProps) {
-  const cards = [
-    {
-      title: "Cash received from customer",
-      value: cashReceivedFromCustomer,
-    },
-    {
-      title: "Cash received from admin",
-      value: cashReceivedFromAdmin,
-    },
-    {
-      title: "Cash disbursed",
-      value: cashDisbursed,
-    },
-  ];
+}: Readonly<SummaryCardsProps>) {
+  const values: FxInventorySummaryCardValues = {
+    cashReceivedFromCustomer,
+    cashReceivedFromAdmin,
+    cashDisbursedToAgent,
+    cashDisbursed,
+  };
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
-      {cards.map((card, index) => (
-        <Card key={index} radius="lg" padding="lg" withBorder>
+    <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
+      {CARD_CONFIG.map((card) => (
+        <Card key={card.key} radius="lg" padding="lg" withBorder>
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <Text size="sm" c="dimmed" mb="xs">
@@ -43,7 +62,7 @@ export function SummaryCards({
                 <Skeleton height={28} mt={4} radius="sm" />
               ) : (
                 <Text fw={700} size="xl" className="text-body-heading-300">
-                  {card.value}
+                  {values[card.key]}
                 </Text>
               )}
             </div>
