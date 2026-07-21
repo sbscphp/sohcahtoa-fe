@@ -37,6 +37,7 @@ import TakeActionMenu, {
   type TakeActionType,
 } from "../../../_transientWalletComponents/modals/TakeActionMenu";
 import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
+import Link from "next/link";
 
 type SuccessVariant =
   | "note"
@@ -442,7 +443,12 @@ export default function TransientWalletEntryDetailPage() {
               />
               <DetailItem
                 label="Transaction Ref"
-                value={entry?.transactionRef ?? "—"}
+                value={<Link
+                  href={adminRoutes.adminTransactionDetails(entry?.linkedTransaction?.id ?? "")}
+                  className="hover:text-[#DD4F05] underline break-all"
+                >
+                  {entry?.linkedTransaction?.referenceNumber ?? "—"}
+                </Link>}
                 loading={isLoading}
               />
               <DetailItem

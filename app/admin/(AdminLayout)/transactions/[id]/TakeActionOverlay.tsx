@@ -559,16 +559,16 @@ export default function TakeActionOverlay({
                           <Group justify="space-between" align="flex-start" wrap="nowrap">
                             <Group align="flex-start" gap="sm" wrap="nowrap">
                               <Avatar radius="xl" size="md" color="#B0B0B0">
-                                {stage.assigneeName.slice(0, 2).toUpperCase()}
+                                {stage.stageName.slice(0, 2).toUpperCase()}
                               </Avatar>
 
                               <div className="min-w-0 space-y-1">
                                 <Text fw={500} className="text-body-heading-300 break-all">
-                                  {stage.assigneeName}
+                                  {stage.stageName}
                                 </Text>
                                 <Text size="xs" c="dimmed" className="text-body-text-50!">
                                   {toSentenceCase(approvalType) + " Approval • "}
-                                  {stage.stageName}
+                                  {stage.assigneeName}
                                   {/* {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""} */}
                                 </Text>
 
