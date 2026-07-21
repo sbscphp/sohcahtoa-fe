@@ -88,6 +88,12 @@ function isDocumentVerificationApproved(verificationStatus: string): boolean {
   return n === "VERIFIED" || n === "APPROVED";
 }
 
+function isDocumentVerificationRejected(verificationStatus: string): boolean {
+  const n = normalizeStatusForComparison(verificationStatus);
+  if (!n || n === "--") return false;
+  return n === "REJECTED";
+}
+
 function isTransationActionable(statusLabel: string | undefined): boolean {
   if (!statusLabel || statusLabel.trim() === "" || statusLabel === "--") return false;
   return normalizeStatusForComparison(statusLabel) === "PENDING" || normalizeStatusForComparison(statusLabel) === "UNDER_REVIEW";
@@ -553,16 +559,16 @@ export default function TakeActionOverlay({
                           <Group justify="space-between" align="flex-start" wrap="nowrap">
                             <Group align="flex-start" gap="sm" wrap="nowrap">
                               <Avatar radius="xl" size="md" color="#B0B0B0">
-                                {stage.assigneeName.slice(0, 2).toUpperCase()}
+                                {stage.stageName.slice(0, 2).toUpperCase()}
                               </Avatar>
 
                               <div className="min-w-0 space-y-1">
                                 <Text fw={500} className="text-body-heading-300 break-all">
-                                  {stage.assigneeName}
+                                  {stage.stageName}
                                 </Text>
                                 <Text size="xs" c="dimmed" className="text-body-text-50!">
                                   {toSentenceCase(approvalType) + " Approval • "}
-                                  {stage.stageName}
+                                  {stage.assigneeName}
                                   {/* {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""} */}
                                 </Text>
 
@@ -630,7 +636,7 @@ export default function TakeActionOverlay({
                         const docKey = doc.id;
                         const docActionsHidden = isDocumentVerificationApproved(
                           doc.verificationStatus
-                        );
+                        ) || isDocumentVerificationRejected(doc.verificationStatus);
                         const badgeStyle = getDocumentStatusBadgeStyle(
                           doc.verificationStatus
                         );
