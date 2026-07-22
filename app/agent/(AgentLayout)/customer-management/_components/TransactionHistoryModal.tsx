@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Modal, Text, Stack, Group } from "@mantine/core";
-import { ArrowUpRight, RotateCcw } from "lucide-react";
+import { Modal, Text, Stack, Group, UnstyledButton } from "@mantine/core";
+import { useRouter } from "next/navigation";
+import { RotateCcw } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { useFetchData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
@@ -12,6 +13,7 @@ import {
   formatLocalDate,
   formatShortTime,
 } from "@/app/utils/helper/formatLocalDate";
+import { formatCurrencyAmount } from "@/app/(customer)/_lib/currency";
 import Loader from "@/components/loader";
 
 interface TransactionHistoryModalProps {
@@ -25,6 +27,7 @@ export function TransactionHistoryModal({
   onClose,
   customerId,
 }: Readonly<TransactionHistoryModalProps>) {
+  const router = useRouter();
   const { data, isLoading } = useFetchData<AgentCustomerTransactionsResponse>(
     customerId && opened
       ? [...agentKeys.customers.transactions(customerId, { page: 1, limit: 20 })]
@@ -34,6 +37,11 @@ export function TransactionHistoryModal({
   );
 
   const transactions = useMemo(() => data?.data ?? [], [data]);
+
+  const goToTransaction = (transactionId: string) => {
+    onClose();
+    router.push(`/agent/transactions/detail/${transactionId}`);
+  };
 
   return (
     <Modal
@@ -76,9 +84,15 @@ export function TransactionHistoryModal({
                   <RotateCcw size={18} className="text-gray-600" />
                 </div>
                 <div>
-                  <Text fw={500} size="sm">
-                    {transaction.transactionReferenceNumber}
-                  </Text>
+                  <UnstyledButton
+                    onClick={() => goToTransaction(transaction.transactionId)}
+                    aria-label={`View transaction ${transaction.transactionReferenceNumber}`}
+                    className="text-left text-inherit hover:text-primary-400!"
+                  >
+                    <Text fw={500} size="sm" inherit>
+                      {transaction.transactionReferenceNumber}
+                    </Text>
+                  </UnstyledButton>
                   <Text size="xs" c="dimmed">
                     {transaction.transactionType} •{" "}
                     {formatLocalDate(transaction.transactionDate, "d MMM yyyy")} •{" "}
@@ -87,7 +101,10 @@ export function TransactionHistoryModal({
                 </div>
               </Group>
               <Text fw={600} size="sm">
-                {transaction.currency} {transaction.foreignAmount}
+                {formatCurrencyAmount(
+                  transaction.foreignAmount,
+                  transaction.currency,
+                )}
               </Text>
             </Group>
           ))}

@@ -55,7 +55,8 @@ export function useAgentTransactionRateCalculator({
   const [displayRate, setDisplayRate] = useState(defaultLabel);
   const [hasValidRate, setHasValidRate] = useState(false);
   const [rateError, setRateError] = useState<string | null>(null);
-  const { mutateAsync, isPending } = useCreateData(agentApi.rates.calculate);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const { mutateAsync } = useCreateData(agentApi.rates.calculate);
 
   const getValuesRef = useRef(getValues);
   const setSendAmountRef = useRef(setSendAmount);
@@ -104,6 +105,7 @@ export function useAgentTransactionRateCalculator({
         setSendAmountRef.current("");
       }
 
+      setIsCalculating(true);
       try {
         const response = await mutateAsync({
           fromCurrency,
@@ -167,6 +169,10 @@ export function useAgentTransactionRateCalculator({
           });
         }
         return false;
+      } finally {
+        if (requestSeq === requestSeqRef.current) {
+          setIsCalculating(false);
+        }
       }
     },
     [mutateAsync, clearStaleRate]
@@ -182,7 +188,7 @@ export function useAgentTransactionRateCalculator({
   return {
     displayRate,
     recalculate,
-    isCalculating: isPending,
+    isCalculating,
     hasValidRate,
     rateError,
   };

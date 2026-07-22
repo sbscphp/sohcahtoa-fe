@@ -171,31 +171,21 @@ export default function RateCalculatorPage() {
 
           <div className="flex flex-col w-full">
             <div className="flex flex-col items-center p-6 gap-6 w-full bg-[#F9F9F9] rounded-t-3xl">
-              <div className="relative w-full max-w-[688px]">
-                <CurrencyAmountInput
-                  label="Converted to"
-                  value={sendAmount}
-                  onChange={(v) => setSendAmount(v)}
-                  currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
-                  currencies={CURRENCIES}
-                  onCurrencyChange={(c) => {
-                    const code = c?.code ?? CURRENCIES[0].code;
-                    setSendCurrency(code);
-                    recalculate(receiveAmount, undefined, code);
-                  }}
-                  placeholder="0"
-                  readOnly
-                  showDropdown={false}
-                />
-                {isCalculating ? (
-                  <div
-                    className="pointer-events-none absolute inset-0 top-10 flex items-center justify-center rounded-lg bg-[#F9F9F9]/80"
-                    aria-hidden
-                  >
-                    <Loader2 className="size-6 animate-spin text-[#4D4B4B]" />
-                  </div>
-                ) : null}
-              </div>
+              <CurrencyAmountInput
+                label="Converted to"
+                value={sendAmount}
+                onChange={(v) => setSendAmount(v)}
+                currency={getCurrencyByCode(sendCurrency) ?? CURRENCIES[0]}
+                currencies={CURRENCIES}
+                onCurrencyChange={(c) => {
+                  const code = c?.code ?? CURRENCIES[0].code;
+                  setSendCurrency(code);
+                  recalculate(receiveAmount, undefined, code);
+                }}
+                placeholder="0"
+                readOnly
+                showDropdown={false}
+              />
             </div>
             <div className="flex flex-row justify-between items-center py-4 px-6 gap-6 w-full min-h-[56px] bg-black rounded-b-3xl">
               <span className="font-normal text-base leading-6 text-white">
