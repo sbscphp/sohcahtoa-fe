@@ -191,6 +191,7 @@ type DomiciliaryBankDetails = {
   bankName: unknown;
   accountName: unknown;
   swiftCode: unknown;
+  iban?: unknown;
   routingNumber: unknown;
   bankAddress: unknown;
   currency: string;
@@ -275,6 +276,7 @@ function domiciliaryBankDetailsFromPickup(
     bankName: dom.domiciliaryBankName,
     accountName: dom.accountName,
     swiftCode: dom.swiftCode,
+    ...(dom.iban ? { iban: dom.iban } : {}),
     routingNumber: dom.routingNumber,
     bankAddress: dom.bankAddress,
     currency: normalizeFxCurrency(currency) ?? "USD",
@@ -286,6 +288,7 @@ type DomiciliaryAccountFormFields = {
   domiciliaryBankName?: unknown;
   accountName?: unknown;
   swiftCode?: unknown;
+  iban?: unknown;
   routingNumber?: unknown;
   bankAddress?: unknown;
 };

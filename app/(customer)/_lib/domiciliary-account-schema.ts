@@ -6,6 +6,7 @@ import {
   digitsFieldSchema,
   sanitizeBankAccountNumber,
   sanitizeBankName,
+  sanitizeIban,
   sanitizePersonName,
   sanitizePostalAddress,
   sanitizeRoutingNumber,
@@ -35,6 +36,8 @@ export const domiciliaryAccountSchema = z
       patternMessage: "Account name can only contain letters, spaces, and . ' -",
     }),
     swiftCode: swiftCodeFieldSchema(),
+    /** Optional — required for some foreign banks (e.g. UK). */
+    iban: z.string(),
     routingNumber: digitsFieldSchema({
       label: "Routing number",
       min: INPUT_LIMITS.routingNumberMin,
@@ -47,6 +50,17 @@ export const domiciliaryAccountSchema = z
       pattern: INPUT_PATTERNS.postalAddress,
       patternMessage: "Bank address can only contain letters, numbers, spaces, and . , # / -",
     }),
+  })
+  .superRefine((data, ctx) => {
+    const iban = sanitizeIban(data.iban);
+    if (!iban) return;
+    if (iban.length < INPUT_LIMITS.ibanMin || iban.length > INPUT_LIMITS.iban) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["iban"],
+        message: "Enter a valid IBAN",
+      });
+    }
   });
 
 export type DomiciliaryAccountFormData = z.infer<typeof domiciliaryAccountSchema>;
@@ -59,6 +73,7 @@ export function domiciliaryAccountInitialValues(
     domiciliaryBankName: sanitizeBankName(initial?.domiciliaryBankName ?? ""),
     accountName: sanitizePersonName(initial?.accountName ?? ""),
     swiftCode: sanitizeSwiftCode(initial?.swiftCode ?? ""),
+    iban: sanitizeIban(initial?.iban ?? ""),
     routingNumber: sanitizeRoutingNumber(initial?.routingNumber ?? ""),
     bankAddress: sanitizePostalAddress(initial?.bankAddress ?? ""),
   };
@@ -71,6 +86,7 @@ export {
   sanitizeBankName as sanitizeDomiciliaryBankName,
   sanitizePersonName as sanitizeDomiciliaryAccountName,
   sanitizeSwiftCode as sanitizeDomiciliarySwiftCode,
+  sanitizeIban as sanitizeDomiciliaryIban,
   sanitizeRoutingNumber as sanitizeDomiciliaryRoutingNumber,
   sanitizePostalAddress as sanitizeDomiciliaryBankAddress,
 } from "@/app/_lib/input-field-rules";

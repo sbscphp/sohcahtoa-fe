@@ -180,6 +180,7 @@ const payoutMethodSchema = z
     domiciliaryBankName: z.string(),
     accountName: z.string(),
     swiftCode: z.string(),
+    iban: z.string(),
     routingNumber: z.string(),
     bankAddress: z.string(),
   })
@@ -209,6 +210,7 @@ const payoutMethodSchema = z
         domiciliaryBankName: data.domiciliaryBankName,
         accountName: data.accountName,
         swiftCode: data.swiftCode,
+        iban: data.iban,
         routingNumber: data.routingNumber,
         bankAddress: data.bankAddress,
       });
@@ -237,6 +239,7 @@ export type PickupPointFormData = z.infer<typeof pickupOnlySchema> &
       domiciliaryBankName: string;
       accountName: string;
       swiftCode: string;
+      iban: string;
       routingNumber: string;
       bankAddress: string;
     };
@@ -352,6 +355,7 @@ export default function PickupPointStep({
         (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.accountName || "",
       swiftCode:
         (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.swiftCode || "",
+      iban: (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.iban || "",
       routingNumber:
         (initialValues as Partial<PickupPointFormData>)?.domAccountDetails?.routingNumber || "",
       bankAddress:
@@ -511,6 +515,7 @@ export default function PickupPointStep({
           domiciliaryBankName: v.domiciliaryBankName.trim(),
           accountName: v.accountName.trim(),
           swiftCode: v.swiftCode.trim().toUpperCase(),
+          iban: v.iban.trim().toUpperCase(),
           routingNumber: v.routingNumber.trim(),
           bankAddress: v.bankAddress.trim(),
         }
@@ -749,6 +754,7 @@ export default function PickupPointStep({
             payoutMethodForm.setFieldValue("domiciliaryBankName", "");
             payoutMethodForm.setFieldValue("accountName", "");
             payoutMethodForm.setFieldValue("swiftCode", "");
+            payoutMethodForm.setFieldValue("iban", "");
             payoutMethodForm.setFieldValue("routingNumber", "");
             payoutMethodForm.setFieldValue("bankAddress", "");
           }}
@@ -980,6 +986,7 @@ export default function PickupPointStep({
               | "domiciliaryBankName"
               | "accountName"
               | "swiftCode"
+              | "iban"
               | "routingNumber"
               | "bankAddress",
               string

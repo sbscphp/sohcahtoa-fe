@@ -1294,6 +1294,7 @@ export interface CustomerBankAccount {
   accountName: string;
   currency?: CustomerBankAccountCurrency;
   swiftCode?: string | null;
+  iban?: string | null;
   routingNumber?: string | null;
   bankAddress?: string | null;
   isVerified: boolean;
@@ -1317,6 +1318,7 @@ export interface CreateCustomerBankAccountRequest {
   /** FX code (e.g. USD) for domiciliary accounts; omit for local NGN. */
   currency?: string;
   swiftCode?: string;
+  iban?: string;
   routingNumber?: string;
   bankAddress?: string;
 }

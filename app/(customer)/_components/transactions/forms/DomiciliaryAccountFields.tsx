@@ -10,6 +10,7 @@ import {
   sanitizeDomiciliaryAccountNumber,
   sanitizeDomiciliaryBankAddress,
   sanitizeDomiciliaryBankName,
+  sanitizeDomiciliaryIban,
   sanitizeDomiciliaryRoutingNumber,
   sanitizeDomiciliarySwiftCode,
 } from "@/app/(customer)/_lib/domiciliary-account-schema";
@@ -20,6 +21,7 @@ type DomiciliaryFieldName =
   | "domiciliaryBankName"
   | "accountName"
   | "swiftCode"
+  | "iban"
   | "routingNumber"
   | "bankAddress";
 
@@ -110,21 +112,36 @@ export default function DomiciliaryAccountFields({
           error={errors.swiftCode}
         />
         <TextInput
-          label="Routing Number"
-          placeholder="Enter routing number"
-          required
+          label="IBAN"
+          placeholder="e.g. GB29NWBK60161331926819"
+          description="Optional — include if your bank uses IBAN"
           size="md"
-          {...getInputProps("routingNumber")}
+          {...getInputProps("iban")}
           {...bindSanitizedInput(
-            sanitizeDomiciliaryRoutingNumber,
-            (value) => setFieldValue("routingNumber", value),
-            DOMICILIARY_INPUT_LIMITS.routingNumberGeneric,
-            "numeric",
-            afterSanitize("routingNumber")
+            sanitizeDomiciliaryIban,
+            (value) => setFieldValue("iban", value),
+            DOMICILIARY_INPUT_LIMITS.iban,
+            undefined,
+            afterSanitize("iban")
           )}
-          error={errors.routingNumber}
+          error={errors.iban}
         />
       </div>
+      <TextInput
+        label="Routing Number"
+        placeholder="Enter routing number"
+        required
+        size="md"
+        {...getInputProps("routingNumber")}
+        {...bindSanitizedInput(
+          sanitizeDomiciliaryRoutingNumber,
+          (value) => setFieldValue("routingNumber", value),
+          DOMICILIARY_INPUT_LIMITS.routingNumberGeneric,
+          "numeric",
+          afterSanitize("routingNumber")
+        )}
+        error={errors.routingNumber}
+      />
       <Textarea
         label="Bank Address"
         placeholder="Enter bank address"

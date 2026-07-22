@@ -26,6 +26,7 @@ const domiciliaryAccount: CustomerBankAccount = {
   accountName: "FX User",
   currency: "USD",
   swiftCode: "CITIUS33",
+  iban: "GB29NWBK60161331926819",
   routingNumber: "021000089",
   bankAddress: "388 Greenwich St",
   isVerified: true,
@@ -72,6 +73,7 @@ describe("domiciliary account mapping", () => {
           domiciliaryBankName: "Citibank",
           accountName: "FX User",
           swiftCode: "CITIUS33",
+          iban: "GB29NWBK60161331926819",
           routingNumber: "021000089",
           bankAddress: "388 Greenwich St",
         },
@@ -83,9 +85,27 @@ describe("domiciliary account mapping", () => {
       accountName: "FX User",
       currency: "USD",
       swiftCode: "CITIUS33",
+      iban: "GB29NWBK60161331926819",
       routingNumber: "021000089",
       bankAddress: "388 Greenwich St",
     });
+  });
+
+  it("omits empty iban from create payload", () => {
+    expect(
+      toCreateDomiciliaryBankAccountPayload(
+        {
+          domiciliaryAccountNumber: "1234567890",
+          domiciliaryBankName: "Citibank",
+          accountName: "FX User",
+          swiftCode: "CITIUS33",
+          iban: "",
+          routingNumber: "021000089",
+          bankAddress: "388 Greenwich St",
+        },
+        "USD",
+      ).iban,
+    ).toBeUndefined();
   });
 
   it("maps API account to refund account using stored extras", () => {
@@ -95,15 +115,18 @@ describe("domiciliary account mapping", () => {
     expect(mapped.domiciliaryAccountNumber).toBe("1234567890");
     expect(mapped.accountName).toBe("FX User");
     expect(mapped.swiftCode).toBe("CITIUS33");
+    expect(mapped.iban).toBe("GB29NWBK60161331926819");
   });
 
   it("prefers form extras when API omits extended fields", () => {
     const mapped = mapCustomerBankAccountToDomiciliaryRefund(localAccount, {
       swiftCode: "ABCDUS33",
+      iban: "DE89370400440532013000",
       routingNumber: "111111111",
       bankAddress: "1 Main St",
     });
     expect(mapped.swiftCode).toBe("ABCDUS33");
+    expect(mapped.iban).toBe("DE89370400440532013000");
     expect(mapped.routingNumber).toBe("111111111");
     expect(mapped.bankAddress).toBe("1 Main St");
   });

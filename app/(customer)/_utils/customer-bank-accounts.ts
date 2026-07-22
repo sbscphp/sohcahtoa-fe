@@ -90,12 +90,14 @@ export function toCreateDomiciliaryBankAccountPayload(
   currency: string,
 ): CreateCustomerBankAccountRequest {
   const normalizedCurrency = normalizeBankAccountCurrency(currency) ?? "USD";
+  const iban = data.iban.trim();
   return {
     bankName: data.domiciliaryBankName.trim(),
     accountNumber: data.domiciliaryAccountNumber.trim(),
     accountName: data.accountName.trim(),
     currency: normalizedCurrency === "FOREIGN" ? "USD" : normalizedCurrency,
     swiftCode: data.swiftCode.trim(),
+    ...(iban ? { iban } : {}),
     routingNumber: data.routingNumber.trim(),
     bankAddress: data.bankAddress.trim(),
   };
@@ -134,6 +136,7 @@ export function mapCustomerBankAccountToDomiciliaryRefund(
     domiciliaryBankName: account.bankName,
     accountName: account.accountName,
     swiftCode: extras?.swiftCode?.trim() ?? account.swiftCode?.trim() ?? "",
+    iban: extras?.iban?.trim() ?? account.iban?.trim() ?? "",
     routingNumber: extras?.routingNumber?.trim() ?? account.routingNumber?.trim() ?? "",
     bankAddress: extras?.bankAddress?.trim() ?? account.bankAddress?.trim() ?? "",
   };
@@ -172,6 +175,7 @@ export function mergeRefundDomiciliaryIntoPickupData(
       domiciliaryBankName: account.domiciliaryBankName,
       accountName: account.accountName,
       swiftCode: account.swiftCode,
+      iban: account.iban,
       routingNumber: account.routingNumber,
       bankAddress: account.bankAddress,
     },
@@ -217,6 +221,7 @@ export function domiciliaryRefundAccountFromPickupData(
     domiciliaryBankName: refund.domiciliaryBankName!.trim(),
     accountName: refund.accountName!.trim(),
     swiftCode: refund.swiftCode?.trim() ?? "",
+    iban: refund.iban?.trim() ?? "",
     routingNumber: refund.routingNumber?.trim() ?? "",
     bankAddress: refund.bankAddress?.trim() ?? "",
   };

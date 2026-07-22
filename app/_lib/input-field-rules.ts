@@ -12,6 +12,8 @@ export const INPUT_LIMITS = {
   routingNumberMin: 5,
   swiftCode: 11,
   swiftCodeMin: 8,
+  iban: 34,
+  ibanMin: 15,
   bankName: 100,
   bankNameMin: 2,
   personName: 100,
@@ -72,6 +74,13 @@ export function sanitizeSwiftCode(
   maxLength = INPUT_LIMITS.swiftCode
 ): string {
   return sanitizeAlphanumeric(value, maxLength, { uppercase: true });
+}
+
+/** IBAN — strips spaces, uppercase alphanumeric, capped at 34. */
+export function sanitizeIban(value: string, maxLength = INPUT_LIMITS.iban): string {
+  return sanitizeAlphanumeric(value.replaceAll(/\s/g, ""), maxLength, {
+    uppercase: true,
+  });
 }
 
 /** Nigerian NGN account (10 digits). */
