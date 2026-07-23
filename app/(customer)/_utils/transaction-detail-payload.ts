@@ -3,6 +3,7 @@ import type {
   TransactionDetailData,
   TransactionDetailPaymentEntry,
   TransactionDetailRequiredDoc,
+  TransactionDetailRequiredDocUploaded,
   TransactionDetailStep,
 } from "@/app/_lib/api/types";
 import type { PaymentDetailsData } from "@/app/(customer)/_components/transactions/details/PaymentDetailsSection";
@@ -82,16 +83,52 @@ function mapPaymentDetailsFromApi(entries: TransactionDetailPaymentEntry[]): Pay
   };
 }
 
-function isRequiredDocEntry(doc: TransactionDetailRequiredDoc): boolean {
+/** Prefer `uploads[]` when present; otherwise fall back to singular `uploaded`. */
+export function resolveRequiredDocUploads(
+  doc: TransactionDetailRequiredDoc,
+): TransactionDetailRequiredDocUploaded[] {
+  if (Array.isArray(doc.uploads) && doc.uploads.length > 0) {
+    return doc.uploads;
+  }
+  return doc.uploaded != null ? [doc.uploaded] : [];
+}
+
+type ExpandedRequiredDoc = {
+  type: string;
+  required?: boolean;
+  uploaded: TransactionDetailRequiredDocUploaded | null;
+};
+
+function isRequiredDocEntry(doc: ExpandedRequiredDoc): boolean {
   return doc.required !== false;
 }
 
+/** One row per file; missing docs stay as a single null-upload row. */
+function expandRequiredDocuments(
+  requiredDocuments: TransactionDetailRequiredDoc[],
+): ExpandedRequiredDoc[] {
+  const expanded: ExpandedRequiredDoc[] = [];
+
+  for (const doc of requiredDocuments) {
+    const files = resolveRequiredDocUploads(doc);
+    if (files.length === 0) {
+      expanded.push({ type: doc.type, required: doc.required, uploaded: null });
+      continue;
+    }
+    for (const file of files) {
+      expanded.push({ type: doc.type, required: doc.required, uploaded: file });
+    }
+  }
+
+  return expanded;
+}
+
 /** Required docs always show; optional docs only when a file was uploaded. */
-function shouldIncludeDocumentInDetailView(doc: TransactionDetailRequiredDoc): boolean {
+function shouldIncludeDocumentInDetailView(doc: ExpandedRequiredDoc): boolean {
   return isRequiredDocEntry(doc) || doc.uploaded != null;
 }
 
-function countByDocumentType(docs: TransactionDetailRequiredDoc[]): Map<string, number> {
+function countByDocumentType(docs: ExpandedRequiredDoc[]): Map<string, number> {
   const totals = new Map<string, number>();
   for (const doc of docs) {
     totals.set(doc.type, (totals.get(doc.type) ?? 0) + 1);
@@ -113,7 +150,8 @@ function mapRequiredDocsToDocumentItems(
   comments: TransactionDetailComment[] = []
 ): TransactionDocumentItem[] {
   const statusOverrides = buildDocStatusOverrideMap(comments);
-  const visibleDocs = requiredDocuments.filter(shouldIncludeDocumentInDetailView);
+  const expanded = expandRequiredDocuments(requiredDocuments);
+  const visibleDocs = expanded.filter(shouldIncludeDocumentInDetailView);
   const totalsByType = countByDocumentType(visibleDocs);
   const occurrenceByType = new Map<string, number>();
 
@@ -161,6 +199,7 @@ function mapRequiredDocsToDocumentItems(
 export function buildDetailPayloadFromApi(api: TransactionDetailData): TransactionDetailPayload {
   const stepData = getStepData(api);
   const docs = api.requiredDocuments ?? [];
+  const expandedDocs = expandRequiredDocuments(docs);
   const pickup = api.cashPickup;
   const requiredDocuments: RequiredDocumentsData = {
     bvn: stepData?.bvn ?? api.personalInfo?.bvn ?? "",
@@ -182,7 +221,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     workPermitNumber: stepData?.workPermitNumber ?? api.personalInfo?.workPermitNumber ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: (() => {
-      const uploadedDocs = docs.filter((d) => d.uploaded != null);
+      const uploadedDocs = expandedDocs.filter((d) => d.uploaded != null);
       const totalsByType = countByDocumentType(uploadedDocs);
       const occurrenceByType = new Map<string, number>();
 
@@ -201,7 +240,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
         };
       });
     })(),
-    missingDocumentTypes: docs
+    missingDocumentTypes: expandedDocs
       .filter((d) => isRequiredDocEntry(d) && d.uploaded == null)
       .map((d, index) => ({
         id: `missing-${d.type}-${index}`,

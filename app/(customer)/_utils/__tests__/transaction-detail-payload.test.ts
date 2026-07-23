@@ -1,12 +1,32 @@
 import { buildDetailPayloadFromApi } from "@/app/(customer)/_utils/transaction-detail-payload";
-import type { TransactionDetailData } from "@/app/_lib/api/types";
+import type {
+  TransactionDetailData,
+  TransactionDetailRequiredDocUploaded,
+} from "@/app/_lib/api/types";
+
+function makeUploaded(
+  id: string,
+  fileName: string,
+  fileUrl: string,
+): TransactionDetailRequiredDocUploaded {
+  return {
+    id,
+    fileName,
+    fileUrl,
+    status: "PENDING",
+    rejectionNotes: null,
+    uploadedAt: "2026-06-10T14:39:57.555Z",
+    verifiedAt: null,
+  };
+}
 
 function makeApiDoc(
   type: string,
   required: boolean,
   uploaded: TransactionDetailData["requiredDocuments"][number]["uploaded"] = null,
+  uploads?: TransactionDetailRequiredDocUploaded[],
 ) {
-  return { type, required, uploaded };
+  return { type, required, uploaded, ...(uploads ? { uploads } : {}) };
 }
 
 describe("buildDetailPayloadFromApi documents", () => {
@@ -27,15 +47,11 @@ describe("buildDetailPayloadFromApi documents", () => {
   } satisfies Partial<TransactionDetailData>;
 
   it("includes optional documents in the sheet when uploaded", () => {
-    const uploaded = {
-      id: "5a880452-4581-4d1d-b590-39c7a3e2d125",
-      fileName: "bank-verification.pdf",
-      fileUrl: "https://example.com/bank.pdf",
-      status: "PENDING",
-      rejectionNotes: null,
-      uploadedAt: "2026-06-10T14:39:57.555Z",
-      verifiedAt: null,
-    };
+    const uploaded = makeUploaded(
+      "5a880452-4581-4d1d-b590-39c7a3e2d125",
+      "bank-verification.pdf",
+      "https://example.com/bank.pdf",
+    );
 
     const payload = buildDetailPayloadFromApi({
       ...baseApi,
@@ -62,24 +78,8 @@ describe("buildDetailPayloadFromApi documents", () => {
   });
 
   it("lists every proof of funds file when multiple share the same type", () => {
-    const proofOne = {
-      id: "pof-1",
-      fileName: "proof-a.pdf",
-      fileUrl: "https://example.com/proof-a.pdf",
-      status: "PENDING",
-      rejectionNotes: null,
-      uploadedAt: "2026-06-10T14:39:57.555Z",
-      verifiedAt: null,
-    };
-    const proofTwo = {
-      id: "pof-2",
-      fileName: "proof-b.pdf",
-      fileUrl: "https://example.com/proof-b.pdf",
-      status: "PENDING",
-      rejectionNotes: null,
-      uploadedAt: "2026-06-10T14:40:57.555Z",
-      verifiedAt: null,
-    };
+    const proofOne = makeUploaded("pof-1", "proof-a.pdf", "https://example.com/proof-a.pdf");
+    const proofTwo = makeUploaded("pof-2", "proof-b.pdf", "https://example.com/proof-b.pdf");
 
     const payload = buildDetailPayloadFromApi({
       ...baseApi,
@@ -111,6 +111,54 @@ describe("buildDetailPayloadFromApi documents", () => {
     ]);
   });
 
+  it("prioritizes uploads[] over singular uploaded for multi-file docs", () => {
+    const first = makeUploaded(
+      "ef445419-71d8-4475-ae81-552f7abc21dd",
+      "receipt.pdf",
+      "https://example.com/receipt.pdf",
+    );
+    const second = makeUploaded(
+      "ee559e50-c135-4094-87d6-9e1ff3e8944e",
+      "Partner Purpose.jpg",
+      "https://example.com/partner.jpg",
+    );
+
+    const payload = buildDetailPayloadFromApi({
+      ...baseApi,
+      requiredDocuments: [
+        makeApiDoc("PASSPORT", true, makeUploaded("pass-1", "passport.pdf", "https://example.com/p.pdf")),
+        makeApiDoc("PROOF_OF_FUNDS", true, first, [first, second]),
+      ],
+    } as TransactionDetailData);
+
+    expect(payload.requiredDocuments.uploadedFiles.map((f) => f.id)).toEqual([
+      "pass-1",
+      "ef445419-71d8-4475-ae81-552f7abc21dd",
+      "ee559e50-c135-4094-87d6-9e1ff3e8944e",
+    ]);
+    expect(payload.requiredDocuments.uploadedFiles.map((f) => f.filename)).toEqual([
+      "passport.pdf",
+      "receipt.pdf",
+      "Partner Purpose.jpg",
+    ]);
+    expect(
+      payload.documentsForSheet
+        ?.filter((d) => d.documentType === "PROOF_OF_FUNDS")
+        .map((d) => ({ id: d.id, name: d.name, fileName: d.fileName })),
+    ).toEqual([
+      {
+        id: "ef445419-71d8-4475-ae81-552f7abc21dd",
+        name: "Proof of Funds 1",
+        fileName: "receipt.pdf",
+      },
+      {
+        id: "ee559e50-c135-4094-87d6-9e1ff3e8944e",
+        name: "Proof of Funds 2",
+        fileName: "Partner Purpose.jpg",
+      },
+    ]);
+  });
+
   it("still lists missing required documents only", () => {
     const payload = buildDetailPayloadFromApi({
       ...baseApi,
@@ -132,15 +180,11 @@ describe("buildDetailPayloadFromApi documents", () => {
       ...baseApi,
       status: "REJECTED",
       requiredDocuments: [
-        makeApiDoc("PASSPORT", true, {
-          id: "doc-1",
-          fileName: "passport.jpg",
-          fileUrl: "https://example.com/passport.jpg",
-          status: "PENDING",
-          rejectionNotes: null,
-          uploadedAt: "2026-06-13T23:30:42.566Z",
-          verifiedAt: null,
-        }),
+        makeApiDoc(
+          "PASSPORT",
+          true,
+          makeUploaded("doc-1", "passport.jpg", "https://example.com/passport.jpg"),
+        ),
         makeApiDoc("INVOICE", true, null),
       ],
     } as TransactionDetailData);

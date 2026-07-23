@@ -890,6 +890,7 @@ export interface TransactionDetailRequiredDocUploaded {
 export interface TransactionDetailRequiredDoc {
   type: string;
   required?: boolean;
+  uploads?: TransactionDetailRequiredDocUploaded[];
   uploaded: TransactionDetailRequiredDocUploaded | null;
 }
 
