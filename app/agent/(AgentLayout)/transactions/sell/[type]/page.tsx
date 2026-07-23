@@ -45,7 +45,7 @@ import {
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { notifications } from "@mantine/notifications";
 import {
-  useCustomerBankAccounts,
+  useAgentBankAccounts,
   useDomiciliaryBankAccounts,
 } from "@/app/agent/_hooks/use-agent-bank-accounts";
 import {
@@ -95,6 +95,7 @@ export default function AgentSellTransactionCreationPage() {
   const [confirmationOpened, setConfirmationOpened] = useState(false);
   const [addCustomerOpened, setAddCustomerOpened] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
+  const customerId = selectedCustomer?.userId ?? "";
   const selectedCustomerKycPrefill = useMemo(
     () => ({
       bvn: selectedCustomer?.bvn ?? "",
@@ -127,17 +128,25 @@ export default function AgentSellTransactionCreationPage() {
   const [selectedDomiciliaryId, setSelectedDomiciliaryId] = useState("");
 
   const domiciliaryAccountsEnabled =
-    activeStep === "refund-bank-details" || addBankOpened;
+    Boolean(customerId) &&
+    (activeStep === "refund-bank-details" || addBankOpened);
   const selectedCurrency =
     (transactionAmountData?.sendCurrency ?? "USD").trim().toUpperCase() || "USD";
 
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(agentApi.transactions.create);
-  const { attachToTransaction } = useCustomerBankAccounts({ enabled: false });
+  const { attachToTransaction } = useAgentBankAccounts({
+    customerId,
+    enabled: false,
+  });
   const {
     domiciliaryAccounts: savedDomiciliaryAccounts,
     isLoading: domiciliaryAccountsLoading,
-  } = useDomiciliaryBankAccounts(selectedCurrency, domiciliaryAccountsEnabled);
+  } = useDomiciliaryBankAccounts(
+    customerId,
+    selectedCurrency,
+    domiciliaryAccountsEnabled,
+  );
 
   const domiciliaryAccounts = useMemo(() => {
     const localIds = new Set(localDomiciliaryAccounts.map((account) => account.id));

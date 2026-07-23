@@ -135,6 +135,8 @@ export default function AgentTransactionCreationPage() {
     PickupPointFormData | BTAPickupPointFormData | TouristPickupPointFormData | null
   >(null);
   const [addBankOpened, setAddBankOpened] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
+  const customerId = selectedCustomer?.userId ?? "";
   const {
     accounts: bankAccounts,
     isLoading: bankAccountsLoading,
@@ -142,8 +144,11 @@ export default function AgentTransactionCreationPage() {
     isSaving: isSavingBankAccount,
     attachToTransaction,
     invalidate: invalidateBankAccounts,
-  } = useAgentBankAccounts();
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerInterface | null>(null);
+  } = useAgentBankAccounts({
+    customerId,
+    currency: "LOCAL",
+    enabled: Boolean(customerId),
+  });
 
   const steps = useMemo(() => {
     const base = getStepsForTransactionType(flowType).map((value) => ({

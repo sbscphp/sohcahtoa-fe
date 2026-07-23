@@ -22,6 +22,16 @@ export const AGENT_API_ENDPOINTS = {
     update: (userId: string) => `/api/agent/customers/${userId}`,
     transactions: (userId: string) =>
       `/api/agent/customers/${userId}/transactions`,
+    bankAccounts: {
+      list: (customerId: string) =>
+        `/api/agent/customers/${customerId}/bank-accounts`,
+      create: (customerId: string) =>
+        `/api/agent/customers/${customerId}/bank-accounts`,
+      setDefault: (customerId: string, accountId: string) =>
+        `/api/agent/customers/${customerId}/bank-accounts/${accountId}/default`,
+      remove: (customerId: string, accountId: string) =>
+        `/api/agent/customers/${customerId}/bank-accounts/${accountId}`,
+    },
   },
   customerAuth: {
     passport: {
@@ -66,6 +76,8 @@ export const AGENT_API_ENDPOINTS = {
     depositInstructions: (id: string) =>
       `/api/agent/transactions/${id}/deposit-instructions`,
     depositStatus: (id: string) => `/api/agent/transactions/${id}/deposit-status`,
+    bankAccounts: (transactionId: string) =>
+      `/api/agent/transactions/${transactionId}/bank-accounts`,
     checkLimits: "/api/agent/transactions/limits/check",
     health: "/api/agent/transactions/health",
     export: "/api/agent/transactions/export",

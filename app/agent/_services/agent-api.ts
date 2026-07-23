@@ -74,6 +74,12 @@ import type {
   AgentPaymentMovementListParams,
   AgentPaymentMovementExportParams,
   AgentPaymentMovementsResponse,
+  AttachBankAccountsToTransactionRequest,
+  AttachBankAccountsToTransactionResponse,
+  CreateCustomerBankAccountRequest,
+  CreateCustomerBankAccountResponse,
+  CustomerBankAccountsListResponse,
+  ListCustomerBankAccountsParams,
 } from "@/app/_lib/api/types";
 
 interface AgentLoginResponseData {
@@ -249,6 +255,26 @@ export const agentApi = {
       apiClient.download(AGENT_API_ENDPOINTS.customers.export, {
         params: params as ApiRequestConfig["params"],
       }),
+    bankAccounts: {
+      list: (customerId: string, params?: ListCustomerBankAccountsParams) =>
+        apiClient.get<CustomerBankAccountsListResponse>(
+          AGENT_API_ENDPOINTS.customers.bankAccounts.list(customerId),
+          { params: params as ApiRequestConfig["params"] },
+        ),
+      create: (customerId: string, data: CreateCustomerBankAccountRequest) =>
+        apiClient.post<CreateCustomerBankAccountResponse>(
+          AGENT_API_ENDPOINTS.customers.bankAccounts.create(customerId),
+          data,
+        ),
+      setDefault: (customerId: string, accountId: string) =>
+        apiClient.patch<CreateCustomerBankAccountResponse>(
+          AGENT_API_ENDPOINTS.customers.bankAccounts.setDefault(customerId, accountId),
+        ),
+      remove: (customerId: string, accountId: string) =>
+        apiClient.delete<{ success: boolean }>(
+          AGENT_API_ENDPOINTS.customers.bankAccounts.remove(customerId, accountId),
+        ),
+    },
   },
 
   dashboard: {
@@ -413,6 +439,15 @@ export const agentApi = {
   
       create: (data: CreateTransactionRequest & { userId: string }) =>
         apiClient.post<Transaction>(AGENT_API_ENDPOINTS.transactions.create, data),
+
+      attachBankAccounts: (
+        transactionId: string,
+        data: AttachBankAccountsToTransactionRequest,
+      ) =>
+        apiClient.post<AttachBankAccountsToTransactionResponse>(
+          AGENT_API_ENDPOINTS.transactions.bankAccounts(transactionId),
+          data,
+        ),
   
       update: (id: string, data: UpdateTransactionRequest) =>
         apiClient.put<Transaction>(AGENT_API_ENDPOINTS.transactions.update(id), data),

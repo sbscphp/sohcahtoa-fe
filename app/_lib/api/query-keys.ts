@@ -588,6 +588,12 @@ export const agentKeys = {
       userId: string,
       params?: { page?: number; limit?: number }
     ) => [...agentKeys.customers.detail(userId), "transactions", params] as const,
+    bankAccounts: {
+      all: (customerId: string) =>
+        [...agentKeys.customers.detail(customerId), "bank-accounts"] as const,
+      list: (customerId: string, currency?: string) =>
+        [...agentKeys.customers.bankAccounts.all(customerId), "list", currency ?? "all"] as const,
+    },
   },
   
   transactions: {
