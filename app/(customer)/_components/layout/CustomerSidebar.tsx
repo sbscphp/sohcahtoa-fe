@@ -25,7 +25,7 @@ type CustomerSidebarProps = {
 const menuItems = [
   { icon: LayoutGrid, label: "Overview", href: "/dashboard" },
   { icon: BanknoteIcon, label: "Transactions", href: "/transactions" },
-  // { icon: History, label: "Transient History", href: "/transient-history" },
+  { icon: History, label: "Transient History", href: "/transient-history" },
   { icon: Calculator, label: "Rate Calculator", href: "/rate-calculator" },
   // { icon: Settings, label: "Settings", href: "/settings" },
 ];
