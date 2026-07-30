@@ -309,10 +309,10 @@ export interface CreateBranchPayload {
   branchManager: string;
   email: string;
   phoneNumber: string;
-  agentName: string;
-  agentEmail: string;
-  agentId: string;
-  agentPhoneNumber: string;
+  agentName?: string;
+  agentEmail?: string;
+  agentId?: string;
+  agentPhoneNumber?: string;
 }
 
 export interface UpdateBranchStatusPayload {

@@ -183,7 +183,7 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
   );
 
   const buildPayload = (): CreateBranchPayload | null => {
-    if (!state || !selectedAgent) return null;
+    if (!state) return null;
 
     return {
       branchName: branchName.trim(),
@@ -193,10 +193,14 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
       branchManager: branchManager.trim(),
       email: managerEmail.trim(),
       phoneNumber: phoneNumber.trim(),
-      agentName: selectedAgent.name,
-      agentEmail: selectedAgent.email,
-      agentId: selectedAgent.id,
-      agentPhoneNumber: selectedAgent.phoneNumber,
+      ...(selectedAgent
+        ? {
+            agentName: selectedAgent.name,
+            agentEmail: selectedAgent.email,
+            agentId: selectedAgent.id,
+            agentPhoneNumber: selectedAgent.phoneNumber,
+          }
+        : {}),
     };
   };
 
@@ -302,24 +306,6 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
       notifications.show({
         title: "Incomplete Form",
         message: "Please complete all required fields before saving.",
-        color: "red",
-      });
-      return;
-    }
-
-    if (isAgentsError) {
-      notifications.show({
-        title: "Unable to Load Agents",
-        message: "Agents could not be fetched. Please try again later.",
-        color: "red",
-      });
-      return;
-    }
-
-    if (!selectedAgent) {
-      notifications.show({
-        title: "Agent Required",
-        message: "Please select an agent before saving the branch.",
         color: "red",
       });
       return;
@@ -555,13 +541,13 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
             <Stack gap="lg">
               <Select
                 label="Agent"
-                placeholder={isAgentsLoading ? "Loading agents..." : "Select an agent"}
+                placeholder={isAgentsLoading ? "Loading agents..." : "Select an agent (optional)"}
                 data={agentOptions}
                 value={agentId}
                 onChange={setAgentId}
-                required
                 radius="md"
                 searchable
+                clearable
                 disabled={isAgentsLoading || isAgentsError || agentOptions.length === 0}
                 error={
                   isAgentsError ? "Unable to load agents. Please try again later." : undefined
@@ -600,12 +586,7 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
                 size="md"
                 buttonType="primary"
                 onClick={handleCreateBranchClick}
-                disabled={
-                  updateBranchMutation.isPending ||
-                  isAgentsLoading ||
-                  isAgentsError ||
-                  !selectedAgent
-                }
+                disabled={updateBranchMutation.isPending}
               >
                 Save Changes
               </CustomButton>

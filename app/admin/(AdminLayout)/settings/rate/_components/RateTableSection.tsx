@@ -24,7 +24,7 @@ const headers = [
   { label: "We buy at", key: "buyAt" },
   { label: "We sell at", key: "sellAt" },
   { label: "Status", key: "status" },
-  { label: "Last updated", key: "lastUpdated" },
+  { label: "Expiry Date", key: "expiryDate" },
   { label: "Action", key: "action" },
 ];
 
@@ -139,7 +139,7 @@ export default function RateTableSection() {
     <div key="status">
       <StatusBadge status={toSentenceCase(item.status)} size="md" />
     </div>,
-    <div key="lastUpdated">{renderDateTimeCell(item.lastUpdated)}</div>,
+    <div key="expiryDate">{renderDateTimeCell(item.expiryDate)}</div>,
     <RowActionIcon
       key="action"
       onClick={() => {

@@ -220,29 +220,11 @@ export default function CreateBranchPage() {
       return;
     }
 
-    if (isAgentsError) {
-      notifications.show({
-        title: "Unable to Load Agents",
-        message: "Agents could not be fetched. Please try again later.",
-        color: "red",
-      });
-      return;
-    }
-
-    if (!selectedAgent) {
-      notifications.show({
-        title: "Agent Required",
-        message: "Please select an agent before creating the branch.",
-        color: "red",
-      });
-      return;
-    }
-
     setIsConfirmOpen(true);
   };
 
   const handleConfirmCreate = () => {
-    if (!state || !selectedAgent || createBranchMutation.isPending) return;
+    if (!state || createBranchMutation.isPending) return;
     if (!isManagerEmailValid || !isBranchEmailValid) {
       notifications.show({
         title: "Invalid Email Address",
@@ -260,10 +242,14 @@ export default function CreateBranchPage() {
       branchManager: branchManager.trim(),
       email: trimmedManagerEmail,
       phoneNumber: phoneNumber.trim(),
-      agentName: selectedAgent.name,
-      agentEmail: selectedAgent.email,
-      agentId: selectedAgent.id,
-      agentPhoneNumber: selectedAgent.phoneNumber,
+      ...(selectedAgent
+        ? {
+            agentName: selectedAgent.name,
+            agentEmail: selectedAgent.email,
+            agentId: selectedAgent.id,
+            agentPhoneNumber: selectedAgent.phoneNumber,
+          }
+        : {}),
     };
 
     createBranchMutation.mutate(payload);
@@ -450,14 +436,13 @@ export default function CreateBranchPage() {
             <Stack gap="lg">
               <Select
                 label="Agent"
-                placeholder={isAgentsLoading ? "Loading agents..." : "Select an agent"}
+                placeholder={isAgentsLoading ? "Loading agents..." : "Select an agent (optional)"}
                 data={agentOptions}
                 value={agentId}
                 onChange={setAgentId}
-                required
                 radius="md"
                 searchable
-                clearable={false}
+                clearable
                 disabled={isAgentsLoading || isAgentsError || agentOptions.length === 0}
                 error={
                   isAgentsError ? "Unable to load agents. Please try again later." : undefined
@@ -496,7 +481,7 @@ export default function CreateBranchPage() {
                 size="md"
                 buttonType="primary"
                 onClick={handleCreateBranchClick}
-                disabled={createBranchMutation.isPending || isAgentsLoading || isAgentsError || !selectedAgent}
+                disabled={createBranchMutation.isPending}
               >
                 Create Branch
               </CustomButton>
