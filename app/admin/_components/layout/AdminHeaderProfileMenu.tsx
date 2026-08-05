@@ -19,13 +19,24 @@ const BASE_SETTING_TABS = [
   { value: "account", label: "Account Information", href: adminRoutes.adminSettingsAccountInformation },
   { value: "password", label: "Password", href: adminRoutes.adminSettingsPassword },
   { value: "notifications", label: "Notifications", href: adminRoutes.adminSettingsNotifications },
-  { value: "pickup-stations", label: "Pick-Up Stations", href: adminRoutes.adminSettingsPickupStations },
 ] as const;
+
+const PICKUP_STATIONS_TAB = {
+  value: "pickup-stations",
+  label: "Pick-Up Stations",
+  href: adminRoutes.adminSettingsPickupStations,
+} as const;
 
 const RATE_TAB = {
   value: "rates",
   label: "Rate Management",
   href: adminRoutes.adminSettingsRates,
+} as const;
+
+const WORKFLOW_CONFIGURATION_TAB = {
+  value: "workflow-configuration",
+  label: "Workflow Configuration",
+  href: adminRoutes.adminSettingsWorkflowConfiguration,
 } as const;
 
 const EMPTY_USER_PERMISSIONS: UserPermission[] = [];
@@ -39,10 +50,17 @@ export default function AdminHeaderProfileMenu() {
 
   const userPermissions = adminUser?.userPermissions ?? EMPTY_USER_PERMISSIONS;
   const hasRateAccess = hasModuleAccess(userPermissions, "RATE");
+  const hasWorkflowAccess = hasModuleAccess(userPermissions, "WORKFLOW");
+  const hasPickUpStationsAccess = hasModuleAccess(userPermissions, "PICKUP_STATIONS");
 
   const settingsMenuItems = useMemo(
-    () => (hasRateAccess ? [...BASE_SETTING_TABS, RATE_TAB] : [...BASE_SETTING_TABS]),
-    [hasRateAccess]
+    () => [
+      ...BASE_SETTING_TABS,
+      ...(hasPickUpStationsAccess ? [PICKUP_STATIONS_TAB] : []),
+      ...(hasRateAccess ? [RATE_TAB] : []),
+      ...(hasWorkflowAccess ? [WORKFLOW_CONFIGURATION_TAB] : []),
+    ],
+    [hasRateAccess, hasWorkflowAccess, hasPickUpStationsAccess]
   );
 
   const [popoverOpen, setPopoverOpen] = useState(false);
