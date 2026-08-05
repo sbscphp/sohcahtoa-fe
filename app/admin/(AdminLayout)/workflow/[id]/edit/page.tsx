@@ -465,7 +465,7 @@ export default function EditWorkflowPage() {
       escalationMinutes: form.values.templateEscalationMinutes,
       hasPtaRequest: form.values.hasPtaRequest,
       stages: form.values.workflowLines.map((line, index) => ({
-        id: line.id,
+        ...(!line.id.startsWith("line-") ? { id: line.id } : {}),
         name: line.workflowType.trim() || `Stage ${index + 1}`,
         type: toStageType(line.workflowType),
         order: index + 1,
