@@ -139,6 +139,9 @@ export default function CustomerDetailsPage() {
                   Date Joined: {dateJoined}
                 </span>
                 <StatusBadge status={currentStatus} />
+                {customer?.accountLock?.isLocked && (
+                  <StatusBadge status="Locked" />
+                )}
               </Group>
             </div>
 
