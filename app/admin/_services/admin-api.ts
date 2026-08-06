@@ -1643,6 +1643,11 @@ export const adminApi = {
         data
       ),
 
+    unlock: (userId: string) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.customers.unlock(userId)
+      ),
+
     transactions: (
       userId: string,
       params?: {
@@ -2313,6 +2318,21 @@ export const adminApi = {
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.settle(id)
       ),
+
+    downloadReceipt: async (transactionId: string): Promise<ApiDownloadResponse> => {
+      const response = await apiClient.post<Response>(
+        API_ENDPOINTS.admin.transactions.downloadReceipt(transactionId),
+        undefined,
+        { returnRawResponse: true }
+      );
+
+      const contentDisposition = response.headers.get("content-disposition");
+      const filename =
+        extractFilenameFromContentDisposition(contentDisposition) ?? undefined;
+      const blob = await response.blob();
+
+      return { blob, filename, contentDisposition: contentDisposition ?? undefined };
+    },
   },
 
   // ==================== Reports ====================

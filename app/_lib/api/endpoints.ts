@@ -150,6 +150,7 @@ export const API_ENDPOINTS = {
       getById: (userId: string) => `/api/admin/customers/${userId}`,
       deactivate: (userId: string) => `/api/admin/customers/${userId}/deactivate`,
       toggleStatus: (userId: string) => `/api/admin/customers/${userId}/status`,
+      unlock: (userId: string) => `/api/admin/customers/${userId}/unlock`,
       transactions: (userId: string) => `/api/admin/customers/${userId}/transactions`,
       transactionsExport: (userId: string) =>
         `/api/admin/customers/${userId}/transactions/export`,
@@ -247,6 +248,8 @@ export const API_ENDPOINTS = {
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
       refund: (id: string) => `/api/admin/transactions/${id}/refund`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
+      downloadReceipt: (transactionId: string) =>
+        `/api/admin/transactions/download/${transactionId}/receipt`,
       unsettledBalance: "/api/admin/transactions/unsettled-balance",
     },
     wallet: {

@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import EmptyState from "@/app/admin/_components/EmptyState";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "../../../_components/DetailItem";
-import { Card, Group, Text, Title } from "@mantine/core";
+import { Card, Group, Loader, Text, Title } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import TakeActionButton from "@/app/admin/_components/TakeActionButton";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 import { ArrowUpRight, File } from "lucide-react";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import type {
   TransactionActionDocumentViewModel,
   TransactionReceiptViewModel,
@@ -51,9 +55,43 @@ export default function Receipt({
   approvalProcessName,
   approvalType,
 }: ReceiptProps) {
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
   const hasData = Boolean(transaction);
   const fieldsToRender = isLoading ? loadingFields : (transaction?.fields ?? []);
+
+  const handleDownloadReceipt = async () => {
+    if (!transactionId || isDownloadingReceipt) return;
+
+    try {
+      setIsDownloadingReceipt(true);
+      const file = await adminApi.transactions.downloadReceipt(transactionId);
+      const objectUrl = URL.createObjectURL(file.blob);
+      const link = document.createElement("a");
+      const fallbackFileName = `transaction-receipt-${transactionId}.pdf`;
+      link.href = objectUrl;
+      link.download = file.filename || fallbackFileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      const apiResponse = (error as unknown as ApiError).data as
+        | ApiResponse
+        | undefined;
+      notifications.show({
+        title: "Receipt Download Failed",
+        message:
+          apiResponse?.error?.message ??
+          (error as Error)?.message ??
+          "Unable to download transaction receipt right now.",
+        color: "red",
+      });
+    } finally {
+      setIsDownloadingReceipt(false);
+    }
+  };
+
   return (
     <Card radius="lg" p="xl" className="m-5 bg-[#F7F7F7]">
       {/* Header */}
@@ -100,7 +138,7 @@ export default function Receipt({
             <DetailItem key={item.label} label={item.label} value={item.value} loading={isLoading} />
           ))}
 
-          {(isLoading || transaction?.document) && (
+          {(isLoading || Boolean(transactionId)) && (
             <div className="space-y-1 md:col-span-3">
               <Text size="xs" className="text-body-text-50!" mb={4}>
                 Payment Receipt
@@ -108,11 +146,11 @@ export default function Receipt({
               {isLoading ? (
                 <div className="h-16 rounded-md border border-gray-300 bg-gray-200/60 animate-pulse" />
               ) : (
-                <a
-                  href={transaction?.document?.url ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex gap-2 mt-3 p-2 border border-gray-300 rounded-md cursor-pointer"
+                <button
+                  type="button"
+                  onClick={handleDownloadReceipt}
+                  disabled={!transactionId || isDownloadingReceipt}
+                  className="flex w-full gap-2 mt-3 p-2 border border-gray-300 rounded-md cursor-pointer text-left disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-[#FFF6F1] border-4 border-[#FFFAF8] rounded-3xl ">
@@ -127,8 +165,12 @@ export default function Receipt({
                       </Text>
                     </div>
                   </div>
-                  <ArrowUpRight size={16} color="#DD4F05" className="mt-2 ml-auto" />
-                </a>
+                  {isDownloadingReceipt ? (
+                    <Loader size={16} color="#DD4F05" className="mt-2 ml-auto" />
+                  ) : (
+                    <ArrowUpRight size={16} color="#DD4F05" className="mt-2 ml-auto" />
+                  )}
+                </button>
               )}
             </div>
           )}

@@ -4,7 +4,7 @@ import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi } from "@/app/admin/_services/admin-api";
 
-type CustomerStatus = "Active" | "Deactivated";
+type CustomerStatus = "Active" | "Deactivated" | "Locked";
 
 interface CustomerApiItem {
   id?: string | number;
@@ -26,6 +26,8 @@ interface CustomerApiItem {
   totalVolume?: number | string;
   isActive?: boolean;
   status?: string;
+  loginStatus?: string;
+  lockedUntil?: string | null;
 }
 
 interface CustomersListResponse {
@@ -62,12 +64,10 @@ function parseNumber(value: unknown): number {
 }
 
 function toStatus(value: CustomerApiItem): CustomerStatus {
-  if (typeof value.isActive === "boolean") {
-    return value.isActive ? "Active" : "Deactivated";
-  }
-
-  const normalized = (value.status ?? "").toLowerCase();
-  return normalized === "active" ? "Active" : "Deactivated";
+  const normalized = (value.loginStatus ?? "").toLowerCase();
+  if (normalized === "active") return "Active";
+  if (normalized === "locked") return "Locked";
+  return "Deactivated";
 }
 
 function mapCustomer(item: CustomerApiItem): CustomerRowItem {

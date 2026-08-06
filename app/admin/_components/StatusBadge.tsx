@@ -33,6 +33,7 @@ const statusColorMap: Record<string, string> = {
   Flagged: "red",
   Reversed: "#6B7280",
   Cancelled: "red",
+  Locked: "#B54708",
 };
 
 interface StatusBadgeProps {
