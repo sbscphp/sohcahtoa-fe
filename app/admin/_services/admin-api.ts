@@ -1643,6 +1643,11 @@ export const adminApi = {
         data
       ),
 
+    unlock: (userId: string) =>
+      apiClient.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.customers.unlock(userId)
+      ),
+
     transactions: (
       userId: string,
       params?: {

@@ -139,6 +139,7 @@ export const API_ENDPOINTS = {
       getById: (userId: string) => `/api/admin/customers/${userId}`,
       deactivate: (userId: string) => `/api/admin/customers/${userId}/deactivate`,
       toggleStatus: (userId: string) => `/api/admin/customers/${userId}/status`,
+      unlock: (userId: string) => `/api/admin/customers/${userId}/unlock`,
       transactions: (userId: string) => `/api/admin/customers/${userId}/transactions`,
       transactionsExport: (userId: string) =>
         `/api/admin/customers/${userId}/transactions/export`,
