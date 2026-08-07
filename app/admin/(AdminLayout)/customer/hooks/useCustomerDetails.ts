@@ -15,6 +15,11 @@ interface CustomerDetailsApiUser {
   totalTransactions?: number | string;
   transactionVolume?: number | string;
   lastActive?: string;
+  accountLock?: {
+    isLocked: boolean;
+    lockedUntil: string | null;
+    failedAttempts: number;
+  };
 }
 
 interface CustomerDetailsResponse {

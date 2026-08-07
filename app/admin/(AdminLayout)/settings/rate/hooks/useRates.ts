@@ -25,6 +25,7 @@ export interface RateListItem {
   buyAt: string;
   sellAt: string;
   lastUpdated: string;
+  expiryDate: string;
   status: string;
 }
 
@@ -152,6 +153,7 @@ function parseRate(raw: Record<string, unknown>): RateListItem {
     currencyPair: getCurrencyPair(raw),
     buyAt: formatNairaValue(raw.buyRate ?? raw.buy_rate ?? raw.buyAt),
     sellAt: formatNairaValue(raw.sellRate ?? raw.sell_rate ?? raw.sellAt),
+    expiryDate: formatDateTime(validUntil),
     lastUpdated: formatDateTime(
       raw.updatedAt ??
         raw.updated_at ??

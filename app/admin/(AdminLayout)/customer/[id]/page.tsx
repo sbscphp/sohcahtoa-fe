@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Group, Text, Divider } from "@mantine/core";
+import { Button, Group, Text, Divider, Menu } from "@mantine/core";
 import { useRouter, useParams } from "next/navigation";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,7 +9,6 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { useCustomerDetails } from "../hooks/useCustomerDetails";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { usePatchData } from "@/app/_lib/api/hooks";
@@ -42,6 +41,8 @@ export default function CustomerDetailsPage() {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [isUnlockConfirmOpen, setIsUnlockConfirmOpen] = useState(false);
+  const [isUnlockSuccessOpen, setIsUnlockSuccessOpen] = useState(false);
   const customerName = customer?.name ?? "—";
   const dateJoined = customer?.dateJoined
     ? new Date(customer.dateJoined).toLocaleString("en-NG", {
@@ -66,6 +67,7 @@ export default function CustomerDetailsPage() {
   const isCurrentlyActive = currentStatus === "Active";
   const actionVerb = isCurrentlyActive ? "Deactivate" : "Reactivate";
   const pastTenseVerb = isCurrentlyActive ? "Deactivated" : "Reactivated";
+  const isLocked = customer?.accountLock?.isLocked === true;
 
   const toggleCustomerStatusMutation = usePatchData(
     (payload: UpdateCustomerStatusPayload) =>
@@ -108,15 +110,50 @@ export default function CustomerDetailsPage() {
     }
   );
 
-  const handleToggleClick = () => {
-    setIsConfirmOpen(true);
-  };
+  const unlockCustomerMutation = usePatchData(
+    () => adminApi.customers.unlock(customerId),
+    {
+      onSuccess: async () => {
+        setIsUnlockConfirmOpen(false);
+        setIsUnlockSuccessOpen(true);
+        notifications.show({
+          title: "Account Unlocked",
+          message: "Customer account has been unlocked successfully.",
+          color: "green",
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.customers.all],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...adminKeys.customers.detail(customerId)],
+          }),
+        ]);
+      },
+      onError: (error) => {
+        const apiResponse = (error as unknown as ApiError).data as ApiResponse;
+        notifications.show({
+          title: "Unlock Failed",
+          message:
+            apiResponse?.error?.message ??
+            error.message ??
+            "Unable to unlock customer account. Please try again.",
+          color: "red",
+        });
+      },
+    }
+  );
 
   const handleConfirm = () => {
     if (!customerId || toggleCustomerStatusMutation.isPending) return;
     toggleCustomerStatusMutation.mutate({
       isActive: !isCurrentlyActive,
     });
+  };
+
+  const handleUnlockConfirm = () => {
+    if (!customerId || unlockCustomerMutation.isPending) return;
+    unlockCustomerMutation.mutate(undefined);
   };
 
   const handleViewAllCustomers = () => {
@@ -139,16 +176,44 @@ export default function CustomerDetailsPage() {
                   Date Joined: {dateJoined}
                 </span>
                 <StatusBadge status={currentStatus} />
+                {isLocked && (
+                  <StatusBadge status="Locked" />
+                )}
               </Group>
             </div>
 
-            <CustomButton
-              buttonType="secondary"
-              onClick={handleToggleClick}
-              disabled={toggleCustomerStatusMutation.isPending}
-            >
-              {isCurrentlyActive ? "Deactivate Customer" : "Reactivate Customer"}
-            </CustomButton>
+            <Menu position="bottom-end" shadow="md" width={160}>
+              <Menu.Target>
+                <Button
+                  radius="xl"
+                  size="md"
+                  color="#DD4F05"
+                  className="self-start md:self-auto"
+                  disabled={
+                    !customer ||
+                    isLoading ||
+                    toggleCustomerStatusMutation.isPending ||
+                    unlockCustomerMutation.isPending
+                  }
+                >
+                  Take Action
+                </Button>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Item onClick={() => setIsConfirmOpen(true)}>
+                  {isCurrentlyActive ? "Deactivate" : "Reactivate"}
+                </Menu.Item>
+                {isLocked && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item onClick={() => setIsUnlockConfirmOpen(true)}>
+                      Unlock Account
+                    </Menu.Item>
+                  </>
+                )}
+              </Menu.Dropdown>
+            </Menu>
           </div>
 
           <Divider className="my-2" />
@@ -226,6 +291,29 @@ export default function CustomerDetailsPage() {
         onClose={() => setIsSuccessOpen(false)}
         title={`Customer ${lastActionPastTense ?? pastTenseVerb}`}
         message={`Customer profile has been successfully ${(lastActionPastTense ?? pastTenseVerb).toLowerCase()}.`}
+        primaryButtonText="View All Customer"
+        onPrimaryClick={handleViewAllCustomers}
+        secondaryButtonText="No, Close"
+      />
+
+      {/* Unlock confirmation modal */}
+      <ConfirmationModal
+        opened={isUnlockConfirmOpen}
+        onClose={() => setIsUnlockConfirmOpen(false)}
+        title="Unlock Account ?"
+        message="Are you sure you want to unlock this customer account? The customer will be able to sign in again."
+        primaryButtonText="Yes, Unlock Account"
+        secondaryButtonText="No, Close"
+        onPrimary={handleUnlockConfirm}
+        loading={unlockCustomerMutation.isPending}
+      />
+
+      {/* Unlock success modal */}
+      <SuccessModal
+        opened={isUnlockSuccessOpen}
+        onClose={() => setIsUnlockSuccessOpen(false)}
+        title="Account Unlocked"
+        message="Customer account has been successfully unlocked."
         primaryButtonText="View All Customer"
         onPrimaryClick={handleViewAllCustomers}
         secondaryButtonText="No, Close"
