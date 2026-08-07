@@ -60,25 +60,22 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
           ? null
           : "Valid email is required",
-      
-      // UPDATED VALIDATION: Strictly +234 followed by 10 digits
       phoneNumber: (value) =>
-        /^\+234\d{10}$/.test(value.trim())
+        /^(0\d{10}|\+234\d{10})$/.test(value.trim())
           ? null
-          : "Phone number must be in +234 format (e.g., +2348031234567)",
-          
-      // Optional field validation
+          : "Phone number must be 080… or +234… format (e.g., 08031234567 or +2348031234567)",
       altPhoneNumber: (value) =>
-        !value || /^\+234\d{10}$/.test(value.trim())
+        !value || /^(0\d{10}|\+234\d{10})$/.test(value.trim())
           ? null
-          : "Phone number must be in +234 format",
-
+          : "Phone number must be 080… or +234… format",
       branch: (value) => (value ? null : "Branch is required"),
       departmentName: (value) => (value ? null : "Department is required"),
+      position: (value) => (value.trim().length ? null : "Position is required"),
       roleName: (value) => (value ? null : "Admin Role is required"),
     },
   });
-   const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+
+  const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const allowedChars = /[0-9+]/;
     if (!allowedChars.test(e.key) && e.key !== "Backspace" && e.key !== "Tab") {
       e.preventDefault();
@@ -128,7 +125,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
       email: values.email.trim(),
       phoneNumber: values.phoneNumber.trim(),
       altPhoneNumber: values.altPhoneNumber.trim() || null,
-      position: values.position.trim() || null,
+      position: values.position.trim(),
       branch: values.branch,
       department: values.departmentName,
       role: values.roleName,
@@ -163,8 +160,8 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
                 label="Phone Number 1"
                 placeholder="+234"
                 required
-                type="tel" // Changed from number to tel
-                maxLength={14} // +234 (4) + 10 digits = 14
+                type="tel"
+                maxLength={14}
                 onKeyDown={handlePhoneKeyPress}
                 {...form.getInputProps("phoneNumber")}
               />
@@ -172,7 +169,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
               <TextInput
                 label="Phone Number 2 (optional)"
                 placeholder="+234"
-                type="tel" // Changed from number to tel
+                type="tel"
                 maxLength={14}
                 onKeyDown={handlePhoneKeyPress}
                 {...form.getInputProps("altPhoneNumber")}
@@ -188,7 +185,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
             </Group>
 
             <Stack gap={4}>
-              <TextInput label="Position" placeholder="Enter position name" {...form.getInputProps("position")} />
+              <TextInput label="Position" placeholder="Enter position name" required {...form.getInputProps("position")} />
               <Text size="xs" c="dimmed">Position user hold in the company</Text>
             </Stack>
 
@@ -199,7 +196,7 @@ export function AddUserModal({ opened, onClose }: AddUserModalProps) {
 
           <Group justify="flex-end">
             <Button variant="outline" radius="xl" onClick={handleClose}>Close</Button>
-            <Button type="submit" color="orange" radius="xl" disabled={!form.isValid()}>
+            <Button type="submit" color="orange" radius="xl">
               Add User
             </Button>
           </Group>
