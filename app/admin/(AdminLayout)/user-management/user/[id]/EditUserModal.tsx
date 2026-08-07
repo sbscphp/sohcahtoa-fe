@@ -81,14 +81,26 @@ export function EditUserModal({
           ? null
           : "Valid email is required",
       phoneNumber: (value) =>
-        value.trim().length ? null : "Phone Number 1 is required",
+        /^(0\d{10}|\+234\d{10})$/.test(value.trim())
+          ? null
+          : "Phone number must be 080… or +234… format (e.g., 08031234567 or +2348031234567)",
+      altPhoneNumber: (value) =>
+        !value || /^(0\d{10}|\+234\d{10})$/.test(value.trim())
+          ? null
+          : "Phone number must be 080… or +234… format",
       branch: (value) => (value ? null : "Branch is required"),
       departmentName: (value) => (value ? null : "Department is required"),
+      position: (value) => (value.trim().length ? null : "Position is required"),
       roleName: (value) => (value ? null : "Admin Role is required"),
     },
   });
 
-  console.log(form.values);
+  const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowedChars = /[0-9+]/;
+    if (!allowedChars.test(e.key) && e.key !== "Backspace" && e.key !== "Tab") {
+      e.preventDefault();
+    }
+  };
 
   const updateUserMutation = usePatchData(
     (payload: UpdateAdminUserPayload) => adminApi.management.users.update(userId!, payload),
@@ -134,7 +146,7 @@ export function EditUserModal({
       email: values.email.trim(),
       phoneNumber: values.phoneNumber.trim(),
       altPhoneNumber: values.altPhoneNumber.trim() || null,
-      position: values.position.trim() || null,
+      position: values.position.trim(),
       branch: values.branch,
       department: values.departmentName,
       role: values.roleName,
@@ -186,14 +198,20 @@ export function EditUserModal({
           <Group grow>
             <TextInput
               label="Phone Number 1"
-              placeholder="+234 00 0000 0000"
+              placeholder="+234"
               required
+              type="tel"
+              maxLength={14}
+              onKeyDown={handlePhoneKeyPress}
               {...form.getInputProps("phoneNumber")}
             />
 
             <TextInput
               label="Phone Number 2 (optional)"
-              placeholder="+234 00 0000 0000"
+              placeholder="+234"
+              type="tel"
+              maxLength={14}
+              onKeyDown={handlePhoneKeyPress}
               {...form.getInputProps("altPhoneNumber")}
             />
           </Group>
@@ -231,6 +249,7 @@ export function EditUserModal({
             <TextInput
               label="Position"
               placeholder="Enter position name"
+              required
               {...form.getInputProps("position")}
             />
             <Text size="xs" c="dimmed">
@@ -265,7 +284,7 @@ export function EditUserModal({
             type="submit"
             color="orange"
             radius="xl"
-            disabled={!form.isValid() || !userId}
+            disabled={!userId}
             loading={updateUserMutation.isPending}
           >
             Save Changes
