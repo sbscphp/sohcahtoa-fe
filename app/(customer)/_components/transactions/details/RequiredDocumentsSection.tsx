@@ -18,7 +18,6 @@ export interface RequiredDocumentsData {
   studentPassportExpiryDate?: string;
   workPermitNumber?: string;
   formAId: string;
-  /** Text initials or signature value — only set when customer signed digitally (not a file upload). */
   digitalSignature?: string;
   /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
   uploadedFiles: Array<{
@@ -88,17 +87,17 @@ export default function RequiredDocumentsSection({
   const makeDoc = (d: { filename: string; url?: string } | undefined, key: string) =>
     d
       ? {
-          filename: d.filename,
-          url: d.url,
-          onView:
-            d.url && onViewDocument
-              ? () => {
-                  const url = d.url;
-                  if (url) onViewDocument(key, d.filename, url);
-                }
-              : undefined,
-          onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
-        }
+        filename: d.filename,
+        url: d.url,
+        onView:
+          d.url && onViewDocument
+            ? () => {
+              const url = d.url;
+              if (url) onViewDocument(key, d.filename, url);
+            }
+            : undefined,
+        onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
+      }
       : undefined;
 
   return (

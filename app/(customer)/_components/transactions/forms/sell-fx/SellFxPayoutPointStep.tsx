@@ -19,7 +19,6 @@ interface SellFxPayoutPointStepProps {
   initialValues?: Partial<SellFxPayoutPointFormData>;
   onSubmit: (data: SellFxPayoutPointFormData) => void;
   onBack?: () => void;
-  /** Agent flow only — when provided, fetches NGN accounts via the agent endpoint (includes customerId). */
   customerId?: string;
 }
 
@@ -31,9 +30,6 @@ export default function SellFxPayoutPointStep({
   customerId,
 }: Readonly<SellFxPayoutPointStepProps>) {
   const [addBankOpened, setAddBankOpened] = useState(false);
-
-  // Agent flow: use agent-scoped endpoint (includes customerId in URL).
-  // Customer flow: use customer-scoped endpoint (no customerId needed).
   const customerHook = useLocalBankAccounts();
   const agentHook = useAgentLocalBankAccounts(customerId ?? "", Boolean(customerId));
   const { accounts: banks, isLoading: banksLoading, addAccount, isSaving } =
