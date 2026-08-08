@@ -358,9 +358,9 @@ function buildOverview(
   const firstStepDataRaw = asRecord(firstStep).data;
   const beneficiary = asRecord(
     raw.beneficiary ||
-      raw.beneficiaryDetails ||
-      (raw?.steps as any[])?.[0]?.data?.beneficiaryDetails ||
-      asRecord(firstStepDataRaw).beneficiaryDetails,
+    raw.beneficiaryDetails ||
+    (raw?.steps as any[])?.[0]?.data?.beneficiaryDetails ||
+    asRecord(firstStepDataRaw).beneficiaryDetails,
   );
   const refundBank = asRecord(
     raw.refundBankDetails || asRecord(firstStepDataRaw).refundBankDetails,
@@ -395,8 +395,8 @@ function buildOverview(
         : "--",
       route: data.customerTransientWalletId
         ? adminRoutes.adminTransientWalletDetails(
-            data.customerTransientWalletId,
-          )
+          data.customerTransientWalletId,
+        )
         : undefined,
     },
   ];
@@ -514,13 +514,13 @@ function buildOverview(
 
   const documentFields: OverviewField[] = Array.isArray(raw.documents)
     ? (raw.documents as Record<string, unknown>[])
-        .map((d) => asRecord(d))
-        .filter((d) => pickString(d.fileUrl) !== "--")
-        .map((d) => ({
-          label: formatEnum(d.documentType),
-          value: pickString(d.fileName, "View Document"),
-          href: pickString(d.fileUrl),
-        }))
+      .map((d) => asRecord(d))
+      .filter((d) => pickString(d.fileUrl) !== "--")
+      .map((d) => ({
+        label: formatEnum(d.documentType),
+        value: pickString(d.fileName, "View Document"),
+        href: pickString(d.fileUrl),
+      }))
     : [];
 
   const baseTitle =
@@ -663,16 +663,16 @@ function buildSettlement(
   const receipt = asRecord(raw.receipt);
   const settlement = asRecord(
     data.transactionSettlement ??
-      details.transactionSettlement ??
-      raw.transactionSettlement,
+    details.transactionSettlement ??
+    raw.transactionSettlement,
   );
   const header = buildHeaderData(data, raw);
 
   const prepaidCard = asRecord(raw.prepaidCard);
   const prepaidCardFallback =
     pickString(prepaidCard.bankName) !== "--" ||
-    pickString(prepaidCard.maskedPan) !== "--" ||
-    pickString(prepaidCard.accountName) !== "--"
+      pickString(prepaidCard.maskedPan) !== "--" ||
+      pickString(prepaidCard.accountName) !== "--"
       ? `${pickString(prepaidCard.bankName)} | ${pickString(prepaidCard.maskedPan)} | ${pickString(prepaidCard.accountName)}`
       : "--";
 
@@ -751,18 +751,18 @@ function buildSettlement(
   const settlementReceipt: TransactionDocumentViewModel | null =
     settlementReceiptUrl !== "--"
       ? {
+        title: pickString(receipt.title, "Settlement Receipt"),
+        fileName: pickString(receipt.fileName, "settlement-receipt"),
+        fileSize: formatFileSize(receipt.fileSize),
+        url: settlementReceiptUrl,
+      }
+      : pickString(receipt.fileUrl) !== "--"
+        ? {
           title: pickString(receipt.title, "Settlement Receipt"),
           fileName: pickString(receipt.fileName, "settlement-receipt"),
           fileSize: formatFileSize(receipt.fileSize),
-          url: settlementReceiptUrl,
+          url: pickString(receipt.fileUrl),
         }
-      : pickString(receipt.fileUrl) !== "--"
-        ? {
-            title: pickString(receipt.title, "Settlement Receipt"),
-            fileName: pickString(receipt.fileName, "settlement-receipt"),
-            fileSize: formatFileSize(receipt.fileSize),
-            url: pickString(receipt.fileUrl),
-          }
         : null;
 
   const hasContent =
@@ -847,8 +847,8 @@ function extractWorkflowHistory(
 ): TransactionWorkflowHistoryItemViewModel[] {
   const history = Array.isArray(raw.history)
     ? raw.history
-        .filter((item) => item && typeof item === "object")
-        .map((item) => asRecord(item))
+      .filter((item) => item && typeof item === "object")
+      .map((item) => asRecord(item))
     : [];
 
   const sortedHistory = history.sort((a, b) => {

@@ -18,6 +18,8 @@ export interface RequiredDocumentsData {
   studentPassportExpiryDate?: string;
   workPermitNumber?: string;
   formAId: string;
+  /** Text initials or signature value — only set when customer signed digitally (not a file upload). */
+  digitalSignature?: string;
   /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
   uploadedFiles: Array<{
     /** Unique per uploaded file — required when multiple files share a document type. */
@@ -130,6 +132,7 @@ export default function RequiredDocumentsSection({
       />
       <LabelText hideWhenEmpty label="Applicant Passport Issued Date" text={data.passportIssueDate} />
       <LabelText hideWhenEmpty label="Applicant Passport Expiry Date" text={data.passportExpiryDate} />
+      <LabelText hideWhenEmpty label="Digital Signature" text={data.digitalSignature} />
 
       {data.uploadedFiles.map((file) => (
         <LabelText

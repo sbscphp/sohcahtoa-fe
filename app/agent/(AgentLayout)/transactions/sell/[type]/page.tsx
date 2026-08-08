@@ -362,6 +362,7 @@ export default function AgentSellTransactionCreationPage() {
               }
               onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
+              customerId={customerId}
             />
           );
         default:
@@ -403,6 +404,7 @@ export default function AgentSellTransactionCreationPage() {
               }
               onSubmit={handlePickupPointSubmit}
               onBack={handleBack}
+              customerId={customerId}
             />
           );
         default:
@@ -443,6 +445,7 @@ export default function AgentSellTransactionCreationPage() {
             }
             onSubmit={handlePickupPointSubmit}
             onBack={handleBack}
+            customerId={customerId}
           />
         );
       default:

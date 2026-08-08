@@ -9,6 +9,7 @@ import PickupPointStep, {
 import { AddBankAccountModal } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import type { AddBankAccountFormData } from "@/app/(customer)/_components/modals/AddBankAccountModal";
 import { useLocalBankAccounts } from "@/app/(customer)/_hooks/use-customer-bank-accounts";
+import { useLocalBankAccounts as useAgentLocalBankAccounts } from "@/app/agent/_hooks/use-agent-bank-accounts";
 import { toCreateBankAccountPayload } from "@/app/(customer)/_utils/customer-bank-accounts";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 
@@ -18,6 +19,8 @@ interface SellFxPayoutPointStepProps {
   initialValues?: Partial<SellFxPayoutPointFormData>;
   onSubmit: (data: SellFxPayoutPointFormData) => void;
   onBack?: () => void;
+  /** Agent flow only — when provided, fetches NGN accounts via the agent endpoint (includes customerId). */
+  customerId?: string;
 }
 
 /** Shared payout step for Resident and Expatriate Sell FX (no cash pickup). */
@@ -25,10 +28,16 @@ export default function SellFxPayoutPointStep({
   initialValues,
   onSubmit,
   onBack,
+  customerId,
 }: Readonly<SellFxPayoutPointStepProps>) {
   const [addBankOpened, setAddBankOpened] = useState(false);
+
+  // Agent flow: use agent-scoped endpoint (includes customerId in URL).
+  // Customer flow: use customer-scoped endpoint (no customerId needed).
+  const customerHook = useLocalBankAccounts();
+  const agentHook = useAgentLocalBankAccounts(customerId ?? "", Boolean(customerId));
   const { accounts: banks, isLoading: banksLoading, addAccount, isSaving } =
-    useLocalBankAccounts();
+    customerId ? agentHook : customerHook;
 
   const handleAddBank = useCallback(
     async (data: AddBankAccountFormData) => {

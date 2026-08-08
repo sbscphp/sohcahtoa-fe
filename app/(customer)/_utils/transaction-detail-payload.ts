@@ -181,6 +181,10 @@ function mapRequiredDocsToDocumentItems(
       ? formatShortTime(uploaded.uploadedAt)
       : undefined;
 
+    const isSignedDigitalSignature =
+      doc.type.toUpperCase() === "DIGITAL_SIGNATURE" &&
+      uploaded.fileUrl?.toUpperCase() === "SIGNED";
+
     return {
       id: uploaded.id || `${doc.type}-${index}`,
       documentType: doc.type,
@@ -190,7 +194,8 @@ function mapRequiredDocsToDocumentItems(
       lastUploadDate,
       lastUploadTime,
       fileName: uploaded.fileName,
-      url: uploaded.fileUrl,
+      // DIGITAL_SIGNATURE with fileUrl "SIGNED" is not a real file — no url, renders as text/dash.
+      url: isSignedDigitalSignature ? undefined : uploaded.fileUrl,
       needsUpload: false,
     };
   });
@@ -221,7 +226,13 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     workPermitNumber: stepData?.workPermitNumber ?? api.personalInfo?.workPermitNumber ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: (() => {
-      const uploadedDocs = expandedDocs.filter((d) => d.uploaded != null);
+      // Exclude DIGITAL_SIGNATURE entries where fileUrl is "SIGNED" — not a real file.
+      const uploadedDocs = expandedDocs.filter(
+        (d) =>
+          d.uploaded != null &&
+          !(d.type.toUpperCase() === "DIGITAL_SIGNATURE" &&
+            d.uploaded.fileUrl?.toUpperCase() === "SIGNED"),
+      );
       const totalsByType = countByDocumentType(uploadedDocs);
       const occurrenceByType = new Map<string, number>();
 
