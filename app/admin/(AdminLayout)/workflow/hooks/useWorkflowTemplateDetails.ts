@@ -40,7 +40,7 @@ export interface WorkflowTemplateEditAssignee {
 export interface WorkflowTemplateEditStage {
   id: string;
   name: string;
-  type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
+  type: string;
   order: number;
   escalationMinutes: number;
   escalationAdminId: string | null;
@@ -131,30 +131,48 @@ function mapAssigneeToUser(
   };
 }
 
+function resolveStageWorkflowType(stage: WorkflowTemplateStage): string {
+  const name = asString(stage.name, "").trim();
+  if (name) return name;
+
+  const type = asString(stage.type, "").trim();
+  if (!type) return "Review";
+
+  // Legacy enum values → title-cased labels for older templates
+  const normalized = type.toUpperCase();
+  if (
+    normalized === "REVIEW" ||
+    normalized === "APPROVAL" ||
+    normalized === "DOCUMENTATION" ||
+    normalized === "VERIFICATION"
+  ) {
+    return toTitleCase(normalized);
+  }
+
+  return type;
+}
+
 function mapStageToViewLine(stage: WorkflowTemplateStage): ViewWorkflowLine {
+  const workflowType = resolveStageWorkflowType(stage);
+
   return {
     id: stage.id,
-    workflowType: toTitleCase(asString(stage.type, "Review")),
+    workflowType,
     escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
     escalateToName: stage.escalationAdmin?.fullName ?? "--",
     users: (stage.assignees ?? []).map((assignee) =>
-      mapAssigneeToUser(assignee.adminId, stage.type, assignee.adminName, assignee.roleName, assignee.adminEmail)
+      mapAssigneeToUser(assignee.adminId, workflowType, assignee.adminName, assignee.roleName, assignee.adminEmail)
     ),
   };
 }
 
 function mapStageForEdit(stage: WorkflowTemplateStage): WorkflowTemplateEditStage {
-  const normalizedType = asString(stage.type, "REVIEW").toUpperCase();
+  const workflowType = resolveStageWorkflowType(stage);
 
   return {
     id: asString(stage.id),
-    name: asString(stage.name, ""),
-    type:
-      normalizedType === "APPROVAL" ||
-      normalizedType === "DOCUMENTATION" ||
-      normalizedType === "VERIFICATION"
-        ? normalizedType
-        : "REVIEW",
+    name: asString(stage.name, workflowType),
+    type: asString(stage.type, workflowType),
     order: Number.isFinite(stage.order) ? stage.order : 0,
     escalationMinutes: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
     escalationAdminId: stage.escalationAdminId ?? null,

@@ -32,10 +32,10 @@ interface WorkflowLineItemProps {
 }
 
 export const ALL_WORKFLOW_TYPE_OPTIONS = [
-  "Review",
-  "Approval",
-  "Documentation",
-  "Verification",
+  "Compliance Review",
+  "Operations Review",
+  "Operations Approval",
+  "Disbursement Confirmation",
 ] as const;
 
 export const RATE_WORKFLOW_TYPE_OPTIONS = ["Approval"] as const;
