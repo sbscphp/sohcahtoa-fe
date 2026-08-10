@@ -54,11 +54,7 @@ interface CreateWorkflowFormValues {
 }
 
 function toStageType(value: string): WorkflowTemplateUpdatePayload["stages"][number]["type"] {
-  const normalized = value.trim().toUpperCase();
-  if (normalized === "APPROVAL") return "APPROVAL";
-  if (normalized === "DOCUMENTATION") return "DOCUMENTATION";
-  if (normalized === "VERIFICATION") return "VERIFICATION";
-  return "REVIEW";
+  return value.trim();
 }
 
 export default function CreateWorkflowPage() {

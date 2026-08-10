@@ -51,21 +51,25 @@ interface EditWorkflowFormValues {
   workflowLines: WorkflowLine[];
 }
 
-function toLineWorkflowType(value: string): string {
-  const normalized = value.trim().toUpperCase();
-  if (!normalized) return "";
+function toLineWorkflowType(name: string, type: string): string {
+  const fromName = name.trim();
+  if (fromName) return fromName;
+
+  const fromType = type.trim();
+  if (!fromType) return "";
+
+  // Legacy enum values → title-cased labels for older templates
+  const normalized = fromType.toUpperCase();
   if (normalized === "APPROVAL") return "Approval";
   if (normalized === "DOCUMENTATION") return "Documentation";
   if (normalized === "VERIFICATION") return "Verification";
-  return "Review";
+  if (normalized === "REVIEW") return "Review";
+
+  return fromType;
 }
 
 function toStageType(value: string): WorkflowTemplateUpdatePayload["stages"][number]["type"] {
-  const normalized = value.trim().toUpperCase();
-  if (normalized === "APPROVAL") return "APPROVAL";
-  if (normalized === "DOCUMENTATION") return "DOCUMENTATION";
-  if (normalized === "VERIFICATION") return "VERIFICATION";
-  return "REVIEW";
+  return value.trim();
 }
 
 function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
@@ -95,7 +99,7 @@ function toFormLines(stages: WorkflowTemplateEditStage[]): WorkflowLine[] {
 
     return {
       id: stage.id || `line-${index + 1}`,
-      workflowType: toLineWorkflowType(stage.type),
+      workflowType: toLineWorkflowType(stage.name, stage.type),
       escalationPeriod: Number.isFinite(stage.escalationMinutes) ? stage.escalationMinutes : 0,
       escalateToUser: firstUser ? { id: firstUser.id, name: firstUser.name } : undefined,
       selectedUsers: mappedUsers,
