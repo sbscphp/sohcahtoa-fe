@@ -71,10 +71,12 @@ export default function SourceOfFundsDeclaration({
           required
           size="md"
           placeholder="e.g. J.D."
-          maxLength={20}
           value={initialsValue}
           onChange={(e) => onInitialsChange(e.target.value)}
           error={initialsError}
+          readOnly
+          variant="filled"
+          className="cursor-not-allowed opacity-70"
         />
       )}
       {signatureMode === "upload" && (

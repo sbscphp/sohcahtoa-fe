@@ -325,6 +325,7 @@ export default function SellTransactionCreationPage() {
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
               onBack={handleBack}
+              customerName={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : ""}
             />
           );
         case "pickup-point":
@@ -364,6 +365,7 @@ export default function SellTransactionCreationPage() {
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
               onBack={handleBack}
+              customerName={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : ""}
             />
           );
         case "pickup-point":
@@ -404,6 +406,7 @@ export default function SellTransactionCreationPage() {
                 initialValues={transactionAmountData || undefined}
                 onSubmit={handleTransactionAmountSubmit}
                 onBack={handleBack}
+                customerName={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : ""}
               />
             );
           case "pickup-point":

@@ -350,6 +350,7 @@ export default function AgentSellTransactionCreationPage() {
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
               onBack={handleBack}
+              customerName={selectedCustomer?.fullName}
             />
           );
         case "pickup-point":
@@ -392,6 +393,7 @@ export default function AgentSellTransactionCreationPage() {
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
               onBack={handleBack}
+              customerName={selectedCustomer?.fullName}
             />
           );
         case "pickup-point":
@@ -433,6 +435,7 @@ export default function AgentSellTransactionCreationPage() {
             initialValues={transactionAmountData || undefined}
             onSubmit={handleTransactionAmountSubmit}
             onBack={handleBack}
+            customerName={selectedCustomer?.fullName}
           />
         );
       case "pickup-point":
