@@ -1115,7 +1115,7 @@ export interface WorkflowTemplateUpdateStageAssigneePayload {
 export interface WorkflowTemplateUpdateStagePayload {
   id?: string;
   name: string;
-  type: "REVIEW" | "APPROVAL" | "DOCUMENTATION" | "VERIFICATION";
+  type: string;
   order: number;
   escalationMinutes: number;
   escalationAdminId?: string | null;
