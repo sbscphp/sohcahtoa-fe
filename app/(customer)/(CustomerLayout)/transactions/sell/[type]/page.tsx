@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useUploadDocuments } from "@/app/(customer)/_hooks/use-document-upload";
 import { useCreateData } from "@/app/_lib/api/hooks";
@@ -113,6 +113,15 @@ export default function SellTransactionCreationPage() {
     (transactionAmountData?.sendCurrency ?? "USD").trim().toUpperCase() || "USD";
 
   const userProfile = useAtomValue(userProfileAtom);
+  // Prefer profile name fields (same as headers / account display). Top-level fullName is optional.
+  const customerName =
+    userProfile?.profile?.fullName?.trim() ||
+    [userProfile?.profile?.firstName, userProfile?.profile?.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    userProfile?.fullName?.trim() ||
+    "";
   const uploadDocuments = useUploadDocuments();
   const createTransaction = useCreateData(customerApi.transactions.create);
   const { attachToTransaction } = useCustomerBankAccounts({ enabled: false });
@@ -129,12 +138,6 @@ export default function SellTransactionCreationPage() {
     return [...localDomiciliaryAccounts, ...fromApi];
   }, [localDomiciliaryAccounts, savedDomiciliaryAccounts]);
 
-  // Drop in-session Dom accounts when FX currency changes so the list stays currency-scoped.
-  useEffect(() => {
-    setLocalDomiciliaryAccounts([]);
-    setSelectedDomiciliaryId("");
-  }, [selectedCurrency]);
-
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
   const handleUploadDocumentsSubmit = (
@@ -148,6 +151,11 @@ export default function SellTransactionCreationPage() {
   };
 
   const handleTransactionAmountSubmit = (data: ResidentTransactionAmountFormData) => {
+    const nextCurrency = (data.sendCurrency ?? "USD").trim().toUpperCase() || "USD";
+    if (nextCurrency !== selectedCurrency) {
+      setLocalDomiciliaryAccounts([]);
+      setSelectedDomiciliaryId("");
+    }
     setTransactionAmountData(data);
     setActiveStep("pickup-point");
   };
@@ -325,7 +333,7 @@ export default function SellTransactionCreationPage() {
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
               onBack={handleBack}
-              customerName={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : ""}
+              customerName={customerName}
             />
           );
         case "pickup-point":
@@ -365,7 +373,7 @@ export default function SellTransactionCreationPage() {
               initialValues={transactionAmountData || undefined}
               onSubmit={handleTransactionAmountSubmit}
               onBack={handleBack}
-              customerName={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : ""}
+              customerName={customerName}
             />
           );
         case "pickup-point":
@@ -406,7 +414,7 @@ export default function SellTransactionCreationPage() {
                 initialValues={transactionAmountData || undefined}
                 onSubmit={handleTransactionAmountSubmit}
                 onBack={handleBack}
-                customerName={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : ""}
+                customerName={customerName}
               />
             );
           case "pickup-point":

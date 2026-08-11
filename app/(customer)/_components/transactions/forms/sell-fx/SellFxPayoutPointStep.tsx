@@ -30,7 +30,7 @@ export default function SellFxPayoutPointStep({
   customerId,
 }: Readonly<SellFxPayoutPointStepProps>) {
   const [addBankOpened, setAddBankOpened] = useState(false);
-  const customerHook = useLocalBankAccounts();
+  const customerHook = useLocalBankAccounts(!customerId);
   const agentHook = useAgentLocalBankAccounts(customerId ?? "", Boolean(customerId));
   const { accounts: banks, isLoading: banksLoading, addAccount, isSaving } =
     customerId ? agentHook : customerHook;

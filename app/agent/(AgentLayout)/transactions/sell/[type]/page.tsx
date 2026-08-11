@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAgentTransactionStep } from "@/app/agent/_hooks/use-agent-transaction-step";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
 import {
@@ -156,11 +156,6 @@ export default function AgentSellTransactionCreationPage() {
     return [...localDomiciliaryAccounts, ...fromApi];
   }, [localDomiciliaryAccounts, savedDomiciliaryAccounts]);
 
-  useEffect(() => {
-    setLocalDomiciliaryAccounts([]);
-    setSelectedDomiciliaryId("");
-  }, [selectedCurrency]);
-
   const activeStepIndex = steps.findIndex((s) => s.value === activeStep);
 
   const handleUploadDocumentsSubmit = (
@@ -174,6 +169,11 @@ export default function AgentSellTransactionCreationPage() {
   };
 
   const handleTransactionAmountSubmit = (data: ResidentTransactionAmountFormData) => {
+    const nextCurrency = (data.sendCurrency ?? "USD").trim().toUpperCase() || "USD";
+    if (nextCurrency !== selectedCurrency) {
+      setLocalDomiciliaryAccounts([]);
+      setSelectedDomiciliaryId("");
+    }
     setTransactionAmountData(data);
     setActiveStep("pickup-point");
   };
