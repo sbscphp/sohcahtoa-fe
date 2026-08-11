@@ -52,7 +52,9 @@ export default function ResidentTransactionAmountStep({
   customerName = "",
 }: Readonly<ResidentTransactionAmountStepProps>) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">("initials");
+  const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">(
+    initialValues?.sourceOfFundsSignatureMode ?? "initials"
+  );
   
   const computedInitials = customerName
     .split(" ")
