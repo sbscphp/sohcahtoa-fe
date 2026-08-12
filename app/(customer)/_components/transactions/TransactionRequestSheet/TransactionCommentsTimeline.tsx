@@ -1,7 +1,6 @@
 "use client";
 
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
-import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import Image from "next/image";
 import Connector from "./connector-timeline.png";
@@ -15,18 +14,11 @@ function formatCommentAction(action: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function commentActionBadgeLabel(action: string): string {
-  const u = action.trim().toUpperCase();
-  if (u.includes("REJECT")) return "Rejected";
-  if (u.includes("APPROV")) return "Approved";
-  if (u.includes("DISBURSE")) return "Disbursement";
-  if (u.includes("DEPOSIT") && u.includes("CONFIRM")) return "Completed";
-  if (u.includes("COMPLETE")) return "Completed";
-  if (u.includes("REQUEST") && u.includes("INFO")) return "Pending";
-  return "Update";
-}
-
-function commentActorLabel(comment: TransactionDetailComment): string {
+function commentActorLabel(
+  comment: TransactionDetailComment,
+  customerSafe: boolean
+): string {
+  if (customerSafe) return "Sohcahtoa";
   return (
     comment.performedByName ??
     comment.addedBy ??
@@ -38,12 +30,15 @@ function commentActorLabel(comment: TransactionDetailComment): string {
 interface TransactionCommentsTimelineProps {
   comments: TransactionDetailComment[];
   emptyHint?: string;
+  /** Hide staff identity; show generic actor for customers. */
+  customerSafe?: boolean;
 }
 
 /** Chained admin/customer updates (same spirit as admin workflow overview). */
 export default function TransactionCommentsTimeline({
   comments,
   emptyHint = "No updates have been posted for this transaction yet.",
+  customerSafe = false,
 }: Readonly<TransactionCommentsTimelineProps>) {
   const ordered = [...comments].sort(
     (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)
@@ -59,13 +54,16 @@ export default function TransactionCommentsTimeline({
 
   return (
     <div className="space-y-0">
-      <p className="text-sm font-medium text-[#4D4B4B] mb-3">Activity</p>
+      <p className="text-sm font-medium text-[#4D4B4B] mb-3">
+        {customerSafe ? "Updates" : "Activity"}
+      </p>
       <div className="space-y-1">
         {ordered.map((item, index) => {
-          const actor = commentActorLabel(item);
+          const actor = commentActorLabel(item, customerSafe);
           const initials = actor.slice(0, 2).toUpperCase();
-          const badgeLabel = commentActionBadgeLabel(item.action);
-          const actionLine = formatCommentAction(item.action);
+          const actionLine = customerSafe
+            ? "Document re-upload requested"
+            : formatCommentAction(item.action);
 
           return (
             <div key={item.id}>
@@ -89,15 +87,6 @@ export default function TransactionCommentsTimeline({
                       </div>
                     </div>
                   </div>
-                  {/* <div className="shrink-0 text-right">
-                    <span
-                      className="inline-flex items-center justify-center"
-                      style={getStatusBadge(badgeLabel)}
-                    >
-                      {badgeLabel}
-                    </span>
-                    <span className="block text-[10px] text-[#8F8B8B] mt-1">Action taken</span>
-                  </div> */}
                 </div>
                 <div className="bg-white border border-[#E1E0E0] rounded-lg p-3">
                   <p className="text-xs text-[#4D4B4B] leading-relaxed whitespace-pre-wrap wrap-break-word">

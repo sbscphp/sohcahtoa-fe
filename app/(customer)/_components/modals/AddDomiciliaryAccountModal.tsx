@@ -67,6 +67,7 @@ export function AddDomiciliaryAccountModal({
           getInputProps={form.getInputProps}
           setFieldValue={form.setFieldValue}
           clearFieldError={form.clearFieldError}
+          bankNameValue={form.values.domiciliaryBankName}
           errors={form.errors}
         />
 

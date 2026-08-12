@@ -12,19 +12,31 @@ export function sanitizeTinInput(value: string): string {
   return value.replaceAll(/[^0-9-]/g, "").slice(0, TIN_MAX_LENGTH);
 }
 
-function isValidTinValue(value: string): boolean {
+function isValidTinValue(value: string, { allowEmpty }: { allowEmpty: boolean }): boolean {
   const trimmed = value.trim();
-  if (!trimmed) return true;
+  if (!trimmed) return allowEmpty;
 
   if (!/^[0-9-]+$/.test(trimmed)) return false;
 
   return countTinDigits(trimmed) === TIN_DIGIT_COUNT;
 }
 
+/** Optional TIN — empty allowed; when present must be 13 digits (hyphens ok). */
 export const kycTinSchema = z
   .string()
   .max(TIN_MAX_LENGTH, "TIN Number is too long")
   .refine(
-    isValidTinValue,
+    (value) => isValidTinValue(value, { allowEmpty: true }),
+    `TIN Number must be ${TIN_DIGIT_COUNT} digits (hyphens allowed)`
+  );
+
+/** Required TIN for flows that mandate Tax Identification Number (e.g. BTA). */
+export const kycTinRequiredSchema = z
+  .string()
+  .trim()
+  .min(1, "TIN Number is required")
+  .max(TIN_MAX_LENGTH, "TIN Number is too long")
+  .refine(
+    (value) => isValidTinValue(value, { allowEmpty: false }),
     `TIN Number must be ${TIN_DIGIT_COUNT} digits (hyphens allowed)`
   );

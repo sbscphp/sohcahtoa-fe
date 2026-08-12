@@ -1,11 +1,9 @@
 "use client";
 
-import { Button, Alert } from "@mantine/core";
-import { Info } from "lucide-react";
+import { Button } from "@mantine/core";
 import { useState } from "react";
 import { BankAccountsList } from "@/app/(customer)/_components/bank-accounts/BankAccountsList";
 import type { BankAccount } from "@/app/(customer)/_components/transactions/forms/PickupPointStep";
-import { REFUND_BANK_ACCOUNT_MESSAGE } from "@/app/(customer)/_lib/compliance-messaging";
 
 export type BankAccountSelectionPurpose = "payout" | "refund";
 
@@ -21,17 +19,16 @@ interface BankAccountSelectionStepProps {
 
 const PURPOSE_COPY: Record<
   BankAccountSelectionPurpose,
-  { title: string; subtitle: string; showRefundNotice: boolean }
+  { title: string; subtitle: string }
 > = {
   payout: {
     title: "Select Bank Account",
     subtitle: "Select an account to receive the electronic transfer or add a new one.",
-    showRefundNotice: false,
   },
   refund: {
     title: "Refund Bank Details",
-    subtitle: "Select your local Nigerian bank account for refunds if your transaction cannot be processed.",
-    showRefundNotice: true,
+    subtitle:
+      "Select your local Nigerian bank account for refunds if your transaction cannot be processed.",
   },
 };
 
@@ -54,12 +51,6 @@ export default function BankAccountSelectionStep({
         <h2 className="text-body-heading-300 text-2xl font-semibold">{copy.title}</h2>
         <p className="text-body-text-200 text-base max-w-md text-center">{copy.subtitle}</p>
       </div>
-
-      {copy.showRefundNotice && (
-        <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">
-          <p className="text-body-text-200 text-sm">{REFUND_BANK_ACCOUNT_MESSAGE}</p>
-        </Alert>
-      )}
 
       <BankAccountsList
         accounts={banks}

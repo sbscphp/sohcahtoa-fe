@@ -18,53 +18,61 @@ function formatOptional(value: string | null | undefined): string {
   return String(value);
 }
 
-function formatIsoDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = Date.parse(iso);
-  if (!Number.isFinite(d)) return iso;
-  return formatShortDate(iso);
-}
+/** API may send station contact on a few optional keys. */
+type CashPickupWithStationContact = TransactionDetailCashPickup & {
+  address?: string | null;
+  pickupAddress?: string | null;
+  phoneNumber?: string | null;
+  pickupPhone?: string | null;
+  pickupPhoneNumber?: string | null;
+};
 
 interface CashPickupDetailsSectionProps {
   data: TransactionDetailCashPickup;
 }
 
 export default function CashPickupDetailsSection({ data }: CashPickupDetailsSectionProps) {
-  const locationLine = [data.pickupLocation?.trim(), data.pickupCity, data.pickupState]
+  const pickup = data as CashPickupWithStationContact;
+  const locationLine = [pickup.pickupLocation?.trim(), pickup.pickupCity, pickup.pickupState]
     .filter(Boolean)
     .join(", ");
+  const address = formatOptional(
+    pickup.address ?? pickup.pickupAddress
+  );
+  const phone = formatOptional(
+    pickup.phoneNumber ?? pickup.pickupPhone ?? pickup.pickupPhoneNumber
+  );
 
   return (
     <SectionBlock title="Cash Pickup">
-      <LabelText label="Pickup code" text={formatOptional(data.pickupCode)} />
+      <LabelText label="Pickup code" text={formatOptional(pickup.pickupCode)} />
       <LabelText label="Location" text={locationLine || "—"} />
+      <LabelText label="Address" text={address} />
+      <LabelText label="Phone" text={phone} />
       <LabelText
         label="Amount"
         amount={{
-          code: data.currency,
-          formatted: Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          code: pickup.currency,
+          formatted: Number(pickup.amount).toLocaleString("en-US", { minimumFractionDigits: 2 }),
         }}
       />
-      <LabelText label="Status" text={formatStatus(data.status)} />
+      <LabelText label="Status" text={formatStatus(pickup.status)} />
       <LabelText
         label="Scheduled date"
         text={
-          data.scheduledPickupDate
-            ? formatShortDate(data.scheduledPickupDate)
+          pickup.scheduledPickupDate
+            ? formatShortDate(pickup.scheduledPickupDate)
             : "—"
         }
       />
       <LabelText
         label="Scheduled time"
-        text={formatOptional(data.scheduledPickupTime)}
+        text={formatOptional(pickup.scheduledPickupTime)}
       />
-      <LabelText label="Expires" text={formatIsoDate(data.expiryDate)} />
-      {/* <LabelText label="Recipient name" text={formatOptional(data.recipientName)} />
-      <LabelText label="Recipient phone" text={formatOptional(data.recipientPhone)} /> */}
-      {data.pickedUpAt ? (
+      {pickup.pickedUpAt ? (
         <LabelText
           label="Picked up"
-          text={`${formatShortDate(data.pickedUpAt)} · ${formatShortTime(data.pickedUpAt)}`}
+          text={`${formatShortDate(pickup.pickedUpAt)} · ${formatShortTime(pickup.pickedUpAt)}`}
         />
       ) : null}
     </SectionBlock>

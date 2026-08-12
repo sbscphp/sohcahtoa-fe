@@ -958,6 +958,13 @@ export interface TransactionDetailCashPickup {
   pickupCode: string;
   recipientName: string | null;
   recipientPhone: string | null;
+  /** Pickup station address when provided by API. */
+  address?: string | null;
+  pickupAddress?: string | null;
+  /** Pickup station phone when provided by API. */
+  phoneNumber?: string | null;
+  pickupPhone?: string | null;
+  pickupPhoneNumber?: string | null;
   amount: string;
   currency: string;
   status: string;

@@ -13,36 +13,84 @@ export interface FAQItem {
   answer: string;
 }
 
+/** Synced from https://sohcahtoa-landingpage.vercel.app/#faq */
 const DEFAULT_FAQS: FAQItem[] = [
   {
     id: "currencies",
-    question: "What currencies do you support for exchange?",
+    question: "What currencies do you exchange?",
     answer:
-      "We support all major currencies including USD, CAD, and EUR and more. Our platform offers competitive exchange rates for Naira conversions with these currencies.",
+      "We buy, sell and pay-out major foreign currencies, including USD, GBP, EUR, and more.",
   },
   {
-    id: "limit",
-    question: "What are the transaction limits?",
+    id: "rates",
+    question: "How can I check your exchange rates?",
     answer:
-      "Transaction limits vary by account type and verification level. You can view your current limits in the dashboard. Residents can transact up to $10,000 per transaction for sell FX.",
+      "Our rates are updated daily and available through our rate calculator on the website and app. Rates may vary slightly depending on market conditions.",
+  },
+  {
+    id: "signup",
+    question: "What do I need to signup?",
+    answer:
+      "All customers are required to provide:\n• BVN (Bank Verification Number)\n• NIN (National Identification Number)\n• International Passport\n\nThese documents are mandatory for all transactions to comply with CBN regulations.",
+  },
+  {
+    id: "fees",
+    question: "Is there a transaction fee?",
+    answer:
+      "Some transactions may include a small service fee. We always inform you of any charges before completing your transaction.",
+  },
+  {
+    id: "large-amounts",
+    question: "Can I exchange large amounts of money?",
+    answer:
+      "Yes, but large transactions (usually above USD 10,000 or equivalent) require additional verification and documentation for compliance with regulatory requirements.",
   },
   {
     id: "timing",
-    question: "How long does a transfer take?",
+    question: "How long will my transaction take?",
     answer:
-      "Most transfers are processed within 1–2 business days. IMTO (MoneyGram, Western Union) collections may be available same day depending on the partner and your location.",
+      "Within 24 hours. Larger transactions may take longer due to verification procedures.",
   },
   {
-    id: "documents",
-    question: "What documents do I need to transact?",
+    id: "reserve",
+    question: "Can I reserve foreign currency in advance?",
     answer:
-      "For sell FX we require a valid ID (e.g. International Passport), proof of address (utility bill), and depending on type: TIN, work permit, or visa and return ticket. Exact requirements are shown in each flow.",
+      "Yes, you can reserve foreign currency ahead of time subject to availability and regulatory requirements.",
   },
   {
-    id: "support",
-    question: "How can I contact support?",
+    id: "sell-back",
+    question: "Can I sell foreign currency back to your BDC?",
     answer:
-      "You can reach us via Chat Support from this page, or through the contact details listed in the app. We typically respond within 24 hours on business days.",
+      "Yes. We buy major foreign currencies from customers at competitive market rates.",
+  },
+  {
+    id: "get-started",
+    question: "How do I get started?",
+    answer:
+      "Simply create an account, complete verification, and you can begin exchanging currencies through our platform.",
+  },
+  {
+    id: "counterfeit",
+    question: "What happens if I receive counterfeit notes?",
+    answer:
+      "We carefully verify all notes during transactions. If a counterfeit note is detected, it is reported to the authorities. Always count and check your cash when exchanging.",
+  },
+  {
+    id: "limits",
+    question: "Are there limits on how much I can exchange?",
+    answer:
+      "Yes, based on regulations.\n\nBTA - $5,000 per 3 months\n\nPTA - $4,000 per 3 months\n\nMedical fees - $5,000 per 3 months\n\nSchool fees - $10,000 per year\n\nProfessional Exam fee - $2,000",
+  },
+  {
+    id: "businesses",
+    question: "Can businesses buy and sell FX with you?",
+    answer: "Approved businesses can sell FX to us but cannot buy from us.",
+  },
+  {
+    id: "receipt",
+    question: "Do I get a receipt for every transaction?",
+    answer:
+      "Yes, every transaction is accompanied by an official receipt for your records.",
   },
 ];
 
@@ -103,7 +151,7 @@ export function FAQAccordion() {
                   </Text>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <Text size="sm" c="dimmed">
+                  <Text size="sm" c="dimmed" className="whitespace-pre-wrap">
                     {faq.answer}
                   </Text>
                 </Accordion.Panel>

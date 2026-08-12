@@ -263,6 +263,7 @@ export default function AgentTransactionDetailPage() {
           adminMessage={adminMessage}
           comments={apiData?.comments ?? []}
           onResubmitDocuments={handleResubmitDocuments}
+          customerSafeOverview={false}
           approvedActions={
             isReceivedPaymentStep ? (
                 <Button

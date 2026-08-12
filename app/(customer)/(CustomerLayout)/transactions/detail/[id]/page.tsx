@@ -13,6 +13,7 @@ import {
   normalizeTransactionStatus,
   TRANSACTION_STATUS_LABELS,
 } from "@/app/(customer)/_lib/transaction-details";
+import { customerCanProceedToPayment } from "@/app/(customer)/_lib/customer-overview";
 import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useCreateData, useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
@@ -35,6 +36,7 @@ import {
   type TransactionSettlementData,
 } from "@/app/(customer)/_components/transactions/details";
 import TransactionRequestSheet, { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet";
+import { documentsIncludeRequiresManualReview } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
 import Loader from "@/components/loader";
 import { formatHeaderDateTime, formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
@@ -154,6 +156,26 @@ export default function TransactionDetailPage() {
     apiData?.beneficiaryDetails,
     apiData?.refundBankDetails,
   );
+  const suppressPaymentActions = documentsIncludeRequiresManualReview(
+    payload.documentsForSheet
+  );
+  const showMakePaymentCta =
+    !showSettlement &&
+    !suppressPaymentActions &&
+    customerCanProceedToPayment(statusKey);
+
+  const openPaymentModal = () => {
+    if (!hasValidPaymentAmount) {
+      notifications.show({
+        title: "Cannot proceed to payment",
+        message:
+          "The Naira amount for this transaction is missing or zero. Refresh the page or contact support if you need help.",
+        color: "red",
+      });
+      return;
+    }
+    setProceedToPaymentOpen(true);
+  };
 
   const handleBackToTransactions = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -206,7 +228,7 @@ export default function TransactionDetailPage() {
             </span>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col sm:flex-row gap-2">
           {showSettlement ? (
             <Button
               variant="outline"
@@ -220,16 +242,34 @@ export default function TransactionDetailPage() {
               Download Receipt
             </Button>
           ) : (
-            <Button
-              variant="filled"
-              radius="xl"
-              size="md"
-              className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
-              style={{ fontWeight: 500, fontSize: "14px" }}
-              onClick={() => setUpdatesSheetOpen(true)}
-            >
-              View Updates
-            </Button>
+            <>
+              {showMakePaymentCta ? (
+                <Button
+                  variant="filled"
+                  radius="xl"
+                  size="md"
+                  className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
+                  style={{ fontWeight: 500, fontSize: "14px" }}
+                  onClick={openPaymentModal}
+                >
+                  Make Payment
+                </Button>
+              ) : null}
+              <Button
+                variant={showMakePaymentCta ? "outline" : "filled"}
+                radius="xl"
+                size="md"
+                className={
+                  showMakePaymentCta
+                    ? "border-[#DD4F05] text-[#DD4F05] hover:bg-[#FFF6F1] font-medium text-base"
+                    : "bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
+                }
+                style={{ fontWeight: 500, fontSize: "14px" }}
+                onClick={() => setUpdatesSheetOpen(true)}
+              >
+                View Updates
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -263,21 +303,26 @@ export default function TransactionDetailPage() {
             queryKey: [...customerKeys.transactions.detail(id)],
           });
         }}
-        onProceedToPayment={() => {
-          if (!hasValidPaymentAmount) {
-            notifications.show({
-              title: "Cannot proceed to payment",
-              message:
-                "The Naira amount for this transaction is missing or zero. Refresh the page or contact support if you need help.",
-              color: "red",
-            });
-            return;
-          }
-          setUpdatesSheetOpen(false);
-          setProceedToPaymentOpen(true);
-        }}
+        onProceedToPayment={
+          customerCanProceedToPayment(statusKey)
+            ? () => {
+                if (!hasValidPaymentAmount) {
+                  notifications.show({
+                    title: "Cannot proceed to payment",
+                    message:
+                      "The Naira amount for this transaction is missing or zero. Refresh the page or contact support if you need help.",
+                    color: "red",
+                  });
+                  return;
+                }
+                setUpdatesSheetOpen(false);
+                setProceedToPaymentOpen(true);
+              }
+            : undefined
+        }
         documents={payload.documentsForSheet}
         allowMissingDocumentUpload={payload.allowMissingDocumentUpload}
+        customerSafeOverview
         onOpenDocument={(doc) => {
           if (doc.url) {
             setDocumentViewer({
