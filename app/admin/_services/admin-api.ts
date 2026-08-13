@@ -83,7 +83,7 @@ export interface CreateAgentPayload {
   email: string;
   phoneNumber: string;
   branch: string;
-  attachment: File;
+  attachment?: File;
 }
 
 export interface AgentDetailsResponseData {
