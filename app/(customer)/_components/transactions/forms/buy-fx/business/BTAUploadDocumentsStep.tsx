@@ -193,9 +193,9 @@ export default function BTAUploadDocumentsStep({
           label="TIN Number"
           required
           size="md"
-          placeholder="e.g. 12345678-00012"
+          placeholder="e.g. 08120451-1001"
           description={TIN_INPUT_HELPER}
-          maxLength={20}
+          maxLength={16}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
           onChange={(e) => {

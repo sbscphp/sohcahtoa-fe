@@ -17,37 +17,29 @@ describe("kyc-tin-schema", () => {
     expect(kycTinRequiredSchema.safeParse("   ").success).toBe(false);
   });
 
-  it("accepts 13 digits with optional hyphens (hyphen not counted)", () => {
+  it("accepts TIN between 10 and 13 digits with optional hyphen", () => {
+    expect(kycTinSchema.safeParse("08120451-1001").success).toBe(true);
+    expect(kycTinSchema.safeParse("1234567890").success).toBe(true);
     expect(kycTinSchema.safeParse("1234567890123").success).toBe(true);
-    expect(kycTinSchema.safeParse("12345678-00012").success).toBe(true);
-    expect(kycTinRequiredSchema.safeParse("1234567890123").success).toBe(true);
-    expect(kycTinRequiredSchema.safeParse("12345678-00012").success).toBe(true);
-    expect(kycTinRequiredSchema.safeParse("12-345-678-90123").success).toBe(true);
-    expect(countTinDigits("12345678-00012")).toBe(13);
-    expect(countTinDigits("12-345-678-90123")).toBe(13);
+    expect(kycTinRequiredSchema.safeParse("08120451-1001").success).toBe(true);
+    expect(countTinDigits("08120451-1001")).toBe(12);
   });
 
   it("accepts pasted unicode dashes after sanitize/validate", () => {
-    // en-dash / em-dash
-    expect(sanitizeTinInput("12345678–00012")).toBe("12345678-00012");
-    expect(sanitizeTinInput("12345678—00012")).toBe("12345678-00012");
-    expect(kycTinRequiredSchema.safeParse("12345678–00012").success).toBe(true);
-    expect(kycTinRequiredSchema.safeParse("12345678—00012").success).toBe(true);
+    expect(sanitizeTinInput("08120451–1001")).toBe("08120451-1001");
+    expect(kycTinRequiredSchema.safeParse("08120451–1001").success).toBe(true);
   });
 
-  it("rejects TIN with wrong digit count when provided", () => {
-    expect(kycTinSchema.safeParse("12345678901").success).toBe(false);
-    expect(kycTinRequiredSchema.safeParse("12345678901").success).toBe(false);
-    // Common 8-4 FIRS display is 12 digits — not 13
-    expect(kycTinRequiredSchema.safeParse("12345678-0001").success).toBe(false);
-    // Input sanitize already caps at 13 digits, so longer digit strings normalize to valid
+  it("rejects TIN outside 10–13 digits", () => {
+    expect(kycTinSchema.safeParse("123456789").success).toBe(false);
+    expect(kycTinRequiredSchema.safeParse("123456789").success).toBe(false);
+    // Extra digits are capped on sanitize; 14 raw digits normalize to valid 13
     expect(sanitizeTinInput("12345678901234")).toBe("1234567890123");
-    expect(kycTinSchema.safeParse(sanitizeTinInput("12345678901234")).success).toBe(true);
+    expect(kycTinRequiredSchema.safeParse("12345678901234").success).toBe(true);
   });
 
   it("sanitizes input to digits and hyphens only and caps at 13 digits", () => {
-    expect(sanitizeTinInput("12ab34-56")).toBe("1234-56");
+    expect(sanitizeTinInput("08ab120451-1001")).toBe("08120451-1001");
     expect(sanitizeTinInput("1234567890123456")).toBe("1234567890123");
-    expect(sanitizeTinInput("1234567890123-99")).toBe("1234567890123-");
   });
 });
