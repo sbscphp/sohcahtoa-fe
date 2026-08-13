@@ -1126,7 +1126,7 @@ export interface WorkflowTemplateUpdatePayload {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
-  approvalType?: "TRANSACTION" | "REFUND" | "RATE";
+  approvalType?: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT";
   minAmount?: number | null;
   maxAmount?: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
