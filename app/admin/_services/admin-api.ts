@@ -2319,6 +2319,18 @@ export const adminApi = {
         API_ENDPOINTS.admin.transactions.settle(id)
       ),
 
+    initiateDisbursement: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.initiateDisbursement(id),
+        {}
+      ),
+
+    confirmDisbursement: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.confirmDisbursement(id),
+        {}
+      ),
+
     downloadReceipt: async (transactionId: string): Promise<ApiDownloadResponse> => {
       const response = await apiClient.post<Response>(
         API_ENDPOINTS.admin.transactions.downloadReceipt(transactionId),

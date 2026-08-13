@@ -51,6 +51,7 @@ export interface TransactionOverviewViewModel {
   timeLabel: string;
   status: string;
   statusLabel: string;
+  workflowStage: string;
   basicDetails: OverviewField[];
   sections: OverviewSection[];
   isEmpty: boolean;
@@ -116,6 +117,7 @@ export interface TransactionReceiptViewModel {
   timeLabel: string;
   status: string;
   statusLabel: string;
+  workflowStage: string;
   fields: OverviewField[];
   document: TransactionDocumentViewModel | null;
   isEmpty: boolean;
@@ -128,6 +130,7 @@ export interface TransactionSettlementViewModel {
   timeLabel: string;
   status: string;
   statusLabel: string;
+  workflowStage: string;
   fields: OverviewField[];
   receipt: TransactionDocumentViewModel | null;
   isEmpty: boolean;
@@ -329,6 +332,7 @@ function buildHeaderData(
 ) {
   const transactionType = (data.transactionType || "") as TransactionType;
   const status = pickString(data.requestStatus, raw.status, "");
+  const workflowStage = pickString(data.workflowStage, "");
   return {
     titlePrefix: pickString(
       data.fxType,
@@ -345,6 +349,7 @@ function buildHeaderData(
       formatEnum(raw.status),
       "--",
     ),
+    workflowStage: workflowStage === "--" ? "" : workflowStage,
   };
 }
 
@@ -575,6 +580,7 @@ function buildOverview(
     timeLabel: header.timeLabel,
     status: header.status,
     statusLabel: header.statusLabel,
+    workflowStage: header.workflowStage,
     basicDetails,
     sections: nonEmptySections,
     isEmpty: nonEmptySections.length === 0,
@@ -653,6 +659,7 @@ function buildReceipt(
     timeLabel: header.timeLabel,
     status: header.status,
     statusLabel: header.statusLabel,
+    workflowStage: header.workflowStage,
     fields,
     document,
     isEmpty: !hasContent,
@@ -784,6 +791,7 @@ function buildSettlement(
     timeLabel: header.timeLabel,
     status: header.status,
     statusLabel: header.statusLabel,
+    workflowStage: header.workflowStage,
     fields,
     receipt: settlementReceipt,
     isEmpty: !hasContent,

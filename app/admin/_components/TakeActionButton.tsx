@@ -1,7 +1,13 @@
 "use client";
 
 import { Button, Menu } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { adminKeys } from "@/app/_lib/api/query-keys";
+import { adminApi } from "@/app/admin/_services/admin-api";
 import TakeActionOverlay from "../(AdminLayout)/transactions/[id]/TakeActionOverlay";
 import type {
   TransactionActionDocumentViewModel,
@@ -29,8 +35,10 @@ interface TakeActionButtonProps {
   /** Callback when overlay closes */
   onClose?: () => void;
   transactionId?: string;
-  /** Raw transaction status code used for disbursement menu gating */
+  /** Raw transaction status code used for confirm-disbursement menu gating */
   transactionStatus?: string;
+  /** Raw workflow stage code used for initiate-disbursement menu gating */
+  workflowStage?: string;
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
@@ -80,6 +88,7 @@ export default function TakeActionButton({
   onClose,
   transactionId,
   transactionStatus,
+  workflowStage,
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
@@ -90,6 +99,7 @@ export default function TakeActionButton({
   approvalProcessName,
   approvalType,
 }: TakeActionButtonProps) {
+  const queryClient = useQueryClient();
   const [approvalsOpen, setApprovalsOpen] = useState(false);
   const [confirmType, setConfirmType] = useState<DisbursementConfirmType | null>(
     null,
@@ -99,9 +109,63 @@ export default function TakeActionButton({
   );
 
   const normalizedStatus = transactionStatus?.trim().toUpperCase() ?? "";
-  const canInitiateDisbursement = normalizedStatus === "AWAITING_DISBURSEMENT";
+  const canInitiateDisbursement =
+    workflowStage?.trim().toUpperCase() === "DEPOSIT_CONFIRMED";
   const canConfirmDisbursement =
     normalizedStatus === "DISBURSEMENT_IN_PROGRESS";
+
+  const handleMutationError = (error: Error, defaultMessage: string) => {
+    const apiResponse = (error as unknown as ApiError).data as
+      | ApiResponse
+      | undefined;
+    notifications.show({
+      color: "red",
+      title: "Action failed",
+      message: apiResponse?.error?.message ?? error.message ?? defaultMessage,
+    });
+  };
+
+  const invalidateTransactionQueries = async () => {
+    if (!transactionId) return;
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.transactions.detail(transactionId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.transactions.lists(),
+      }),
+    ]);
+  };
+
+  const initiateDisbursementMutation = useCreateData(
+    (id: string) => adminApi.transactions.initiateDisbursement(id),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionQueries();
+        setConfirmType(null);
+        setSuccessType("initiate");
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to initiate disbursement."),
+    },
+  );
+
+  const confirmDisbursementMutation = useCreateData(
+    (id: string) => adminApi.transactions.confirmDisbursement(id),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionQueries();
+        setConfirmType(null);
+        setSuccessType("confirm");
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to confirm disbursement."),
+    },
+  );
+
+  const isConfirmLoading =
+    initiateDisbursementMutation.isPending ||
+    confirmDisbursementMutation.isPending;
 
   const handleOpenApprovals = () => {
     setApprovalsOpen(true);
@@ -114,12 +178,16 @@ export default function TakeActionButton({
   };
 
   const handleConfirmPrimary = () => {
-    if (!confirmType) return;
-    setSuccessType(confirmType);
-    setConfirmType(null);
+    if (!transactionId || !confirmType || isConfirmLoading) return;
+    if (confirmType === "initiate") {
+      initiateDisbursementMutation.mutate(transactionId);
+      return;
+    }
+    confirmDisbursementMutation.mutate(transactionId);
   };
 
   const handleCloseConfirm = () => {
+    if (isConfirmLoading) return;
     setConfirmType(null);
   };
 
@@ -193,6 +261,7 @@ export default function TakeActionButton({
           message={confirmProps.message}
           primaryButtonText={confirmProps.primaryButtonText}
           onPrimary={handleConfirmPrimary}
+          loading={isConfirmLoading}
         />
       )}
 
