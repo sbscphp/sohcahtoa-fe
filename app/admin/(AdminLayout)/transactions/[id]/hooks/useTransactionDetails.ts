@@ -49,6 +49,7 @@ export interface TransactionOverviewViewModel {
   titleValue: string;
   dateLabel: string;
   timeLabel: string;
+  status: string;
   statusLabel: string;
   basicDetails: OverviewField[];
   sections: OverviewSection[];
@@ -113,6 +114,7 @@ export interface TransactionReceiptViewModel {
   titleValue: string;
   dateLabel: string;
   timeLabel: string;
+  status: string;
   statusLabel: string;
   fields: OverviewField[];
   document: TransactionDocumentViewModel | null;
@@ -124,6 +126,7 @@ export interface TransactionSettlementViewModel {
   titleValue: string;
   dateLabel: string;
   timeLabel: string;
+  status: string;
   statusLabel: string;
   fields: OverviewField[];
   receipt: TransactionDocumentViewModel | null;
@@ -325,6 +328,7 @@ function buildHeaderData(
   raw: Record<string, unknown>,
 ) {
   const transactionType = (data.transactionType || "") as TransactionType;
+  const status = pickString(data.requestStatus, raw.status, "");
   return {
     titlePrefix: pickString(
       data.fxType,
@@ -335,6 +339,7 @@ function buildHeaderData(
       LABEL_BY_TYPE[transactionType] ?? formatEnum(data.transactionType),
     dateLabel: formatDate(data.date),
     timeLabel: formatTime(data.time),
+    status: status === "--" ? "" : status,
     statusLabel: pickString(
       formatEnum(data.requestStatus),
       formatEnum(raw.status),
@@ -568,6 +573,7 @@ function buildOverview(
     titleValue: header.titleValue,
     dateLabel: header.dateLabel,
     timeLabel: header.timeLabel,
+    status: header.status,
     statusLabel: header.statusLabel,
     basicDetails,
     sections: nonEmptySections,
@@ -645,6 +651,7 @@ function buildReceipt(
     titleValue: header.titleValue,
     dateLabel: header.dateLabel,
     timeLabel: header.timeLabel,
+    status: header.status,
     statusLabel: header.statusLabel,
     fields,
     document,
@@ -775,6 +782,7 @@ function buildSettlement(
     titleValue: header.titleValue,
     dateLabel: header.dateLabel,
     timeLabel: header.timeLabel,
+    status: header.status,
     statusLabel: header.statusLabel,
     fields,
     receipt: settlementReceipt,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@mantine/core";
+import { Button, Menu } from "@mantine/core";
 import { useState } from "react";
 import TakeActionOverlay from "../(AdminLayout)/transactions/[id]/TakeActionOverlay";
 import type {
@@ -8,6 +8,10 @@ import type {
   TransactionWorkflowHistoryItemViewModel,
   PendingWorkflowStageViewModel,
 } from "../(AdminLayout)/transactions/[id]/hooks/useTransactionDetails";
+import { ConfirmationModal } from "./ConfirmationModal";
+import { SuccessModal } from "./SuccessModal";
+
+type DisbursementConfirmType = "initiate" | "confirm";
 
 interface TakeActionButtonProps {
   /** Button text - defaults to "Take Action" */
@@ -25,6 +29,8 @@ interface TakeActionButtonProps {
   /** Callback when overlay closes */
   onClose?: () => void;
   transactionId?: string;
+  /** Raw transaction status code used for disbursement menu gating */
+  transactionStatus?: string;
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
@@ -38,6 +44,32 @@ interface TakeActionButtonProps {
   approvalType?: string;
 }
 
+const INITIATE_CONFIRM = {
+  title: "Initiate Disbursement?",
+  message:
+    "Are you sure you want to initiate disbursement for this transaction?",
+  primaryButtonText: "Yes, Initiate Disbursement",
+} as const;
+
+const CONFIRM_DISBURSEMENT = {
+  title: "Confirm Disbursement?",
+  message:
+    "Are you sure you want to confirm disbursement for this transaction? This action can not be undone.",
+  primaryButtonText: "Yes, Confirm Disbursement",
+} as const;
+
+const INITIATE_SUCCESS = {
+  title: "Disbursement Initiated",
+  message: "Disbursement has been initiated successfully.",
+  primaryButtonText: "Close",
+} as const;
+
+const CONFIRM_SUCCESS = {
+  title: "Disbursement Successful",
+  message: "Funds disbursed successfully!",
+  primaryButtonText: "Close",
+} as const;
+
 export default function TakeActionButton({
   label = "Take Action",
   size = "md",
@@ -47,6 +79,7 @@ export default function TakeActionButton({
   onOpen,
   onClose,
   transactionId,
+  transactionStatus,
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
@@ -57,33 +90,89 @@ export default function TakeActionButton({
   approvalProcessName,
   approvalType,
 }: TakeActionButtonProps) {
-  const [opened, setOpened] = useState(false);
+  const [approvalsOpen, setApprovalsOpen] = useState(false);
+  const [confirmType, setConfirmType] = useState<DisbursementConfirmType | null>(
+    null,
+  );
+  const [successType, setSuccessType] = useState<DisbursementConfirmType | null>(
+    null,
+  );
 
-  const handleOpen = () => {
-    setOpened(true);
+  const normalizedStatus = transactionStatus?.trim().toUpperCase() ?? "";
+  const canInitiateDisbursement = normalizedStatus === "AWAITING_DISBURSEMENT";
+  const canConfirmDisbursement =
+    normalizedStatus === "DISBURSEMENT_IN_PROGRESS";
+
+  const handleOpenApprovals = () => {
+    setApprovalsOpen(true);
     onOpen?.();
   };
 
-  const handleClose = () => {
-    setOpened(false);
+  const handleCloseApprovals = () => {
+    setApprovalsOpen(false);
     onClose?.();
   };
 
+  const handleConfirmPrimary = () => {
+    if (!confirmType) return;
+    setSuccessType(confirmType);
+    setConfirmType(null);
+  };
+
+  const handleCloseConfirm = () => {
+    setConfirmType(null);
+  };
+
+  const handleCloseSuccess = () => {
+    setSuccessType(null);
+  };
+
+  const confirmProps =
+    confirmType === "initiate"
+      ? INITIATE_CONFIRM
+      : confirmType === "confirm"
+        ? CONFIRM_DISBURSEMENT
+        : null;
+
+  const successProps =
+    successType === "initiate"
+      ? INITIATE_SUCCESS
+      : successType === "confirm"
+        ? CONFIRM_SUCCESS
+        : null;
+
   return (
     <>
-      <Button
-        color={color}
-        radius="xl"
-        size={size}
-        variant={variant}
-        onClick={handleOpen}
-        className={className}
-      >
-        {label}
-      </Button>
+      <Menu position="bottom-end" shadow="md" width={220}>
+        <Menu.Target>
+          <Button
+            color={color}
+            radius="xl"
+            size={size}
+            variant={variant}
+            className={className}
+          >
+            {label}
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item onClick={handleOpenApprovals}>View Approvals</Menu.Item>
+          {canInitiateDisbursement && (
+            <Menu.Item onClick={() => setConfirmType("initiate")}>
+              Initiate Disbursement
+            </Menu.Item>
+          )}
+          {canConfirmDisbursement && (
+            <Menu.Item onClick={() => setConfirmType("confirm")}>
+              Confirm Disbursement
+            </Menu.Item>
+          )}
+        </Menu.Dropdown>
+      </Menu>
+
       <TakeActionOverlay
-        opened={opened}
-        onClose={handleClose}
+        opened={approvalsOpen}
+        onClose={handleCloseApprovals}
         transactionId={transactionId}
         transactionStatusLabel={transactionStatusLabel}
         documents={documents}
@@ -95,6 +184,28 @@ export default function TakeActionButton({
         approvalProcessName={approvalProcessName}
         approvalType={approvalType}
       />
+
+      {confirmProps && (
+        <ConfirmationModal
+          opened={confirmType !== null}
+          onClose={handleCloseConfirm}
+          title={confirmProps.title}
+          message={confirmProps.message}
+          primaryButtonText={confirmProps.primaryButtonText}
+          onPrimary={handleConfirmPrimary}
+        />
+      )}
+
+      {successProps && (
+        <SuccessModal
+          opened={successType !== null}
+          onClose={handleCloseSuccess}
+          title={successProps.title}
+          message={successProps.message}
+          primaryButtonText={successProps.primaryButtonText}
+          onPrimaryClick={handleCloseSuccess}
+        />
+      )}
     </>
   );
 }

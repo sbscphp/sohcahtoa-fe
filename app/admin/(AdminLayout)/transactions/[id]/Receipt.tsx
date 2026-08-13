@@ -114,6 +114,7 @@ export default function Receipt({
 
         <TakeActionButton
           transactionId={transactionId}
+          transactionStatus={isLoading ? undefined : transaction?.status}
           transactionStatusLabel={
             isLoading ? undefined : transaction?.statusLabel
           }
