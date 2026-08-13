@@ -257,7 +257,9 @@ export function CreateRoleModal({
       onClose={handleClose}
       title={
         <Text className="text-body-heading-300! text-xl! font-bold! leading-tight!">
-          Create a New Role
+          {step === "permissions"
+            ? "Permissions: Create permissions for this role"
+            : "Create a New Role"}
         </Text>
       }
       closeButtonProps={{
@@ -289,6 +291,7 @@ export function CreateRoleModal({
                 label="Description"
                 placeholder="Short description of role"
                 required
+                maxLength={64}
                 {...form.getInputProps("description")}
               />
               <Text size="xs" c="dimmed">

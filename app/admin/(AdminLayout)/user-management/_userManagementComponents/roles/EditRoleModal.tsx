@@ -295,7 +295,9 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
         onClose={handleClose}
         title={
           <Text className="text-body-heading-300! text-xl! font-bold! leading-tight!">
-            Edit Role
+            {step === "permissions"
+              ? "Permissions: Manage permissions for this role"
+              : "Edit Role"}
           </Text>
         }
         closeButtonProps={{
@@ -322,6 +324,7 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
                   label="Description"
                   placeholder="Short description of role"
                   required
+                  maxLength={64}
                   {...form.getInputProps("description")}
                 />
                 <Text size="xs" c="dimmed">
