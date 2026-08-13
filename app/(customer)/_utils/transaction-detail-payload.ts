@@ -4,10 +4,12 @@ import type {
   TransactionDetailPaymentEntry,
   TransactionDetailRequiredDoc,
   TransactionDetailRequiredDocUploaded,
+  TransactionDetailSettlement,
   TransactionDetailStep,
 } from "@/app/_lib/api/types";
 import type { PaymentDetailsData } from "@/app/(customer)/_components/transactions/details/PaymentDetailsSection";
 import type { RequiredDocumentsData, TransactionDetailsData } from "@/app/(customer)/_components/transactions/details";
+import type { TransactionSettlementData } from "@/app/(customer)/_components/transactions/details/TransactionSettlementSection";
 import type { TransactionDocumentItem } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import type { TransactionDetailPayload } from "@/app/(customer)/(CustomerLayout)/transactions/detail/[id]/page";
 import { getTransactionTypeLabel } from "@/app/(customer)/_lib/mock-transactions";
@@ -34,6 +36,84 @@ function formatStatusLabel(status?: string | null): string {
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatProofFilename(url: string): string {
+  try {
+    const path = new URL(url).pathname;
+    const last = path.split("/").filter(Boolean).pop();
+    if (last) return decodeURIComponent(last);
+  } catch {
+    // ignore invalid URL
+  }
+  return "proof-of-payment";
+}
+
+function formatPaidInto(
+  bankDetails: TransactionDetailSettlement["bankDetails"]
+): string | undefined {
+  if (!bankDetails) return undefined;
+  const lines = [
+    bankDetails.bankName,
+    bankDetails.accountName,
+    bankDetails.accountNumber,
+  ].filter((value): value is string => Boolean(value && String(value).trim()));
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+function mapSettlementFromApi(
+  api: TransactionDetailData
+): TransactionSettlementData | undefined {
+  const settlement = api.settlement ?? api.outboundSettlement ?? null;
+  if (!settlement) return undefined;
+
+  const settledAt =
+    settlement.confirmedAt ||
+    settlement.depositedAt ||
+    settlement.updatedAt ||
+    settlement.createdAt ||
+    api.updatedAt;
+
+  const amountNumber = Number(settlement.amount);
+  const settlementAmount =
+    Number.isFinite(amountNumber) && settlement.amount
+      ? {
+          code: settlement.currency || "NGN",
+          formatted: amountNumber.toLocaleString("en-US", { minimumFractionDigits: 2 }),
+        }
+      : undefined;
+
+  const cashPickup = api.cashPickup;
+  const prepaidCard = api.prepaidCard;
+  const settlementStructureCash =
+    cashPickup?.amount && cashPickup.currency
+      ? `${cashPickup.currency} ${Number(cashPickup.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+      : undefined;
+  const prepaidBank = typeof prepaidCard?.bankName === "string" ? prepaidCard.bankName : "";
+  const prepaidPan = typeof prepaidCard?.maskedPan === "string" ? prepaidCard.maskedPan : "";
+  const settlementStructurePrepaidCard =
+    prepaidBank || prepaidPan ? [prepaidBank, prepaidPan].filter(Boolean).join(" · ") : undefined;
+
+  return {
+    settlementId: settlement.id,
+    settlementDate: settledAt ? formatShortDate(settledAt) : "",
+    settlementTime: settledAt ? formatShortTime(settledAt) : "",
+    settlementAmount,
+    paymentMethod: settlement.paymentMethod
+      ? formatStatusLabel(settlement.paymentMethod)
+      : undefined,
+    paymentReference: settlement.paymentReference ?? undefined,
+    settlementReceipt: settlement.proofOfPayment
+      ? {
+          filename: formatProofFilename(settlement.proofOfPayment),
+          url: settlement.proofOfPayment,
+        }
+      : undefined,
+    settlementStructureCash,
+    settlementStructurePrepaidCard,
+    paidInto: formatPaidInto(settlement.bankDetails),
+    settlementStatus: settlement.status ? formatStatusLabel(settlement.status) : undefined,
+  };
 }
 
 function commentActionToDocumentStatus(action?: string | null): string | null {
@@ -298,17 +378,9 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     payload.paymentDetails = mapPaymentDetailsFromApi(apiPaymentRows);
   }
 
-  if (normalizeTransactionStatus(api.status) === "COMPLETED") {
-    payload.settlement = {
-      settlementId: pickup?.pickupCode ?? "—",
-      settlementDate: pickup?.pickedUpAt ? formatShortDate(pickup.pickedUpAt) : formatShortDate(api.updatedAt),
-      settlementTime: pickup?.pickedUpAt ? formatShortTime(pickup.pickedUpAt) : formatShortTime(api.updatedAt),
-      settlementReceipt: { filename: "settlement-receipt.pdf" },
-      settlementStructureCash: "—",
-      settlementStructurePrepaidCard: "—",
-      paidInto: "—",
-      settlementStatus: pickup?.status ?? "—",
-    };
+  const mappedSettlement = mapSettlementFromApi(api);
+  if (mappedSettlement) {
+    payload.settlement = mappedSettlement;
   }
 
   return payload;

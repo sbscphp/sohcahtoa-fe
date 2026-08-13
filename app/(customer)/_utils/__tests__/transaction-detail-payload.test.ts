@@ -201,4 +201,38 @@ describe("buildDetailPayloadFromApi documents", () => {
 
     expect(payload.allowMissingDocumentUpload).toBe(true);
   });
+
+  it("maps settlement from the transaction settlement object", () => {
+    const payload = buildDetailPayloadFromApi({
+      ...baseApi,
+      status: "COMPLETED",
+      requiredDocuments: [],
+      settlement: {
+        id: "252bd46f-07ad-4df0-8a2a-896938afbdf6",
+        amount: "184500",
+        currency: "NGN",
+        status: "CONFIRMED",
+        paymentMethod: "CASH_DEPOSIT",
+        paymentReference: "AGENT-IN-4ad3e785-8922-4483-aa9a-26183d968cef",
+        depositedAt: "2026-08-05T14:22:53.864Z",
+        confirmedAt: "2026-08-05T14:22:53.864Z",
+        proofOfPayment:
+          "https://res.cloudinary.com/example/image/upload/v1/agent-inbound-payments/proof.pdf",
+        bankDetails: null,
+      },
+      cashPickup: null,
+      prepaidCard: null,
+    } as TransactionDetailData);
+
+    expect(payload.settlement).toMatchObject({
+      settlementId: "252bd46f-07ad-4df0-8a2a-896938afbdf6",
+      paymentMethod: "Cash Deposit",
+      paymentReference: "AGENT-IN-4ad3e785-8922-4483-aa9a-26183d968cef",
+      settlementStatus: "Confirmed",
+      settlementAmount: { code: "NGN", formatted: "184,500.00" },
+    });
+    expect(payload.settlement?.settlementReceipt?.url).toContain("proof.pdf");
+    expect(payload.settlement?.settlementStructureCash).toBeUndefined();
+    expect(payload.settlement?.settlementStructurePrepaidCard).toBeUndefined();
+  });
 });

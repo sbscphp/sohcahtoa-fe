@@ -58,7 +58,6 @@ export function beneficiaryDetailsFromBankForm(
     typeof bank.otherInformation === "string" ? bank.otherInformation.trim() : "";
 
   const details: Record<string, unknown> = {
-    name: organizationName,
     organizationName,
     schoolName: organizationName,
     beneficiaryName: organizationName,

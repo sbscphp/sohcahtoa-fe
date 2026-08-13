@@ -17,13 +17,14 @@ import {
   sanitizeRoutingNumber,
 } from "@/app/_lib/input-field-rules";
 
-export type InternationalBankDetailsVariant = "default" | "school-fees";
+export type InternationalBankDetailsVariant = "default" | "school-fees" | "medical";
 
 const VARIANT_LABELS: Record<
   InternationalBankDetailsVariant,
   {
     beneficiarySection: string;
     organizationName: string;
+    organizationPlaceholder: string;
     bankSection: string;
     bankName: string;
     accountName: string;
@@ -31,7 +32,16 @@ const VARIANT_LABELS: Record<
 > = {
   default: {
     beneficiarySection: "Beneficiary details",
+    organizationName: "Organization name",
+    organizationPlaceholder: "Enter organization name",
+    bankSection: "Beneficiary bank details",
+    bankName: "Bank name",
+    accountName: "Beneficiary account name",
+  },
+  medical: {
+    beneficiarySection: "Beneficiary details",
     organizationName: "Name of organization",
+    organizationPlaceholder: "Hospital Name",
     bankSection: "Beneficiary bank details",
     bankName: "Bank name",
     accountName: "Beneficiary account name",
@@ -39,6 +49,7 @@ const VARIANT_LABELS: Record<
   "school-fees": {
     beneficiarySection: "For the School (Beneficiary)",
     organizationName: "School name",
+    organizationPlaceholder: "School name",
     bankSection: "Beneficiary bank details",
     bankName: "Bank name",
     accountName: "Account name (for the school)",
@@ -122,7 +133,7 @@ export default function InternationalBankDetailsFields({
           label={labels.organizationName}
           required
           size="md"
-          placeholder="School Name"
+          placeholder={labels.organizationPlaceholder}
           {...form.getInputProps("organizationName")}
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -193,7 +204,7 @@ export default function InternationalBankDetailsFields({
           {...form.getInputProps("accountName")}
         />
         <Textarea
-          label="Bank account address"
+          label="Bank Address"
           required
           minRows={2}
           size="md"
@@ -202,7 +213,7 @@ export default function InternationalBankDetailsFields({
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextInput
-            label="Bank account IBAN"
+            label="IBAN"
             size="md"
             placeholder="e.g. GB29 NWBK 6016 1331 9268 19"
             {...form.getInputProps("iban")}
@@ -213,7 +224,7 @@ export default function InternationalBankDetailsFields({
             error={form.errors.iban as string | undefined}
           />
           <TextInput
-            label="Bank account SWIFT / BIC"
+            label="SWIFT/BIC"
             size="md"
             placeholder="e.g. ABCDUS33XXX"
             maxLength={11}
@@ -257,19 +268,13 @@ export default function InternationalBankDetailsFields({
       </BankDetailsFormSection>
 
       {hasPaymentIdentifierFields(region) ? (
-        <BankDetailsFormSection title="Payment identifiers (by bank country / region)">
-          {region !== "UK" ? (
-          <p className="text-sm text-body-text-200 -mt-1">
-            Fields below depend on the bank account country / region selected above.
-          </p>
-          ) : null}
-
+        <BankDetailsFormSection>
           {region !== "NG" ? (
             <TextInput
-              label="Payment reference / ID"
-            required
-            size="md"
-            placeholder="Enter"
+              label="Payment/Invoice reference number"
+              required
+              size="md"
+              placeholder="Enter"
               {...form.getInputProps("paymentReference")}
             />
           ) : null}

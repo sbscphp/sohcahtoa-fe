@@ -976,6 +976,26 @@ export interface TransactionDetailCashPickup {
   updatedAt: string;
 }
 
+export interface TransactionDetailSettlement {
+  id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
+  depositedAt?: string | null;
+  confirmedAt?: string | null;
+  proofOfPayment?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  bankDetails?: {
+    bankName?: string | null;
+    accountName?: string | null;
+    accountNumber?: string | null;
+  } | null;
+}
+
 export interface TransactionDetailPaymentEntry {
   id: string;
   sessionId?: string | null;
@@ -1061,7 +1081,8 @@ export interface TransactionDetailData {
   requiredDocuments: TransactionDetailRequiredDoc[];
   cashPickup: TransactionDetailCashPickup | null;
   prepaidCard: Record<string, unknown> | null;
-  settlement?: Record<string, unknown> | null;
+  settlement?: TransactionDetailSettlement | null;
+  outboundSettlement?: TransactionDetailSettlement | null;
   paymentDetails?: TransactionDetailPaymentEntry[] | null;
   steps: TransactionDetailStep[];
   comments?: TransactionDetailComment[];

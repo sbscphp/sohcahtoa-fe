@@ -138,7 +138,7 @@ export default function TransactionDetailPage() {
     statusKey !== "VERIFICATION_COMPLETED" &&
     statusKey !== "ADMIN_APPROVAL_PENDING" &&
     statusKey !== "PENDING_RECORD_VALIDATION";
-  const showSettlement = statusKey === "COMPLETED";
+  const showSettlement = Boolean(payload.settlement);
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
   const nairaRaw = apiData?.nairaEquivalent;
@@ -384,6 +384,7 @@ export default function TransactionDetailPage() {
           <TransactionSettlementSection
             data={payload.settlement}
             onDownloadReceipt={handleDownloadReceipt}
+            onViewReceipt={(url, filename) => setDocumentViewer({ url, filename })}
           />
         )}
       </div>
