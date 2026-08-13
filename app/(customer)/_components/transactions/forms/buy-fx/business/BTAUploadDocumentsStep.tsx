@@ -24,7 +24,11 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
-import { kycTinRequiredSchema, sanitizeTinInput } from "@/app/(customer)/_lib/kyc-tin-schema";
+import {
+  kycTinRequiredSchema,
+  sanitizeTinInput,
+  TIN_INPUT_HELPER,
+} from "@/app/(customer)/_lib/kyc-tin-schema";
 
 const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
@@ -120,7 +124,10 @@ export default function BTAUploadDocumentsStep({
   useKycProfilePrefillEffect(form, initialValues, kyc, !omitLoggedInUserKyc);
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values as BTAUploadDocumentsFormData);
+    onSubmit({
+      ...values,
+      tinNumber: sanitizeTinInput(values.tinNumber ?? ""),
+    } as BTAUploadDocumentsFormData);
   });
 
   return (
@@ -186,7 +193,8 @@ export default function BTAUploadDocumentsStep({
           label="TIN Number"
           required
           size="md"
-          placeholder="Enter TIN Number"
+          placeholder="e.g. 12345678-00012"
+          description={TIN_INPUT_HELPER}
           maxLength={20}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
@@ -194,6 +202,7 @@ export default function BTAUploadDocumentsStep({
             const raw = sanitizeTinInput(e.currentTarget.value);
             e.currentTarget.value = raw;
             form.setFieldValue("tinNumber", raw);
+            form.clearFieldError("tinNumber");
           }}
         />
         <TextInput
