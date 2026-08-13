@@ -177,7 +177,7 @@ export default function ResidentUploadDocumentsStep({
           label="TIN Number"
           size="md"
           placeholder="e.g. 08120451-1001"
-          description={TIN_INPUT_HELPER}
+          // description={TIN_INPUT_HELPER}
           maxLength={16}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}

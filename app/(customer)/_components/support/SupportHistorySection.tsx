@@ -115,7 +115,7 @@ export default function SupportHistorySection() {
             e.stopPropagation();
             goToViewSupport(row.id);
           }}
-          aria-label="View transaction details"
+          aria-label="View support details"
         >
           <IconArrowRight className="w-8 h-8 "/>
         </ActionIcon>

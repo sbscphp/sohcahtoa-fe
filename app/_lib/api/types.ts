@@ -1130,19 +1130,47 @@ export interface SupportTicketListResponse {
   };
 }
 
+export interface SupportTicketCommentAuthor {
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface SupportTicketComment {
+  id: string;
+  message: string;
+  createdAt: string;
+  author: SupportTicketCommentAuthor;
+}
+
+export interface SupportTicketAttachment {
+  id: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  createdAt?: string;
+  /** @deprecated Prefer createdAt from API */
+  uploadedAt?: string;
+}
+
 export interface SupportTicketDetail extends SupportTicket {
+  priority?: string;
+  customer?: {
+    name: string;
+    email: string;
+  };
+  assignedAgent?: { name: string; email: string } | null;
+  /** Staff replies / updates from the ticket API. */
+  comments?: SupportTicketComment[];
+  /** Legacy shape — prefer `comments`. */
   messages?: {
     id: string;
     from: string;
     message: string;
     createdAt: string;
   }[];
-  attachments?: {
-    id: string;
-    fileName: string;
-    fileUrl: string;
-    uploadedAt: string;
-  }[];
+  attachments?: SupportTicketAttachment[];
 }
 
 export interface SupportTicketDetailResponse {
