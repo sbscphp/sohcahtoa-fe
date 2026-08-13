@@ -168,7 +168,7 @@ export default function DomiciliaryAccountFields({
         <TextInput
           label="IBAN"
           placeholder="e.g. GB29NWBK60161331926819"
-          description="Optional — include if your bank uses IBAN"
+          // description="Optional — include if your bank uses IBAN"
           size="md"
           {...getInputProps("iban")}
           {...bindSanitizedInput(
