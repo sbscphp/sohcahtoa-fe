@@ -511,7 +511,7 @@ export function EditRoleModal({ opened, roleId, role, onClose }: EditRoleModalPr
         onPrimaryClick={() => {
           setIsSuccessOpen(false);
           handleClose();
-          router.push(adminRoutes.adminUserManagement());
+          router.push(adminRoutes.adminUserManagementRoles());
         }}
         secondaryButtonText="Close"
       />

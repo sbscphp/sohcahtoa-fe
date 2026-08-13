@@ -482,7 +482,7 @@ export function CreateRoleModal({
       primaryButtonText="Manage Admin Role"
       onPrimaryClick={() => {
         setIsSuccessOpen(false);
-        router.push(adminRoutes.adminUserManagement());
+        router.push(adminRoutes.adminUserManagementRoles());
       }}
     />
     </>

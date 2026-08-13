@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 interface RolePermissionModalProps {
   opened: boolean;
@@ -35,7 +36,7 @@ export function RolePermissionModal({
     setIsSuccessOpen(true);
   };
   const handleManageUser = () => {
-    router.push("/admin/user-management");
+    router.push(adminRoutes.adminUserManagementRoles());
   };
   function PermissionRow({ label }: PermissionRowProps) {
     return (
