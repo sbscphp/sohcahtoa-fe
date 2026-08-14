@@ -438,7 +438,7 @@ export default function RateDetailPage() {
                   value="1"
                   readOnly
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{ input: "text-xl! font-bold! text-start!" }}
                   styles={{
                     input: {
@@ -469,7 +469,7 @@ export default function RateDetailPage() {
                   error={form.errors.buyRateInput}
                   readOnly={!isEditMode}
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{ input: "text-xl! font-bold! text-end!" }}
                   styles={{
                     input: {
@@ -535,7 +535,7 @@ export default function RateDetailPage() {
                   error={form.errors.sellRateInput}
                   readOnly={!isEditMode}
                   radius="md"
-                  className="flex-1 min-w-[140px]"
+                  className="flex-1 min-w-35"
                   classNames={{ input: "text-xl! font-bold! text-end!" }}
                   styles={{
                     input: {

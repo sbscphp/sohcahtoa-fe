@@ -83,7 +83,7 @@ export interface CreateAgentPayload {
   email: string;
   phoneNumber: string;
   branch: string;
-  attachment: File;
+  attachment?: File;
 }
 
 export interface AgentDetailsResponseData {
@@ -1126,7 +1126,7 @@ export interface WorkflowTemplateUpdatePayload {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
-  approvalType?: "TRANSACTION" | "REFUND" | "RATE";
+  approvalType?: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT";
   minAmount?: number | null;
   maxAmount?: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
@@ -2271,6 +2271,12 @@ export const adminApi = {
         data
       ),
 
+    approveDisbursement: (id: string, data?: { notes?: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.approveDisbursement(id),
+        data
+      ),
+
     requestTransactionInfo: (
       id: string,
       data: { notes: string; fields: string[] }
@@ -2308,6 +2314,12 @@ export const adminApi = {
         data
       ),
 
+    rejectDisbursement: (id: string, data: { reason: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.rejectDisbursement(id),
+        data
+      ),
+
     refund: (id: string, data: { reason: string; notes: string, walletId: string, entryId: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.refund(id),
@@ -2317,6 +2329,18 @@ export const adminApi = {
     settle: (id: string) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.settle(id)
+      ),
+
+    initiateDisbursement: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.initiateDisbursement(id),
+        {}
+      ),
+
+    confirmDisbursement: (id: string) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.confirmDisbursement(id),
+        {}
       ),
 
     downloadReceipt: async (transactionId: string): Promise<ApiDownloadResponse> => {

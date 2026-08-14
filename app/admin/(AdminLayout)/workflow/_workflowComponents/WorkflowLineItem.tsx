@@ -36,16 +36,70 @@ export const ALL_WORKFLOW_TYPE_OPTIONS = [
   "Operations Review",
   "Operations Approval",
   "Disbursement Confirmation",
+  "Refund Approval",
 ] as const;
 
 export const RATE_WORKFLOW_TYPE_OPTIONS = ["Approval"] as const;
+export const TRANSACTION_WORKFLOW_TYPE_OPTIONS = ["Compliance Review"] as const;
+export const DISBURSEMENT_WORKFLOW_TYPE_OPTIONS = [
+  "Disbursement Confirmation",
+  "Operations Approval",
+  "Operations Review",
+] as const;
+export const REFUND_WORKFLOW_TYPE_OPTIONS = ["Refund Approval"] as const;
 
+export function getAllowedWorkflowTypes(approvalType: string): string[] {
+  switch (approvalType) {
+    case "RATE":
+      return [...RATE_WORKFLOW_TYPE_OPTIONS];
+    case "TRANSACTION":
+      return [...TRANSACTION_WORKFLOW_TYPE_OPTIONS];
+    case "DISBURSEMENT":
+      return [...DISBURSEMENT_WORKFLOW_TYPE_OPTIONS];
+    case "REFUND":
+      return [...REFUND_WORKFLOW_TYPE_OPTIONS];
+    default:
+      return [...ALL_WORKFLOW_TYPE_OPTIONS];
+  }
+}
+
+/** Prefill when an approval type has exactly one allowed workflow type. */
+export function getDefaultWorkflowType(approvalType: string): string {
+  const allowed = getAllowedWorkflowTypes(approvalType);
+  return allowed.length === 1 ? allowed[0] : "";
+}
+
+/**
+ * Align workflow line types with the selected approval type:
+ * - RATE / TRANSACTION / REFUND auto-fill their single allowed type
+ * - DISBURSEMENT keeps a type if still allowed, otherwise clears it
+ */
+export function coerceWorkflowLinesForApprovalType(
+  lines: WorkflowLine[],
+  approvalType: string
+): WorkflowLine[] {
+  if (!approvalType) return lines;
+
+  const allowed = getAllowedWorkflowTypes(approvalType);
+  const singleDefault = getDefaultWorkflowType(approvalType);
+
+  return lines.map((line) => {
+    if (singleDefault) {
+      return { ...line, workflowType: singleDefault };
+    }
+    if (line.workflowType && allowed.includes(line.workflowType)) {
+      return line;
+    }
+    return { ...line, workflowType: "" };
+  });
+}
+
+/** @deprecated Prefer coerceWorkflowLinesForApprovalType */
 export function coerceRateWorkflowLines(
   lines: WorkflowLine[],
   approvalType: string
 ): WorkflowLine[] {
-  if (approvalType !== "RATE") return lines;
-  return lines.map((line) => ({ ...line, workflowType: "Approval" }));
+  return coerceWorkflowLinesForApprovalType(lines, approvalType);
 }
 
 function getInitials(name: string): string {

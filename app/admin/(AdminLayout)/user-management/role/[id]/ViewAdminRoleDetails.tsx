@@ -272,7 +272,7 @@ export default function ViewAdminRoleDetails() {
         title={`Role ${pastTenseVerb}`}
         message={`Role has been successfully ${pastTenseVerb.toLowerCase()}.`}
         primaryButtonText="Manage Roles"
-        onPrimaryClick={() => router.push(adminRoutes.adminUserManagement())}
+        onPrimaryClick={() => router.push(adminRoutes.adminUserManagementRoles())}
         secondaryButtonText="No, Close"
       />
 

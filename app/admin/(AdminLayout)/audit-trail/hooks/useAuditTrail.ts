@@ -79,6 +79,36 @@ export interface UseAuditTrailParams {
   dateTo?: string;
 }
 
+function formatTimeWithPeriod(dateValue: Date): string {
+  return dateValue.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/** Formats "HH:mm" / "HH:mm:ss" (or a full datetime) as 12-hour time with AM/PM. */
+function formatTimeLabel(value: string | undefined): string {
+  if (!value?.trim()) return "-";
+
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (match) {
+    const hours = Number.parseInt(match[1], 10);
+    const minutes = match[2];
+    if (Number.isNaN(hours)) return trimmed;
+
+    const period = hours >= 12 ? "PM" : "AM";
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${minutes} ${period}`;
+  }
+
+  const dateValue = new Date(trimmed);
+  if (Number.isNaN(dateValue.getTime())) return trimmed;
+
+  return formatTimeWithPeriod(dateValue);
+}
+
 function splitDateTime(value: string | undefined): { date: string; time: string } {
   if (!value) return { date: "-", time: "-" };
 
@@ -89,10 +119,7 @@ function splitDateTime(value: string | undefined): { date: string; time: string 
 
   return {
     date: dateValue.toISOString().slice(0, 10),
-    time: dateValue.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    time: formatTimeWithPeriod(dateValue),
   };
 }
 
@@ -104,7 +131,7 @@ function mapAuditTrailItem(item: AuditTrailApiItem): AuditTrailRowItem {
   return {
     id: String(item.id ?? item.auditId ?? item.actionId ?? ""),
     timestamp: split.date,
-    time: item.actionTime ?? item.time ?? split.time,
+    time: formatTimeLabel(item.actionTime ?? item.time ?? split.time),
     actionBy:
       item.actionBy ?? item.admin?.fullName ?? item.adminName ?? item.fullName ?? "-",
     role: item.role ?? item.roleName ?? item.admin?.email ?? "-",

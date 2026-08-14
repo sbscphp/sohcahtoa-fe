@@ -49,7 +49,9 @@ export interface TransactionOverviewViewModel {
   titleValue: string;
   dateLabel: string;
   timeLabel: string;
+  status: string;
   statusLabel: string;
+  workflowStage: string;
   basicDetails: OverviewField[];
   sections: OverviewSection[];
   isEmpty: boolean;
@@ -108,12 +110,18 @@ export function isRefundApprovalType(approvalType?: string | null): boolean {
   return approvalType?.trim().toLowerCase() === "refund";
 }
 
+export function isDisbursementApprovalType(approvalType?: string | null): boolean {
+  return approvalType?.trim().toLowerCase() === "disbursement";
+}
+
 export interface TransactionReceiptViewModel {
   titlePrefix: string;
   titleValue: string;
   dateLabel: string;
   timeLabel: string;
+  status: string;
   statusLabel: string;
+  workflowStage: string;
   fields: OverviewField[];
   document: TransactionDocumentViewModel | null;
   isEmpty: boolean;
@@ -124,7 +132,9 @@ export interface TransactionSettlementViewModel {
   titleValue: string;
   dateLabel: string;
   timeLabel: string;
+  status: string;
   statusLabel: string;
+  workflowStage: string;
   fields: OverviewField[];
   receipt: TransactionDocumentViewModel | null;
   isEmpty: boolean;
@@ -325,6 +335,8 @@ function buildHeaderData(
   raw: Record<string, unknown>,
 ) {
   const transactionType = (data.transactionType || "") as TransactionType;
+  const status = pickString(data.requestStatus, raw.status, "");
+  const workflowStage = pickString(data.workflowStage, "");
   return {
     titlePrefix: pickString(
       data.fxType,
@@ -335,11 +347,13 @@ function buildHeaderData(
       LABEL_BY_TYPE[transactionType] ?? formatEnum(data.transactionType),
     dateLabel: formatDate(data.date),
     timeLabel: formatTime(data.time),
+    status: status === "--" ? "" : status,
     statusLabel: pickString(
       formatEnum(data.requestStatus),
       formatEnum(raw.status),
       "--",
     ),
+    workflowStage: workflowStage === "--" ? "" : workflowStage,
   };
 }
 
@@ -568,7 +582,9 @@ function buildOverview(
     titleValue: header.titleValue,
     dateLabel: header.dateLabel,
     timeLabel: header.timeLabel,
+    status: header.status,
     statusLabel: header.statusLabel,
+    workflowStage: header.workflowStage,
     basicDetails,
     sections: nonEmptySections,
     isEmpty: nonEmptySections.length === 0,
@@ -645,7 +661,9 @@ function buildReceipt(
     titleValue: header.titleValue,
     dateLabel: header.dateLabel,
     timeLabel: header.timeLabel,
+    status: header.status,
     statusLabel: header.statusLabel,
+    workflowStage: header.workflowStage,
     fields,
     document,
     isEmpty: !hasContent,
@@ -775,7 +793,9 @@ function buildSettlement(
     titleValue: header.titleValue,
     dateLabel: header.dateLabel,
     timeLabel: header.timeLabel,
+    status: header.status,
     statusLabel: header.statusLabel,
+    workflowStage: header.workflowStage,
     fields,
     receipt: settlementReceipt,
     isEmpty: !hasContent,

@@ -151,7 +151,7 @@ export default function AgentTable() {
         name: "attachment",
         label: "Additional Document",
         type: "file",
-        required: true,
+        required: false,
         accept: ".pdf,.jpg,.jpeg,.png",
         maxSize: 2,
         description: "Upload KYC document (Max: 2 MB)",

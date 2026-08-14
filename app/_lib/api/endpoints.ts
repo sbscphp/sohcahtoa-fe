@@ -237,6 +237,8 @@ export const API_ENDPOINTS = {
       getById: (id: string) => `/api/admin/transactions/${id}`,
       review: (id: string) => `/api/admin/transactions/${id}/review`,
       approve: (id: string) => `/api/admin/transactions/${id}/approve`,
+      approveDisbursement: (id: string) =>
+        `/api/admin/transactions/${id}/approve-disbursement`,
       requestTransactionInfo: (id: string) =>
         `/api/admin/transactions/${id}/request-info`,
       approveDocument: (id: string, documentId: string) =>
@@ -246,8 +248,14 @@ export const API_ENDPOINTS = {
       rejectDocument: (id: string, documentId: string) =>
         `/api/admin/transactions/${id}/documents/${documentId}/reject`,
       reject: (id: string) => `/api/admin/transactions/${id}/reject`,
+      rejectDisbursement: (id: string) =>
+        `/api/admin/transactions/${id}/reject-disbursement`,
       refund: (id: string) => `/api/admin/transactions/${id}/refund`,
       settle: (id: string) => `/api/admin/transactions/${id}/settle`,
+      initiateDisbursement: (id: string) =>
+        `/api/admin/transactions/${id}/initiate-disbursement`,
+      confirmDisbursement: (id: string) =>
+        `/api/admin/transactions/${id}/confirm-disbursement`,
       downloadReceipt: (transactionId: string) =>
         `/api/admin/transactions/download/${transactionId}/receipt`,
       unsettledBalance: "/api/admin/transactions/unsettled-balance",
