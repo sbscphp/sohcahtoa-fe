@@ -13,6 +13,7 @@ import Loader from "@/components/loader";
 import DocumentViewerModal from "@/app/(customer)/_components/modals/DocumentViewerModal";
 import SupportConversationModal from "@/app/(customer)/_components/support/SupportConversationModal";
 
+
 function getCategoryLabel(category: string): string {
   const match = [
     { value: "TRANSACTION_ISSUE", label: "Transaction issue" },
