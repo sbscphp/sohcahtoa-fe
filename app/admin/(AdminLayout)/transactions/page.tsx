@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Skeleton } from "@mantine/core";
+import { Skeleton, Tooltip } from "@mantine/core";
 import Image from "next/image";
 import StatCard from "../../_components/StatCard";
 import gold from "../../_components/assets/icons/Goldmoneys.png";
@@ -63,13 +63,26 @@ function TransactionsTabContent() {
             ))
           ) : (
             <>
-              <StatCard
-                title="Under Review"
-                value={stats?.underReview ?? 0}
-                icon={Icon1}
-                iconBg="bg-orange-100"
-                isEmpty={isStatsEmpty}
-              />
+              <Tooltip
+                withArrow
+                openDelay={50}
+                label={
+                  <div className="space-y-1 text-xs">
+                    <p>Compliance review - {stats?.complianceReview ?? 0}</p>
+                    <p>Operations review - {stats?.operationsReview ?? 0}</p>
+                  </div>
+                }
+              >
+                <div className="flex">
+                  <StatCard className="grow"
+                    title="Under Review"
+                    value={stats?.underReview ?? 0}
+                    icon={Icon1}
+                    iconBg="bg-orange-100"
+                    isEmpty={isStatsEmpty}
+                  />
+                </div>
+              </Tooltip>
               <StatCard
                 title="Rejected"
                 value={stats?.rejected ?? 0}
