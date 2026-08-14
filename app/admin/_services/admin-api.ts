@@ -2271,6 +2271,12 @@ export const adminApi = {
         data
       ),
 
+    approveDisbursement: (id: string, data?: { notes?: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.approveDisbursement(id),
+        data
+      ),
+
     requestTransactionInfo: (
       id: string,
       data: { notes: string; fields: string[] }
@@ -2305,6 +2311,12 @@ export const adminApi = {
     reject: (id: string, data: { reason: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.reject(id),
+        data
+      ),
+
+    rejectDisbursement: (id: string, data: { reason: string }) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.transactions.rejectDisbursement(id),
         data
       ),
 

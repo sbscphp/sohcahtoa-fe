@@ -110,6 +110,10 @@ export function isRefundApprovalType(approvalType?: string | null): boolean {
   return approvalType?.trim().toLowerCase() === "refund";
 }
 
+export function isDisbursementApprovalType(approvalType?: string | null): boolean {
+  return approvalType?.trim().toLowerCase() === "disbursement";
+}
+
 export interface TransactionReceiptViewModel {
   titlePrefix: string;
   titleValue: string;
