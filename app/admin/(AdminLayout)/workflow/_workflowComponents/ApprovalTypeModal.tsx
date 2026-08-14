@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Modal, TextInput, Radio, ScrollArea, Text } from "@mantine/core";
 import { Search } from "lucide-react";
 
-export type ApprovalTypeValue = "TRANSACTION" | "REFUND" | "RATE";
+export type ApprovalTypeValue = "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT";
 
 interface ApprovalTypeOption {
   value: ApprovalTypeValue;
@@ -15,6 +15,7 @@ const APPROVAL_TYPE_OPTIONS: ApprovalTypeOption[] = [
   { value: "TRANSACTION", label: "Transaction Approval" },
   { value: "REFUND", label: "Transaction Refund Approval" },
   { value: "RATE", label: "Rate Approval" },
+  { value: "DISBURSEMENT", label: "Disbursement Approval" },
 ];
 
 export function approvalTypeLabel(value: ApprovalTypeValue | ""): string {

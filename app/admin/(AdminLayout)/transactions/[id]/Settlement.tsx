@@ -82,6 +82,8 @@ export default function Settlement({
 
         <TakeActionButton
           transactionId={transactionId}
+          transactionStatus={isLoading ? undefined : transaction?.status}
+          workflowStage={isLoading ? undefined : transaction?.workflowStage}
           transactionStatusLabel={
             isLoading ? undefined : transaction?.statusLabel
           }

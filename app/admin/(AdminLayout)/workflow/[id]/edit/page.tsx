@@ -21,10 +21,10 @@ import ApprovalTypeModal, { type ApprovalTypeValue, approvalTypeLabel } from "..
 import EscalationProtocolModal from "../../_workflowComponents/EscalationProtocolModal";
 import AssignToModal, { AssignableUser, AssignableRole } from "../../_workflowComponents/AssignToModal";
 import WorkflowLineItem, {
-  ALL_WORKFLOW_TYPE_OPTIONS,
-  coerceRateWorkflowLines,
-  RATE_WORKFLOW_TYPE_OPTIONS,
-  WorkflowLine,
+  coerceWorkflowLinesForApprovalType,
+  getAllowedWorkflowTypes,
+  getDefaultWorkflowType,
+  type WorkflowLine,
 } from "../../_workflowComponents/WorkflowLineItem";
 import {
   useWorkflowTemplateDetails,
@@ -181,7 +181,7 @@ export default function EditWorkflowPage() {
     if (!template?.editTemplate || hasInitializedForm) return;
 
     const processType = template.editTemplate.processType === "FLEXIBLE" ? "flexible" : "rigid";
-    const prefilledLines = coerceRateWorkflowLines(
+    const prefilledLines = coerceWorkflowLinesForApprovalType(
       toFormLines(template.editTemplate.stages),
       template.editTemplate.approvalType
     );
@@ -316,12 +316,10 @@ export default function EditWorkflowPage() {
 
   const handleApprovalTypeSelect = (value: ApprovalTypeValue) => {
     form.setFieldValue("approvalType", value);
-    if (value === "RATE") {
-      form.setFieldValue(
-        "workflowLines",
-        coerceRateWorkflowLines(form.values.workflowLines, value)
-      );
-    }
+    form.setFieldValue(
+      "workflowLines",
+      coerceWorkflowLinesForApprovalType(form.values.workflowLines, value)
+    );
   };
 
   // Refs to always read the latest values in stable callbacks without re-creating them.
@@ -401,10 +399,10 @@ export default function EditWorkflowPage() {
   }, []);
 
   const handleAddWorkflowLine = useCallback(() => {
-    const isRateWorkflow = formRef.current.values.approvalType === "RATE";
+    const approvalType = formRef.current.values.approvalType;
     const newLine: WorkflowLine = {
       id: `line-${Date.now()}`,
-      workflowType: isRateWorkflow ? "Approval" : "",
+      workflowType: getDefaultWorkflowType(approvalType),
       escalationPeriod: 0,
       escalateToUser: undefined,
       selectedUsers: [],
@@ -768,11 +766,7 @@ export default function EditWorkflowPage() {
                   line={line}
                   index={index}
                   totalLines={form.values.workflowLines.length}
-                  allowedWorkflowTypes={
-                    form.values.approvalType === "RATE"
-                      ? [...RATE_WORKFLOW_TYPE_OPTIONS]
-                      : [...ALL_WORKFLOW_TYPE_OPTIONS]
-                  }
+                  allowedWorkflowTypes={getAllowedWorkflowTypes(form.values.approvalType)}
                   onUpdateWorkflowType={handleUpdateWorkflowType}
                   onOpenEscalationModal={(lineId) => {
                     const line = workflowLinesRef.current.find((l) => l.id === lineId);

@@ -27,9 +27,9 @@ import AssignToModal, {
   type AssignableRole,
 } from "../_workflowComponents/AssignToModal";
 import WorkflowLineItem, {
-  ALL_WORKFLOW_TYPE_OPTIONS,
-  coerceRateWorkflowLines,
-  RATE_WORKFLOW_TYPE_OPTIONS,
+  coerceWorkflowLinesForApprovalType,
+  getAllowedWorkflowTypes,
+  getDefaultWorkflowType,
   type WorkflowLine,
 } from "../_workflowComponents/WorkflowLineItem";
 import { useWorkflowEditOptions } from "../hooks/useWorkflowEditOptions";
@@ -228,12 +228,10 @@ export default function CreateWorkflowPage() {
 
   const handleApprovalTypeSelect = (value: ApprovalTypeValue) => {
     form.setFieldValue("approvalType", value);
-    if (value === "RATE") {
-      form.setFieldValue(
-        "workflowLines",
-        coerceRateWorkflowLines(form.values.workflowLines, value)
-      );
-    }
+    form.setFieldValue(
+      "workflowLines",
+      coerceWorkflowLinesForApprovalType(form.values.workflowLines, value)
+    );
   };
 
   const handleEscalationSave = useCallback(
@@ -304,10 +302,10 @@ export default function CreateWorkflowPage() {
   }, []);
 
   const handleAddWorkflowLine = useCallback(() => {
-    const isRateWorkflow = formRef.current.values.approvalType === "RATE";
+    const approvalType = formRef.current.values.approvalType;
     const newLine: WorkflowLine = {
       id: `line-${Date.now()}`,
-      workflowType: isRateWorkflow ? "Approval" : "",
+      workflowType: getDefaultWorkflowType(approvalType),
       escalationPeriod: 0,
       escalateToUser: undefined,
       selectedUsers: [],
@@ -639,11 +637,7 @@ export default function CreateWorkflowPage() {
                   line={line}
                   index={index}
                   totalLines={form.values.workflowLines.length}
-                  allowedWorkflowTypes={
-                    form.values.approvalType === "RATE"
-                      ? [...RATE_WORKFLOW_TYPE_OPTIONS]
-                      : [...ALL_WORKFLOW_TYPE_OPTIONS]
-                  }
+                  allowedWorkflowTypes={getAllowedWorkflowTypes(form.values.approvalType)}
                   onUpdateWorkflowType={handleUpdateWorkflowType}
                   onOpenEscalationModal={(lineId) => {
                     const l = workflowLinesRef.current.find((wl) => wl.id === lineId);

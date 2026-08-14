@@ -65,6 +65,9 @@ const adminWorkflowEdit = (id: string | number = ':id') => `${adminWorkflowDetai
 
 //User-Management routes
 const adminUserManagement = () => `${admin()}/user-management`;
+const adminUserManagementUsers = () => `${adminUserManagement()}?tab=user`;
+const adminUserManagementRoles = () => `${adminUserManagement()}?tab=roles`;
+const adminUserManagementDepartments = () => `${adminUserManagement()}?tab=department`;
 const adminUserManagementUser = (id: string | number = ':id') => `${adminUserManagement()}/user/${id}`;
 const adminUserManagementRole = (id: string | number = ':id') => `${adminUserManagement()}/role/${id}`;
 
@@ -165,6 +168,9 @@ export const adminRoutes = {
 
   // User Management
   adminUserManagement,
+  adminUserManagementUsers,
+  adminUserManagementRoles,
+  adminUserManagementDepartments,
   adminUserManagementUser,
   adminUserManagementRole,
 

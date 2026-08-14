@@ -29,6 +29,7 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     '/admin/outlet',
     '/admin/tickets',
     '/admin/settings',
+    '/admin/user-management',
     '/admin/transient-wallets',
     '/admin/login',
   ];
@@ -183,10 +184,11 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
       { label: 'User Details' },
     ];
   } 
-  // Ticket Details: /admin/user-management/role/:id
+  // Role Details: /admin/user-management/role/:id
   if (/^\/admin\/user-management\/role\/[^/]+$/.test(pathname)) {
     return [
       { label: 'User Management', url: adminRoutes.adminUserManagement() },
+      { label: 'Roles', url: adminRoutes.adminUserManagementRoles() },
       { label: 'Role Details' },
     ];
   } 

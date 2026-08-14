@@ -134,7 +134,19 @@ function buildTimeline(ticket: TicketDetailsViewModel | null | undefined): Timel
       iconBg: "bg-orange-100",
       text: (
         <>
-          Attachment uploaded: <strong>{label}</strong>
+          Attachment uploaded:{" "}
+          {attachment.fileUrl ? (
+            <a
+              href={attachment.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold underline hover:text-orange-600"
+            >
+              {label}
+            </a>
+          ) : (
+            <strong>{label}</strong>
+          )}
         </>
       ),
       date,

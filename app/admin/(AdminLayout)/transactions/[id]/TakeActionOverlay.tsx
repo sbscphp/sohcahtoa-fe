@@ -26,6 +26,7 @@ import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActi
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import {
+  isDisbursementApprovalType,
   isRefundApprovalType,
   type TransactionActionDocumentViewModel,
   type TransactionWorkflowHistoryItemViewModel,
@@ -114,6 +115,7 @@ export default function TakeActionOverlay({
   pendingWorkflowStages = [],
 }: TakeActionOverlayProps) {
   const isRefundWorkflow = isRefundApprovalType(approvalType);
+  const isDisbursementWorkflow = isDisbursementApprovalType(approvalType);
   // const router = useRouter();
   const hideTransactionFooter =
     !isTransationActionable(transactionStatusLabel) ||
@@ -243,7 +245,13 @@ export default function TakeActionOverlay({
 
   const completeReviewMutation = useCreateData(
     (variables: { transactionId: string; notes: string }) =>
-      adminApi.transactions.approve(variables.transactionId, { notes: variables.notes }),
+      isDisbursementWorkflow
+        ? adminApi.transactions.approveDisbursement(variables.transactionId, {
+            notes: variables.notes,
+          })
+        : adminApi.transactions.approve(variables.transactionId, {
+            notes: variables.notes,
+          }),
     {
       onSuccess: async () => {
         await invalidateTransactionDetail();
@@ -277,9 +285,13 @@ export default function TakeActionOverlay({
 
   const transactionRejectMutation = useCreateData(
     (variables: { transactionId: string; reason: string }) =>
-      adminApi.transactions.reject(variables.transactionId, {
-        reason: variables.reason,
-      }),
+      isDisbursementWorkflow
+        ? adminApi.transactions.rejectDisbursement(variables.transactionId, {
+            reason: variables.reason,
+          })
+        : adminApi.transactions.reject(variables.transactionId, {
+            reason: variables.reason,
+          }),
     {
       onSuccess: async () => {
         await invalidateTransactionDetail();
@@ -924,7 +936,11 @@ export default function TakeActionOverlay({
                   className="font-medium! text-sm!"
                   onClick={openTransactionCompleteReview}
                 >
-                  {isRefundWorkflow ? "Complete Refund Review" : "Complete Review"}
+                  {isDisbursementWorkflow
+                    ? "Complete Disbursement Review"
+                    : isRefundWorkflow
+                      ? "Complete Refund Review"
+                      : "Complete Review"}
                 </Button>
                 <Popover
                   width={360}
@@ -967,35 +983,37 @@ export default function TakeActionOverlay({
                     </div>
 
                     <div className="divide-y divide-[#EAECF0]">
-                      <button
-                        type="button"
-                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                        onClick={openRequestMoreInfo}
-                      >
-                        <span
-                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
-                          style={{
-                            borderRadius: "40% 60% 70% 30% / 60% 40% 60% 40%",
-                          }}
+                      {!isDisbursementWorkflow && (
+                        <button
+                          type="button"
+                          className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                          onClick={openRequestMoreInfo}
                         >
-                          <Info
-                            className="h-5 w-5 text-[#DD4F05]"
-                            strokeWidth={2.5}
-                          />
-                        </span>
-                        <span className="min-w-0 pt-0.5">
-                          <Text fw={600} className="text-body-heading-300">
-                            Request Info
-                          </Text>
-                          <Text
-                            size="sm"
-                            className="text-body-text-200! mt-1 leading-relaxed"
+                          <span
+                            className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                            style={{
+                              borderRadius: "40% 60% 70% 30% / 60% 40% 60% 40%",
+                            }}
                           >
-                            Place action under review and request more
-                            information from customer.
-                          </Text>
-                        </span>
-                      </button>
+                            <Info
+                              className="h-5 w-5 text-[#DD4F05]"
+                              strokeWidth={2.5}
+                            />
+                          </span>
+                          <span className="min-w-0 pt-0.5">
+                            <Text fw={600} className="text-body-heading-300">
+                              Request Info
+                            </Text>
+                            <Text
+                              size="sm"
+                              className="text-body-text-200! mt-1 leading-relaxed"
+                            >
+                              Place action under review and request more
+                              information from customer.
+                            </Text>
+                          </span>
+                        </button>
+                      )}
 
                       <button
                         type="button"
@@ -1068,14 +1086,26 @@ export default function TakeActionOverlay({
       <ApprovalActionConfirmModal
         opened={transactionCompleteReviewOpen}
         onClose={closeTransactionCompleteReview}
-        title={isRefundWorkflow ? "Complete Refund Approval?" : "Complete Approval ?"}
+        title={
+          isDisbursementWorkflow
+            ? "Complete Disbursement Approval?"
+            : isRefundWorkflow
+              ? "Complete Refund Approval?"
+              : "Complete Approval ?"
+        }
         message={
-          isRefundWorkflow
-            ? "You are about to mark this refund request as fully approved. Once confirmed, the refund process will be completed, and no further reviews or changes can be made."
-            : "You are about to mark this application as fully approved. Once confirmed, the process will be completed, and no further reviews or changes can be made"
+          isDisbursementWorkflow
+            ? "You are about to approve this disbursement stage. Once confirmed, your approval will be recorded and the disbursement workflow will continue."
+            : isRefundWorkflow
+              ? "You are about to mark this refund request as fully approved. Once confirmed, the refund process will be completed, and no further reviews or changes can be made."
+              : "You are about to mark this application as fully approved. Once confirmed, the process will be completed, and no further reviews or changes can be made"
         }
         primaryButtonText={
-          isRefundWorkflow ? "Yes, Complete Refund Approval" : "Yes, Complete Approval"
+          isDisbursementWorkflow
+            ? "Yes, Complete Disbursement Approval"
+            : isRefundWorkflow
+              ? "Yes, Complete Refund Approval"
+              : "Yes, Complete Approval"
         }
         secondaryButtonText="No, Close"
         onConfirm={submitTransactionCompleteReview}
@@ -1156,11 +1186,19 @@ export default function TakeActionOverlay({
       <SuccessModal
         opened={transactionCompleteReviewSuccessOpen}
         onClose={() => setTransactionCompleteReviewSuccessOpen(false)}
-        title={isRefundWorkflow ? "Refund Approval Completed" : "Action Approval Completed"}
+        title={
+          isDisbursementWorkflow
+            ? "Disbursement Approval Completed"
+            : isRefundWorkflow
+              ? "Refund Approval Completed"
+              : "Action Approval Completed"
+        }
         message={
-          isRefundWorkflow
-            ? "The refund request has been successfully approved and the process is now complete"
-            : "The request/application has been successfully approved and the process is now complete"
+          isDisbursementWorkflow
+            ? "The disbursement stage has been successfully approved and the workflow will continue"
+            : isRefundWorkflow
+              ? "The refund request has been successfully approved and the process is now complete"
+              : "The request/application has been successfully approved and the process is now complete"
         }
         // primaryButtonText="View More Action Approval"
         // onPrimaryClick={navigateToTransactionsList}
