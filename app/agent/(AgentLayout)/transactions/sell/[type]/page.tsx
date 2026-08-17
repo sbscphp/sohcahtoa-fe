@@ -100,11 +100,14 @@ export default function AgentSellTransactionCreationPage() {
     () => ({
       bvn: selectedCustomer?.bvn ?? "",
       ninNumber: selectedCustomer?.nin ?? "",
+      tinNumber: selectedCustomer?.tin ?? "",
     }),
-    [selectedCustomer?.bvn, selectedCustomer?.nin]
+    [selectedCustomer?.bvn, selectedCustomer?.nin, selectedCustomer?.tin]
   );
   const lockSelectedCustomerKyc = Boolean(
-    selectedCustomer?.bvn?.trim() || selectedCustomer?.nin?.trim()
+    selectedCustomer?.bvn?.trim() ||
+      selectedCustomer?.nin?.trim() ||
+      selectedCustomer?.tin?.trim()
   );
 
   const [uploadDocumentsData, setUploadDocumentsData] = useState<
