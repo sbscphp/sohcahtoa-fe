@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 
 interface StatCardProps {
+  className?: string;
   title: string;
   value?: ReactNode;
   icon: ReactNode;
@@ -10,6 +11,7 @@ interface StatCardProps {
 }
 
 export default function StatCard({
+  className,
   title,
   value,
   icon,
@@ -18,7 +20,7 @@ export default function StatCard({
   isEmpty = false,
 }: StatCardProps) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className={`flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm ${className}`}>
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-lg ${
           isEmpty ? "bg-gray-100" : iconBg

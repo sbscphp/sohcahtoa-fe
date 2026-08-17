@@ -84,6 +84,8 @@ export interface TransactionWorkflowHistoryItemViewModel {
   comment: string;
   documentType: string;
   action: string;
+  /** Raw createdAt timestamp (ms since epoch) for chronological sorting/grouping. */
+  timestampMs: number;
 }
 
 export interface PendingWorkflowStageViewModel {
@@ -862,6 +864,12 @@ function getWorkflowStatusLabel(action: unknown): string {
   return "Review Pending";
 }
 
+function toTimestampMs(createdAt: string): number {
+  if (createdAt === "--") return Number.NEGATIVE_INFINITY;
+  const ts = new Date(createdAt).getTime();
+  return Number.isNaN(ts) ? Number.NEGATIVE_INFINITY : ts;
+}
+
 function extractWorkflowHistory(
   raw: Record<string, unknown>,
 ): TransactionWorkflowHistoryItemViewModel[] {
@@ -872,20 +880,9 @@ function extractWorkflowHistory(
     : [];
 
   const sortedHistory = history.sort((a, b) => {
-    const aCreatedAt = pickString(a.createdAt);
-    const bCreatedAt = pickString(b.createdAt);
-    const aTs =
-      aCreatedAt !== "--"
-        ? new Date(aCreatedAt).getTime()
-        : Number.NEGATIVE_INFINITY;
-    const bTs =
-      bCreatedAt !== "--"
-        ? new Date(bCreatedAt).getTime()
-        : Number.NEGATIVE_INFINITY;
-    return (
-      (Number.isNaN(aTs) ? Number.NEGATIVE_INFINITY : aTs) -
-      (Number.isNaN(bTs) ? Number.NEGATIVE_INFINITY : bTs)
-    );
+    const aTs = toTimestampMs(pickString(a.createdAt));
+    const bTs = toTimestampMs(pickString(b.createdAt));
+    return aTs - bTs;
   });
 
   return sortedHistory
@@ -906,6 +903,7 @@ function extractWorkflowHistory(
         comment: pickString(source.notes, "No notes provided"),
         documentType: pickString(formatEnum(metadata.documentType), "--"),
         action: asString(source.action),
+        timestampMs: toTimestampMs(createdAt),
       };
     })
     .filter((item): item is TransactionWorkflowHistoryItemViewModel =>
