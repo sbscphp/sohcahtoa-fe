@@ -419,11 +419,16 @@ export default function TakeActionOverlay({
   //   setTransactionRejectSuccessOpen(false);
   // };
 
-  const documentWorkflowItems = workflowHistory.filter((item) =>
-    item.action.toUpperCase().startsWith("DOCUMENT")
-  );
+  const isDocumentWorkflowItem = (item: (typeof workflowHistory)[number]) => {
+    const action = item.action.toUpperCase();
+    return (
+      action.startsWith("DOCUMENT") ||
+      action.startsWith("VERIFICATION_COMPLETED")
+    );
+  };
+  const documentWorkflowItems = workflowHistory.filter(isDocumentWorkflowItem);
   const generalWorkflowItems = workflowHistory.filter(
-    (item) => !item.action.toUpperCase().startsWith("DOCUMENT")
+    (item) => !isDocumentWorkflowItem(item)
   );
 
   return (

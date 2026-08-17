@@ -32,7 +32,9 @@ export default function Header({
 
   const { data: unreadCountResponse } = useFetchData(
     [...adminKeys.notifications.unreadCount()],
-    () => adminApi.notifications.getUnreadNotificationCount()
+    () => adminApi.notifications.getUnreadNotificationCount(),
+    true,
+    { refetchInterval: 30_000 }
   );
   const unreadCount = unreadCountResponse?.data?.count ?? 0;
 
