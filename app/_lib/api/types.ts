@@ -538,6 +538,7 @@ export interface AgentCustomerSummary {
   kycStatus: string;
   nin?: string | null;
   bvn?: string | null;
+  tin?: string | null;
 }
 
 export interface AgentCustomerListResponse

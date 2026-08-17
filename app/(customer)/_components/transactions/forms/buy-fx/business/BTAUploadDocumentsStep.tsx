@@ -97,6 +97,14 @@ export default function BTAUploadDocumentsStep({
   );
   const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
   const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
+  const tinLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
+      kyc.hasTinFromProfile,
+      initialValues?.tinNumber,
+      kyc.defaultTin
+    );
+  const forceTinLock = lockKycPrefill && Boolean(initialValues?.tinNumber?.trim());
 
   const form = useForm<BTAUploadDocumentsFormValues>({
     mode: "uncontrolled",
@@ -104,7 +112,8 @@ export default function BTAUploadDocumentsStep({
       bvn: initialValues?.bvn || (omitLoggedInUserKyc ? "" : kyc.defaultBvn) || "",
       ninNumber:
         initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
-      tinNumber: initialValues?.tinNumber || "",
+      tinNumber:
+        initialValues?.tinNumber || (omitLoggedInUserKyc ? "" : kyc.defaultTin) || "",
       formAId: initialValues?.formAId || "",
       tccDocumentNumber: initialValues?.tccDocumentNumber || "",
       tccFile: initialValues?.tccFile ?? null,
@@ -204,6 +213,7 @@ export default function BTAUploadDocumentsStep({
             form.setFieldValue("tinNumber", raw);
             form.clearFieldError("tinNumber");
           }}
+          disabled={tinLocked || forceTinLock}
         />
         <TextInput
           label="Form A ID"
