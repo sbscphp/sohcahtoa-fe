@@ -77,7 +77,7 @@ export default function TransientWalletEntryDetailPage() {
     entry?.linkedTransactionId,
     entry?.linkedTransaction
   );
-  const isCreditEntry = entry?.type === "CREDIT";
+  const isCreditEntry = entry?.type?.trim().toUpperCase() === "CREDIT";
   const canLink = canLinkLedgerEntry(entry?.matchDisplayStatus ?? "Unmatched", entry?.linkedTransaction);
   const canUnlink = canUnlinkLedgerEntry(
     (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
