@@ -988,6 +988,8 @@ export interface AdminCbnFnReportDetailsData {
 
 export interface AdminTransactionStatsData {
   underReview: number;
+  complianceReview: number;
+  operationsReview: number;
   rejected: number;
   requestInformation: number;
   approved: number;

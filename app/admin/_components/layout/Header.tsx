@@ -32,7 +32,9 @@ export default function Header({
 
   const { data: unreadCountResponse } = useFetchData(
     [...adminKeys.notifications.unreadCount()],
-    () => adminApi.notifications.getUnreadNotificationCount()
+    () => adminApi.notifications.getUnreadNotificationCount(),
+    true,
+    { refetchInterval: 30_000 }
   );
   const unreadCount = unreadCountResponse?.data?.count ?? 0;
 
@@ -121,7 +123,7 @@ export default function Header({
         >
           <Bell size={16} className="text-body-text-300" />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
+            <span className="absolute -right-0.5 -top-0.5 min-w-3.5 rounded-full bg-red-500 px-1 py-px text-center text-[10px] font-medium leading-tight text-white">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}

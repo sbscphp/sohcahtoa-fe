@@ -17,7 +17,7 @@ export default function TakeActionMenu({
   onAction,
   // canLink = false,
   // canUnlink = false,
-  canDisburse = false,
+  // canDisburse = false,
   canRefund = false,
   canFlag = true,
 }: Readonly<TakeActionMenuProps>) {
@@ -58,11 +58,11 @@ export default function TakeActionMenu({
             Initiate refund
           </Menu.Item>
         )}
-        {canDisburse && (
+        {/* {canDisburse && (
           <Menu.Item onClick={() => onAction("disburse")}>
             Confirm disbursement
           </Menu.Item>
-        )}
+        )} */}
       </Menu.Dropdown>
     </Menu>
   );

@@ -100,6 +100,240 @@ function isTransationActionable(statusLabel: string | undefined): boolean {
   return normalizeStatusForComparison(statusLabel) === "PENDING" || normalizeStatusForComparison(statusLabel) === "UNDER_REVIEW";
 }
 
+/** Buckets that group related workflow-history actions under a shared review heading. */
+type WorkflowReviewGroupKey = "COMPLIANCE" | "OPERATIONS" | "REFUND";
+
+const REVIEW_GROUP_LABELS: Record<WorkflowReviewGroupKey, string> = {
+  COMPLIANCE: "Compliance Review",
+  OPERATIONS: "Operations Review",
+  REFUND: "Refund Review",
+};
+
+const REVIEW_GROUP_ACTIONS: Record<WorkflowReviewGroupKey, Set<string>> = {
+  COMPLIANCE: new Set(["TRANSACTION_STAGE_APPROVED", "TRANSACTION_REJECTED"]),
+  OPERATIONS: new Set(["DISBURSEMENT_APPROVED", "DISBURSEMENT_REJECTED"]),
+  REFUND: new Set(["REFUND_APPROVED", "REFUND_REJECTED"]),
+};
+
+function getReviewGroupKey(action: string): WorkflowReviewGroupKey | null {
+  const normalized = action.trim().toUpperCase();
+  for (const key of Object.keys(REVIEW_GROUP_ACTIONS) as WorkflowReviewGroupKey[]) {
+    if (REVIEW_GROUP_ACTIONS[key].has(normalized)) return key;
+  }
+  return null;
+}
+
+function getPendingReviewGroupKey(approvalType?: string): WorkflowReviewGroupKey {
+  if (isDisbursementApprovalType(approvalType)) return "OPERATIONS";
+  if (isRefundApprovalType(approvalType)) return "REFUND";
+  return "COMPLIANCE";
+}
+
+interface WorkflowSection {
+  key: string;
+  label: string | null;
+  items: TransactionWorkflowHistoryItemViewModel[];
+  stages: PendingWorkflowStageViewModel[];
+  sortTime: number;
+  isPendingSection: boolean;
+}
+
+/**
+ * Groups general workflow-history items by review type (compliance/operations/refund),
+ * merges pending workflow stages into their matching group when possible, and orders
+ * sections chronologically (by each section's earliest item) with the pending section
+ * always rendered last.
+ */
+function buildWorkflowSections(
+  generalWorkflowItems: TransactionWorkflowHistoryItemViewModel[],
+  pendingWorkflowStages: PendingWorkflowStageViewModel[],
+  approvalType?: string,
+): WorkflowSection[] {
+  const groupBuckets: Record<
+    WorkflowReviewGroupKey,
+    TransactionWorkflowHistoryItemViewModel[]
+  > = {
+    COMPLIANCE: [],
+    OPERATIONS: [],
+    REFUND: [],
+  };
+
+  const sections: WorkflowSection[] = [];
+
+  generalWorkflowItems.forEach((item) => {
+    const groupKey = getReviewGroupKey(item.action);
+    if (groupKey) {
+      groupBuckets[groupKey].push(item);
+      return;
+    }
+    sections.push({
+      key: `item-${item.id}`,
+      label: null,
+      items: [item],
+      stages: [],
+      sortTime: item.timestampMs,
+      isPendingSection: false,
+    });
+  });
+
+  (Object.keys(groupBuckets) as WorkflowReviewGroupKey[]).forEach((groupKey) => {
+    const items = groupBuckets[groupKey];
+    if (items.length === 0) return;
+    sections.push({
+      key: groupKey,
+      // Only worth a heading once there are 2+ related items to connect.
+      label: items.length >= 2 ? REVIEW_GROUP_LABELS[groupKey] : null,
+      items,
+      stages: [],
+      sortTime: items[0].timestampMs,
+      isPendingSection: false,
+    });
+  });
+
+  let pendingSection: WorkflowSection | null = null;
+
+  if (pendingWorkflowStages.length > 0) {
+    const pendingGroupKey = getPendingReviewGroupKey(approvalType);
+    const matchingSectionIndex = sections.findIndex(
+      (section) => section.key === pendingGroupKey,
+    );
+
+    if (matchingSectionIndex !== -1) {
+      const [matchingSection] = sections.splice(matchingSectionIndex, 1);
+      matchingSection.stages = pendingWorkflowStages;
+      // A matching general item was found, so the heading is always meaningful here.
+      matchingSection.label = REVIEW_GROUP_LABELS[pendingGroupKey];
+      matchingSection.isPendingSection = true;
+      pendingSection = matchingSection;
+    } else {
+      pendingSection = {
+        key: "PENDING",
+        // No matching workflow items to relate this to, so skip the redundant heading.
+        label: null,
+        items: [],
+        stages: pendingWorkflowStages,
+        sortTime: Number.POSITIVE_INFINITY,
+        isPendingSection: true,
+      };
+    }
+  }
+
+  sections.sort((a, b) => a.sortTime - b.sortTime);
+
+  if (pendingSection) {
+    sections.push(pendingSection);
+  }
+
+  return sections;
+}
+
+function renderWorkflowHistoryItemCard(
+  item: TransactionWorkflowHistoryItemViewModel,
+) {
+  return (
+    <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+      {/* Header Row */}
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Group align="flex-start" gap="sm" wrap="nowrap">
+          <Avatar radius="xl" size="md" color="#F5B89C">
+            {item.actorLabel.slice(0, 2).toUpperCase()}
+          </Avatar>
+
+          <div className="min-w-0 space-y-1">
+            <Text fw={500} className="text-body-heading-300 break-all">
+              {item.actorLabel}
+            </Text>
+            <Text size="xs" c="dimmed" className="text-body-text-50!">
+              {item.documentType === "--"
+                ? item.actionLabel
+                : `${item.documentType} • ${item.actionLabel}`}
+            </Text>
+
+            {/* Date & Time */}
+            <Group gap={6} mt={4}>
+              <Text
+                size="xs"
+                c="dimmed"
+                className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+              >
+                📅 {item.date}
+              </Text>
+              <Text size="xs" c="dimmed" className="text-body-text-200">
+                ⏰ {item.time}
+              </Text>
+            </Group>
+          </div>
+        </Group>
+
+        {/* Status */}
+        <div className="text-right shrink-0">
+          <StatusBadge status={item.statusLabel} size="xs" />
+          <Text size="xs" c="dimmed" className="text-body-text-50! block mt-1">
+            Action Taken
+          </Text>
+        </div>
+      </Group>
+
+      {/* Comment Box */}
+      <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+        <Text size="xs" className="text-body-text-200 leading-relaxed">
+          {item.comment}
+        </Text>
+      </div>
+    </div>
+  );
+}
+
+function renderPendingStageCard(
+  stage: PendingWorkflowStageViewModel,
+  approvalType?: string,
+) {
+  return (
+    <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+      {/* Header Row */}
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Group align="flex-start" gap="sm" wrap="nowrap">
+          <Avatar radius="xl" size="md" color="#B0B0B0">
+            {stage.stageName.slice(0, 2).toUpperCase()}
+          </Avatar>
+
+          <div className="min-w-0 space-y-1">
+            <Text fw={500} className="text-body-heading-300 break-all">
+              {stage.stageName}
+            </Text>
+            <Text size="xs" c="dimmed" className="text-body-text-50!">
+              {toSentenceCase(approvalType) + " Approval • "}
+              {stage.assigneeName}
+            </Text>
+
+            {/* Date & Time */}
+            <Group gap={6} mt={4}>
+              <Text
+                size="xs"
+                c="dimmed"
+                className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
+              >
+                📅 --
+              </Text>
+              <Text size="xs" c="dimmed" className="text-body-text-200">
+                ⏰ --
+              </Text>
+            </Group>
+          </div>
+        </Group>
+
+        {/* Status */}
+        <div className="text-right shrink-0">
+          <StatusBadge status="Pending" size="xs" />
+          <Text size="xs" c="dimmed" className="text-body-text-50! block mt-1">
+            Awaiting Action
+          </Text>
+        </div>
+      </Group>
+    </div>
+  );
+}
+
 export default function TakeActionOverlay({
   opened,
   onClose,
@@ -419,11 +653,21 @@ export default function TakeActionOverlay({
   //   setTransactionRejectSuccessOpen(false);
   // };
 
-  const documentWorkflowItems = workflowHistory.filter((item) =>
-    item.action.toUpperCase().startsWith("DOCUMENT")
-  );
+  const isDocumentWorkflowItem = (item: (typeof workflowHistory)[number]) => {
+    const action = item.action.toUpperCase();
+    return (
+      action.startsWith("DOCUMENT") ||
+      action.startsWith("VERIFICATION_COMPLETED")
+    );
+  };
+  const documentWorkflowItems = workflowHistory.filter(isDocumentWorkflowItem);
   const generalWorkflowItems = workflowHistory.filter(
-    (item) => !item.action.toUpperCase().startsWith("DOCUMENT")
+    (item) => !isDocumentWorkflowItem(item)
+  );
+  const workflowSections = buildWorkflowSections(
+    generalWorkflowItems,
+    pendingWorkflowStages,
+    approvalType
   );
 
   return (
@@ -499,134 +743,49 @@ export default function TakeActionOverlay({
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    {generalWorkflowItems.map((item, index) => (
-                      <React.Fragment key={item.id}>
-                        <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
-                          {/* Header Row */}
-                          <Group justify="space-between" align="flex-start" wrap="nowrap">
-                            <Group align="flex-start" gap="sm" wrap="nowrap">
-                              <Avatar radius="xl" size="md" color="#F5B89C">
-                                {item.actorLabel.slice(0, 2).toUpperCase()}
-                              </Avatar>
+                    {workflowSections.map((section) => {
+                      const cards: { key: string; node: React.ReactNode }[] = [
+                        ...section.items.map((item) => ({
+                          key: item.id,
+                          node: renderWorkflowHistoryItemCard(item),
+                        })),
+                        ...section.stages.map((stage) => ({
+                          key: stage.stageId,
+                          node: renderPendingStageCard(stage, approvalType),
+                        })),
+                      ];
 
-                              <div className="min-w-0 space-y-1">
-                                <Text fw={500} className="text-body-heading-300 break-all">
-                                  {item.actorLabel}
-                                </Text>
-                                <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                  {item.documentType === "--"
-                                    ? item.actionLabel
-                                    : `${item.documentType} • ${item.actionLabel}`}
-                                </Text>
-
-                                {/* Date & Time */}
-                                <Group gap={6} mt={4}>
-                                  <Text
-                                    size="xs"
-                                    c="dimmed"
-                                    className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
-                                  >
-                                    📅 {item.date}
-                                  </Text>
-                                  <Text size="xs" c="dimmed" className="text-body-text-200">
-                                    ⏰ {item.time}
-                                  </Text>
-                                </Group>
-                              </div>
-                            </Group>
-
-                            {/* Status */}
-                            <div className="text-right shrink-0">
-                              <StatusBadge status={item.statusLabel} size="xs" />
-                              <Text
-                                size="xs"
-                                c="dimmed"
-                                className="text-body-text-50! block mt-1"
-                              >
-                                Action Taken
-                              </Text>
-                            </div>
-                          </Group>
-
-                          {/* Comment Box */}
-                          <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
-                            <Text size="xs" className="text-body-text-200 leading-relaxed">
-                              {item.comment}
+                      return (
+                        <div key={section.key}>
+                          {section.label && (
+                            <Text
+                              fw={600}
+                              size="sm"
+                              className="text-body-heading-300"
+                              mb={10}
+                            >
+                              {section.label}
                             </Text>
+                          )}
+                          <div className="space-y-5">
+                            {cards.map((card, cardIndex) => (
+                              <React.Fragment key={card.key}>
+                                {card.node}
+
+                                {/* Connector: only between cards within the same section */}
+                                {cardIndex < cards.length - 1 && (
+                                  <Image
+                                    src={Connector}
+                                    alt="connector"
+                                    className="ml-8 -my-0.5"
+                                  />
+                                )}
+                              </React.Fragment>
+                            ))}
                           </div>
                         </div>
-
-                        {/* Connector */}
-                        {(index < generalWorkflowItems.length - 1 || pendingWorkflowStages.length > 0) && (
-                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
-                        )}
-                      </React.Fragment>
-                    ))}
-
-                    {/* Pending Stage Items */}
-                    {pendingWorkflowStages.map((stage, index) => (
-                      <React.Fragment key={stage.stageId}>
-                        <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
-                          {/* Header Row */}
-                          <Group justify="space-between" align="flex-start" wrap="nowrap">
-                            <Group align="flex-start" gap="sm" wrap="nowrap">
-                              <Avatar radius="xl" size="md" color="#B0B0B0">
-                                {stage.stageName.slice(0, 2).toUpperCase()}
-                              </Avatar>
-
-                              <div className="min-w-0 space-y-1">
-                                <Text fw={500} className="text-body-heading-300 break-all">
-                                  {stage.stageName}
-                                </Text>
-                                <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                  {toSentenceCase(approvalType) + " Approval • "}
-                                  {stage.assigneeName}
-                                  {/* {stage.assigneeRole ? ` • ${toSentenceCase(stage.assigneeRole)}` : ""} */}
-                                </Text>
-
-                                {/* Date & Time */}
-                                <Group gap={6} mt={4}>
-                                  <Text
-                                    size="xs"
-                                    c="dimmed"
-                                    className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
-                                  >
-                                    📅 --
-                                  </Text>
-                                  <Text size="xs" c="dimmed" className="text-body-text-200">
-                                    ⏰ --
-                                  </Text>
-                                </Group>
-                              </div>
-                            </Group>
-
-                            {/* Status */}
-                            <div className="text-right shrink-0">
-                              <StatusBadge status="Pending" size="xs" />
-                              <Text
-                                size="xs"
-                                c="dimmed"
-                                className="text-body-text-50! block mt-1"
-                              >
-                                Awaiting Action
-                              </Text>
-                            </div>
-                          </Group>
-
-                          {/* Comment Box */}
-                          {/* <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
-                            <Text size="xs" className="text-body-text-200 leading-relaxed">
-                              Awaiting action
-                            </Text>
-                          </div> */}
-                        </div>
-
-                        {/* Connector */}
-                        {index < pendingWorkflowStages.length - 1 && (
-                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
-                        )}
-                      </React.Fragment>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </Tabs.Panel>
@@ -855,60 +1014,7 @@ export default function TakeActionOverlay({
                         </Text>
                         {documentWorkflowItems.map((item, index) => (
                           <React.Fragment key={item.id}>
-                            <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
-                              {/* Header Row */}
-                              <Group justify="space-between" align="flex-start" wrap="nowrap">
-                                <Group align="flex-start" gap="sm" wrap="nowrap">
-                                  <Avatar radius="xl" size="md" color="#F5B89C">
-                                    {item.actorLabel.slice(0, 2).toUpperCase()}
-                                  </Avatar>
-
-                                  <div className="min-w-0 space-y-1">
-                                    <Text fw={500} className="text-body-heading-300 break-all">
-                                      {item.actorLabel}
-                                    </Text>
-                                    <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                      {item.documentType === "--"
-                                        ? item.actionLabel
-                                        : `${item.documentType} • ${item.actionLabel}`}
-                                    </Text>
-
-                                    {/* Date & Time */}
-                                    <Group gap={6} mt={4}>
-                                      <Text
-                                        size="xs"
-                                        c="dimmed"
-                                        className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
-                                      >
-                                        📅 {item.date}
-                                      </Text>
-                                      <Text size="xs" c="dimmed" className="text-body-text-200">
-                                        ⏰ {item.time}
-                                      </Text>
-                                    </Group>
-                                  </div>
-                                </Group>
-
-                                {/* Status */}
-                                <div className="text-right shrink-0">
-                                  <StatusBadge status={item.statusLabel} size="xs" />
-                                  <Text
-                                    size="xs"
-                                    c="dimmed"
-                                    className="text-body-text-50! block mt-1"
-                                  >
-                                    Action Taken
-                                  </Text>
-                                </div>
-                              </Group>
-
-                              {/* Comment Box */}
-                              <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
-                                <Text size="xs" className="text-body-text-200 leading-relaxed">
-                                  {item.comment}
-                                </Text>
-                              </div>
-                            </div>
+                            {renderWorkflowHistoryItemCard(item)}
 
                             {/* Connector */}
                             {index < documentWorkflowItems.length - 1 && (

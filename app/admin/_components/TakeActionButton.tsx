@@ -87,7 +87,7 @@ export default function TakeActionButton({
   onOpen,
   onClose,
   transactionId,
-  transactionStatus,
+  // transactionStatus,
   workflowStage,
   transactionStatusLabel,
   documents = [],
@@ -108,11 +108,10 @@ export default function TakeActionButton({
     null,
   );
 
-  const normalizedStatus = transactionStatus?.trim().toUpperCase() ?? "";
   const canInitiateDisbursement =
     workflowStage?.trim().toUpperCase() === "DEPOSIT_CONFIRMED";
   const canConfirmDisbursement =
-    normalizedStatus === "DISBURSEMENT_IN_PROGRESS";
+    workflowStage?.trim().toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
 
   const handleMutationError = (error: Error, defaultMessage: string) => {
     const apiResponse = (error as unknown as ApiError).data as
