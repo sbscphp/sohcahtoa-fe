@@ -66,6 +66,11 @@ const INVALID_LINK_TRANSACTION_STATUSES = new Set([
   "declined",
 ]);
 
+const REFUND_BLOCKED_TRANSACTION_STATUSES = new Set([
+  "completed",
+  "refunded",
+]);
+
 /** FX transactions in these states should not be linked (or warrant re-linking). */
 export function isLinkableTransactionStatus(
   status: string | null | undefined
@@ -73,6 +78,15 @@ export function isLinkableTransactionStatus(
   const normalized = status?.trim().toLowerCase();
   if (!normalized) return true;
   return !INVALID_LINK_TRANSACTION_STATUSES.has(normalized);
+}
+
+function isRefundBlockedTransactionStatus(
+  status: string | null | undefined
+): boolean {
+  const normalized = status?.trim().toLowerCase();
+  return Boolean(
+    normalized && REFUND_BLOCKED_TRANSACTION_STATUSES.has(normalized)
+  );
 }
 
 export function isInvalidLinkedTransactionStatus(
@@ -156,6 +170,7 @@ export function canRefundLedgerEntry(
     hasActiveLedgerLink(linkedTransactionId) &&
     isCreditEntry &&
     isLinkableTransactionStatus(linkedTransactionStatus) &&
+    !isRefundBlockedTransactionStatus(linkedTransactionStatus) &&
     !hasLedgerWorkflowStatus(refundStatus)
   );
 }
