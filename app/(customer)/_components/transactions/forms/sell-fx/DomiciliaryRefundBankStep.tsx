@@ -54,10 +54,6 @@ export default function DomiciliaryRefundBankStep({
     <div className="space-y-6">
       <div className="flex flex-col gap-2 justify-center items-center">
         <h2 className="text-body-heading-300 text-2xl font-semibold">Refund Bank Details</h2>
-        <p className="text-body-text-200 text-base max-w-md text-center">
-          Select your domiciliary (foreign currency) bank account for refunds if your transaction
-          cannot be processed.
-        </p>
       </div>
 
       <Alert icon={<Info size={14} />} title="" className="bg-white! border-gray-300!">

@@ -980,6 +980,7 @@ export default function PickupPointStep({
           getInputProps={(field) => payoutMethodForm.getInputProps(field)}
           setFieldValue={(field, value) => payoutMethodForm.setFieldValue(field, value)}
           clearFieldError={(field) => payoutMethodForm.clearFieldError(field)}
+          bankNameValue={payoutMethodForm.values.domiciliaryBankName}
           errors={payoutMethodForm.errors as Partial<
             Record<
               | "domiciliaryAccountNumber"

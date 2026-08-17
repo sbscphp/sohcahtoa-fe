@@ -4,9 +4,9 @@ import {
   INPUT_PATTERNS,
   constrainedTextFieldSchema,
   digitsFieldSchema,
-  sanitizeBankAccountNumber,
   sanitizeBankName,
   sanitizeIban,
+  sanitizeNgnAccountNumber,
   sanitizePersonName,
   sanitizePostalAddress,
   sanitizeRoutingNumber,
@@ -18,16 +18,15 @@ export const domiciliaryAccountSchema = z
   .object({
     domiciliaryAccountNumber: digitsFieldSchema({
       label: "Domiciliary account number",
-      min: INPUT_LIMITS.bankAccountNumberMin,
-      max: INPUT_LIMITS.bankAccountNumber,
+      min: INPUT_LIMITS.ngnAccountNumber,
+      max: INPUT_LIMITS.ngnAccountNumber,
+      exact: INPUT_LIMITS.ngnAccountNumber,
     }),
-    domiciliaryBankName: constrainedTextFieldSchema({
-      label: "Domiciliary bank name",
-      min: INPUT_LIMITS.bankNameMin,
-      max: INPUT_LIMITS.bankName,
-      pattern: INPUT_PATTERNS.bankName,
-      patternMessage: "Bank name can only contain letters, numbers, spaces, and . ' & -",
-    }),
+    domiciliaryBankName: z
+      .string()
+      .trim()
+      .min(1, "Select a bank")
+      .max(INPUT_LIMITS.bankName, "Bank name is too long"),
     accountName: constrainedTextFieldSchema({
       label: "Account name",
       min: INPUT_LIMITS.personNameMin,
@@ -69,7 +68,7 @@ export function domiciliaryAccountInitialValues(
   initial?: Partial<DomiciliaryAccountFormData>
 ): DomiciliaryAccountFormData {
   return {
-    domiciliaryAccountNumber: sanitizeBankAccountNumber(initial?.domiciliaryAccountNumber ?? ""),
+    domiciliaryAccountNumber: sanitizeNgnAccountNumber(initial?.domiciliaryAccountNumber ?? ""),
     domiciliaryBankName: sanitizeBankName(initial?.domiciliaryBankName ?? ""),
     accountName: sanitizePersonName(initial?.accountName ?? ""),
     swiftCode: sanitizeSwiftCode(initial?.swiftCode ?? ""),
@@ -82,7 +81,7 @@ export function domiciliaryAccountInitialValues(
 // Re-export limits for UI maxLength props
 export {
   INPUT_LIMITS as DOMICILIARY_INPUT_LIMITS,
-  sanitizeBankAccountNumber as sanitizeDomiciliaryAccountNumber,
+  sanitizeNgnAccountNumber as sanitizeDomiciliaryAccountNumber,
   sanitizeBankName as sanitizeDomiciliaryBankName,
   sanitizePersonName as sanitizeDomiciliaryAccountName,
   sanitizeSwiftCode as sanitizeDomiciliarySwiftCode,

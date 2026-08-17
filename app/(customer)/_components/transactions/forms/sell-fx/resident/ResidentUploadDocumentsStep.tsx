@@ -7,7 +7,7 @@ import {
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { UTILITY_BILL_AGE_REQUIREMENT } from "@/app/(customer)/_lib/compliance-messaging";
 import { kycBvnSchema, kycNinRequiredSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
-import { kycTinSchema, sanitizeTinInput } from "@/app/(customer)/_lib/kyc-tin-schema";
+import { kycTinSchema, sanitizeTinInput, TIN_INPUT_HELPER } from "@/app/(customer)/_lib/kyc-tin-schema";
 import { MAX_DOCUMENT_FILE_MB } from "@/app/(customer)/_utils/document-upload";
 import {
   formatDateToIso,
@@ -176,14 +176,16 @@ export default function ResidentUploadDocumentsStep({
         <TextInput
           label="TIN Number"
           size="md"
-          placeholder="Enter TIN Number"
-          maxLength={20}
+          placeholder="e.g. 08120451-1001"
+          // description={TIN_INPUT_HELPER}
+          maxLength={16}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
           onChange={(e) => {
             const raw = sanitizeTinInput(e.currentTarget.value);
             e.currentTarget.value = raw;
             form.setFieldValue("tinNumber", raw);
+            form.clearFieldError("tinNumber");
           }}
         />
 

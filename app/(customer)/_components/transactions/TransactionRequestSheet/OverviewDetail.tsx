@@ -2,6 +2,11 @@
 
 import { EmptyState } from "@/app/(customer)/_components/common";
 import {
+  filterCustomerVisibleComments,
+  getCustomerOverviewStatusLabel,
+  hasCustomerDocumentReuploadRequest,
+} from "@/app/(customer)/_lib/customer-overview";
+import {
   getTransactionStatusLabel,
   normalizeTransactionStatus,
   TRANSACTION_STATUS_LABELS,
@@ -27,6 +32,13 @@ interface OverviewDetailProps {
   transactionStatus?: string;
   /** Hides payment / agent buttons when any doc is in manual review (parent clears handlers too). */
   suppressTransactionActions?: boolean;
+  /**
+   * Customer audience: collapse status labels and only surface re-upload comments.
+   * Agent/staff keep full activity + internal status labels.
+   */
+  customerSafe?: boolean;
+  /** Document status labels — used to detect customer "Document re-upload" state. */
+  documentStatuses?: string[];
 }
 
 type HeaderTone = "success" | "danger" | "muted";
@@ -71,20 +83,37 @@ export default function OverviewDetail({
   transactionId,
   date,
   time,
-  adminMessage,
+  adminMessage: _adminMessage,
   onProceedToPayment,
   approvedActions,
   comments = [],
   transactionStatus,
   suppressTransactionActions = false,
+  customerSafe = false,
+  documentStatuses = [],
 }: Readonly<OverviewDetailProps>) {
   const s = normalizeTransactionStatus(transactionStatus);
-  const timelineTitle = getTransactionStatusLabel(transactionStatus);
+  const visibleComments = customerSafe
+    ? filterCustomerVisibleComments(comments)
+    : comments;
+  const needsReupload =
+    customerSafe &&
+    hasCustomerDocumentReuploadRequest(comments, documentStatuses);
+  const timelineTitle = customerSafe
+    ? getCustomerOverviewStatusLabel(transactionStatus, {
+        hasDocumentReuploadRequest: needsReupload,
+      })
+    : getTransactionStatusLabel(transactionStatus);
 
   const timeline = (
     <TransactionCommentsTimeline
-      comments={comments}
-      emptyHint="No updates have been posted for this transaction yet."
+      comments={visibleComments}
+      customerSafe={customerSafe}
+      emptyHint={
+        customerSafe
+          ? "No document re-upload requests for this transaction."
+          : "No updates have been posted for this transaction yet."
+      }
     />
   );
 
@@ -98,7 +127,7 @@ export default function OverviewDetail({
     s === "ADMIN_APPROVAL_PENDING" ||
     s === "PENDING_RECORD_VALIDATION"
   ) {
-    if (comments.length > 0) {
+    if (visibleComments.length > 0 || needsReupload) {
       return (
         <div className="px-4 pb-8 space-y-4">
           <OverviewMetaHeader
@@ -137,8 +166,7 @@ export default function OverviewDetail({
           time={time}
           tone="danger"
         />
-        {timeline}
-        {/* {adminMessage ? <RejectedStatus variant="messageOnly" adminMessage={adminMessage} /> : null} */}
+        {customerSafe ? null : timeline}
       </div>
     );
   }
@@ -153,7 +181,7 @@ export default function OverviewDetail({
           time={time}
           tone="danger"
         />
-        {timeline}
+        {customerSafe ? null : timeline}
         <p className="text-sm text-center text-[#8F8B8B] leading-6">
           This transaction was cancelled. No further action is required.
         </p>
@@ -197,7 +225,7 @@ export default function OverviewDetail({
             time={time}
             tone="muted"
           />
-          {timeline}
+          {customerSafe ? null : timeline}
           <p className="text-sm text-center text-[#8F8B8B] leading-6">
             Your request has been approved. Disbursement is being processed.
           </p>
@@ -217,9 +245,11 @@ export default function OverviewDetail({
               tone="success"
             />
           </div>
-          <div className="w-full max-h-[min(58vh,30rem)] overflow-y-auto overscroll-contain">
-            {timeline}
-          </div>
+          {!customerSafe ? (
+            <div className="w-full max-h-[min(58vh,30rem)] overflow-y-auto overscroll-contain">
+              {timeline}
+            </div>
+          ) : null}
           {suppressTransactionActions ? (
             <p className="text-sm text-center text-[#8F8B8B] leading-6 px-1">
               {MANUAL_REVIEW_BLOCKS_ACTIONS}
@@ -242,9 +272,11 @@ export default function OverviewDetail({
             tone="success"
           />
         </div>
-        <div className="w-full max-h-[min(58vh,30rem)] overflow-y-auto overscroll-contain">
-          {timeline}
-        </div>
+        {!customerSafe || visibleComments.length > 0 ? (
+          <div className="w-full max-h-[min(58vh,30rem)] overflow-y-auto overscroll-contain">
+            {timeline}
+          </div>
+        ) : null}
         {suppressTransactionActions ? (
           <p className="text-sm text-center text-[#8F8B8B] leading-6 px-1">
             {MANUAL_REVIEW_BLOCKS_ACTIONS}
@@ -268,7 +300,7 @@ export default function OverviewDetail({
           time={time}
           tone="success"
         />
-        {timeline}
+        {customerSafe ? null : timeline}
         <p className="text-sm text-center text-[#8F8B8B] leading-6">
           This transaction has been settled. No pending updates.
         </p>
@@ -286,7 +318,7 @@ export default function OverviewDetail({
           time={time}
           tone="muted"
         />
-        {timeline}
+        {customerSafe ? null : timeline}
       </div>
     );
   }

@@ -958,6 +958,13 @@ export interface TransactionDetailCashPickup {
   pickupCode: string;
   recipientName: string | null;
   recipientPhone: string | null;
+  /** Pickup station address when provided by API. */
+  address?: string | null;
+  pickupAddress?: string | null;
+  /** Pickup station phone when provided by API. */
+  phoneNumber?: string | null;
+  pickupPhone?: string | null;
+  pickupPhoneNumber?: string | null;
   amount: string;
   currency: string;
   status: string;
@@ -967,6 +974,26 @@ export interface TransactionDetailCashPickup {
   pickedUpAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TransactionDetailSettlement {
+  id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
+  depositedAt?: string | null;
+  confirmedAt?: string | null;
+  proofOfPayment?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  bankDetails?: {
+    bankName?: string | null;
+    accountName?: string | null;
+    accountNumber?: string | null;
+  } | null;
 }
 
 export interface TransactionDetailPaymentEntry {
@@ -1054,7 +1081,8 @@ export interface TransactionDetailData {
   requiredDocuments: TransactionDetailRequiredDoc[];
   cashPickup: TransactionDetailCashPickup | null;
   prepaidCard: Record<string, unknown> | null;
-  settlement?: Record<string, unknown> | null;
+  settlement?: TransactionDetailSettlement | null;
+  outboundSettlement?: TransactionDetailSettlement | null;
   paymentDetails?: TransactionDetailPaymentEntry[] | null;
   steps: TransactionDetailStep[];
   comments?: TransactionDetailComment[];
@@ -1102,19 +1130,47 @@ export interface SupportTicketListResponse {
   };
 }
 
+export interface SupportTicketCommentAuthor {
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface SupportTicketComment {
+  id: string;
+  message: string;
+  createdAt: string;
+  author: SupportTicketCommentAuthor;
+}
+
+export interface SupportTicketAttachment {
+  id: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  createdAt?: string;
+  /** @deprecated Prefer createdAt from API */
+  uploadedAt?: string;
+}
+
 export interface SupportTicketDetail extends SupportTicket {
+  priority?: string;
+  customer?: {
+    name: string;
+    email: string;
+  };
+  assignedAgent?: { name: string; email: string } | null;
+  /** Staff replies / updates from the ticket API. */
+  comments?: SupportTicketComment[];
+  /** Legacy shape — prefer `comments`. */
   messages?: {
     id: string;
     from: string;
     message: string;
     createdAt: string;
   }[];
-  attachments?: {
-    id: string;
-    fileName: string;
-    fileUrl: string;
-    uploadedAt: string;
-  }[];
+  attachments?: SupportTicketAttachment[];
 }
 
 export interface SupportTicketDetailResponse {

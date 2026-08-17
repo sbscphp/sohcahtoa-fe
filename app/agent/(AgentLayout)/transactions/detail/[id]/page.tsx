@@ -26,8 +26,11 @@ import { useCreateData, useFetchSingleData } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
 import type { TransactionDetailComment } from "@/app/_lib/api/types";
 import EmptyState from "@/app/admin/_components/EmptyState";
+import { customerCanProceedToPayment } from "@/app/(customer)/_lib/customer-overview";
+import { documentsIncludeRequiresManualReview } from "@/app/(customer)/_components/transactions/TransactionRequestSheet/DocumentDetail";
 import AgentProceedToPaymentModal from "@/app/agent/_components/transactions/details/AgentProceedToPaymentModal";
 import AgentRecordDisbursementModal from "@/app/agent/_components/transactions/details/AgentRecordDisbursementModal";
+import AgentSelectPaymentMethodModal from "@/app/agent/_components/transactions/details/AgentSelectPaymentMethodModal";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { buildAgentDetailPayloadFromApi } from "@/app/agent/_utils/agent-transaction-detail-payload";
 import { resolveTransactionPayoutSections } from "@/app/(customer)/_lib/resolve-transaction-payout-display";
@@ -68,6 +71,7 @@ export default function AgentTransactionDetailPage() {
   );
 
   const [updatesSheetOpen, setUpdatesSheetOpen] = useState(false);
+  const [selectPaymentMethodOpen, setSelectPaymentMethodOpen] = useState(false);
   const [proceedToPaymentOpen, setProceedToPaymentOpen] = useState(false);
   const [recordDisbursementOpen, setRecordDisbursementOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
@@ -156,6 +160,26 @@ export default function AgentTransactionDetailPage() {
   const isReceivedPaymentStep =
     (apiData?.status ?? "").toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
   const isAwaitingDisbursement = statusKey === "AWAITING_DISBURSEMENT";
+  const suppressPaymentActions = documentsIncludeRequiresManualReview(
+    payload.documentsForSheet
+  );
+  const showMakePaymentCta =
+    !showSettlement &&
+    !suppressPaymentActions &&
+    !isReceivedPaymentStep &&
+    !isAwaitingDisbursement &&
+    customerCanProceedToPayment(statusKey);
+
+  const openPaymentMethodPicker = () => {
+    setUpdatesSheetOpen(false);
+    setSelectPaymentMethodOpen(true);
+  };
+
+  const continueToPayment = () => {
+    setSelectPaymentMethodOpen(false);
+    setUpdatesSheetOpen(false);
+    setProceedToPaymentOpen(true);
+  };
 
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
@@ -226,7 +250,7 @@ export default function AgentTransactionDetailPage() {
               </span>
             </div>
           </div>
-          <div className="shrink-0 w-full md:w-auto">
+          <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row gap-2">
             {showSettlement ? (
               <Button
                 variant="outline"
@@ -239,15 +263,32 @@ export default function AgentTransactionDetailPage() {
                 Download Receipt
               </Button>
             ) : (
-              <Button
-                variant="filled"
-                radius="xl"
-                size="md"
-                className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
-                onClick={() => setUpdatesSheetOpen(true)}
-              >
-                View Updates
-              </Button>
+              <>
+                {showMakePaymentCta ? (
+                  <Button
+                    variant="filled"
+                    radius="xl"
+                    size="md"
+                    className="bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
+                    onClick={openPaymentMethodPicker}
+                  >
+                    Make Payment
+                  </Button>
+                ) : null}
+                <Button
+                  variant={showMakePaymentCta ? "outline" : "filled"}
+                  radius="xl"
+                  size="md"
+                  className={
+                    showMakePaymentCta
+                      ? "border-[#DD4F05] text-[#DD4F05] hover:bg-[#FFF6F1] font-medium text-base"
+                      : "bg-[#DD4F05] hover:bg-[#B84204] text-white font-medium text-base"
+                  }
+                  onClick={() => setUpdatesSheetOpen(true)}
+                >
+                  View Updates
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -263,6 +304,7 @@ export default function AgentTransactionDetailPage() {
           adminMessage={adminMessage}
           comments={apiData?.comments ?? []}
           onResubmitDocuments={handleResubmitDocuments}
+          customerSafeOverview={false}
           approvedActions={
             isReceivedPaymentStep ? (
                 <Button
@@ -315,10 +357,7 @@ export default function AgentTransactionDetailPage() {
                   radius="xl"
                   fullWidth
                   className="mt-6! bg-[#DD4F05] hover:bg-[#B84204] text-[#FFF6F1] h-12!"
-                  onClick={() => {
-                    setUpdatesSheetOpen(false);
-                    setProceedToPaymentOpen(true);
-                  }}
+                  onClick={continueToPayment}
                   rightSection={<ArrowUpRight className="w-4 h-4" />}
                 >
                   Continue
@@ -337,6 +376,13 @@ export default function AgentTransactionDetailPage() {
             }
           }}
           onViewTransaction={() => setUpdatesSheetOpen(false)}
+        />
+        <AgentSelectPaymentMethodModal
+          opened={selectPaymentMethodOpen}
+          onClose={() => setSelectPaymentMethodOpen(false)}
+          paymentMethod={paymentMethod}
+          onPaymentMethodChange={setPaymentMethod}
+          onContinue={continueToPayment}
         />
         <AgentProceedToPaymentModal
           opened={proceedToPaymentOpen}
@@ -424,10 +470,11 @@ export default function AgentTransactionDetailPage() {
                 data={payload.paymentDetails}
               />
             )}
-          {showSettlement && payload.settlement && (
+          {payload.settlement && (
             <TransactionSettlementSection
               data={payload.settlement}
               onDownloadReceipt={handleDownloadReceipt}
+              onViewReceipt={(url, filename) => setDocumentViewer({ url, filename })}
             />
           )}
         </div>

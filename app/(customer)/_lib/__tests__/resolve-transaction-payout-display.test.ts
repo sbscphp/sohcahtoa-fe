@@ -1,4 +1,5 @@
 import {
+  getBeneficiaryDetailRows,
   resolveTransactionPayoutDisplay,
   resolveTransactionPayoutSections,
 } from "../resolve-transaction-payout-display";
@@ -70,6 +71,59 @@ describe("resolveTransactionPayoutSections", () => {
       refundBank: null,
       payoutBankAccounts: [],
     });
+  });
+});
+
+describe("getBeneficiaryDetailRows", () => {
+  it("uses collection order, Organization name only, and curated bank labels", () => {
+    const rows = getBeneficiaryDetailRows({
+      iban: "GB29NWBK60161331926819",
+      schoolName: "Inland Hospital and Co.",
+      organizationName: "Inland Hospital and Co.",
+      beneficiaryName: "Inland Hospital and Co.",
+      name: "Inland Hospital and Co.",
+      bankName: "Chase",
+      accountName: "Inland Hospital",
+      bankAddress: "1 Wall St",
+      swiftCode: "CHASUS33",
+      accountNumber: "12345678",
+      routingNumber: "021000021",
+      paymentReference: "INV-22",
+      beneficiaryPhone: "08012345678",
+      beneficiaryEmail: "ops@hospital.test",
+      beneficiaryAddress: "12 Broad St",
+      beneficiaryCity: "Lagos",
+      beneficiaryState: "Lagos",
+      beneficiaryCountry: "Nigeria",
+      beneficiaryCountryRegion: "US_CA",
+      bankAccountName: "Chase",
+    });
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Bank account country / region",
+      "Organization name",
+      "Phone number",
+      "Email",
+      "Address",
+      "City",
+      "State",
+      "Country",
+      "Bank name",
+      "Account name",
+      "Bank Address",
+      "IBAN",
+      "SWIFT/BIC",
+      "Bank account number",
+      "Payment/Invoice reference number",
+      "Routing number",
+    ]);
+    expect(rows.find((row) => row.key === "organizationName")?.value).toBe(
+      "Inland Hospital and Co.",
+    );
+    expect(rows.some((row) => row.label === "School Name")).toBe(false);
+    expect(rows.find((row) => row.key === "beneficiaryCountryRegion")?.value).toBe(
+      "United States & Canada",
+    );
   });
 });
 

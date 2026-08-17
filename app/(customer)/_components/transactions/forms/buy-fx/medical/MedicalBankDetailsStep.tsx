@@ -48,7 +48,7 @@ export default function MedicalBankDetailsStep({
         </p>
       </div>
 
-      <InternationalBankDetailsFields form={form} />
+      <InternationalBankDetailsFields form={form} variant="medical" />
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center w-full">
         {onBack && (

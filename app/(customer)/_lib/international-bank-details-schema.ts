@@ -33,7 +33,7 @@ function validateSwiftWhenPresent(swift: string, path: string, ctx: z.Refinement
 
 export const internationalBankDetailsBaseSchema = z.object({
   beneficiaryCountryRegion: z.enum(["UK", "US_CA", "IN", "AU", "NG", "OTHER"]),
-  organizationName: z.string().trim().min(1, "Name of organization is required"),
+  organizationName: z.string().trim().min(1, "Organization name is required"),
   beneficiaryPhone: z.string().trim().min(1, "Phone number is required"),
   beneficiaryEmail: z.email().min(1, "Email address is required"),
   beneficiaryAddress: z.string().trim().min(1, "Address is required"),
@@ -42,7 +42,7 @@ export const internationalBankDetailsBaseSchema = z.object({
   beneficiaryCountry: z.string().trim().min(1, "Country is required"),
   bankName: z.string().trim().min(1, "Bank name is required"),
   accountName: z.string().trim().min(1, "Account name is required"),
-  bankAddress: z.string().trim().min(1, "Bank account address is required"),
+  bankAddress: z.string().trim().min(1, "Bank Address is required"),
   accountNumber: z
     .string()
     .trim()
@@ -88,7 +88,7 @@ export function refineInternationalBankDetails(
 
   const paymentRequired = region !== "NG";
   if (paymentRequired) {
-    need("paymentReference", "Payment reference / ID is required", data.paymentReference);
+    need("paymentReference", "Payment/Invoice reference number is required", data.paymentReference);
   }
 
   switch (region) {
@@ -98,7 +98,7 @@ export function refineInternationalBankDetails(
         ctx.addIssue({
           code: "custom",
           path: ["iban"],
-          message: "Bank account IBAN is required for United Kingdom",
+          message: "IBAN is required for United Kingdom",
         });
       } else if (iban.length < 15 || iban.length > 34) {
         ctx.addIssue({
@@ -107,7 +107,7 @@ export function refineInternationalBankDetails(
           message: "Enter a valid IBAN",
         });
       }
-      need("swiftCode", "Bank account SWIFT / BIC is required for United Kingdom", data.swiftCode);
+      need("swiftCode", "SWIFT/BIC is required for United Kingdom", data.swiftCode);
       break;
     }
     case "US_CA": {
@@ -119,7 +119,7 @@ export function refineInternationalBankDetails(
           message: "Routing number must be 9 digits",
         });
       }
-      need("swiftCode", "Bank account SWIFT / BIC is required", data.swiftCode);
+      need("swiftCode", "SWIFT/BIC is required", data.swiftCode);
       break;
     }
     case "IN": {
@@ -133,12 +133,12 @@ export function refineInternationalBankDetails(
         });
       }
       need("purposeCode", "Purpose code is required for India", data.purposeCode);
-      need("swiftCode", "Bank account SWIFT / BIC is required for India", data.swiftCode);
+      need("swiftCode", "SWIFT/BIC is required for India", data.swiftCode);
       break;
     }
     case "AU":
       need("bsbCode", "BSB code is required for Australia", data.bsbCode);
-      need("swiftCode", "Bank account SWIFT / BIC is required for Australia", data.swiftCode);
+      need("swiftCode", "SWIFT/BIC is required for Australia", data.swiftCode);
       break;
     case "NG":
       break;

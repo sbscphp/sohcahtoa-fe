@@ -24,13 +24,16 @@ import {
   useKycProfilePrefillEffect,
 } from "@/app/(customer)/_hooks/use-customer-profile-bvn-nin";
 import { kycBvnSchema, kycNinOptionalSchema } from "@/app/(customer)/_lib/kyc-bvn-nin-schema";
-import { kycTinSchema, sanitizeTinInput } from "@/app/(customer)/_lib/kyc-tin-schema";
+import {
+  kycTinRequiredSchema,
+  sanitizeTinInput,
+  TIN_INPUT_HELPER,
+} from "@/app/(customer)/_lib/kyc-tin-schema";
 
-/** TCC document number + TIN certificate file optional — not collected when inputs are hidden. */
 const uploadDocumentsSchema = z.object({
   bvn: kycBvnSchema,
   ninNumber: kycNinOptionalSchema,
-  tinNumber: kycTinSchema,
+  tinNumber: kycTinRequiredSchema,
   formAId: formAIdSchema,
   tccDocumentNumber: z.string().max(50, "Document number is too long"),
   tccFile: z.custom<FileWithPath | null>().refine((file) => file !== null, {
@@ -96,7 +99,7 @@ export default function BTAUploadDocumentsStep({
   const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
 
   const form = useForm<BTAUploadDocumentsFormValues>({
-    mode: "controlled",
+    mode: "uncontrolled",
     initialValues: {
       bvn: initialValues?.bvn || (omitLoggedInUserKyc ? "" : kyc.defaultBvn) || "",
       ninNumber:
@@ -121,7 +124,10 @@ export default function BTAUploadDocumentsStep({
   useKycProfilePrefillEffect(form, initialValues, kyc, !omitLoggedInUserKyc);
 
   const handleSubmit = form.onSubmit((values) => {
-    onSubmit(values as BTAUploadDocumentsFormData);
+    onSubmit({
+      ...values,
+      tinNumber: sanitizeTinInput(values.tinNumber ?? ""),
+    } as BTAUploadDocumentsFormData);
   });
 
   return (
@@ -185,15 +191,18 @@ export default function BTAUploadDocumentsStep({
         />
         <TextInput
           label="TIN Number"
+          required
           size="md"
-          placeholder="Enter TIN Number"
-          maxLength={20}
+          placeholder="e.g. 08120451-1001"
+          // description={TIN_INPUT_HELPER}
+          maxLength={16}
           autoComplete="off"
           {...form.getInputProps("tinNumber")}
           onChange={(e) => {
             const raw = sanitizeTinInput(e.currentTarget.value);
             e.currentTarget.value = raw;
             form.setFieldValue("tinNumber", raw);
+            form.clearFieldError("tinNumber");
           }}
         />
         <TextInput

@@ -41,6 +41,7 @@ interface ResidentTransactionAmountStepProps {
   onSubmit: (data: ResidentTransactionAmountFormData) => void;
   onBack?: () => void;
   exchangeRate?: string;
+  customerName?: string;
 }
 
 export default function ResidentTransactionAmountStep({
@@ -48,10 +49,21 @@ export default function ResidentTransactionAmountStep({
   onSubmit,
   onBack,
   exchangeRate = "USD1 - NGN1500",
+  customerName = "",
 }: Readonly<ResidentTransactionAmountStepProps>) {
   const [proofModalOpen, setProofModalOpen] = useState(false);
-  const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">("initials");
-  const [sourceOfFundsInitials, setSourceOfFundsInitials] = useState(initialValues?.sourceOfFundsInitials ?? "");
+  const [sourceOfFundsMode, setSourceOfFundsMode] = useState<"initials" | "upload">(
+    initialValues?.sourceOfFundsSignatureMode ?? "initials"
+  );
+  
+  const computedInitials = customerName
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   const [sourceOfFundsSignatureFile, setSourceOfFundsSignatureFile] = useState<FileWithPath | null>(
     initialValues?.sourceOfFundsSignatureFile ?? null
   );
@@ -113,12 +125,12 @@ export default function ResidentTransactionAmountStep({
       setProofOfFundsError("Please upload at least one proof of fund document");
       return false;
     }
-    const hasInitials = sourceOfFundsMode === "initials" && sourceOfFundsInitials.trim().length > 0;
+    const hasInitials = sourceOfFundsMode === "initials" && computedInitials.length > 0;
     const hasSignature = sourceOfFundsMode === "upload" && sourceOfFundsSignatureFile != null;
     if (!hasInitials && !hasSignature) {
       setSourceOfFundsError(
         sourceOfFundsMode === "initials"
-          ? "Please enter your initials for the source of funds declaration"
+          ? "Please provide a valid customer name to generate initials"
           : "Please upload your DIGITAL SIGNATURE for the source of funds declaration"
       );
       return false;
@@ -133,7 +145,7 @@ export default function ResidentTransactionAmountStep({
     onSubmit({
       ...values,
       sourceOfFundsSignatureMode: over10k ? sourceOfFundsMode : undefined,
-      sourceOfFundsInitials: over10k && sourceOfFundsMode === "initials" ? sourceOfFundsInitials.trim() : undefined,
+      sourceOfFundsInitials: over10k && sourceOfFundsMode === "initials" ? computedInitials : undefined,
       sourceOfFundsSignatureFile: over10k && sourceOfFundsMode === "upload" ? sourceOfFundsSignatureFile : undefined,
       proofOfFundsFiles: over10k ? proofOfFundsFiles : undefined,
     });
@@ -200,8 +212,8 @@ export default function ResidentTransactionAmountStep({
           <SourceOfFundsDeclaration
             signatureMode={sourceOfFundsMode}
             onSignatureModeChange={setSourceOfFundsMode}
-            initialsValue={sourceOfFundsInitials}
-            onInitialsChange={setSourceOfFundsInitials}
+            initialsValue={computedInitials}
+            onInitialsChange={() => {}} // no-op since it's read-only
             initialsError={sourceOfFundsMode === "initials" ? (sourceOfFundsError ?? undefined) : undefined}
             signatureFile={sourceOfFundsSignatureFile}
             onSignatureFileChange={setSourceOfFundsSignatureFile}

@@ -10,8 +10,9 @@ import LabelText from "./LabelText";
 const PAYMENT_SECTION_TITLE_CLASS =
   "font-medium text-lg leading-[26px] text-[#DD4F05]";
 
+/** Match SectionBlock: even 1 / 3 / 5 columns, no custom spans. */
 const PAYMENT_BODY_GRID =
-  "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 px-8 *:min-w-0";
+  "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 md:px-8 px-4 *:min-w-0";
 
 const PAYMENT_BODY_GRID_NESTED =
   "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 *:min-w-0";
@@ -95,7 +96,7 @@ function paymentLineFields(line: PaymentInflowLine): ReactNode[] {
         key={`${k}-acct-name`}
         label="Source account name"
         text={line.sourceAccountName}
-        className="md:col-span-2 xl:col-span-3"
+        wrapText
       />
     );
   }
@@ -106,9 +107,6 @@ function paymentLineFields(line: PaymentInflowLine): ReactNode[] {
         key={`${k}-acct-no`}
         label="Source account number"
         text={line.sourceAccountNumber}
-        className={
-          line.sourceAccountName ? "md:col-span-1 xl:col-span-2" : "md:col-span-3 xl:col-span-5"
-        }
       />
     );
   }
@@ -119,7 +117,7 @@ function paymentLineFields(line: PaymentInflowLine): ReactNode[] {
         key={`${k}-remarks`}
         label="Remarks"
         text={line.tranRemarks}
-        className="md:col-span-3 xl:col-span-5"
+        wrapText
       />
     );
   }
@@ -130,7 +128,6 @@ function paymentLineFields(line: PaymentInflowLine): ReactNode[] {
         key={`${k}-verified`}
         label="Verified at"
         text={`${formatShortDate(line.verifiedAt)} · ${formatShortTime(line.verifiedAt)}`}
-        className="md:col-span-3 xl:col-span-5"
       />
     );
   }
@@ -151,7 +148,7 @@ export default function PaymentDetailsSection({ data }: PaymentDetailsSectionPro
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <div className="flex items-center px-8">
+      <div className="flex items-center md:px-8 px-4">
         <h3 className={PAYMENT_SECTION_TITLE_CLASS}>Payment Details</h3>
       </div>
       <div className={PAYMENT_BODY_GRID}>

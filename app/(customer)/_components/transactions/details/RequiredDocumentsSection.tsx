@@ -18,6 +18,7 @@ export interface RequiredDocumentsData {
   studentPassportExpiryDate?: string;
   workPermitNumber?: string;
   formAId: string;
+  digitalSignature?: string;
   /** Files from API `requiredDocuments` (covers school fees, PTA, sell FX, and future types). */
   uploadedFiles: Array<{
     /** Unique per uploaded file — required when multiple files share a document type. */
@@ -86,17 +87,17 @@ export default function RequiredDocumentsSection({
   const makeDoc = (d: { filename: string; url?: string } | undefined, key: string) =>
     d
       ? {
-          filename: d.filename,
-          url: d.url,
-          onView:
-            d.url && onViewDocument
-              ? () => {
-                  const url = d.url;
-                  if (url) onViewDocument(key, d.filename, url);
-                }
-              : undefined,
-          onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
-        }
+        filename: d.filename,
+        url: d.url,
+        onView:
+          d.url && onViewDocument
+            ? () => {
+              const url = d.url;
+              if (url) onViewDocument(key, d.filename, url);
+            }
+            : undefined,
+        onDownload: onDownload ? () => onDownload(key, d.filename) : undefined,
+      }
       : undefined;
 
   return (
@@ -130,6 +131,7 @@ export default function RequiredDocumentsSection({
       />
       <LabelText hideWhenEmpty label="Applicant Passport Issued Date" text={data.passportIssueDate} />
       <LabelText hideWhenEmpty label="Applicant Passport Expiry Date" text={data.passportExpiryDate} />
+      <LabelText hideWhenEmpty label="Digital Signature" text={data.digitalSignature} />
 
       {data.uploadedFiles.map((file) => (
         <LabelText

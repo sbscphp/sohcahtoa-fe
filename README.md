@@ -1,6 +1,6 @@
 # SohCahToa Digital FX Platform - Frontend
 
-> A secure, fully compliant digital foreign exchange platform aligned with Central Bank of Nigeria (CBN) guidelines.
+> A secure, fully compliant digital foreign exchange platform aligned with Central Bank of Nigeria (CBN) guidelines
 
 ## 📖 About
 

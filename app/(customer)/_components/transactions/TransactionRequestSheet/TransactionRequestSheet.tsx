@@ -31,6 +31,11 @@ interface TransactionRequestSheetProps {
   allowMissingDocumentUpload?: boolean;
   onViewTransaction?: () => void;
   onOpenDocument?: (doc: TransactionDocumentItem) => void;
+  /**
+   * Customer overview hides staff names and non-reupload comments.
+   * Agent/staff should pass `false`.
+   */
+  customerSafeOverview?: boolean;
 }
 
 export default function TransactionRequestSheet({
@@ -50,6 +55,7 @@ export default function TransactionRequestSheet({
   allowMissingDocumentUpload,
   onViewTransaction,
   onOpenDocument,
+  customerSafeOverview = true,
 }: Readonly<TransactionRequestSheetProps>) {
   const suppressTransactionActions = documentsIncludeRequiresManualReview(documents);
 
@@ -126,6 +132,8 @@ export default function TransactionRequestSheet({
               }
               suppressTransactionActions={suppressTransactionActions}
               comments={comments}
+              customerSafe={customerSafeOverview}
+              documentStatuses={(documents ?? []).map((doc) => doc.status)}
             />
           </Tabs.Panel>
 

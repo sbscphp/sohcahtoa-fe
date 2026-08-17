@@ -112,7 +112,7 @@ export default function TransientHistoryTable({
 
   return (
     <TableWrapper<TransientHistoryRow>
-      title="Transient History"
+      title="Payment History"
       filters={filters}
       filterValues={filterValues}
       onFiltersApply={onFiltersApply}
