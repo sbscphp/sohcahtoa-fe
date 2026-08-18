@@ -201,8 +201,6 @@ export default function WorkflowDetailPage() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <DetailItem label="Workflow Name" value={workflow.name} />
               <DetailItem label="Description" value={workflow.description} />
-              <DetailItem label="Branch" value={workflow.branch} />
-              <DetailItem label="Department" value={workflow.department} />
               <DetailItem label="Workflow Type" value={workflow.workflowType} />
               {workflow.approvalType && (
                 <DetailItem
