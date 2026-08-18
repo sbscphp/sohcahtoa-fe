@@ -12,10 +12,10 @@ type PrepaidCardProps = {
 };
 
 export default function PrepaidCard({
-  lastFour = "7093",
-  validThru = "08/27",
-  balance = 3048,
-  cardholderName = "Emmanuel Israel",
+  lastFour = "0000",
+  validThru = "00/00",
+  balance = 0,
+  cardholderName = "",
 }: PrepaidCardProps) {
   const currencyCode = useSelectedCurrencyCode();
   const bgSrc = typeof cardBackground === "string" ? cardBackground : (cardBackground as { src: string }).src;
