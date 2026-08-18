@@ -6,7 +6,6 @@ import { useFetchData } from "@/app/_lib/api/hooks";
 import { adminKeys } from "@/app/_lib/api/query-keys";
 import { adminApi, type ManagementAdminUserItem } from "@/app/admin/_services/admin-api";
 import type { AssignableRole, AssignableUser } from "../_workflowComponents/AssignToModal";
-import { useManagementLookups } from "../../user-management/hooks/useManagementLookups";
 
 interface EscalationUserOption {
   id: string;
@@ -49,10 +48,6 @@ function deriveRoles(users: AssignableUser[]): AssignableRole[] {
 }
 
 export function useWorkflowEditOptions() {
-  const { options: departmentOptions, isLoading: departmentsLoading } =
-    useManagementLookups("department");
-  const { options: branchOptions, isLoading: branchesLoading } = useManagementLookups("branch");
-
   const usersQuery = useFetchData<ApiResponse<ManagementAdminUserItem[]>>(
     [...adminKeys.management.users.allUsers()],
     () =>
@@ -75,12 +70,10 @@ export function useWorkflowEditOptions() {
   );
 
   return {
-    branchOptions,
-    departmentOptions,
     users,
     roles,
     escalationUsers,
-    isLoading: departmentsLoading || branchesLoading || usersQuery.isLoading,
+    isLoading: usersQuery.isLoading,
     isError: usersQuery.isError,
   };
 }

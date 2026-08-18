@@ -1133,8 +1133,6 @@ export interface WorkflowTemplateUpdatePayload {
   maxAmount?: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
   action: string;
-  branchId: string;
-  departmentId: string;
   escalationMinutes: number;
   hasPtaRequest: boolean;
   stages: WorkflowTemplateUpdateStagePayload[];
