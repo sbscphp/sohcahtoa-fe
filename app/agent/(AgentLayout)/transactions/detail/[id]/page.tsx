@@ -140,7 +140,7 @@ export default function AgentTransactionDetailPage() {
     statusKey !== "VERIFICATION_COMPLETED" &&
     statusKey !== "ADMIN_APPROVAL_PENDING" &&
     statusKey !== "PENDING_RECORD_VALIDATION";
-  const showSettlement = statusKey === "COMPLETED";
+  const showDownloadReceipt = statusKey === "COMPLETED";
   const showIdentificationBlock =
     !isBlankDetailText(payload.identification.bvn) ||
     !isBlankDetailText(payload.identification.nin) ||
@@ -164,7 +164,7 @@ export default function AgentTransactionDetailPage() {
     payload.documentsForSheet
   );
   const showMakePaymentCta =
-    !showSettlement &&
+    !showDownloadReceipt &&
     !suppressPaymentActions &&
     !isReceivedPaymentStep &&
     !isAwaitingDisbursement &&
@@ -251,7 +251,7 @@ export default function AgentTransactionDetailPage() {
             </div>
           </div>
           <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row gap-2">
-            {showSettlement ? (
+            {showDownloadReceipt ? (
               <Button
                 variant="outline"
                 radius="xl"

@@ -138,6 +138,7 @@ export default function TransactionDetailPage() {
     statusKey !== "VERIFICATION_COMPLETED" &&
     statusKey !== "ADMIN_APPROVAL_PENDING" &&
     statusKey !== "PENDING_RECORD_VALIDATION";
+  const showDownloadReceipt = statusKey === "COMPLETED";
   const showSettlement = Boolean(payload.settlement);
   const currency = getCurrencyByCode(payload.currencyCode);
   const flagUrl = getCurrencyFlagUrl(payload.currencyCode);
@@ -160,7 +161,7 @@ export default function TransactionDetailPage() {
     payload.documentsForSheet
   );
   const showMakePaymentCta =
-    !showSettlement &&
+    !showDownloadReceipt &&
     !suppressPaymentActions &&
     customerCanProceedToPayment(statusKey);
 
@@ -229,7 +230,7 @@ export default function TransactionDetailPage() {
           </div>
         </div>
         <div className="shrink-0 flex flex-col sm:flex-row gap-2">
-          {showSettlement ? (
+          {showDownloadReceipt ? (
             <Button
               variant="outline"
               radius="xl"
