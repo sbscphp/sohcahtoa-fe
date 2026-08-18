@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Stack, Text, TextInput, NumberInput, Select, Textarea, Radio, Group } from "@mantine/core";
+import { Stack, Text, TextInput, NumberInput, Textarea, Radio, Group } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Check } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
@@ -40,8 +40,6 @@ interface EditWorkflowFormValues {
   workflowDescription: string;
   approvalType: ApprovalTypeValue | "";
   workflowAction: string;
-  branchApplicable: string;
-  departmentApplicable: string;
   minAmount: number | "";
   maxAmount: number | "";
   workflowType: WorkflowMode;
@@ -122,8 +120,6 @@ export default function EditWorkflowPage() {
     isError: templateError,
   } = useWorkflowTemplateDetails(id);
   const {
-    branchOptions,
-    departmentOptions,
     users: assignableUsers,
     roles: assignableRoles,
     escalationUsers,
@@ -136,8 +132,6 @@ export default function EditWorkflowPage() {
       workflowDescription: "",
       approvalType: "",
       workflowAction: "",
-      branchApplicable: "",
-      departmentApplicable: "",
       minAmount: "",
       maxAmount: "",
       workflowType: "rigid",
@@ -164,8 +158,6 @@ export default function EditWorkflowPage() {
         if (wordCount > 24) return "Description must not exceed 24 words";
         return null;
       },
-      branchApplicable: (value) => (value ? null : "Branch is required"),
-      departmentApplicable: (value) => (value ? null : "Department is required"),
       maxAmount: (value, values) => {
         if (values.approvalType === "RATE") return null;
         if (value === "" || values.minAmount === "") return null;
@@ -192,8 +184,6 @@ export default function EditWorkflowPage() {
       workflowDescription: template.editTemplate.description,
       approvalType: template.editTemplate.approvalType,
       workflowAction: template.editTemplate.action,
-      branchApplicable: template.editTemplate.branchId,
-      departmentApplicable: template.editTemplate.departmentId,
       minAmount: template.editTemplate.minAmount ?? "",
       maxAmount: template.editTemplate.maxAmount ?? "",
       workflowType: processType,
@@ -254,9 +244,6 @@ export default function EditWorkflowPage() {
       setIsSaveConfirmOpen(false);
     },
   });
-
-  const branchLabelOptions = useMemo(() => branchOptions, [branchOptions]);
-  const departmentLabelOptions = useMemo(() => departmentOptions, [departmentOptions]);
 
   // Snapshot the active line's current selections at the moment the modal opens.
   // Keyed on assignModalSession so they only recompute on open, not on every render.
@@ -462,8 +449,6 @@ export default function EditWorkflowPage() {
       maxAmount: form.values.approvalType === "RATE" ? null : (form.values.maxAmount === "" ? null : form.values.maxAmount),
       processType: form.values.workflowType === "flexible" ? "FLEXIBLE" : "RIGID_LINEAR",
       action: form.values.workflowAction.trim(),
-      branchId: form.values.branchApplicable,
-      departmentId: form.values.departmentApplicable,
       escalationMinutes: form.values.templateEscalationMinutes,
       hasPtaRequest: form.values.hasPtaRequest,
       stages: form.values.workflowLines.map((line, index) => ({
@@ -624,39 +609,6 @@ export default function EditWorkflowPage() {
                 label: "text-sm font-medium text-gray-900 mb-1",
               }}
             />
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Select
-                label="Branch Applicable"
-                placeholder="Select an Option"
-                data={branchLabelOptions}
-                {...form.getInputProps("branchApplicable")}
-                required
-                searchable
-                radius="md"
-                classNames={{
-                  label: "text-sm font-medium text-gray-900 mb-1",
-                }}
-              />
-
-              <div>
-                <Select
-                  label="Department Applicable"
-                  placeholder="Select an Option"
-                  data={departmentLabelOptions}
-                  {...form.getInputProps("departmentApplicable")}
-                  required
-                  searchable
-                  radius="md"
-                  classNames={{
-                    label: "text-sm font-medium text-gray-900 mb-1",
-                  }}
-                />
-                <Text size="xs" c="dimmed" mt={4}>
-                  A corresponding department within a branch
-                </Text>
-              </div>
-            </div>
 
             {form.values.approvalType !== "RATE" && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

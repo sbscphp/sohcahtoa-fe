@@ -111,7 +111,7 @@ export default function TakeActionButton({
   const canInitiateDisbursement =
     workflowStage?.trim().toUpperCase() === "DEPOSIT_CONFIRMED";
   const canConfirmDisbursement =
-    workflowStage?.trim().toUpperCase() === "DISBURSEMENT_IN_PROGRESS";
+    workflowStage?.trim().toUpperCase() === "DISBURSEMENT_APPROVED";
 
   const handleMutationError = (error: Error, defaultMessage: string) => {
     const apiResponse = (error as unknown as ApiError).data as

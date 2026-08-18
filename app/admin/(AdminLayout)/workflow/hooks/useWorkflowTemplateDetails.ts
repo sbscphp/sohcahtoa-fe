@@ -20,8 +20,6 @@ export interface WorkflowTemplateDetailsViewModel {
   status: "Active" | "Deactivated" | "Draft";
   workflowAction: string;
   description: string;
-  branch: string;
-  department: string;
   workflowType: string;
   approvalType: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "";
   minAmount: number | null;
@@ -60,8 +58,6 @@ export interface WorkflowTemplateEditData {
   status: "ACTIVE" | "DEACTIVATED" | "DRAFT";
   escalationMinutes: number;
   hasPtaRequest: boolean;
-  branchId: string;
-  departmentId: string;
   stages: WorkflowTemplateEditStage[];
 }
 
@@ -217,20 +213,6 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
     approvalType: approvalTypeNormalized,
     minAmount: data.minAmount != null ? (Number.isFinite(Number(data.minAmount)) ? Number(data.minAmount) : null) : null,
     maxAmount: data.maxAmount != null ? (Number.isFinite(Number(data.maxAmount)) ? Number(data.maxAmount) : null) : null,
-    branch: asString(
-      // Prefer human-readable branch name when available
-      (data as WorkflowTemplateDetailsData).branchName ??
-        (sourceWithDate.branchName as string | undefined) ??
-        data.branchId,
-      "--"
-    ),
-    department: asString(
-      // Prefer human-readable department name when available
-      (data as WorkflowTemplateDetailsData).departmentName ??
-        (sourceWithDate.departmentName as string | undefined) ??
-        data.departmentId,
-      "--"
-    ),
     workflowType: toTitleCase(asString(data.processType, "--")),
     personnelProcesses: stages.map(mapStageToViewLine),
     editTemplate: {
@@ -251,8 +233,6 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
             : "ACTIVE",
       escalationMinutes: Number.isFinite(data.escalationMinutes) ? data.escalationMinutes : 0,
       hasPtaRequest: Boolean(data.hasPtaRequest),
-      branchId: asString(data.branchId),
-      departmentId: asString(data.departmentId),
       stages: stages.map(mapStageForEdit),
     },
   };
