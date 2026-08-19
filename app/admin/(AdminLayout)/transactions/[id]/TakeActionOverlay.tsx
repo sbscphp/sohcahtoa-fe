@@ -28,6 +28,7 @@ import { adminApi } from "@/app/admin/_services/admin-api";
 import {
   isDisbursementApprovalType,
   isRefundApprovalType,
+  isViewableDocumentUrl,
   type TransactionActionDocumentViewModel,
   type TransactionWorkflowHistoryItemViewModel,
   type PendingWorkflowStageViewModel,
@@ -826,15 +827,21 @@ export default function TakeActionOverlay({
                                 {doc.fileSize}
                               </Text>
 
-                              <a
-                                href={doc.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="cursor-pointer flex items-center gap-1 underline text-body-text-200 hover:text-primary-400 mt-2 text-xs"
-                              >
-                                View Document
-                                <ArrowUpRight size={14} className="text-primary-400" />
-                              </a>
+                              {doc.signatureText && !isViewableDocumentUrl(doc.url) ? (
+                                <Text size="xs" className="text-body-text-200 mt-2">
+                                  {doc.signatureText}
+                                </Text>
+                              ) : isViewableDocumentUrl(doc.url) ? (
+                                <a
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="cursor-pointer flex items-center gap-1 underline text-body-text-200 hover:text-primary-400 mt-2 text-xs"
+                                >
+                                  View Document
+                                  <ArrowUpRight size={14} className="text-primary-400" />
+                                </a>
+                              ) : null}
                             </div>
 
                             <div className="text-right flex flex-col items-end gap-3 shrink-0">
