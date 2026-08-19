@@ -614,7 +614,8 @@ export default function EditWorkflowPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <NumberInput
                   label="Minimum Amount"
-                  placeholder="Enter minimum amount"
+                  description="Leave blank to apply this workflow to all transactions with no minimum"
+                  placeholder="0.00"
                   thousandSeparator=","
                   value={form.values.minAmount}
                   onChange={(val) => form.setFieldValue("minAmount", typeof val === "number" ? val : "")}
@@ -622,11 +623,13 @@ export default function EditWorkflowPage() {
                   radius="md"
                   classNames={{
                     label: "text-sm font-medium text-gray-900 mb-1",
+                    description: "text-xs text-gray-500 mb-1",
                   }}
                 />
                 <NumberInput
                   label="Maximum Amount"
-                  placeholder="Enter maximum amount"
+                  description="Leave blank if this workflow has no maximum transaction amount"
+                  placeholder="0.00"
                   thousandSeparator=","
                   value={form.values.maxAmount}
                   onChange={(val) => form.setFieldValue("maxAmount", typeof val === "number" ? val : "")}
@@ -634,6 +637,7 @@ export default function EditWorkflowPage() {
                   radius="md"
                   classNames={{
                     label: "text-sm font-medium text-gray-900 mb-1",
+                    description: "text-xs text-gray-500 mb-1",
                   }}
                   error={form.errors.maxAmount}
                 />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, TextInput, Radio, ScrollArea, Text } from "@mantine/core";
+import { Modal, TextInput, Radio, Text } from "@mantine/core";
 import { Search } from "lucide-react";
 
 export type ApprovalTypeValue = "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT";
@@ -12,10 +12,10 @@ interface ApprovalTypeOption {
 }
 
 const APPROVAL_TYPE_OPTIONS: ApprovalTypeOption[] = [
-  { value: "TRANSACTION", label: "Transaction Approval" },
+  { value: "TRANSACTION", label: "Compliance Approval" },
+  { value: "DISBURSEMENT", label: "Disbursement Approval" },
   { value: "REFUND", label: "Transaction Refund Approval" },
   { value: "RATE", label: "Rate Approval" },
-  { value: "DISBURSEMENT", label: "Disbursement Approval" },
 ];
 
 export function approvalTypeLabel(value: ApprovalTypeValue | ""): string {
@@ -80,7 +80,7 @@ export default function ApprovalTypeModal({
           radius="md"
         />
 
-        <ScrollArea h={200} type="scroll">
+        <div>
           <Radio.Group value={value ?? ""}>
             <div className="space-y-2">
               {filteredOptions.map((option) => {
@@ -109,7 +109,7 @@ export default function ApprovalTypeModal({
               })}
             </div>
           </Radio.Group>
-        </ScrollArea>
+        </div>
       </div>
     </Modal>
   );
