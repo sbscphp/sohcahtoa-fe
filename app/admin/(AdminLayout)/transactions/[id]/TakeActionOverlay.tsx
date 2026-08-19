@@ -1143,13 +1143,21 @@ export default function TakeActionOverlay({
                         </span>
                         <span className="min-w-0 pt-0.5">
                           <Text fw={600} className="text-body-heading-300">
-                            Reject Action
+                            {isDisbursementWorkflow
+                              ? "Reject Disbursement"
+                              : isRefundWorkflow
+                                ? "Reject Refund"
+                                : "Reject Action"}
                           </Text>
                           <Text
                             size="sm"
                             className="text-body-text-200! mt-1 leading-relaxed"
                           >
-                            Reject and provide feedback to the customer.
+                            {isDisbursementWorkflow
+                              ? "Reject this disbursement stage and record your reason."
+                              : isRefundWorkflow
+                                ? "Reject this refund request and record your reason."
+                                : "Reject and provide feedback to the customer."}
                           </Text>
                         </span>
                       </button>
@@ -1252,9 +1260,27 @@ export default function TakeActionOverlay({
       <ApprovalActionConfirmModal
         opened={transactionRejectOpen}
         onClose={closeTransactionRejectFlow}
-        title="Reject Request/Application?"
-        message="You are about to reject this application. Once confirmed, the request will be declined and no further processing will take place."
-        primaryButtonText="Yes, Reject Request/Application"
+        title={
+          isDisbursementWorkflow
+            ? "Reject Disbursement?"
+            : isRefundWorkflow
+              ? "Reject Refund?"
+              : "Reject Request/Application?"
+        }
+        message={
+          isDisbursementWorkflow
+            ? "You are about to reject this disbursement stage. Once confirmed, the disbursement will be declined and no further processing will take place."
+            : isRefundWorkflow
+              ? "You are about to reject this refund request. Once confirmed, the refund will be declined and no further processing will take place."
+              : "You are about to reject this application. Once confirmed, the request will be declined and no further processing will take place."
+        }
+        primaryButtonText={
+          isDisbursementWorkflow
+            ? "Yes, Reject Disbursement"
+            : isRefundWorkflow
+              ? "Yes, Reject Refund"
+              : "Yes, Reject Request/Application"
+        }
         secondaryButtonText="No, Close"
         onConfirm={submitTransactionReject}
         isLoading={transactionRejectMutation.isPending}
@@ -1341,8 +1367,20 @@ export default function TakeActionOverlay({
       <SuccessModal
         opened={transactionRejectSuccessOpen}
         onClose={() => setTransactionRejectSuccessOpen(false)}
-        title="Action Approval Rejected"
-        message="The application has been successfully rejected and marked as closed"
+        title={
+          isDisbursementWorkflow
+            ? "Disbursement Rejected"
+            : isRefundWorkflow
+              ? "Refund Rejected"
+              : "Action Approval Rejected"
+        }
+        message={
+          isDisbursementWorkflow
+            ? "The disbursement stage has been successfully rejected and will not proceed"
+            : isRefundWorkflow
+              ? "The refund request has been successfully rejected and marked as closed"
+              : "The application has been successfully rejected and marked as closed"
+        }
         // primaryButtonText="View More Action Approval"
         // onPrimaryClick={navigateToTransactionsList}
         secondaryButtonText="Close"
