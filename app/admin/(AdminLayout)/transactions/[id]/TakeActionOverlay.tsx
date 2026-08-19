@@ -53,6 +53,7 @@ interface TakeActionOverlayProps {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  isLastWorkflowStage?: boolean;
   pendingWorkflowStages?: PendingWorkflowStageViewModel[];
 }
 
@@ -347,6 +348,7 @@ export default function TakeActionOverlay({
   approvalState,
   approvalProcessName,
   approvalType,
+  isLastWorkflowStage = false,
   pendingWorkflowStages = [],
 }: TakeActionOverlayProps) {
   const isRefundWorkflow = isRefundApprovalType(approvalType);
@@ -479,13 +481,14 @@ export default function TakeActionOverlay({
   );
 
   const completeReviewMutation = useCreateData(
-    (variables: { transactionId: string; notes: string }) =>
+    (variables: { transactionId: string; notes: string; sessionId?: string }) =>
       isDisbursementWorkflow
         ? adminApi.transactions.approveDisbursement(variables.transactionId, {
             notes: variables.notes,
           })
         : adminApi.transactions.approve(variables.transactionId, {
             notes: variables.notes,
+            ...(variables.sessionId ? { sessionId: variables.sessionId } : {}),
           }),
     {
       onSuccess: async () => {
@@ -602,11 +605,12 @@ export default function TakeActionOverlay({
     setTransactionCompleteReviewOpen(false);
   };
 
-  const submitTransactionCompleteReview = (comment: string) => {
+  const submitTransactionCompleteReview = (comment: string, sessionId?: string) => {
     if (!transactionId) return;
     completeReviewMutation.mutate({
       transactionId,
       notes: comment,
+      sessionId,
     });
   };
 
@@ -1232,6 +1236,7 @@ export default function TakeActionOverlay({
         onConfirm={submitTransactionCompleteReview}
         isLoading={completeReviewMutation.isPending}
         commentRequired={false}
+        showSessionId={isRefundWorkflow && isLastWorkflowStage}
       />
 
       <ApprovalActionConfirmModal

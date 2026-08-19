@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Modal, Text, Textarea } from "@mantine/core";
+import { Button, Modal, Text, Textarea, TextInput } from "@mantine/core";
 import Image from "next/image";
 import { exclamation } from "@/app/assets/asset";
 import type { ReactNode } from "react";
@@ -15,9 +15,10 @@ export interface ApprovalActionConfirmModalProps {
   message: ReactNode;
   primaryButtonText: string;
   secondaryButtonText: string;
-  onConfirm: (comment: string) => void;
+  onConfirm: (comment: string, sessionId?: string) => void;
   isLoading?: boolean;
   zIndex?: number;
+  showSessionId?: boolean;
 }
 
 export function ApprovalActionConfirmModal({
@@ -32,12 +33,15 @@ export function ApprovalActionConfirmModal({
   onConfirm,
   isLoading = false,
   zIndex = 4000,
+  showSessionId = false,
 }: ApprovalActionConfirmModalProps) {
   const [comment, setComment] = useState("");
+  const [sessionId, setSessionId] = useState("");
 
   const handleModalClose = () => {
     if (isLoading) return;
     setComment("");
+    setSessionId("");
     onClose();
   };
 
@@ -45,16 +49,18 @@ export function ApprovalActionConfirmModal({
     if (isLoading) return;
     const trimmed = comment.trim();
     if (commentRequired && !trimmed) return;
-    onConfirm(trimmed);
+    const trimmedSessionId = sessionId.trim();
+    onConfirm(trimmed, trimmedSessionId || undefined);
   };
 
   useEffect(() => {
-    if (!opened && comment !== "") {
+    if (!opened && (comment !== "" || sessionId !== "")) {
       setTimeout(() => {
         setComment("");
+        setSessionId("");
       }, 0);
     }
-  }, [opened, comment]);
+  }, [opened, comment, sessionId]);
 
   const handleSecondary = () => {
     handleModalClose();
@@ -85,6 +91,26 @@ export function ApprovalActionConfirmModal({
         <div className="w-full space-y-3 px-2 text-center text-body-text-100! text-sm leading-relaxed">
           {message}
         </div>
+        {showSessionId && (
+          <div className="w-full space-y-1.5 text-left">
+            <Text size="sm" fw={500} className="text-body-heading-300">
+              Session ID
+            <span className="text-red-500" aria-hidden>
+              *
+            </span>
+            </Text>
+            <TextInput
+              placeholder="Enter session ID"
+              value={sessionId}
+              onChange={(e) => setSessionId(e.currentTarget.value)}
+              radius="md"
+              disabled={isLoading}
+              classNames={{
+                input: "border border-[#CCCACA]! text-sm",
+              }}
+            />
+          </div>
+        )}
         <div className="w-full space-y-1.5 text-left">
           <Text size="sm" fw={500} className="text-body-heading-300">
             Comment{" "}

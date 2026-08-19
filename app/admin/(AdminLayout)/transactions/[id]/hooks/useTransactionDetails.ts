@@ -103,6 +103,7 @@ export interface TransactionApprovalUiViewModel {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  isLastWorkflowStage: boolean;
 }
 
 export interface UseTransactionDetailsOptions {
@@ -950,6 +951,23 @@ function extractWorkflowHistory(
     );
 }
 
+function isCurrentOrderLastWorkflowStage(
+  ap: AdminTransactionApprovalProcess | null,
+): boolean {
+  if (!ap) return false;
+  const currentOrder =
+    typeof ap.currentOrder === "number" ? ap.currentOrder : null;
+  const stages = ap.workflowStages ?? [];
+  if (currentOrder === null || stages.length === 0) return false;
+  let maxOrder = -Infinity;
+  for (const s of stages) {
+    if (typeof s.order === "number" && s.order > maxOrder) {
+      maxOrder = s.order;
+    }
+  }
+  return Number.isFinite(maxOrder) && currentOrder === maxOrder;
+}
+
 function extractPendingWorkflowStages(
   ap: AdminTransactionApprovalProcess | null,
 ): PendingWorkflowStageViewModel[] {
@@ -1007,6 +1025,7 @@ export function buildTransactionApprovalUi(
     approvalState: undefined,
     approvalProcessName: undefined,
     approvalType: undefined,
+    isLastWorkflowStage: false,
   };
   if (!data) return legacy;
 
@@ -1016,11 +1035,13 @@ export function buildTransactionApprovalUi(
   const approvalType = asString(ap?.approvalType).trim() || undefined;
   const isApprovalOfficer = Boolean(ap?.isApprovalOfficer);
   const stages = ap?.workflowStages;
+  const isLastWorkflowStage = isCurrentOrderLastWorkflowStage(ap);
   const sharedApprovalFields = {
     isApprovalOfficer,
     approvalState,
     approvalProcessName,
     approvalType,
+    isLastWorkflowStage,
   };
 
   if (!ap || !Array.isArray(stages) || stages.length === 0) {
@@ -1122,6 +1143,7 @@ export function useTransactionDetails(
     approvalState: approvalUi.approvalState,
     approvalProcessName: approvalUi.approvalProcessName,
     approvalType: approvalUi.approvalType,
+    isLastWorkflowStage: approvalUi.isLastWorkflowStage,
     canActOnTransactionFooter: approvalUi.canActOnTransactionFooter,
     isLoading: query.isLoading,
     isError: query.isError,

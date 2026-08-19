@@ -36,6 +36,7 @@ export default function ViewTransactionPage() {
     approvalState,
     approvalProcessName,
     approvalType,
+    isLastWorkflowStage,
     isLoading,
     isError,
   } = useTransactionDetails(transactionId, { adminUserId: adminUser?.id });
@@ -69,6 +70,7 @@ export default function ViewTransactionPage() {
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
           approvalType={approvalType}
+          isLastWorkflowStage={isLastWorkflowStage}
         />
       )}
       {activeTab === "receipt" && (
@@ -85,6 +87,7 @@ export default function ViewTransactionPage() {
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
           approvalType={approvalType}
+          isLastWorkflowStage={isLastWorkflowStage}
         />
       )}
       {activeTab === "transaction-settlement" && (
@@ -101,6 +104,7 @@ export default function ViewTransactionPage() {
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
           approvalType={approvalType}
+          isLastWorkflowStage={isLastWorkflowStage}
         />
       )}
     </div>

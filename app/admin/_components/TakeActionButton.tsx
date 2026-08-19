@@ -51,6 +51,7 @@ interface TakeActionButtonProps {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  isLastWorkflowStage?: boolean;
 }
 
 const INITIATE_CONFIRM = {
@@ -92,6 +93,7 @@ export default function TakeActionButton({
   approvalState,
   approvalProcessName,
   approvalType,
+  isLastWorkflowStage = false,
 }: TakeActionButtonProps) {
   const queryClient = useQueryClient();
   const [approvalsOpen, setApprovalsOpen] = useState(false);
@@ -239,6 +241,7 @@ export default function TakeActionButton({
         approvalState={approvalState}
         approvalProcessName={approvalProcessName}
         approvalType={approvalType}
+        isLastWorkflowStage={isLastWorkflowStage}
       />
 
       <ConfirmationModal

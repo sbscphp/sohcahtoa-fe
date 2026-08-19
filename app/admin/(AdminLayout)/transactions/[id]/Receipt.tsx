@@ -32,6 +32,7 @@ interface ReceiptProps {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  isLastWorkflowStage?: boolean;
 }
 
 const loadingFields = [
@@ -54,6 +55,7 @@ export default function Receipt({
   approvalState,
   approvalProcessName,
   approvalType,
+  isLastWorkflowStage = false,
 }: ReceiptProps) {
   const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
   const EmptyImg = <Image src={Empty} alt="No Details Available" />;
@@ -127,6 +129,7 @@ export default function Receipt({
           approvalState={approvalState}
           approvalProcessName={approvalProcessName}
           approvalType={approvalType}
+          isLastWorkflowStage={isLastWorkflowStage}
         />
       </Group>
 

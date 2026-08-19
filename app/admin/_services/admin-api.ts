@@ -2265,7 +2265,7 @@ export const adminApi = {
         data
       ),
 
-    approve: (id: string, data?: { notes?: string }) =>
+    approve: (id: string, data?: { notes?: string; sessionId?: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.approve(id),
         data
