@@ -35,7 +35,7 @@ export default function CardTransactionsCard() {
       />
       <div>
         {CARD_TRANSACTIONS.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-500">No card transactions yet</p>
+          <p className="py-8 text-center text-sm text-gray-500">No card transactions yet.</p>
         ) : (
           CARD_TRANSACTIONS.map((tx) => (
             <TransactionListItem
