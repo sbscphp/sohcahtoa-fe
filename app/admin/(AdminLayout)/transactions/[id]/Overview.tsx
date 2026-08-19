@@ -8,13 +8,14 @@ import EmptyState from "@/app/admin/_components/EmptyState";
 import Empty from "../../../_components/assets/EmptyTrans.png";
 import Image from "next/image";
 import Link from "next/link";
-import type {
-  TransactionActionDocumentViewModel,
-  TransactionOverviewViewModel,
-  TransactionWorkflowHistoryItemViewModel,
-  PendingWorkflowStageViewModel,
-  OverviewSection,
-  OverviewField,
+import {
+  isViewableDocumentUrl,
+  type TransactionActionDocumentViewModel,
+  type TransactionOverviewViewModel,
+  type TransactionWorkflowHistoryItemViewModel,
+  type PendingWorkflowStageViewModel,
+  type OverviewSection,
+  type OverviewField,
 } from "./hooks/useTransactionDetails";
 
 interface OverviewProps {
@@ -64,6 +65,32 @@ const loadingSections: OverviewSection[] = [
     ],
   },
 ];
+
+function renderOverviewFieldValue(item: OverviewField) {
+  if (item.route) {
+    return (
+      <Link
+        href={item.route}
+        className="hover:text-[#DD4F05] underline break-all"
+      >
+        {item.value}
+      </Link>
+    );
+  }
+  if (item.href && isViewableDocumentUrl(item.href)) {
+    return (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:text-[#DD4F05] underline break-all"
+      >
+        {item.value}
+      </a>
+    );
+  }
+  return item.value;
+}
 
 export default function Overview({
   transaction,
@@ -138,27 +165,7 @@ export default function Overview({
             <DetailItem
               key={item.label}
               label={item.label}
-              value={
-                item.route ? (
-                  <Link
-                    href={item.route}
-                    className="hover:text-[#DD4F05] underline break-all"
-                  >
-                    {item.value}
-                  </Link>
-                ) : item.href ? (
-                  <a
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-[#DD4F05] underline break-all"
-                  >
-                    {item.value}
-                  </a>
-                ) : (
-                  item.value
-                )
-              }
+              value={renderOverviewFieldValue(item)}
               loading={isLoading}
             />
           ))}
@@ -176,27 +183,7 @@ export default function Overview({
               <DetailItem
                 key={`${section.title}-${item.label}`}
                 label={item.label}
-                value={
-                  item.route ? (
-                    <Link
-                      href={item.route}
-                      className="hover:text-[#DD4F05] underline break-all"
-                    >
-                      {item.value}
-                    </Link>
-                  ) : item.href ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-[#DD4F05] underline break-all"
-                    >
-                      {item.value}
-                    </a>
-                  ) : (
-                    item.value
-                  )
-                }
+                value={renderOverviewFieldValue(item)}
                 loading={isLoading}
               />
             ))}

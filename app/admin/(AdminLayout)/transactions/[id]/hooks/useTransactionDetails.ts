@@ -72,6 +72,7 @@ export interface TransactionActionDocumentViewModel {
   url: string;
   documentType: string;
   verificationStatus: string;
+  signatureText?: string;
 }
 
 export interface TransactionWorkflowHistoryItemViewModel {
@@ -206,6 +207,22 @@ function pickString(...values: unknown[]): string {
       return String(value);
   }
   return "--";
+}
+
+export function isViewableDocumentUrl(url: unknown): boolean {
+  const source = typeof url === "string" ? url.trim() : "";
+  return /^https?:\/\//i.test(source);
+}
+
+function getDocumentSignatureText(doc: Record<string, unknown>): string {
+  const metadata = asRecord(doc.metadata);
+  const text = pickString(metadata.signatureText);
+  return text === "--" ? "" : text;
+}
+
+function isSignatureOnlyDocument(doc: Record<string, unknown>): boolean {
+  const url = pickString(doc.fileUrl, doc.url);
+  return !isViewableDocumentUrl(url) && Boolean(getDocumentSignatureText(doc));
 }
 
 function formatEnum(value: unknown): string {
@@ -531,12 +548,30 @@ function buildOverview(
   const documentFields: OverviewField[] = Array.isArray(raw.documents)
     ? (raw.documents as Record<string, unknown>[])
       .map((d) => asRecord(d))
-      .filter((d) => pickString(d.fileUrl) !== "--")
-      .map((d) => ({
-        label: formatEnum(d.documentType),
-        value: pickString(d.fileName, "View Document"),
-        href: pickString(d.fileUrl),
-      }))
+      .filter((d) => {
+        const url = pickString(d.fileUrl);
+        return url !== "--" || Boolean(getDocumentSignatureText(d));
+      })
+      .map((d) => {
+        const url = pickString(d.fileUrl);
+        if (isSignatureOnlyDocument(d)) {
+          return {
+            label: formatEnum(d.documentType),
+            value: getDocumentSignatureText(d),
+          };
+        }
+        if (isViewableDocumentUrl(url)) {
+          return {
+            label: formatEnum(d.documentType),
+            value: pickString(d.fileName, "View Document"),
+            href: url,
+          };
+        }
+        return {
+          label: formatEnum(d.documentType),
+          value: pickString(d.fileName, "View Document"),
+        };
+      })
     : [];
 
   const baseTitle =
@@ -815,8 +850,11 @@ function extractActionDocuments(
     .map((item) => asRecord(item))
     .map((source): TransactionActionDocumentViewModel | null => {
       const id = pickString(source.id, source.documentId, source.uuid);
-      const url = pickString(source.fileUrl, source.url);
-      if (id === "--" || url === "--") return null;
+      const rawUrl = pickString(source.fileUrl, source.url);
+      const url = isViewableDocumentUrl(rawUrl) ? rawUrl : "";
+      const signatureText = getDocumentSignatureText(source) || undefined;
+      if (id === "--") return null;
+      if (!url && !signatureText) return null;
 
       return {
         id,
@@ -836,6 +874,7 @@ function extractActionDocuments(
           formatEnum(source.status),
           "No Action",
         ),
+        signatureText,
       };
     })
     .filter((item): item is TransactionActionDocumentViewModel =>
