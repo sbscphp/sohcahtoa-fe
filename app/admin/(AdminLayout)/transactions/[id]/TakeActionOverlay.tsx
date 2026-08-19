@@ -113,7 +113,7 @@ const REVIEW_GROUP_LABELS: Record<WorkflowReviewGroupKey, string> = {
 const REVIEW_GROUP_ACTIONS: Record<WorkflowReviewGroupKey, Set<string>> = {
   COMPLIANCE: new Set(["TRANSACTION_STAGE_APPROVED", "TRANSACTION_STAGE_REJECTED", "TRANSACTION_APPROVED", "TRANSACTION_REJECTED"]),
   OPERATIONS: new Set(["DISBURSEMENT_STAGE_APPROVED", "DISBURSEMENT_STAGE_REJECTED", "DISBURSEMENT_APPROVED", "DISBURSEMENT_REJECTED"]),
-  REFUND: new Set(["REFUND_APPROVED", "REFUND_REJECTED"]),
+  REFUND: new Set(["REFUND_STAGE_APPROVED", "REFUND_STAGE_REJECTED", "REFUND_APPROVED", "REFUND_REJECTED"]),
 };
 
 function getReviewGroupKey(action: string): WorkflowReviewGroupKey | null {
@@ -210,7 +210,7 @@ function buildWorkflowSections(
       pendingSection = {
         key: "PENDING",
         // No matching workflow items to relate this to, so skip the redundant heading.
-        label: null,
+        label: pendingWorkflowStages.length >= 2 ? REVIEW_GROUP_LABELS[pendingGroupKey] : null,
         items: [],
         stages: pendingWorkflowStages,
         sortTime: Number.POSITIVE_INFINITY,
