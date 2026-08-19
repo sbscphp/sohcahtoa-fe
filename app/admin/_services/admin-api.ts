@@ -2265,7 +2265,7 @@ export const adminApi = {
         data
       ),
 
-    approve: (id: string, data?: { notes?: string }) =>
+    approve: (id: string, data?: { notes?: string; sessionId?: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.approve(id),
         data
@@ -2337,10 +2337,10 @@ export const adminApi = {
         {}
       ),
 
-    confirmDisbursement: (id: string) =>
+    confirmDisbursement: (id: string, data: { sessionId: string }) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.transactions.confirmDisbursement(id),
-        {}
+        data
       ),
 
     downloadReceipt: async (transactionId: string): Promise<ApiDownloadResponse> => {
