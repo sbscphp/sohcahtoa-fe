@@ -8,6 +8,7 @@ import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput"
 import { getStatusBadge, normalizeStatus } from "@/app/(customer)/_utils/status-badge";
 import ResubmitSuccessModal from "./ResubmitSuccessModal";
 import { MAX_DOCUMENT_FILE_BYTES, MAX_DOCUMENT_FILE_MB } from "@/app/(customer)/_utils/document-upload";
+import { isRealFileUrl } from "@/app/utils/helper/isRealFileUrl";
 
 export function isRequiresManualReviewStatus(status: string): boolean {
   return normalizeStatus(status) === "requires_manual_review";
@@ -201,7 +202,7 @@ export default function DocumentDetail({
                 const showUploadField =
                   allowMissingDocumentUpload &&
                   (canResubmitStatus(doc.status) || Boolean(doc.needsUpload));
-                const canOpenExisting = Boolean(doc.url?.trim());
+                const canOpenExisting = isRealFileUrl(doc.url);
                 const subtitle = doc.needsUpload
                   ? "No file uploaded yet"
                   : (doc.fileName ?? doc.size);

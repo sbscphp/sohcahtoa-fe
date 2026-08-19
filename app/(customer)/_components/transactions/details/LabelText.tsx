@@ -107,23 +107,30 @@ export default function LabelText({
       );
     }
     if (doc) {
-      const handleClick = doc.url && doc.onView ? doc.onView : doc.onDownload;
-      return (
-        <button
-          type="button"
-          onClick={handleClick}
-          className="flex min-w-0 w-full max-w-full items-center gap-2 text-left hover:opacity-80 transition-opacity"
-          aria-label={doc.url && doc.onView ? "View document" : "Download document"}
-          title={doc.filename}
-        >
-          <span className={`${valueClass} min-w-0 truncate`}>{doc.filename}</span>
-          {doc.url && doc.onView ? (
-            <FileText className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
-          ) : (
-            <Download className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
-          )}
-        </button>
-      );
+      const hasView = doc.url && doc.onView;
+      const hasAction = hasView || doc.onDownload;
+      const icon = hasView
+        ? <FileText className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
+        : doc.onDownload
+          ? <Download className="shrink-0 w-4 h-4 text-[#98A2B3]" aria-hidden />
+          : null;
+
+      if (hasAction) {
+        return (
+          <button
+            type="button"
+            onClick={hasView ? doc.onView : doc.onDownload}
+            className="flex min-w-0 w-full max-w-full items-center gap-2 text-left hover:opacity-80 transition-opacity"
+            aria-label={hasView ? "View document" : "Download document"}
+            title={doc.filename}
+          >
+            <span className={`${valueClass} min-w-0 truncate`}>{doc.filename}</span>
+            {icon}
+          </button>
+        );
+      }
+
+      return <span className={`${valueClass} block max-w-full truncate`} title={doc.filename}>{doc.filename}</span>;
     }
     if (multiline !== undefined) {
       return (

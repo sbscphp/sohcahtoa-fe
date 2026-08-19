@@ -1057,6 +1057,7 @@ export interface TransactionDetailData {
   exchangeRate: string | null;
   disbursementMethod: string | null;
   disbursementOption?: DisbursementOption | null;
+  digitalSignature?: string | null;
   formAId?: string | null;
   taxClearanceNumber?: string | null;
   personalInfo?: {
