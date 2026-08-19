@@ -621,9 +621,10 @@ export default function EditWorkflowPage() {
                   onChange={(val) => form.setFieldValue("minAmount", typeof val === "number" ? val : "")}
                   min={0}
                   radius="md"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
                   classNames={{
                     label: "text-sm font-medium text-gray-900 mb-1",
-                    description: "text-xs text-gray-500 mb-1",
+                    description: "text-xs text-gray-500 mt-1",
                   }}
                 />
                 <NumberInput
@@ -635,9 +636,10 @@ export default function EditWorkflowPage() {
                   onChange={(val) => form.setFieldValue("maxAmount", typeof val === "number" ? val : "")}
                   min={0}
                   radius="md"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
                   classNames={{
                     label: "text-sm font-medium text-gray-900 mb-1",
-                    description: "text-xs text-gray-500 mb-1",
+                    description: "text-xs text-gray-500 mt-1",
                   }}
                   error={form.errors.maxAmount}
                 />
