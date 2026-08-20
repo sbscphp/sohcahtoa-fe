@@ -1450,6 +1450,7 @@ export default function TakeActionOverlay({
         onClose={closeConfirmDisbursementFlow}
         onConfirm={submitConfirmDisbursement}
         isLoading={confirmDisbursementMutation.isPending}
+        zIndex={4000}
       />
 
       <SuccessModal
