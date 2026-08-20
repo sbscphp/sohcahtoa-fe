@@ -15,6 +15,7 @@ import type {
   PendingWorkflowStageViewModel,
 } from "../(AdminLayout)/transactions/[id]/hooks/useTransactionDetails";
 import { ConfirmationModal } from "./ConfirmationModal";
+import { ConfirmDisbursementModal } from "./ConfirmDisbursementModal";
 import { SuccessModal } from "./SuccessModal";
 
 type DisbursementConfirmType = "initiate" | "confirm";
@@ -50,6 +51,7 @@ interface TakeActionButtonProps {
   approvalState?: string;
   approvalProcessName?: string;
   approvalType?: string;
+  isLastWorkflowStage?: boolean;
 }
 
 const INITIATE_CONFIRM = {
@@ -57,13 +59,6 @@ const INITIATE_CONFIRM = {
   message:
     "Are you sure you want to initiate disbursement for this transaction?",
   primaryButtonText: "Yes, Initiate Disbursement",
-} as const;
-
-const CONFIRM_DISBURSEMENT = {
-  title: "Confirm Disbursement?",
-  message:
-    "Are you sure you want to confirm disbursement for this transaction? This action can not be undone.",
-  primaryButtonText: "Yes, Confirm Disbursement",
 } as const;
 
 const INITIATE_SUCCESS = {
@@ -98,6 +93,7 @@ export default function TakeActionButton({
   approvalState,
   approvalProcessName,
   approvalType,
+  isLastWorkflowStage = false,
 }: TakeActionButtonProps) {
   const queryClient = useQueryClient();
   const [approvalsOpen, setApprovalsOpen] = useState(false);
@@ -150,7 +146,8 @@ export default function TakeActionButton({
   );
 
   const confirmDisbursementMutation = useCreateData(
-    (id: string) => adminApi.transactions.confirmDisbursement(id),
+    ({ id, sessionId }: { id: string; sessionId: string }) =>
+      adminApi.transactions.confirmDisbursement(id, { sessionId }),
     {
       onSuccess: async () => {
         await invalidateTransactionQueries();
@@ -176,13 +173,14 @@ export default function TakeActionButton({
     onClose?.();
   };
 
-  const handleConfirmPrimary = () => {
-    if (!transactionId || !confirmType || isConfirmLoading) return;
-    if (confirmType === "initiate") {
-      initiateDisbursementMutation.mutate(transactionId);
-      return;
-    }
-    confirmDisbursementMutation.mutate(transactionId);
+  const handleInitiateConfirm = () => {
+    if (!transactionId || isConfirmLoading) return;
+    initiateDisbursementMutation.mutate(transactionId);
+  };
+
+  const handleConfirmDisbursement = (sessionId: string) => {
+    if (!transactionId || isConfirmLoading) return;
+    confirmDisbursementMutation.mutate({ id: transactionId, sessionId });
   };
 
   const handleCloseConfirm = () => {
@@ -193,13 +191,6 @@ export default function TakeActionButton({
   const handleCloseSuccess = () => {
     setSuccessType(null);
   };
-
-  const confirmProps =
-    confirmType === "initiate"
-      ? INITIATE_CONFIRM
-      : confirmType === "confirm"
-        ? CONFIRM_DISBURSEMENT
-        : null;
 
   const successProps =
     successType === "initiate"
@@ -250,19 +241,25 @@ export default function TakeActionButton({
         approvalState={approvalState}
         approvalProcessName={approvalProcessName}
         approvalType={approvalType}
+        isLastWorkflowStage={isLastWorkflowStage}
       />
 
-      {confirmProps && (
-        <ConfirmationModal
-          opened={confirmType !== null}
-          onClose={handleCloseConfirm}
-          title={confirmProps.title}
-          message={confirmProps.message}
-          primaryButtonText={confirmProps.primaryButtonText}
-          onPrimary={handleConfirmPrimary}
-          loading={isConfirmLoading}
-        />
-      )}
+      <ConfirmationModal
+        opened={confirmType === "initiate"}
+        onClose={handleCloseConfirm}
+        title={INITIATE_CONFIRM.title}
+        message={INITIATE_CONFIRM.message}
+        primaryButtonText={INITIATE_CONFIRM.primaryButtonText}
+        onPrimary={handleInitiateConfirm}
+        loading={initiateDisbursementMutation.isPending}
+      />
+
+      <ConfirmDisbursementModal
+        opened={confirmType === "confirm"}
+        onClose={handleCloseConfirm}
+        onConfirm={handleConfirmDisbursement}
+        isLoading={confirmDisbursementMutation.isPending}
+      />
 
       {successProps && (
         <SuccessModal

@@ -42,11 +42,11 @@ export const ALL_WORKFLOW_TYPE_OPTIONS = [
 export const RATE_WORKFLOW_TYPE_OPTIONS = ["Approval"] as const;
 export const TRANSACTION_WORKFLOW_TYPE_OPTIONS = ["Compliance Review"] as const;
 export const DISBURSEMENT_WORKFLOW_TYPE_OPTIONS = [
-  "Disbursement Confirmation",
-  "Operations Approval",
   "Operations Review",
+  "Operations Approval",
+  "Disbursement Confirmation",
 ] as const;
-export const REFUND_WORKFLOW_TYPE_OPTIONS = ["Refund Approval"] as const;
+export const REFUND_WORKFLOW_TYPE_OPTIONS = ["Refund Review", "Refund Approval", "Refund Confirmation"] as const;
 
 export function getAllowedWorkflowTypes(approvalType: string): string[] {
   switch (approvalType) {
