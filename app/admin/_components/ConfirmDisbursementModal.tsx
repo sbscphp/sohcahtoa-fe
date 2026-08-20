@@ -10,6 +10,7 @@ interface ConfirmDisbursementModalProps {
   onClose: () => void;
   onConfirm: (sessionId: string) => void;
   isLoading?: boolean;
+  zIndex?: number;
 }
 
 export function ConfirmDisbursementModal({
@@ -17,6 +18,7 @@ export function ConfirmDisbursementModal({
   onClose,
   onConfirm,
   isLoading = false,
+  zIndex = 4000,
 }: ConfirmDisbursementModalProps) {
   const [sessionId, setSessionId] = useState("");
 
@@ -52,6 +54,7 @@ export function ConfirmDisbursementModal({
       closeOnClickOutside={!isLoading}
       closeOnEscape={!isLoading}
       overlayProps={{ opacity: 0.3, blur: 2 }}
+      zIndex={zIndex}
     >
       <div className="flex flex-col items-center space-y-5">
         <div className="flex items-center justify-center">

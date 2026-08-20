@@ -24,6 +24,7 @@ import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
 import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { ConfirmDisbursementModal } from "@/app/admin/_components/ConfirmDisbursementModal";
 import { adminApi } from "@/app/admin/_services/admin-api";
 import {
   isDisbursementApprovalType,
@@ -42,6 +43,8 @@ interface TakeActionOverlayProps {
   opened: boolean;
   onClose: () => void;
   transactionId?: string;
+  /** Raw workflow stage code; used to gate the Confirm Disbursement footer action. */
+  workflowStage?: string;
   /** Tab header status (e.g. from overview/receipt/settlement); hides transaction-level footer actions when Approved. */
   transactionStatusLabel?: string;
   documents?: TransactionActionDocumentViewModel[];
@@ -55,6 +58,8 @@ interface TakeActionOverlayProps {
   approvalType?: string;
   isLastWorkflowStage?: boolean;
   pendingWorkflowStages?: PendingWorkflowStageViewModel[];
+  /** All stages of the disbursement approval workflow, used to preview "Operations Review" before/after it is the active process. */
+  disbursementWorkflowStages?: PendingWorkflowStageViewModel[];
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -141,15 +146,18 @@ interface WorkflowSection {
 }
 
 /**
- * Groups general workflow-history items by review type (compliance/operations/refund),
+ * Groups review-related workflow-history items by review type (compliance/operations/refund),
  * merges pending workflow stages into their matching group when possible, and orders
  * sections chronologically (by each section's earliest item) with the pending section
- * always rendered last.
+ * always rendered last. Expects `groupedWorkflowItems` to already be filtered to items
+ * that match a review group (see `getReviewGroupKey`); anything else belongs in the
+ * Activities tab instead.
  */
 function buildWorkflowSections(
-  generalWorkflowItems: TransactionWorkflowHistoryItemViewModel[],
+  groupedWorkflowItems: TransactionWorkflowHistoryItemViewModel[],
   pendingWorkflowStages: PendingWorkflowStageViewModel[],
   approvalType?: string,
+  disbursementWorkflowStages: PendingWorkflowStageViewModel[] = [],
 ): WorkflowSection[] {
   const groupBuckets: Record<
     WorkflowReviewGroupKey,
@@ -162,21 +170,14 @@ function buildWorkflowSections(
 
   const sections: WorkflowSection[] = [];
 
-  generalWorkflowItems.forEach((item) => {
+  groupedWorkflowItems.forEach((item) => {
     const groupKey = getReviewGroupKey(item.action);
     if (groupKey) {
       groupBuckets[groupKey].push(item);
-      return;
     }
-    sections.push({
-      key: `item-${item.id}`,
-      label: null,
-      items: [item],
-      stages: [],
-      sortTime: item.timestampMs,
-      isPendingSection: false,
-    });
   });
+
+  const completedOperationsCount = groupBuckets.OPERATIONS.length;
 
   (Object.keys(groupBuckets) as WorkflowReviewGroupKey[]).forEach((groupKey) => {
     const items = groupBuckets[groupKey];
@@ -184,13 +185,52 @@ function buildWorkflowSections(
     sections.push({
       key: groupKey,
       // Only worth a heading once there are 2+ related items to connect.
-      label: items.length >= 2 ? REVIEW_GROUP_LABELS[groupKey] : null,
+      label: items.length >= 1 ? REVIEW_GROUP_LABELS[groupKey] : null,
       items,
       stages: [],
       sortTime: items[0].timestampMs,
       isPendingSection: false,
     });
   });
+
+  sections.sort((a, b) => a.sortTime - b.sortTime);
+
+  // Surface "Operations Review" at all times (using the always-on disbursement approval
+  // process) whenever it isn't already the live/active approval process — the active-process
+  // case is already covered by the pendingWorkflowStages merge below. Only the stages that
+  // haven't yet been decided on (per workflowLine history) are shown, so an abandoned
+  // disbursement workflow still displays its full remaining structure.
+  if (!isDisbursementApprovalType(approvalType) && disbursementWorkflowStages.length > 0) {
+    const operationsPreviewStages = disbursementWorkflowStages.slice(
+      completedOperationsCount,
+    );
+    const operationsSectionIndex = sections.findIndex(
+      (section) => section.key === "OPERATIONS",
+    );
+
+    if (operationsSectionIndex !== -1) {
+      // Abandoned workflow: history already exists for Operations Review, chronological
+      // position is already correct, just attach whatever stages are still pending.
+      sections[operationsSectionIndex].stages = operationsPreviewStages;
+      sections[operationsSectionIndex].isPendingSection =
+        operationsPreviewStages.length > 0;
+    } else if (operationsPreviewStages.length > 0) {
+      // Never started: insert right after Compliance Review (or at the front) to keep the
+      // fixed Compliance -> Operations -> Refund order, since it has no real timestamp yet.
+      const complianceIndex = sections.findIndex(
+        (section) => section.key === "COMPLIANCE",
+      );
+      const insertIndex = complianceIndex === -1 ? 0 : complianceIndex + 1;
+      sections.splice(insertIndex, 0, {
+        key: "OPERATIONS",
+        label: REVIEW_GROUP_LABELS.OPERATIONS,
+        items: [],
+        stages: operationsPreviewStages,
+        sortTime: Number.POSITIVE_INFINITY,
+        isPendingSection: true,
+      });
+    }
+  }
 
   let pendingSection: WorkflowSection | null = null;
 
@@ -211,7 +251,7 @@ function buildWorkflowSections(
       pendingSection = {
         key: "PENDING",
         // No matching workflow items to relate this to, so skip the redundant heading.
-        label: pendingWorkflowStages.length >= 2 ? REVIEW_GROUP_LABELS[pendingGroupKey] : null,
+        label: pendingWorkflowStages.length >= 1 ? REVIEW_GROUP_LABELS[pendingGroupKey] : null,
         items: [],
         stages: pendingWorkflowStages,
         sortTime: Number.POSITIVE_INFINITY,
@@ -219,8 +259,6 @@ function buildWorkflowSections(
       };
     }
   }
-
-  sections.sort((a, b) => a.sortTime - b.sortTime);
 
   if (pendingSection) {
     sections.push(pendingSection);
@@ -231,24 +269,35 @@ function buildWorkflowSections(
 
 function renderWorkflowHistoryItemCard(
   item: TransactionWorkflowHistoryItemViewModel,
+  groupLabel?: string,
 ) {
+  // When rendered inside a Workflow Line review-group section, headline with the section's
+  // label (e.g. "Operations Review") instead of the actor, matching the pending-stage card
+  // structure; the actor still shows up on the line below. Activities/Documentation tab
+  // callers omit `groupLabel` and keep the original actor-centric look.
+  const headline = groupLabel ?? item.actorLabel;
+  const groupTypeLabel = groupLabel?.replace(/\s*Review$/i, "");
+  const subtitle = groupLabel
+    ? `${groupTypeLabel} Approval • ${item.actorLabel}`
+    : item.documentType === "--"
+      ? item.actionLabel
+      : `${item.documentType} • ${item.actionLabel}`;
+
   return (
     <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
       {/* Header Row */}
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group align="flex-start" gap="sm" wrap="nowrap">
           <Avatar radius="xl" size="md" color="#F5B89C">
-            {item.actorLabel.slice(0, 2).toUpperCase()}
+            {headline.slice(0, 2).toUpperCase()}
           </Avatar>
 
           <div className="min-w-0 space-y-1">
             <Text fw={500} className="text-body-heading-300 break-all">
-              {item.actorLabel}
+              {headline}
             </Text>
             <Text size="xs" c="dimmed" className="text-body-text-50!">
-              {item.documentType === "--"
-                ? item.actionLabel
-                : `${item.documentType} • ${item.actionLabel}`}
+              {subtitle}
             </Text>
 
             {/* Date & Time */}
@@ -288,23 +337,27 @@ function renderWorkflowHistoryItemCard(
 
 function renderPendingStageCard(
   stage: PendingWorkflowStageViewModel,
-  approvalType?: string,
+  groupLabel: string,
 ) {
+  // `stage.name` from the API is a sub-stage name (e.g. "Operations Approval"), not the
+  // review-group name, so the headline is always derived from the section it belongs to.
+  const groupTypeLabel = groupLabel.replace(/\s*Review$/i, "");
+
   return (
     <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
       {/* Header Row */}
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group align="flex-start" gap="sm" wrap="nowrap">
           <Avatar radius="xl" size="md" color="#B0B0B0">
-            {stage.stageName.slice(0, 2).toUpperCase()}
+            {groupLabel.slice(0, 2).toUpperCase()}
           </Avatar>
 
           <div className="min-w-0 space-y-1">
             <Text fw={500} className="text-body-heading-300 break-all">
-              {stage.stageName}
+              {groupLabel}
             </Text>
             <Text size="xs" c="dimmed" className="text-body-text-50!">
-              {toSentenceCase(approvalType) + " Approval • "}
+              {groupTypeLabel + " Approval • "}
               {stage.assigneeName}
             </Text>
 
@@ -340,6 +393,7 @@ export default function TakeActionOverlay({
   opened,
   onClose,
   transactionId,
+  workflowStage,
   transactionStatusLabel,
   documents = [],
   workflowHistory = [],
@@ -350,9 +404,12 @@ export default function TakeActionOverlay({
   approvalType,
   isLastWorkflowStage = false,
   pendingWorkflowStages = [],
+  disbursementWorkflowStages = [],
 }: TakeActionOverlayProps) {
   const isRefundWorkflow = isRefundApprovalType(approvalType);
   const isDisbursementWorkflow = isDisbursementApprovalType(approvalType);
+  const canConfirmDisbursement =
+    workflowStage?.trim().toUpperCase() === "DISBURSEMENT_APPROVED";
   // const router = useRouter();
   const hideTransactionFooter =
     !isTransationActionable(transactionStatusLabel) ||
@@ -384,6 +441,10 @@ export default function TakeActionOverlay({
     useState(false);
   const [transactionRejectOpen, setTransactionRejectOpen] = useState(false);
   const [transactionRejectSuccessOpen, setTransactionRejectSuccessOpen] =
+    useState(false);
+
+  const [confirmDisbursementOpen, setConfirmDisbursementOpen] = useState(false);
+  const [confirmDisbursementSuccessOpen, setConfirmDisbursementSuccessOpen] =
     useState(false);
 
   // Ref attached to the open Popover dropdown so we can exclude it from outside-click detection
@@ -424,6 +485,18 @@ export default function TakeActionOverlay({
     await queryClient.invalidateQueries({
       queryKey: adminKeys.transactions.detail(transactionId),
     });
+  };
+
+  const invalidateTransactionQueries = async () => {
+    if (!transactionId) return;
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.transactions.detail(transactionId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.transactions.lists(),
+      }),
+    ]);
   };
 
   const approveDocumentMutation = useCreateData(
@@ -541,6 +614,20 @@ export default function TakeActionOverlay({
     }
   );
 
+  const confirmDisbursementMutation = useCreateData(
+    ({ id, sessionId }: { id: string; sessionId: string }) =>
+      adminApi.transactions.confirmDisbursement(id, { sessionId }),
+    {
+      onSuccess: async () => {
+        await invalidateTransactionQueries();
+        setConfirmDisbursementOpen(false);
+        setConfirmDisbursementSuccessOpen(true);
+      },
+      onError: (error) =>
+        handleMutationError(error, "Unable to confirm disbursement."),
+    }
+  );
+
   const openCompleteApprovalFlow = () => {
     if (!selectedDocumentId) return;
     setTakeActionPopoverKey(null);
@@ -648,6 +735,20 @@ export default function TakeActionOverlay({
     });
   };
 
+  const openConfirmDisbursementFlow = () => {
+    setConfirmDisbursementOpen(true);
+  };
+
+  const closeConfirmDisbursementFlow = () => {
+    if (confirmDisbursementMutation.isPending) return;
+    setConfirmDisbursementOpen(false);
+  };
+
+  const submitConfirmDisbursement = (sessionId: string) => {
+    if (!transactionId || confirmDisbursementMutation.isPending) return;
+    confirmDisbursementMutation.mutate({ id: transactionId, sessionId });
+  };
+
   // const navigateToTransactionsList = () => {
   //   router.push(adminRoutes.adminTransactions());
   //   setApprovalSuccessOpen(false);
@@ -669,10 +770,19 @@ export default function TakeActionOverlay({
   const generalWorkflowItems = workflowHistory.filter(
     (item) => !isDocumentWorkflowItem(item)
   );
+  // Only review-related actions (compliance/operations/refund) stay in the Workflow
+  // Line tab; everything else surfaces in the Activities tab instead.
+  const groupedWorkflowItems = generalWorkflowItems.filter(
+    (item) => getReviewGroupKey(item.action) !== null
+  );
+  const activityItems = generalWorkflowItems
+    .filter((item) => getReviewGroupKey(item.action) === null)
+    .sort((a, b) => a.timestampMs - b.timestampMs);
   const workflowSections = buildWorkflowSections(
-    generalWorkflowItems,
+    groupedWorkflowItems,
     pendingWorkflowStages,
-    approvalType
+    approvalType,
+    disbursementWorkflowStages
   );
 
   return (
@@ -730,6 +840,9 @@ export default function TakeActionOverlay({
                 <AdminTabButton value="receipt">
                   Documentation
                 </AdminTabButton>
+                <AdminTabButton value="activities">
+                  Activities
+                </AdminTabButton>
               </Tabs.List>
 
               <Tabs.Panel value="overview" className="flex-1 overflow-y-auto pb-4 pt-4">
@@ -737,7 +850,7 @@ export default function TakeActionOverlay({
                   <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
                   <Text size="sm" className="text-body-text-200">{approvalState}</Text>
                 </Flex>
-                {generalWorkflowItems.length === 0 && pendingWorkflowStages.length === 0 ? (
+                {workflowSections.length === 0 ? (
                   <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
                     <Text fw={600} className="text-body-heading-300">
                       No workflow history available
@@ -749,14 +862,15 @@ export default function TakeActionOverlay({
                 ) : (
                   <div className="space-y-5">
                     {workflowSections.map((section) => {
+                      const groupLabel = section.label ?? undefined;
                       const cards: { key: string; node: React.ReactNode }[] = [
                         ...section.items.map((item) => ({
                           key: item.id,
-                          node: renderWorkflowHistoryItemCard(item),
+                          node: renderWorkflowHistoryItemCard(item, groupLabel),
                         })),
                         ...section.stages.map((stage) => ({
                           key: stage.stageId,
-                          node: renderPendingStageCard(stage, approvalType),
+                          node: renderPendingStageCard(stage, groupLabel ?? ""),
                         })),
                       ];
 
@@ -1038,136 +1152,176 @@ export default function TakeActionOverlay({
                   </>
                 )}
               </Tabs.Panel>
+
+              <Tabs.Panel value="activities" className="flex-1 overflow-y-auto pb-4 pt-4">
+                {activityItems.length === 0 ? (
+                  <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
+                    <Text fw={600} className="text-body-heading-300">
+                      No activity recorded
+                    </Text>
+                    <Text size="sm" className="text-body-text-200 mt-1">
+                      No additional activity has been recorded for this transaction yet.
+                    </Text>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {activityItems.map((item, index) => (
+                      <React.Fragment key={item.id}>
+                        {renderWorkflowHistoryItemCard(item)}
+
+                        {/* Connector */}
+                        {index < activityItems.length - 1 && (
+                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              </Tabs.Panel>
             </Tabs>
 
           </div>
 
           {/* Sticky Footer */}
-          {(!hideTransactionFooter && isApprovalOfficer) && (
+          {(canConfirmDisbursement || (!hideTransactionFooter && isApprovalOfficer)) && (
             <div className="sticky bottom-0 left-0 right-0 z-10 py-5 px-4 -mx-4 -mb-4 mt-auto border-t border-[#E1E0E0] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
               <Group justify="center" gap="md">
-                <Button
-                  color="#DD4F05"
-                  radius="xl"
-                  size="lg"
-                  className="font-medium! text-sm!"
-                  onClick={openTransactionCompleteReview}
-                >
-                  {isDisbursementWorkflow
-                    ? "Complete Disbursement Review"
-                    : isRefundWorkflow
-                      ? "Complete Refund Review"
-                      : "Complete Review"}
-                </Button>
-                <Popover
-                  width={360}
-                  position="top-end"
-                  shadow="md"
-                  withinPortal
-                  zIndex={3200}
-                  closeOnClickOutside={true}
-                  closeOnEscape={true}
-                  opened={transactionTakeActionOpen}
-                  onClose={() => setTransactionTakeActionOpen(false)}
-                >
-                  <Popover.Target>
+                {canConfirmDisbursement ? (
+                  <Button
+                    color="#DD4F05"
+                    radius="xl"
+                    size="lg"
+                    className="font-medium! text-sm!"
+                    onClick={openConfirmDisbursementFlow}
+                  >
+                    Confirm Disbursement
+                  </Button>
+                ) : (
+                  <>
                     <Button
-                      variant="outline"
+                      color="#DD4F05"
                       radius="xl"
                       size="lg"
-                      color="dark"
                       className="font-medium! text-sm!"
-                      rightSection={<ChevronDown size={16} />}
-                      onClick={() =>
-                        setTransactionTakeActionOpen((opened) => !opened)
-                      }
+                      onClick={openTransactionCompleteReview}
                     >
-                      Take Action
+                      {isDisbursementWorkflow
+                        ? "Complete Disbursement Review"
+                        : isRefundWorkflow
+                          ? "Complete Refund Review"
+                          : "Complete Review"}
                     </Button>
-                  </Popover.Target>
-
-                  <Popover.Dropdown
-                    p={0}
-                    className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
-                  >
-                    <div className="px-5 py-4 border-b border-[#EAECF0]">
-                      <Text fw={700} className="text-body-heading-300">
-                        Take Action
-                      </Text>
-                      <Text size="sm" className="text-body-text-200! mt-0.5">
-                        Take action with ease
-                      </Text>
-                    </div>
-
-                    <div className="divide-y divide-[#EAECF0]">
-                      {!isDisbursementWorkflow && (
-                        <button
-                          type="button"
-                          className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                          onClick={openRequestMoreInfo}
+                    <Popover
+                      width={360}
+                      position="top-end"
+                      shadow="md"
+                      withinPortal
+                      zIndex={3200}
+                      closeOnClickOutside={true}
+                      closeOnEscape={true}
+                      opened={transactionTakeActionOpen}
+                      onClose={() => setTransactionTakeActionOpen(false)}
+                    >
+                      <Popover.Target>
+                        <Button
+                          variant="outline"
+                          radius="xl"
+                          size="lg"
+                          color="dark"
+                          className="font-medium! text-sm!"
+                          rightSection={<ChevronDown size={16} />}
+                          onClick={() =>
+                            setTransactionTakeActionOpen((opened) => !opened)
+                          }
                         >
-                          <span
-                            className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
-                            style={{
-                              borderRadius: "40% 60% 70% 30% / 60% 40% 60% 40%",
-                            }}
-                          >
-                            <Info
-                              className="h-5 w-5 text-[#DD4F05]"
-                              strokeWidth={2.5}
-                            />
-                          </span>
-                          <span className="min-w-0 pt-0.5">
-                            <Text fw={600} className="text-body-heading-300">
-                              Request Info
-                            </Text>
-                            <Text
-                              size="sm"
-                              className="text-body-text-200! mt-1 leading-relaxed"
-                            >
-                              Place action under review and request more
-                              information from customer.
-                            </Text>
-                          </span>
-                        </button>
-                      )}
+                          Take Action
+                        </Button>
+                      </Popover.Target>
 
-                      <button
-                        type="button"
-                        className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
-                        onClick={openTransactionRejectFlow}
+                      <Popover.Dropdown
+                        p={0}
+                        className="rounded-2xl border border-[#E1E0E0] shadow-lg overflow-hidden bg-white"
                       >
-                        <span
-                          className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
-                          style={{
-                            borderRadius: "50% 50% 40% 60% / 40% 60% 40% 60%",
-                          }}
-                        >
-                          <X className="h-5 w-5 text-[#F04438]" strokeWidth={2.5} />
-                        </span>
-                        <span className="min-w-0 pt-0.5">
-                          <Text fw={600} className="text-body-heading-300">
-                            {isDisbursementWorkflow
-                              ? "Reject Disbursement"
-                              : isRefundWorkflow
-                                ? "Reject Refund"
-                                : "Reject Action"}
+                        <div className="px-5 py-4 border-b border-[#EAECF0]">
+                          <Text fw={700} className="text-body-heading-300">
+                            Take Action
                           </Text>
-                          <Text
-                            size="sm"
-                            className="text-body-text-200! mt-1 leading-relaxed"
+                          <Text size="sm" className="text-body-text-200! mt-0.5">
+                            Take action with ease
+                          </Text>
+                        </div>
+
+                        <div className="divide-y divide-[#EAECF0]">
+                          {!isDisbursementWorkflow && (
+                            <button
+                              type="button"
+                              className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                              onClick={openRequestMoreInfo}
+                            >
+                              <span
+                                className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FDDCCC]"
+                                style={{
+                                  borderRadius: "40% 60% 70% 30% / 60% 40% 60% 40%",
+                                }}
+                              >
+                                <Info
+                                  className="h-5 w-5 text-[#DD4F05]"
+                                  strokeWidth={2.5}
+                                />
+                              </span>
+                              <span className="min-w-0 pt-0.5">
+                                <Text fw={600} className="text-body-heading-300">
+                                  Request Info
+                                </Text>
+                                <Text
+                                  size="sm"
+                                  className="text-body-text-200! mt-1 leading-relaxed"
+                                >
+                                  Place action under review and request more
+                                  information from customer.
+                                </Text>
+                              </span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="flex cursor-pointer w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F9FAFB]"
+                            onClick={openTransactionRejectFlow}
                           >
-                            {isDisbursementWorkflow
-                              ? "Reject this disbursement stage and record your reason."
-                              : isRefundWorkflow
-                                ? "Reject this refund request and record your reason."
-                                : "Reject and provide feedback to the customer."}
-                          </Text>
-                        </span>
-                      </button>
-                    </div>
-                  </Popover.Dropdown>
-                </Popover>
+                            <span
+                              className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#FECACA]"
+                              style={{
+                                borderRadius: "50% 50% 40% 60% / 40% 60% 40% 60%",
+                              }}
+                            >
+                              <X className="h-5 w-5 text-[#F04438]" strokeWidth={2.5} />
+                            </span>
+                            <span className="min-w-0 pt-0.5">
+                              <Text fw={600} className="text-body-heading-300">
+                                {isDisbursementWorkflow
+                                  ? "Reject Disbursement"
+                                  : isRefundWorkflow
+                                    ? "Reject Refund"
+                                    : "Reject Action"}
+                              </Text>
+                              <Text
+                                size="sm"
+                                className="text-body-text-200! mt-1 leading-relaxed"
+                              >
+                                {isDisbursementWorkflow
+                                  ? "Reject this disbursement stage and record your reason."
+                                  : isRefundWorkflow
+                                    ? "Reject this refund request and record your reason."
+                                    : "Reject and provide feedback to the customer."}
+                              </Text>
+                            </span>
+                          </button>
+                        </div>
+                      </Popover.Dropdown>
+                    </Popover>
+                  </>
+                )}
               </Group>
             </div>
           )}
@@ -1291,6 +1445,14 @@ export default function TakeActionOverlay({
         isLoading={transactionRejectMutation.isPending}
       />
 
+      <ConfirmDisbursementModal
+        opened={confirmDisbursementOpen}
+        onClose={closeConfirmDisbursementFlow}
+        onConfirm={submitConfirmDisbursement}
+        isLoading={confirmDisbursementMutation.isPending}
+        zIndex={4000}
+      />
+
       <SuccessModal
         opened={approvalSuccessOpen}
         onClose={() => setApprovalSuccessOpen(false)}
@@ -1391,6 +1553,19 @@ export default function TakeActionOverlay({
         secondaryButtonText="Close"
         onSecondaryClick={() => {
           setTransactionRejectSuccessOpen(false);
+          onClose();
+        }}
+        zIndex={4100}
+      />
+
+      <SuccessModal
+        opened={confirmDisbursementSuccessOpen}
+        onClose={() => setConfirmDisbursementSuccessOpen(false)}
+        title="Disbursement Successful"
+        message="Funds disbursed successfully!"
+        secondaryButtonText="Close"
+        onSecondaryClick={() => {
+          setConfirmDisbursementSuccessOpen(false);
           onClose();
         }}
         zIndex={4100}

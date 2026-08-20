@@ -968,6 +968,20 @@ function isCurrentOrderLastWorkflowStage(
   return Number.isFinite(maxOrder) && currentOrder === maxOrder;
 }
 
+function mapWorkflowStageToViewModel(
+  s: AdminTransactionApprovalWorkflowStage,
+): PendingWorkflowStageViewModel | null {
+  const firstAssignee = s.assignees?.[0];
+  if (!firstAssignee) return null;
+  return {
+    stageId: s.stageId ?? "",
+    stageName: s.name ?? "Pending Stage",
+    order: s.order ?? 0,
+    assigneeName: firstAssignee.adminName ?? "Unknown",
+    assigneeRole: firstAssignee.roleName ?? "",
+  };
+}
+
 function extractPendingWorkflowStages(
   ap: AdminTransactionApprovalProcess | null,
 ): PendingWorkflowStageViewModel[] {
@@ -979,17 +993,24 @@ function extractPendingWorkflowStages(
   return stages
     .filter((s) => typeof s.order === "number" && s.order >= currentOrder)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .map((s): PendingWorkflowStageViewModel | null => {
-      const firstAssignee = s.assignees?.[0];
-      if (!firstAssignee) return null;
-      return {
-        stageId: s.stageId ?? "",
-        stageName: s.name ?? "Pending Stage",
-        order: s.order ?? 0,
-        assigneeName: firstAssignee.adminName ?? "Unknown",
-        assigneeRole: firstAssignee.roleName ?? "",
-      };
-    })
+    .map(mapWorkflowStageToViewModel)
+    .filter((item): item is PendingWorkflowStageViewModel => Boolean(item));
+}
+
+/**
+ * Maps every stage of an approval process (no `currentOrder` filtering), sorted by order.
+ * Used for the disbursement-preview flow, since `currentOrder` isn't a reliable signal for
+ * a process that isn't the currently active one (e.g. abandoned/superseded workflows).
+ */
+function extractAllWorkflowStages(
+  ap: AdminTransactionApprovalProcess | null,
+): PendingWorkflowStageViewModel[] {
+  if (!ap) return [];
+  const stages = ap.workflowStages ?? [];
+  return stages
+    .slice()
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map(mapWorkflowStageToViewModel)
     .filter((item): item is PendingWorkflowStageViewModel => Boolean(item));
 }
 
@@ -1001,6 +1022,23 @@ function resolveApprovalProcess(
     return data.approvalProcess;
   }
   const nested = asRecord(data.raw).approvalProcess;
+  if (nested && typeof nested === "object") {
+    return nested as AdminTransactionApprovalProcess;
+  }
+  return null;
+}
+
+function resolveDisbursementApprovalProcess(
+  data: AdminTransactionDetailsData | null,
+): AdminTransactionApprovalProcess | null {
+  if (!data) return null;
+  if (
+    data.disbursementApprovalProcess &&
+    typeof data.disbursementApprovalProcess === "object"
+  ) {
+    return data.disbursementApprovalProcess;
+  }
+  const nested = asRecord(data.raw).disbursementApprovalProcess;
   if (nested && typeof nested === "object") {
     return nested as AdminTransactionApprovalProcess;
   }
@@ -1132,6 +1170,14 @@ export function useTransactionDetails(
     [query.data?.data],
   );
 
+  const disbursementWorkflowStages = useMemo(
+    () =>
+      extractAllWorkflowStages(
+        resolveDisbursementApprovalProcess(query.data?.data ?? null),
+      ),
+    [query.data?.data],
+  );
+
   return {
     overview,
     receipt,
@@ -1139,6 +1185,7 @@ export function useTransactionDetails(
     actionDocuments,
     workflowHistory,
     pendingWorkflowStages,
+    disbursementWorkflowStages,
     isApprovalOfficer: approvalUi.isApprovalOfficer,
     approvalState: approvalUi.approvalState,
     approvalProcessName: approvalUi.approvalProcessName,

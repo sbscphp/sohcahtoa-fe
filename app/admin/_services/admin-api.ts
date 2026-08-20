@@ -1192,6 +1192,8 @@ export interface AdminTransactionDetailsData {
   details: AdminTransactionDetailsPayload | null;
   raw?: Record<string, unknown> | null;
   approvalProcess?: AdminTransactionApprovalProcess | null;
+  /** Always-available disbursement approval workflow, independent of which process is currently active (see approvalProcess). */
+  disbursementApprovalProcess?: AdminTransactionApprovalProcess | null;
   paymentDetails?: AgentTransactionPaymentDetails | null;
   transactionSettlement?: AgentTransactionSettlementDetails | null;
 }

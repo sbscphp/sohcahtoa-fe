@@ -23,6 +23,7 @@ interface OverviewProps {
   actionDocuments?: TransactionActionDocumentViewModel[];
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
   pendingWorkflowStages?: PendingWorkflowStageViewModel[];
+  disbursementWorkflowStages?: PendingWorkflowStageViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -98,6 +99,7 @@ export default function Overview({
   actionDocuments = [],
   workflowHistory = [],
   pendingWorkflowStages = [],
+  disbursementWorkflowStages = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -147,6 +149,7 @@ export default function Overview({
           documents={actionDocuments}
           workflowHistory={workflowHistory}
           pendingWorkflowStages={pendingWorkflowStages}
+          disbursementWorkflowStages={disbursementWorkflowStages}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}
