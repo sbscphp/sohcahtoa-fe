@@ -137,21 +137,28 @@ function getPendingReviewGroupKey(approvalType?: string): WorkflowReviewGroupKey
 }
 
 interface WorkflowSection {
-  key: string;
-  label: string | null;
+  key: WorkflowReviewGroupKey;
+  label: string;
   items: TransactionWorkflowHistoryItemViewModel[];
   stages: PendingWorkflowStageViewModel[];
-  sortTime: number;
   isPendingSection: boolean;
 }
 
+const REVIEW_GROUP_ORDER: WorkflowReviewGroupKey[] = [
+  "COMPLIANCE",
+  "OPERATIONS",
+  "REFUND",
+];
+
 /**
  * Groups review-related workflow-history items by review type (compliance/operations/refund),
- * merges pending workflow stages into their matching group when possible, and orders
- * sections chronologically (by each section's earliest item) with the pending section
- * always rendered last. Expects `groupedWorkflowItems` to already be filtered to items
- * that match a review group (see `getReviewGroupKey`); anything else belongs in the
- * Activities tab instead.
+ * merges in pending workflow stages for whichever group is currently active, and always
+ * orders sections Compliance -> Operations -> Refund regardless of item timestamps — this
+ * mirrors the fixed real-world workflow progression, so a group with no history yet (e.g.
+ * Compliance still pending) never renders after a later stage's preview. Refund is only
+ * included when applicable (it has history or is the active process). Expects
+ * `groupedWorkflowItems` to already be filtered to items that match a review group (see
+ * `getReviewGroupKey`); anything else belongs in the Activities tab instead.
  */
 function buildWorkflowSections(
   groupedWorkflowItems: TransactionWorkflowHistoryItemViewModel[],
@@ -168,8 +175,6 @@ function buildWorkflowSections(
     REFUND: [],
   };
 
-  const sections: WorkflowSection[] = [];
-
   groupedWorkflowItems.forEach((item) => {
     const groupKey = getReviewGroupKey(item.action);
     if (groupKey) {
@@ -178,93 +183,37 @@ function buildWorkflowSections(
   });
 
   const completedOperationsCount = groupBuckets.OPERATIONS.length;
-
-  (Object.keys(groupBuckets) as WorkflowReviewGroupKey[]).forEach((groupKey) => {
-    const items = groupBuckets[groupKey];
-    if (items.length === 0) return;
-    sections.push({
-      key: groupKey,
-      // Only worth a heading once there are 2+ related items to connect.
-      label: items.length >= 1 ? REVIEW_GROUP_LABELS[groupKey] : null,
-      items,
-      stages: [],
-      sortTime: items[0].timestampMs,
-      isPendingSection: false,
-    });
-  });
-
-  sections.sort((a, b) => a.sortTime - b.sortTime);
+  const pendingGroupKey = getPendingReviewGroupKey(approvalType);
 
   // Surface "Operations Review" at all times (using the always-on disbursement approval
   // process) whenever it isn't already the live/active approval process — the active-process
-  // case is already covered by the pendingWorkflowStages merge below. Only the stages that
-  // haven't yet been decided on (per workflowLine history) are shown, so an abandoned
-  // disbursement workflow still displays its full remaining structure.
-  if (!isDisbursementApprovalType(approvalType) && disbursementWorkflowStages.length > 0) {
-    const operationsPreviewStages = disbursementWorkflowStages.slice(
-      completedOperationsCount,
-    );
-    const operationsSectionIndex = sections.findIndex(
-      (section) => section.key === "OPERATIONS",
-    );
+  // case is already covered by pendingWorkflowStages below. Only the stages that haven't
+  // yet been decided on (per workflowLine history) are shown, so an abandoned disbursement
+  // workflow still displays its full remaining structure.
+  const operationsPreviewStages = !isDisbursementApprovalType(approvalType)
+    ? disbursementWorkflowStages.slice(completedOperationsCount)
+    : [];
 
-    if (operationsSectionIndex !== -1) {
-      // Abandoned workflow: history already exists for Operations Review, chronological
-      // position is already correct, just attach whatever stages are still pending.
-      sections[operationsSectionIndex].stages = operationsPreviewStages;
-      sections[operationsSectionIndex].isPendingSection =
-        operationsPreviewStages.length > 0;
-    } else if (operationsPreviewStages.length > 0) {
-      // Never started: insert right after Compliance Review (or at the front) to keep the
-      // fixed Compliance -> Operations -> Refund order, since it has no real timestamp yet.
-      const complianceIndex = sections.findIndex(
-        (section) => section.key === "COMPLIANCE",
-      );
-      const insertIndex = complianceIndex === -1 ? 0 : complianceIndex + 1;
-      sections.splice(insertIndex, 0, {
-        key: "OPERATIONS",
-        label: REVIEW_GROUP_LABELS.OPERATIONS,
-        items: [],
-        stages: operationsPreviewStages,
-        sortTime: Number.POSITIVE_INFINITY,
-        isPendingSection: true,
-      });
-    }
-  }
+  return REVIEW_GROUP_ORDER.map((key): WorkflowSection | null => {
+    const items = groupBuckets[key];
+    const stages =
+      key === pendingGroupKey
+        ? pendingWorkflowStages
+        : key === "OPERATIONS"
+          ? operationsPreviewStages
+          : [];
 
-  let pendingSection: WorkflowSection | null = null;
+    // Nothing to show for this group (e.g. Refund when it's not applicable).
+    if (items.length === 0 && stages.length === 0) return null;
 
-  if (pendingWorkflowStages.length > 0) {
-    const pendingGroupKey = getPendingReviewGroupKey(approvalType);
-    const matchingSectionIndex = sections.findIndex(
-      (section) => section.key === pendingGroupKey,
-    );
-
-    if (matchingSectionIndex !== -1) {
-      const [matchingSection] = sections.splice(matchingSectionIndex, 1);
-      matchingSection.stages = pendingWorkflowStages;
-      // A matching general item was found, so the heading is always meaningful here.
-      matchingSection.label = REVIEW_GROUP_LABELS[pendingGroupKey];
-      matchingSection.isPendingSection = true;
-      pendingSection = matchingSection;
-    } else {
-      pendingSection = {
-        key: "PENDING",
-        // No matching workflow items to relate this to, so skip the redundant heading.
-        label: pendingWorkflowStages.length >= 1 ? REVIEW_GROUP_LABELS[pendingGroupKey] : null,
-        items: [],
-        stages: pendingWorkflowStages,
-        sortTime: Number.POSITIVE_INFINITY,
-        isPendingSection: true,
-      };
-    }
-  }
-
-  if (pendingSection) {
-    sections.push(pendingSection);
-  }
-
-  return sections;
+    return {
+      key,
+      label: REVIEW_GROUP_LABELS[key],
+      items,
+      stages,
+      isPendingSection: stages.length > 0,
+    };
+  }).filter((section): section is WorkflowSection => section !== null);
 }
 
 function renderWorkflowHistoryItemCard(
@@ -862,30 +811,27 @@ export default function TakeActionOverlay({
                 ) : (
                   <div className="space-y-5">
                     {workflowSections.map((section) => {
-                      const groupLabel = section.label ?? undefined;
                       const cards: { key: string; node: React.ReactNode }[] = [
                         ...section.items.map((item) => ({
                           key: item.id,
-                          node: renderWorkflowHistoryItemCard(item, groupLabel),
+                          node: renderWorkflowHistoryItemCard(item, section.label),
                         })),
                         ...section.stages.map((stage) => ({
                           key: stage.stageId,
-                          node: renderPendingStageCard(stage, groupLabel ?? ""),
+                          node: renderPendingStageCard(stage, section.label),
                         })),
                       ];
 
                       return (
                         <div key={section.key}>
-                          {section.label && (
-                            <Text
-                              fw={600}
-                              size="sm"
-                              className="text-body-heading-300"
-                              mb={10}
-                            >
-                              {section.label}
-                            </Text>
-                          )}
+                          <Text
+                            fw={600}
+                            size="sm"
+                            className="text-body-heading-300"
+                            mb={10}
+                          >
+                            {section.label}
+                          </Text>
                           <div className="space-y-5">
                             {cards.map((card, cardIndex) => (
                               <React.Fragment key={card.key}>
