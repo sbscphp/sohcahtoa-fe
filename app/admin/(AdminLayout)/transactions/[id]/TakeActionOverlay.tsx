@@ -797,7 +797,8 @@ export default function TakeActionOverlay({
               <Tabs.Panel value="overview" className="flex-1 overflow-y-auto pb-4 pt-4">
                 <Flex className="mb-4" align="center" gap="sm">
                   <StatusBadge status={transactionStatusLabel ?? "--"} size="lg" />
-                  <Text size="sm" className="text-body-text-200">{approvalState}</Text>
+                  <Text size="sm" className="text-body-text-200">{transactionStatusLabel === "Pending" ? '' : approvalState}</Text>
+                  {/* <Text size="sm" className="text-body-text-200">{transactionStatusLabel === "Pending" ? REVIEW_GROUP_LABELS[getPendingReviewGroupKey(approvalType)] : approvalState}</Text> */}
                 </Flex>
                 {workflowSections.length === 0 ? (
                   <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
