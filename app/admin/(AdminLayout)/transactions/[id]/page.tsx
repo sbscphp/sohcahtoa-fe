@@ -31,6 +31,7 @@ export default function ViewTransactionPage() {
     actionDocuments,
     workflowHistory,
     pendingWorkflowStages,
+    disbursementWorkflowStages,
     isApprovalOfficer,
     canActOnTransactionFooter,
     approvalState,
@@ -62,6 +63,7 @@ export default function ViewTransactionPage() {
           actionDocuments={actionDocuments}
           workflowHistory={workflowHistory}
           pendingWorkflowStages={pendingWorkflowStages}
+          disbursementWorkflowStages={disbursementWorkflowStages}
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
@@ -79,6 +81,7 @@ export default function ViewTransactionPage() {
           actionDocuments={actionDocuments}
           workflowHistory={workflowHistory}
           pendingWorkflowStages={pendingWorkflowStages}
+          disbursementWorkflowStages={disbursementWorkflowStages}
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
@@ -96,6 +99,7 @@ export default function ViewTransactionPage() {
           actionDocuments={actionDocuments}
           workflowHistory={workflowHistory}
           pendingWorkflowStages={pendingWorkflowStages}
+          disbursementWorkflowStages={disbursementWorkflowStages}
           transactionId={transactionId}
           isLoading={isLoading}
           isError={isError}
