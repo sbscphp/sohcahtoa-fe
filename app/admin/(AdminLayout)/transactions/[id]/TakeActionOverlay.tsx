@@ -122,6 +122,15 @@ const REVIEW_GROUP_ACTIONS: Record<WorkflowReviewGroupKey, Set<string>> = {
   REFUND: new Set(["REFUND_STAGE_APPROVED", "REFUND_STAGE_REJECTED", "REFUND_APPROVED", "REFUND_REJECTED"]),
 };
 
+// There's no backend "refund approval process" object to source real stage names from (unlike
+// disbursementApprovalProcess for Operations Review), so Refund Review stages/items are named
+// off this fixed ordered list instead, reusing the last entry for any further steps.
+const REFUND_STAGE_NAME_FALLBACKS: readonly string[] = [
+  "Refund approval",
+  "Internal Control review",
+  "Refund disbursement confirmation",
+];
+
 function getReviewGroupKey(action: string): WorkflowReviewGroupKey | null {
   const normalized = action.trim().toUpperCase();
   for (const key of Object.keys(REVIEW_GROUP_ACTIONS) as WorkflowReviewGroupKey[]) {
@@ -824,23 +833,40 @@ export default function TakeActionOverlay({
                         return name && name !== "Pending Stage" ? name : undefined;
                       };
 
+                      // No backend "refund approval process" object exists to source real
+                      // stage names from, so fall back to a fixed ordered list, reusing its
+                      // last entry for any further steps.
+                      const resolveRefundStageName = (
+                        index: number,
+                      ): string | undefined => {
+                        if (!Number.isFinite(index) || index < 0) return undefined;
+                        const clampedIndex = Math.min(
+                          index,
+                          REFUND_STAGE_NAME_FALLBACKS.length - 1,
+                        );
+                        return REFUND_STAGE_NAME_FALLBACKS[clampedIndex];
+                      };
+
+                      const resolveSectionItemLabel = (index: number): string =>
+                        section.key === "OPERATIONS"
+                          ? resolveOperationsStageName(index) ?? section.label
+                          : section.key === "REFUND"
+                            ? resolveRefundStageName(index) ?? section.label
+                            : section.label;
+
                       const cards: { key: string; node: React.ReactNode }[] = [
                         ...section.items.map((item, index) => ({
                           key: item.id,
                           node: renderWorkflowHistoryItemCard(
                             item,
-                            section.key === "OPERATIONS"
-                              ? resolveOperationsStageName(index) ?? section.label
-                              : section.label,
+                            resolveSectionItemLabel(index),
                           ),
                         })),
                         ...section.stages.map((stage) => ({
                           key: stage.stageId,
                           node: renderPendingStageCard(
                             stage,
-                            section.key === "OPERATIONS"
-                              ? resolveOperationsStageName(stage.order - 1) ?? section.label
-                              : section.label,
+                            resolveSectionItemLabel(stage.order - 1),
                           ),
                         })),
                       ];
