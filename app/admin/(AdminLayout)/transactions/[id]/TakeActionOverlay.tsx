@@ -813,14 +813,35 @@ export default function TakeActionOverlay({
                 ) : (
                   <div className="space-y-10">
                     {workflowSections.map((section) => {
+                      // Operations Review has a stage-by-stage progression (e.g. "Operations
+                      // Review" then "Operations Approval"), so prefer the matching stage's
+                      // own name from disbursementApprovalProcess over the generic group
+                      // label, which is only used as a fallback.
+                      const resolveOperationsStageName = (
+                        index: number,
+                      ): string | undefined => {
+                        const name = disbursementWorkflowStages[index]?.stageName;
+                        return name && name !== "Pending Stage" ? name : undefined;
+                      };
+
                       const cards: { key: string; node: React.ReactNode }[] = [
-                        ...section.items.map((item) => ({
+                        ...section.items.map((item, index) => ({
                           key: item.id,
-                          node: renderWorkflowHistoryItemCard(item, section.label),
+                          node: renderWorkflowHistoryItemCard(
+                            item,
+                            section.key === "OPERATIONS"
+                              ? resolveOperationsStageName(index) ?? section.label
+                              : section.label,
+                          ),
                         })),
                         ...section.stages.map((stage) => ({
                           key: stage.stageId,
-                          node: renderPendingStageCard(stage, section.label),
+                          node: renderPendingStageCard(
+                            stage,
+                            section.key === "OPERATIONS"
+                              ? resolveOperationsStageName(stage.order - 1) ?? section.label
+                              : section.label,
+                          ),
                         })),
                       ];
 
@@ -1154,9 +1175,9 @@ export default function TakeActionOverlay({
                       onClick={openTransactionCompleteReview}
                     >
                       {isDisbursementWorkflow
-                        ? "Complete Disbursement Review"
+                        ? "Complete Review"
                         : isRefundWorkflow
-                          ? "Complete Refund Review"
+                          ? "Complete Review"
                           : "Complete Review"}
                     </Button>
                     <Popover
