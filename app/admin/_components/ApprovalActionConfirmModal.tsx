@@ -19,6 +19,7 @@ export interface ApprovalActionConfirmModalProps {
   isLoading?: boolean;
   zIndex?: number;
   showSessionId?: boolean;
+  sessionIdDescription?: string;
 }
 
 export function ApprovalActionConfirmModal({
@@ -34,6 +35,7 @@ export function ApprovalActionConfirmModal({
   isLoading = false,
   zIndex = 4000,
   showSessionId = false,
+  sessionIdDescription = "The session ID is the unique identifier for the transaction session.",
 }: ApprovalActionConfirmModalProps) {
   const [comment, setComment] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -101,6 +103,8 @@ export function ApprovalActionConfirmModal({
             </Text>
             <TextInput
               placeholder="Enter session ID"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              description={sessionIdDescription}
               value={sessionId}
               onChange={(e) => setSessionId(e.currentTarget.value)}
               radius="md"

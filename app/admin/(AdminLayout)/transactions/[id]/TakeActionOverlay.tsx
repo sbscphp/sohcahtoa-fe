@@ -525,7 +525,19 @@ export default function TakeActionOverlay({
       onSuccess: async () => {
         await invalidateTransactionDetail();
         setTransactionCompleteReviewOpen(false);
-        setTransactionCompleteReviewSuccessOpen(true);
+        if (isDisbursementWorkflow && isLastWorkflowStage) {
+          // This was the last pending approver in the disbursement workflow — skip the
+          // generic success modal and jump straight into confirming the disbursement.
+          notifications.show({
+            color: "green",
+            title: "Disbursement Approval Completed",
+            message:
+              "The disbursement stage has been successfully approved. You can now confirm the disbursement.",
+          });
+          setConfirmDisbursementOpen(true);
+        } else {
+          setTransactionCompleteReviewSuccessOpen(true);
+        }
       },
       onError: (error) =>
         handleMutationError(error, "Unable to complete transaction review."),

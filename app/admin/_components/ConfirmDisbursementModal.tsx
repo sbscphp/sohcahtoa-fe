@@ -78,6 +78,8 @@ export function ConfirmDisbursementModal({
           </Text>
           <TextInput
             placeholder="Enter session ID"
+            inputWrapperOrder={["label", "input", "description", "error"]}
+            description="The session ID is the unique identifier for the disbursement transaction session."
             value={sessionId}
             onChange={(e) => setSessionId(e.currentTarget.value)}
             radius="md"
