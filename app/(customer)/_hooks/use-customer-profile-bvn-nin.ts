@@ -4,20 +4,24 @@ import { useEffect } from "react";
 import type { UseFormReturnType } from "@mantine/form";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
+import { sanitizeTinInput } from "@/app/(customer)/_lib/kyc-tin-schema";
 
 type FormWithKycFields = {
   bvn: string;
   ninNumber: string;
+  tinNumber?: string;
 };
 
 /**
- * When `initialValues` is missing or has no draft BVN/NIN, profile may load after mount.
- * Fills empty fields once `defaultBvn` / `defaultNin` become available.
+ * When `initialValues` is missing or has no draft BVN/NIN/TIN, profile may load after mount.
+ * Fills empty fields once profile KYC values become available.
  */
 export function useKycProfilePrefillEffect<T extends FormWithKycFields>(
   form: UseFormReturnType<T>,
-  initialValues: { bvn?: string | null; ninNumber?: string | null } | undefined,
-  kyc: { defaultBvn: string; defaultNin: string },
+  initialValues:
+    | { bvn?: string | null; ninNumber?: string | null; tinNumber?: string | null }
+    | undefined,
+  kyc: { defaultBvn: string; defaultNin: string; defaultTin: string },
   /** When false (e.g. agent acting on behalf of a customer), do not fill from the logged-in user profile */
   enabled = true
 ) {
@@ -47,6 +51,21 @@ export function useKycProfilePrefillEffect<T extends FormWithKycFields>(
       kyc.defaultNin
     );
   }, [kyc.defaultNin, initialValues?.ninNumber, enabled]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (!("tinNumber" in form.values)) return;
+    const hasDraftTin =
+      initialValues?.tinNumber != null &&
+      String(initialValues.tinNumber).trim() !== "";
+    if (hasDraftTin) return;
+    if (!kyc.defaultTin.trim()) return;
+    if ((form.values.tinNumber ?? "").trim() !== "") return;
+    (form as unknown as UseFormReturnType<FormWithKycFields>).setFieldValue(
+      "tinNumber",
+      kyc.defaultTin
+    );
+  }, [kyc.defaultTin, initialValues?.tinNumber, enabled]);
 }
 
 function normalizeForCompare(value: string | null | undefined): string {
@@ -86,7 +105,7 @@ export function shouldCollectBvnNin(customerType?: string | null): boolean {
 }
 
 /**
- * BVN / NIN from `userProfileAtom` (GET profile / `AuthProfileSync`).
+ * BVN / NIN / TIN from `userProfileAtom` (GET profile / `AuthProfileSync`).
  * Uses API values as returned (including masked BVN such as `*******9933`).
  * Returns empty defaults when the logged-in user is not a Nigerian citizen.
  */
@@ -95,15 +114,22 @@ export function useCustomerProfileBvnNin() {
   const collectsBvnNin = shouldCollectBvnNin(profile?.customerType);
   const bvn = profile?.kyc?.bvn;
   const nin = profile?.kyc?.nin;
+  const tin = profile?.kyc?.tin;
   const defaultBvn =
     collectsBvnNin && bvn != null && bvn !== "" ? String(bvn) : "";
   const defaultNin =
     collectsBvnNin && nin != null && nin !== "" ? String(nin) : "";
+  const defaultTin =
+    collectsBvnNin && tin != null && tin !== ""
+      ? sanitizeTinInput(String(tin))
+      : "";
   return {
     defaultBvn,
     defaultNin,
+    defaultTin,
     hasBvnFromProfile: defaultBvn.length > 0,
     hasNinFromProfile: defaultNin.length > 0,
+    hasTinFromProfile: defaultTin.length > 0,
     collectsBvnNin,
   };
 }

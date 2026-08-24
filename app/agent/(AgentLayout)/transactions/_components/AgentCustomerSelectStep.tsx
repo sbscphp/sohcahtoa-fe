@@ -33,6 +33,7 @@ function toCustomerInterface(item: AgentCustomerSummary): CustomerInterface {
     kycStatus: item.kycStatus,
     nin: item.nin ?? null,
     bvn: item.bvn ?? null,
+    tin: item.tin ?? null,
   };
 }
 

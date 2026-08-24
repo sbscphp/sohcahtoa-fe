@@ -19,6 +19,11 @@ import {
 } from "@/app/(customer)/_lib/transaction-details";
 import { formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocalDate";
 import { getDocumentLabelForApiType } from "@/app/(customer)/_utils/transaction-validation";
+import { isRealFileUrl } from "@/app/utils/helper/isRealFileUrl";
+
+function isDigSigTextOnly(type: string, fileUrl: string | null | undefined): boolean {
+  return type.toUpperCase() === "DIGITAL_SIGNATURE" && !isRealFileUrl(fileUrl);
+}
 
 function getStepData(api: TransactionDetailData): TransactionDetailStep["data"] | null {
   const completed = api.steps?.filter((s) => s.data && Object.keys(s.data).length > 0);
@@ -261,9 +266,7 @@ function mapRequiredDocsToDocumentItems(
       ? formatShortTime(uploaded.uploadedAt)
       : undefined;
 
-    const isSignedDigitalSignature =
-      doc.type.toUpperCase() === "DIGITAL_SIGNATURE" &&
-      uploaded.fileUrl?.toUpperCase() === "SIGNED";
+    const isTextSig = isDigSigTextOnly(doc.type, uploaded.fileUrl);
 
     return {
       id: uploaded.id || `${doc.type}-${index}`,
@@ -273,9 +276,8 @@ function mapRequiredDocsToDocumentItems(
       status: overrideStatus ?? formatStatusLabel(uploaded.status),
       lastUploadDate,
       lastUploadTime,
-      fileName: uploaded.fileName,
-      // DIGITAL_SIGNATURE with fileUrl "SIGNED" is not a real file — no url, renders as text/dash.
-      url: isSignedDigitalSignature ? undefined : uploaded.fileUrl,
+      fileName: isTextSig ? (uploaded.fileUrl ?? "Signed") : uploaded.fileName,
+      url: isTextSig ? undefined : uploaded.fileUrl,
       needsUpload: false,
     };
   });
@@ -306,13 +308,7 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     workPermitNumber: stepData?.workPermitNumber ?? api.personalInfo?.workPermitNumber ?? "",
     formAId: stepData?.formAId ?? api.formAId ?? "",
     uploadedFiles: (() => {
-      // Exclude DIGITAL_SIGNATURE entries where fileUrl is "SIGNED" — not a real file.
-      const uploadedDocs = expandedDocs.filter(
-        (d) =>
-          d.uploaded != null &&
-          !(d.type.toUpperCase() === "DIGITAL_SIGNATURE" &&
-            d.uploaded.fileUrl?.toUpperCase() === "SIGNED"),
-      );
+      const uploadedDocs = expandedDocs.filter((d) => d.uploaded != null);
       const totalsByType = countByDocumentType(uploadedDocs);
       const occurrenceByType = new Map<string, number>();
 
@@ -322,12 +318,14 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
         occurrenceByType.set(d.type, occurrence);
         const totalForType = totalsByType.get(d.type) ?? 1;
 
+        const isTextSig = isDigSigTextOnly(d.type, uploaded.fileUrl);
+
         return {
           id: uploaded.id || `${d.type}-${index}`,
           documentType: d.type,
           label: documentDisplayLabel(d.type, occurrence, totalForType),
-          filename: uploaded.fileName,
-          url: uploaded.fileUrl,
+          filename: isTextSig ? (api.digitalSignature ?? uploaded.fileUrl ?? "Signed") : uploaded.fileName,
+          url: isTextSig ? undefined : uploaded.fileUrl,
         };
       });
     })(),
@@ -345,7 +343,6 @@ export function buildDetailPayloadFromApi(api: TransactionDetailData): Transacti
     requiredDocuments.nin = ninFromStep ?? ninFromProfile ?? undefined;
   }
   if (stepData?.tin != null) requiredDocuments.tin = stepData.tin;
-
   const nairaFormatted = api.nairaEquivalent != null ? Number(api.nairaEquivalent).toLocaleString("en-NG", { minimumFractionDigits: 2 }) : "—";
   const foreignFormatted = api.foreignAmount != null ? Number(api.foreignAmount).toLocaleString("en-US", { minimumFractionDigits: 2 }) : "—";
 

@@ -34,9 +34,9 @@ function FlowRow({ label, value, barFillPercent, barColor }: FlowRowProps) {
 
 export default function CardTransactionFlowsCard() {
   const currencyCode = useSelectedCurrencyCode();
-  const moneyIn = 4046;
-  const moneyOut = 1046;
-  const total = 3048;
+  const moneyIn = 0;
+  const moneyOut = 0;
+  const total = 0;
   const max = Math.max(moneyIn, moneyOut);
   const inPercent = max > 0 ? moneyIn / max * 100 : 0;
   const outPercent = max > 0 ? moneyOut / max * 100 : 0;

@@ -45,4 +45,5 @@ export interface CustomerInterface {
     kycStatus: string;
     nin?: string | null;
     bvn?: string | null;
+    tin?: string | null;
 }

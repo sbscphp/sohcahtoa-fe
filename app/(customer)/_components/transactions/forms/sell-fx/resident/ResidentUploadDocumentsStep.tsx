@@ -86,6 +86,14 @@ export default function ResidentUploadDocumentsStep({
     );
   const forceBvnLock = lockKycPrefill && Boolean(initialValues?.bvn?.trim());
   const forceNinLock = lockKycPrefill && Boolean(initialValues?.ninNumber?.trim());
+  const tinLocked =
+    !omitLoggedInUserKyc &&
+    shouldLockKycPrefill(
+      kyc.hasTinFromProfile,
+      initialValues?.tinNumber,
+      kyc.defaultTin
+    );
+  const forceTinLock = lockKycPrefill && Boolean(initialValues?.tinNumber?.trim());
 
   const form = useForm<ResidentUploadDocumentsFormValues>({
     mode: "uncontrolled",
@@ -93,7 +101,8 @@ export default function ResidentUploadDocumentsStep({
       bvn: initialValues?.bvn || (omitLoggedInUserKyc ? "" : kyc.defaultBvn) || "",
       ninNumber:
         initialValues?.ninNumber || (omitLoggedInUserKyc ? "" : kyc.defaultNin) || "",
-      tinNumber: initialValues?.tinNumber || "",
+      tinNumber:
+        initialValues?.tinNumber || (omitLoggedInUserKyc ? "" : kyc.defaultTin) || "",
       passportDocumentNumber: initialValues?.passportDocumentNumber || "",
       passportIssueDate: initialValues?.passportIssueDate || "",
       passportExpiryDate: initialValues?.passportExpiryDate || "",
@@ -187,6 +196,7 @@ export default function ResidentUploadDocumentsStep({
             form.setFieldValue("tinNumber", raw);
             form.clearFieldError("tinNumber");
           }}
+          disabled={tinLocked || forceTinLock}
         />
 
         <TextInput

@@ -538,6 +538,7 @@ export interface AgentCustomerSummary {
   kycStatus: string;
   nin?: string | null;
   bvn?: string | null;
+  tin?: string | null;
 }
 
 export interface AgentCustomerListResponse
@@ -1056,6 +1057,7 @@ export interface TransactionDetailData {
   exchangeRate: string | null;
   disbursementMethod: string | null;
   disbursementOption?: DisbursementOption | null;
+  digitalSignature?: string | null;
   formAId?: string | null;
   taxClearanceNumber?: string | null;
   personalInfo?: {
