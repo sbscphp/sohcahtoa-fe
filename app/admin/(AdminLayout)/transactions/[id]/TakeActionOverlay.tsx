@@ -122,6 +122,15 @@ const REVIEW_GROUP_ACTIONS: Record<WorkflowReviewGroupKey, Set<string>> = {
   REFUND: new Set(["REFUND_STAGE_APPROVED", "REFUND_STAGE_REJECTED", "REFUND_APPROVED", "REFUND_REJECTED"]),
 };
 
+// There's no backend "refund approval process" object to source real stage names from (unlike
+// disbursementApprovalProcess for Operations Review), so Refund Review stages/items are named
+// off this fixed ordered list instead, reusing the last entry for any further steps.
+const REFUND_STAGE_NAME_FALLBACKS: readonly string[] = [
+  "Refund approval",
+  "Internal Control review",
+  "Refund disbursement confirmation",
+];
+
 function getReviewGroupKey(action: string): WorkflowReviewGroupKey | null {
   const normalized = action.trim().toUpperCase();
   for (const key of Object.keys(REVIEW_GROUP_ACTIONS) as WorkflowReviewGroupKey[]) {
@@ -516,7 +525,19 @@ export default function TakeActionOverlay({
       onSuccess: async () => {
         await invalidateTransactionDetail();
         setTransactionCompleteReviewOpen(false);
-        setTransactionCompleteReviewSuccessOpen(true);
+        if (isDisbursementWorkflow && isLastWorkflowStage) {
+          // This was the last pending approver in the disbursement workflow — skip the
+          // generic success modal and jump straight into confirming the disbursement.
+          notifications.show({
+            color: "green",
+            title: "Disbursement Approval Completed",
+            message:
+              "The disbursement stage has been successfully approved. You can now confirm the disbursement.",
+          });
+          setConfirmDisbursementOpen(true);
+        } else {
+          setTransactionCompleteReviewSuccessOpen(true);
+        }
       },
       onError: (error) =>
         handleMutationError(error, "Unable to complete transaction review."),
@@ -813,14 +834,52 @@ export default function TakeActionOverlay({
                 ) : (
                   <div className="space-y-10">
                     {workflowSections.map((section) => {
+                      // Operations Review has a stage-by-stage progression (e.g. "Operations
+                      // Review" then "Operations Approval"), so prefer the matching stage's
+                      // own name from disbursementApprovalProcess over the generic group
+                      // label, which is only used as a fallback.
+                      const resolveOperationsStageName = (
+                        index: number,
+                      ): string | undefined => {
+                        const name = disbursementWorkflowStages[index]?.stageName;
+                        return name && name !== "Pending Stage" ? name : undefined;
+                      };
+
+                      // No backend "refund approval process" object exists to source real
+                      // stage names from, so fall back to a fixed ordered list, reusing its
+                      // last entry for any further steps.
+                      const resolveRefundStageName = (
+                        index: number,
+                      ): string | undefined => {
+                        if (!Number.isFinite(index) || index < 0) return undefined;
+                        const clampedIndex = Math.min(
+                          index,
+                          REFUND_STAGE_NAME_FALLBACKS.length - 1,
+                        );
+                        return REFUND_STAGE_NAME_FALLBACKS[clampedIndex];
+                      };
+
+                      const resolveSectionItemLabel = (index: number): string =>
+                        section.key === "OPERATIONS"
+                          ? resolveOperationsStageName(index) ?? section.label
+                          : section.key === "REFUND"
+                            ? resolveRefundStageName(index) ?? section.label
+                            : section.label;
+
                       const cards: { key: string; node: React.ReactNode }[] = [
-                        ...section.items.map((item) => ({
+                        ...section.items.map((item, index) => ({
                           key: item.id,
-                          node: renderWorkflowHistoryItemCard(item, section.label),
+                          node: renderWorkflowHistoryItemCard(
+                            item,
+                            resolveSectionItemLabel(index),
+                          ),
                         })),
                         ...section.stages.map((stage) => ({
                           key: stage.stageId,
-                          node: renderPendingStageCard(stage, section.label),
+                          node: renderPendingStageCard(
+                            stage,
+                            resolveSectionItemLabel(stage.order - 1),
+                          ),
                         })),
                       ];
 
@@ -1154,9 +1213,9 @@ export default function TakeActionOverlay({
                       onClick={openTransactionCompleteReview}
                     >
                       {isDisbursementWorkflow
-                        ? "Complete Disbursement Review"
+                        ? "Complete Review"
                         : isRefundWorkflow
-                          ? "Complete Refund Review"
+                          ? "Complete Review"
                           : "Complete Review"}
                     </Button>
                     <Popover
