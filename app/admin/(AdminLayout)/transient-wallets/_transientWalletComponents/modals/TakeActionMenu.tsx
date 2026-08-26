@@ -1,6 +1,9 @@
 "use client";
 
 import { Button, Menu } from "@mantine/core";
+import { useAtomValue } from "jotai";
+import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import { hasModuleAccess } from "@/app/admin/_lib/permissions";
 
 export type TakeActionType = "link" | "unlink" | "flag" | "refund" | "disburse";
 
@@ -26,6 +29,19 @@ export default function TakeActionMenu({
   // const showLink = canLink;
   // const showUnlink = canUnlink;
   // const showLinkSection = showLink || showUnlink;
+
+  const adminUser = useAtomValue(adminUserAtom);
+  const userPermissions = adminUser?.userPermissions ?? [];
+  const canCreateTransientWallet = hasModuleAccess(
+    userPermissions,
+    "TRANSIENT_WALLET",
+    "create"
+  );
+  const canEditTransientWallet = hasModuleAccess(
+    userPermissions,
+    "TRANSIENT_WALLET",
+    "edit"
+  );
 
   return (
     <Menu position="bottom-end" shadow="md" width={200}>
@@ -55,12 +71,12 @@ export default function TakeActionMenu({
             Mark as flagged
           </Menu.Item>
         ) : null}
-        {canRefund && (
+        {canRefund && canCreateTransientWallet && (
           <Menu.Item onClick={() => onAction("refund")}>
             Initiate refund
           </Menu.Item>
         )}
-        {canInitiateDisbursement && (
+        {canInitiateDisbursement && canEditTransientWallet && (
           <Menu.Item onClick={() => onAction("disburse")}>
             Initiate disbursement
           </Menu.Item>
