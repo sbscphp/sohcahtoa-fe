@@ -1213,10 +1213,10 @@ export default function TakeActionOverlay({
                       onClick={openTransactionCompleteReview}
                     >
                       {isDisbursementWorkflow
-                        ? "Complete Review"
+                        ? "Complete Disbursement Review"
                         : isRefundWorkflow
-                          ? "Complete Review"
-                          : "Complete Review"}
+                          ? "Complete Refund Review"
+                          : "Complete Compliance Review"}
                     </Button>
                     <Popover
                       width={360}
