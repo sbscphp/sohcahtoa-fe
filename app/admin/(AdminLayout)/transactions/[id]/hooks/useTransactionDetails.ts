@@ -95,6 +95,8 @@ export interface PendingWorkflowStageViewModel {
   order: number;
   assigneeName: string;
   assigneeRole: string;
+  /** Whether this is the stage currently awaiting action, per the API's own `isCurrent` flag. */
+  isCurrent: boolean;
 }
 
 export interface TransactionApprovalUiViewModel {
@@ -979,6 +981,7 @@ function mapWorkflowStageToViewModel(
     order: s.order ?? 0,
     assigneeName: firstAssignee.adminName ?? "Unknown",
     assigneeRole: firstAssignee.roleName ?? "",
+    isCurrent: s.isCurrent === true,
   };
 }
 
