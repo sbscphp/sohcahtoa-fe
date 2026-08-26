@@ -139,10 +139,13 @@ function getReviewGroupKey(action: string): WorkflowReviewGroupKey | null {
   return null;
 }
 
-function getPendingReviewGroupKey(approvalType?: string): WorkflowReviewGroupKey {
-  if (isDisbursementApprovalType(approvalType)) return "OPERATIONS";
-  if (isRefundApprovalType(approvalType)) return "REFUND";
-  return "COMPLIANCE";
+function getPendingReviewGroupKey(approvalType?: string): WorkflowReviewGroupKey | null {
+  if (approvalType) {
+    if (isDisbursementApprovalType(approvalType)) return "OPERATIONS";
+    if (isRefundApprovalType(approvalType)) return "REFUND";
+    return "COMPLIANCE";
+  }
+  return null;
 }
 
 interface WorkflowSection {
@@ -899,10 +902,10 @@ export default function TakeActionOverlay({
                               // section is still active: Refund preview during Operations
                               // Review, and Operations preview during Refund Review.
                               isStale:
-                                (section.key === "REFUND" &&
+                                (!activeReviewGroupKey || (section.key === "REFUND" &&
                                   activeReviewGroupKey === "OPERATIONS") ||
                                 (section.key === "OPERATIONS" &&
-                                  activeReviewGroupKey === "REFUND"),
+                                  activeReviewGroupKey === "REFUND")),
                             },
                           ),
                         })),
