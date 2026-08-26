@@ -11,6 +11,7 @@ interface TakeActionMenuProps {
   canDisburse?: boolean;
   canRefund?: boolean;
   canFlag?: boolean;
+  canInitiateDisbursement?: boolean;
 }
 
 export default function TakeActionMenu({
@@ -19,6 +20,7 @@ export default function TakeActionMenu({
   // canUnlink = false,
   // canDisburse = false,
   canRefund = false,
+  canInitiateDisbursement = false,
   canFlag = true,
 }: Readonly<TakeActionMenuProps>) {
   // const showLink = canLink;
@@ -56,6 +58,11 @@ export default function TakeActionMenu({
         {canRefund && (
           <Menu.Item onClick={() => onAction("refund")}>
             Initiate refund
+          </Menu.Item>
+        )}
+        {canInitiateDisbursement && (
+          <Menu.Item onClick={() => onAction("disburse")}>
+            Initiate disbursement
           </Menu.Item>
         )}
         {/* {canDisburse && (
