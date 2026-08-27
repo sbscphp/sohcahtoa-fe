@@ -83,25 +83,25 @@ export default function TransientWalletEntryDetailPage() {
   const isCreditEntry = entry?.type?.trim().toUpperCase() === "CREDIT";
   const canLink = canLinkLedgerEntry(entry?.matchDisplayStatus ?? "Unmatched", entry?.linkedTransaction);
   const canUnlink = canUnlinkLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     entry?.refundStatus,
     entry?.disbursementStatus
   );
   const canDisburse = canDisburseLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     isCreditEntry,
     entry?.linkedTransactionStatus,
     entry?.disbursementStatus
   );
   const canRefund = canRefundLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     isCreditEntry,
     entry?.linkedTransactionStatus,
     entry?.refundStatus
   );
   const canFlag = !entry?.isFlagged;
   const canInitiateDisbursement = canInitiateDisbursementLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     isCreditEntry,
     entry?.linkedTransactionStatus,
     entry?.disbursementStatus,
@@ -479,13 +479,11 @@ export default function TransientWalletEntryDetailPage() {
               />
               <DetailItem
                 label="Match Status"
-                value={
-                  entry
-                    ? entry.isFlagged
-                      ? `${entry.matchDisplayStatus} (Flagged)`
-                      : entry.matchDisplayStatus
-                    : "—"
-                }
+                value={<LedgerStatusBadges
+                  matchDisplayStatus={entry?.matchDisplayStatus}
+                  isFlagged={entry?.isFlagged}
+                  layout="stacked"
+                />}
                 loading={isLoading}
               />
               <DetailItem
