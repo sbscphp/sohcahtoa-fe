@@ -51,21 +51,6 @@ export default function TakeActionMenu({
         </Button>
       </Menu.Target>
       <Menu.Dropdown>
-        {/* {showLinkSection ? (
-          <>
-            {showLink ? (
-              <Menu.Item onClick={() => onAction("link")}>
-                Link transaction
-              </Menu.Item>
-            ) : null}
-            {showUnlink ? (
-              <Menu.Item onClick={() => onAction("unlink")}>
-                Unlink transaction
-              </Menu.Item>
-            ) : null}
-            <Menu.Divider />
-          </>
-        ) : null} */}
         {canFlag ? (
           <Menu.Item onClick={() => onAction("flag")}>
             Mark as flagged

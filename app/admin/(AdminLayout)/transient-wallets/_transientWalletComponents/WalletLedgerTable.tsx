@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
-import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { Text, Group, TextInput, Select, Button, Alert } from "@mantine/core";
 import { Search, Upload, ListFilter } from "lucide-react";
@@ -19,6 +18,7 @@ import {
   type TransientLedgerEntry,
 } from "../hooks/useTransientWalletLedger";
 import LedgerStatusBadges from "./LedgerStatusBadges";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 
 const pageSize = 20;
 
@@ -103,7 +103,7 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
 
   const renderRow = (item: TransientLedgerEntry) => [
     <div key="entryId">
-      <Text size="sm" fw={500} className="max-w-[200px] truncate">
+      <Text size="sm" fw={500} className="max-w-50 truncate">
         ID:{item.entryId}
       </Text>
     </div>,
@@ -113,7 +113,7 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
         {item.time}
       </Text>
     </div>,
-    <Text key="sessionId" size="sm" className="max-w-[180px] truncate">
+    <Text key="sessionId" size="sm" className="max-w-45 truncate">
       {item.sessionId}
     </Text>,
     <Text
@@ -128,7 +128,7 @@ export default function WalletLedgerTable({ walletId }: WalletLedgerTableProps) 
       {item.type === "Credit" ? "+" : "-"}
       {formatCurrency(item.amount)}
     </Text>,
-    <StatusBadge key="entryStatus" status={item.entryStatus} />,
+    <TransactionStatusBadge key="status" status={item.linkedTransactionStatus} />,
     <LedgerStatusBadges
       key="matchStatus"
       matchDisplayStatus={item.matchDisplayStatus}

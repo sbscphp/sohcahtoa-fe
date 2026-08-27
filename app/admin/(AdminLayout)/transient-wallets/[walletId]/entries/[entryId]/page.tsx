@@ -39,6 +39,8 @@ import TakeActionMenu, {
 } from "../../../_transientWalletComponents/modals/TakeActionMenu";
 import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 import Link from "next/link";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 
 type SuccessVariant =
   | "note"
@@ -472,7 +474,7 @@ export default function TransientWalletEntryDetailPage() {
               />
               <DetailItem
                 label="Entry Status"
-                value={entry?.entryStatus ?? "—"}
+                value={entry?.entryStatus ? <StatusBadge key="entryStatus" status={entry?.entryStatus} /> : "—"}
                 loading={isLoading}
               />
               <DetailItem
@@ -490,7 +492,7 @@ export default function TransientWalletEntryDetailPage() {
                 label="Linked TX Status"
                 value={
                   hasLinkedTransaction && entry?.linkedTransactionStatus
-                    ? formatApiStatusLabel(entry.linkedTransactionStatus)
+                    ? <TransactionStatusBadge key="status" status={entry?.linkedTransactionStatus} />
                     : "—"
                 }
                 loading={isLoading}

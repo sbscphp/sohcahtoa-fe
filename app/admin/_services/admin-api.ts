@@ -663,6 +663,7 @@ export interface AdminWalletLedgerEntry {
   balanceAfter: number;
   description: string;
   status: string;
+  linkedTransaction: AdminLedgerLinkedTransaction | null;
   transactionRef: string;
   matchStatus: string | null;
   transactionId: string;
