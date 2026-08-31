@@ -45,7 +45,7 @@ interface TakeActionButtonProps {
 }
 
 export default function TakeActionButton({
-  label = "Take Action",
+  label,
   size = "md",
   variant = "filled",
   color = "#DD4F05",
@@ -88,7 +88,7 @@ export default function TakeActionButton({
         className={className}
         onClick={handleOpenApprovals}
       >
-        {label}
+        {label ?? (transactionStatusLabel === "Pending" ? "Take Action" : "View Approvals") }
       </Button>
 
       <TakeActionOverlay

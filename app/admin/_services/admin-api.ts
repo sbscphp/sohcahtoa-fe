@@ -663,6 +663,7 @@ export interface AdminWalletLedgerEntry {
   balanceAfter: number;
   description: string;
   status: string;
+  linkedTransaction: AdminLedgerLinkedTransaction | null;
   transactionRef: string;
   matchStatus: string | null;
   transactionId: string;
@@ -1176,6 +1177,12 @@ export interface AdminTransactionApprovalProcess {
   currentOrder?: number | null;
 }
 
+export interface AdminTransactionTransientWalletEntry {
+  id: string;
+  walletId: string;
+  type?: "DEBIT" | "CREDIT" | string;
+}
+
 export interface AdminTransactionDetailsData {
   id: string;
   reference: string;
@@ -1184,6 +1191,7 @@ export interface AdminTransactionDetailsData {
   customerName: string;
   customerType: string;
   customerTransientWalletId?: string | null;
+  transientWalletEntries?: AdminTransactionTransientWalletEntry[] | null;
   transactionType: string;
   fxType: string;
   transactionStage: string;

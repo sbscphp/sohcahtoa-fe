@@ -139,10 +139,13 @@ function getReviewGroupKey(action: string): WorkflowReviewGroupKey | null {
   return null;
 }
 
-function getPendingReviewGroupKey(approvalType?: string): WorkflowReviewGroupKey {
-  if (isDisbursementApprovalType(approvalType)) return "OPERATIONS";
-  if (isRefundApprovalType(approvalType)) return "REFUND";
-  return "COMPLIANCE";
+function getPendingReviewGroupKey(approvalType?: string): WorkflowReviewGroupKey | null {
+  if (approvalType) {
+    if (isDisbursementApprovalType(approvalType)) return "OPERATIONS";
+    if (isRefundApprovalType(approvalType)) return "REFUND";
+    return "COMPLIANCE";
+  }
+  return null;
 }
 
 interface WorkflowSection {
@@ -296,13 +299,22 @@ function renderWorkflowHistoryItemCard(
 function renderPendingStageCard(
   stage: PendingWorkflowStageViewModel,
   groupLabel: string,
+  options?: { isNextToAct?: boolean; isStale?: boolean },
 ) {
   // `stage.name` from the API is a sub-stage name (e.g. "Operations Approval"), not the
   // review-group name, so the headline is always derived from the section it belongs to.
   const groupTypeLabel = groupLabel.replace(/\s*Review$/i, "");
+  // Subtly highlight whoever is actually next to act in the live workflow, and stale-out
+  // pending stages that belong to a review section that isn't the active one (e.g. the
+  // Operations Review preview shown while Compliance/Refund is the active process).
+  const containerClass = options?.isNextToAct
+    ? "bg-gray-25 border border-primary-100"
+    : options?.isStale
+      ? "bg-gray-25 opacity-60"
+      : "bg-[#F7F7F7]";
 
   return (
-    <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+    <div className={`${containerClass} rounded-lg p-5 mb-0 space-y-4!`}>
       {/* Header Row */}
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group align="flex-start" gap="sm" wrap="nowrap">
@@ -754,6 +766,9 @@ export default function TakeActionOverlay({
     approvalType,
     disbursementWorkflowStages
   );
+  // The only section whose pending stages reflect the live approval process — used to tell
+  // apart the real "next to act" stage from a stale preview of a not-yet-active section.
+  const activeReviewGroupKey = getPendingReviewGroupKey(approvalType);
 
   return (
     <>
@@ -879,6 +894,19 @@ export default function TakeActionOverlay({
                           node: renderPendingStageCard(
                             stage,
                             resolveSectionItemLabel(stage.order - 1),
+                            {
+                              isNextToAct:
+                                section.key === activeReviewGroupKey && stage.isCurrent,
+                              // Stale is only meaningful for the two "preview" pairings where a
+                              // later-stage section is shown pending while an earlier-stage
+                              // section is still active: Refund preview during Operations
+                              // Review, and Operations preview during Refund Review.
+                              isStale:
+                                (!activeReviewGroupKey || (section.key === "REFUND" &&
+                                  activeReviewGroupKey === "OPERATIONS") ||
+                                (section.key === "OPERATIONS" &&
+                                  activeReviewGroupKey === "REFUND")),
+                            },
                           ),
                         })),
                       ];
@@ -1213,10 +1241,10 @@ export default function TakeActionOverlay({
                       onClick={openTransactionCompleteReview}
                     >
                       {isDisbursementWorkflow
-                        ? "Complete Review"
+                        ? "Complete Disbursement Review"
                         : isRefundWorkflow
-                          ? "Complete Review"
-                          : "Complete Review"}
+                          ? "Complete Refund Review"
+                          : "Complete Compliance Review"}
                     </Button>
                     <Popover
                       width={360}

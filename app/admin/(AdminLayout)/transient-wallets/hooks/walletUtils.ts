@@ -181,3 +181,19 @@ export function canRefundLedgerEntry(
     (!hasLedgerWorkflowStatus(refundStatus) || hasRefundFailedWorkflowStatus(refundStatus))
   );
 }
+
+export function canInitiateDisbursementLedgerEntry(
+  linkedTransactionId: string | null | undefined,
+  isCreditEntry: boolean,
+  linkedTransactionStatus: string | null | undefined,
+  disbursementStatus: string | null | undefined,
+  refundStatus: string | null | undefined
+): boolean {
+  return (
+    hasActiveLedgerLink(linkedTransactionId) &&
+    isCreditEntry &&
+    isLinkableTransactionStatus(linkedTransactionStatus) &&
+    !hasLedgerWorkflowStatus(disbursementStatus) &&
+    hasRefundFailedWorkflowStatus(refundStatus)
+  );
+}

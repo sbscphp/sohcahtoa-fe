@@ -29,6 +29,7 @@ export interface TransientLedgerEntry {
   type: LedgerEntryType;
   amount: number;
   entryStatus: string;
+  linkedTransactionStatus: string | null;
   matchDisplayStatus: LedgerMatchDisplayStatus;
   isFlagged: boolean;
 }
@@ -70,6 +71,7 @@ function mapLedgerEntry(
     type: mapLedgerType(item.type),
     amount: item.amount,
     entryStatus: formatApiStatusLabel(item.status),
+    linkedTransactionStatus: item?.linkedTransaction?.status ?? null,
     matchDisplayStatus: normalizeMatchStatus(item.matchStatus),
     isFlagged: Boolean(item.isFlagged),
   };
