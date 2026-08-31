@@ -26,6 +26,7 @@ import {
   canDisburseLedgerEntry,
   canRefundLedgerEntry,
   hasLedgerLinkedTransaction,
+  canInitiateDisbursementLedgerEntry,
 } from "../../../hooks/walletUtils";
 import EntryAuditLogsTab from "../../../_transientWalletComponents/EntryAuditLogsTab";
 import EntryAdminNotesTab from "../../../_transientWalletComponents/EntryAdminNotesTab";
@@ -38,6 +39,8 @@ import TakeActionMenu, {
 } from "../../../_transientWalletComponents/modals/TakeActionMenu";
 import { formatTransactionTypeForTables } from "@/app/utils/helper/formatTransactionType";
 import Link from "next/link";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { TransactionStatusBadge } from "@/app/admin/_components/TransactionStatusBadge";
 
 type SuccessVariant =
   | "note"
@@ -80,23 +83,30 @@ export default function TransientWalletEntryDetailPage() {
   const isCreditEntry = entry?.type?.trim().toUpperCase() === "CREDIT";
   const canLink = canLinkLedgerEntry(entry?.matchDisplayStatus ?? "Unmatched", entry?.linkedTransaction);
   const canUnlink = canUnlinkLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     entry?.refundStatus,
     entry?.disbursementStatus
   );
   const canDisburse = canDisburseLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     isCreditEntry,
     entry?.linkedTransactionStatus,
     entry?.disbursementStatus
   );
   const canRefund = canRefundLedgerEntry(
-    (entry?.linkedTransaction?.id || entry?.linkedTransactionId ),
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
     isCreditEntry,
     entry?.linkedTransactionStatus,
     entry?.refundStatus
   );
   const canFlag = !entry?.isFlagged;
+  const canInitiateDisbursement = canInitiateDisbursementLedgerEntry(
+    (entry?.linkedTransaction?.id || entry?.linkedTransactionId),
+    isCreditEntry,
+    entry?.linkedTransactionStatus,
+    entry?.disbursementStatus,
+    entry?.refundStatus
+  );
 
   const [activeTab, setActiveTab] = useState<"audit" | "notes">("audit");
 
@@ -190,14 +200,14 @@ export default function TransientWalletEntryDetailPage() {
   );
 
   const disburseMutation = useCreateData<unknown, void>(
-    () => adminApi.wallet.disburseEntry(walletId, entryId),
+    () => adminApi.transactions.initiateDisbursement(entry?.linkedTransaction?.id ?? ""),
     {
       onSuccess: async () => {
         await Promise.all([invalidateEntry(), invalidateAuditLogs()]);
         setConfirmType(null);
         setSuccessVariant("disbursement");
       },
-      onError: (error) => showErrorToast(error, "Unable to confirm disbursement."),
+      onError: (error) => showErrorToast(error, "Unable to initiate Disbursement."),
     }
   );
 
@@ -291,10 +301,10 @@ export default function TransientWalletEntryDetailPage() {
         };
       case "disburse":
         return {
-          title: "Confirm Disbursement?",
+          title: "Initiate Disbursement?",
           message:
-            "Are you sure you want to confirm disbursement for this transaction? This action can not be undone.",
-          primaryButtonText: "Yes, Confirm Disbursement",
+            "Are you sure you want to re-initiate disbursement for this transaction? A disbursement workflow will be triggered for this entry",
+          primaryButtonText: "Yes, Initiate",
         };
       default:
         return null;
@@ -349,8 +359,8 @@ export default function TransientWalletEntryDetailPage() {
         };
       case "disbursement":
         return {
-          title: "Disbursement Successful",
-          message: "Funds disbursed successfully!",
+          title: "Disbursement Initiated",
+          message: "The disbursement workflow has been re-initiated for this transaction",
           primaryButtonText: "View Wallet",
           secondaryButtonText: undefined,
           onPrimary: handleViewWallet,
@@ -427,6 +437,7 @@ export default function TransientWalletEntryDetailPage() {
                 canUnlink={canUnlink}
                 canDisburse={canDisburse}
                 canRefund={canRefund}
+                canInitiateDisbursement={canInitiateDisbursement}
                 canFlag={canFlag}
               />
             </Group>
@@ -463,25 +474,23 @@ export default function TransientWalletEntryDetailPage() {
               />
               <DetailItem
                 label="Entry Status"
-                value={entry?.entryStatus ?? "—"}
+                value={entry?.entryStatus ? <StatusBadge key="entryStatus" status={entry?.entryStatus} /> : "—"}
                 loading={isLoading}
               />
               <DetailItem
                 label="Match Status"
-                value={
-                  entry
-                    ? entry.isFlagged
-                      ? `${entry.matchDisplayStatus} (Flagged)`
-                      : entry.matchDisplayStatus
-                    : "—"
-                }
+                value={<LedgerStatusBadges
+                  matchDisplayStatus={entry?.matchDisplayStatus}
+                  isFlagged={entry?.isFlagged}
+                  layout="stacked"
+                />}
                 loading={isLoading}
               />
               <DetailItem
                 label="Linked TX Status"
                 value={
                   hasLinkedTransaction && entry?.linkedTransactionStatus
-                    ? formatApiStatusLabel(entry.linkedTransactionStatus)
+                    ? <TransactionStatusBadge key="status" status={entry?.linkedTransactionStatus} />
                     : "—"
                 }
                 loading={isLoading}
