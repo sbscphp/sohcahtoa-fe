@@ -100,6 +100,13 @@ function hasLedgerWorkflowStatus(value: string | null | undefined): boolean {
   return Boolean(value?.trim());
 }
 
+function hasRefundFailedWorkflowStatus(value: string | null | undefined): boolean {
+  const normalized = value?.trim().toLowerCase();
+  return Boolean(
+    normalized && ["failed", "cancelled"].includes(normalized)
+  );
+}
+
 export function hasActiveLedgerLink(
   linkedTransactionId: string | null | undefined
 ): boolean {
@@ -171,6 +178,6 @@ export function canRefundLedgerEntry(
     isCreditEntry &&
     isLinkableTransactionStatus(linkedTransactionStatus) &&
     !isRefundBlockedTransactionStatus(linkedTransactionStatus) &&
-    !hasLedgerWorkflowStatus(refundStatus)
+    (!hasLedgerWorkflowStatus(refundStatus) || hasRefundFailedWorkflowStatus(refundStatus))
   );
 }
