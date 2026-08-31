@@ -12,8 +12,8 @@ interface ApprovalTypeOption {
 }
 
 const APPROVAL_TYPE_OPTIONS: ApprovalTypeOption[] = [
-  { value: "TRANSACTION", label: "Compliance Approval" },
-  { value: "DISBURSEMENT", label: "Disbursement Approval" },
+  { value: "TRANSACTION", label: "Compliance Review" },
+  { value: "DISBURSEMENT", label: "Operations Review" },
   { value: "REFUND", label: "Transaction Refund Approval" },
   { value: "RATE", label: "Rate Approval" },
 ];

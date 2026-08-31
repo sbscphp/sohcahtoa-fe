@@ -8,6 +8,7 @@ import {
   type AdminTransactionApprovalProcess,
   type AdminTransactionApprovalWorkflowStage,
   type AdminTransactionDetailsData,
+  type AdminTransactionTransientWalletEntry,
 } from "@/app/admin/_services/admin-api";
 import type { ApiResponse } from "@/app/_lib/api/client";
 import { getCurrencyByCode } from "@/app/admin/_lib/currency";
@@ -95,6 +96,8 @@ export interface PendingWorkflowStageViewModel {
   order: number;
   assigneeName: string;
   assigneeRole: string;
+  /** Whether this is the stage currently awaiting action, per the API's own `isCurrent` flag. */
+  isCurrent: boolean;
 }
 
 export interface TransactionApprovalUiViewModel {
@@ -377,6 +380,31 @@ function buildHeaderData(
   };
 }
 
+function buildTransientWalletEntryFields(
+  entries: AdminTransactionTransientWalletEntry[] | null | undefined,
+): OverviewField[] {
+  const validEntries = Array.isArray(entries)
+    ? entries.filter((entry) => entry?.id && entry?.walletId)
+    : [];
+
+  if (validEntries.length === 0) {
+    return [{ label: "Transient Wallet Entry", value: "--" }];
+  }
+
+  return validEntries.map((entry) => {
+    const typeSuffix =
+      validEntries.length > 1 && entry.type ? ` (${entry.type})` : "";
+    return {
+      label: `Transient Wallet Entry${typeSuffix}`,
+      value: entry.id,
+      route: adminRoutes.adminTransientWalletEntryDetails(
+        entry.walletId,
+        entry.id,
+      ),
+    };
+  });
+}
+
 function buildOverview(
   data: AdminTransactionDetailsData | null,
 ): TransactionOverviewViewModel | null {
@@ -433,6 +461,7 @@ function buildOverview(
         )
         : undefined,
     },
+    ...buildTransientWalletEntryFields(data.transientWalletEntries),
   ];
   const commonFields: OverviewField[] = [
     {
@@ -979,6 +1008,7 @@ function mapWorkflowStageToViewModel(
     order: s.order ?? 0,
     assigneeName: firstAssignee.adminName ?? "Unknown",
     assigneeRole: firstAssignee.roleName ?? "",
+    isCurrent: s.isCurrent === true,
   };
 }
 

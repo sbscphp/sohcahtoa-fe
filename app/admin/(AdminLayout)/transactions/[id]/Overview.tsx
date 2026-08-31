@@ -48,6 +48,7 @@ const loadingBasicDetails: OverviewField[] = [
   { label: "Request Status", value: "--" },
   { label: "Customer Type", value: "--" },
   { label: "Transient Wallet ID", value: "--" },
+  { label: "Transient Wallet Entry", value: "--" },
 ];
 
 const loadingSections: OverviewSection[] = [
@@ -169,7 +170,7 @@ export default function Overview({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {basicDetailsToRender.map((item) => (
             <DetailItem
-              key={item.label}
+              key={`${item.label}-${item.value}`}
               label={item.label}
               value={renderOverviewFieldValue(item)}
               loading={isLoading}
