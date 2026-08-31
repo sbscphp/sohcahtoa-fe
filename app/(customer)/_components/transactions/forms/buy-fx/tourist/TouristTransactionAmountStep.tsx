@@ -11,13 +11,34 @@ import { CoinsSwapFreeIcons } from "@hugeicons/core-free-icons";
 import { useTransactionRateCalculator } from "@/app/(customer)/_hooks/use-transaction-rate";
 import { notifications } from "@mantine/notifications";
 
-const transactionAmountSchema = z.object({
-  receiveAmount: z.string().min(1, "Amount is required"),
-  receiveCurrency: z.string().min(1, "Currency is required"),
-  sendAmount: z.string().min(1, "Amount is required"),
-  sendCurrency: z.string().min(1, "Currency is required"),
-  exchangeRate: z.string().optional(),
-});
+const MAX_TOURIST_AMOUNT = 10_000;
+
+function receiveAmountExceedsMaxMessage(maxValue: number): string {
+  return `Value for this transaction type cannot be greater than ${maxValue.toLocaleString()}`;
+}
+
+function receiveAmountOverMax(raw: string): boolean {
+  const parsedAmount = Number.parseFloat(raw.replaceAll(",", ""));
+  return Number.isFinite(parsedAmount) && parsedAmount > MAX_TOURIST_AMOUNT;
+}
+
+const transactionAmountSchema = z
+  .object({
+    receiveAmount: z.string().min(1, "Amount is required"),
+    receiveCurrency: z.string().min(1, "Currency is required"),
+    sendAmount: z.string().min(1, "Amount is required"),
+    sendCurrency: z.string().min(1, "Currency is required"),
+    exchangeRate: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (receiveAmountOverMax(data.receiveAmount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["receiveAmount"],
+        message: receiveAmountExceedsMaxMessage(MAX_TOURIST_AMOUNT),
+      });
+    }
+  });
 
 export type TouristTransactionAmountFormData = z.infer<typeof transactionAmountSchema>;
 
@@ -56,6 +77,7 @@ export default function TouristTransactionAmountStep({
   const nextDisabled =
     !form.values.receiveAmount?.trim() ||
     !form.values.sendAmount?.trim() ||
+    receiveAmountOverMax(form.values.receiveAmount) ||
     !hasValidRate ||
     isCalculating;
 
@@ -81,6 +103,14 @@ export default function TouristTransactionAmountStep({
             value={form.values.receiveAmount}
             onChange={(value) => {
               form.setFieldValue("receiveAmount", value);
+              if (receiveAmountOverMax(value)) {
+                form.setFieldError(
+                  "receiveAmount",
+                  receiveAmountExceedsMaxMessage(MAX_TOURIST_AMOUNT)
+                );
+              } else {
+                form.clearFieldError("receiveAmount");
+              }
               recalculate(value);
             }}
             currency={getCurrencyByCode(form.values.receiveCurrency) ?? CURRENCIES[0]}
