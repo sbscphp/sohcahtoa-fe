@@ -78,6 +78,12 @@ export default function ViewSupportRequestPage() {
               {formatHeaderDateTime(detail.timestamp) || detail.timestamp}
             </span>
           </div>
+          {detail.transactionId ? (
+            <div className="flex flex-col w-full gap-1 py-2 items-start sm:col-span-2">
+              <span className="text-[#6C6969] text-sm font-normal">Transaction ID</span>
+              <span className="text-sm font-medium text-[#4D4B4B]">{detail.transactionId}</span>
+            </div>
+          ) : null}
         </div>
         {detail.description && (
           <div className="pt-2">

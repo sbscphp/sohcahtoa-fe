@@ -16,6 +16,7 @@ import {
   filterAndPrepareSegments,
   type TransactionsByTypeGroup,
 } from "@/app/agent/(AgentLayout)/dashboard/_utils/transactions-by-type-groups";
+import { SELECT_WIDTH } from "@/app/agent/utils/constants";
 
 const PieChart = dynamic(
   () => import("@mantine/charts").then((m) => m.PieChart),
@@ -37,31 +38,16 @@ const FLOW_OPTIONS: Array<{ value: TransactionsByTypeGroup; label: string }> = [
 ];
 
 const PIE_COLORS = [
-  "#232323",
-  "#B2AFAF",
-  "#8F8B8B",
-  "#F97316",
-  "#3B82F6",
-  "#6B7280",
+  "#DD4F05", // primary-400
+  "#E88A58", // primary-200
+  "#EEA782", // primary-100
+  "#F4C4AC", // primary-50
+  "#933503", // primary-600
+  "#F8DCCD", // primary-25
 ];
 
 /** Hide slice label below this share to avoid stacked/overlapping text */
 const MIN_LABEL_PERCENT = 0.02;
-
-const pillSelectStyles = {
-  input: {
-    borderColor: "#CCCACA",
-    borderRadius: 9999,
-    minHeight: "2.5rem",
-    paddingLeft: "1rem",
-    paddingRight: "2rem",
-    fontFamily: "var(--mantine-font-family)",
-    fontWeight: 500,
-    fontSize: "0.875rem",
-    lineHeight: "1.25rem",
-    color: "#4D4B4B",
-  },
-} as const;
 
 function formatNgn(amount: number): string {
   return new Intl.NumberFormat("en-NG", {
@@ -179,7 +165,7 @@ function TransactionsPieTooltip({
 export function TransactionsByType() {
   const [range, setRange] = useState<AgentDashboardRange>("last_30_days");
   const [flow, setFlow] = useState<TransactionsByTypeGroup>("buy");
-  const filterIcon = <ListFilter size={14} strokeWidth={2} className="text-[#4D4B4B]" />;
+  const filterIcon = <ListFilter size={16} strokeWidth={2} className="text-gray-500" />;
 
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const [chartSize, setChartSize] = useState(220);
@@ -283,9 +269,11 @@ export function TransactionsByType() {
           <span className="block">Transactions</span>
           <span className="block">By Type</span>
         </p>
-        <Box className="flex min-w-0 w-full max-w-full flex-1 flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <Box className="flex min-w-0 w-full max-w-full flex-1 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Select
-            size="sm"
+            size="xs"
+            w={{ base: "100%", sm: SELECT_WIDTH }}
+            className="custom-select min-w-0"
             data={FLOW_OPTIONS}
             value={flow}
             onChange={(v) => {
@@ -293,11 +281,12 @@ export function TransactionsByType() {
             }}
             rightSection={filterIcon}
             rightSectionPointerEvents="none"
-            styles={pillSelectStyles}
-            className="w-full min-w-0 sm:w-auto sm:min-w-[5.8rem]"
+            radius="2xl"
           />
           <Select
-            size="sm"
+            size="xs"
+            w={{ base: "100%", sm: SELECT_WIDTH }}
+            className="custom-select min-w-0"
             data={RANGE_OPTIONS}
             value={range}
             onChange={(value) => {
@@ -305,8 +294,7 @@ export function TransactionsByType() {
             }}
             rightSection={filterIcon}
             rightSectionPointerEvents="none"
-            styles={pillSelectStyles}
-            className="w-full min-w-0 sm:w-auto sm:min-w-30"
+            radius="2xl"
           />
         </Box>
       </Group>

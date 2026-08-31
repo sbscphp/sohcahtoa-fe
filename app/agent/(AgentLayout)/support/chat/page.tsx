@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
-import { Card, Text, Select, Textarea, Button, Group, Stack, Loader } from "@mantine/core";
+import { Card, Text, Select, Textarea, TextInput, Button, Group, Stack, Loader } from "@mantine/core";
 import FileUploadInput from "@/app/(customer)/_components/forms/FileUploadInput";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -18,12 +18,26 @@ import { agentKeys } from "@/app/_lib/api/query-keys";
 import type { SupportTicketCategory } from "@/app/_lib/api/types";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 
-const supportSchema = z.object({
-  customerId: z.string().min(1, "Customer ID is required"),
-  category: z.string().min(1, "Category is required"),
-  description: z.string().min(1, "Description is required"),
-  attachment: z.any().optional(),
-});
+const supportSchema = z
+  .object({
+    customerId: z.string().min(1, "Customer ID is required"),
+    category: z.string().min(1, "Category is required"),
+    description: z.string().min(1, "Description is required"),
+    transactionId: z.string().optional(),
+    attachment: z.any().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.category === "TRANSACTION_ISSUE" &&
+      !data.transactionId?.trim()
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["transactionId"],
+        message: "Transaction ID is required for transaction issues",
+      });
+    }
+  });
 
 type SupportFormValues = z.infer<typeof supportSchema>;
 
@@ -86,11 +100,14 @@ export default function ChatSupportPage() {
       customerId: "",
       category: "",
       description: "",
+      transactionId: "",
       attachment: null,
     },
     validate: zod4Resolver(supportSchema),
     validateInputOnChange: true,
   });
+
+  const isTransactionCategory = form.values.category === "TRANSACTION_ISSUE";
 
   const handleSubmit = form.onSubmit(() => {
     openConfirm();
@@ -102,6 +119,10 @@ export default function ChatSupportPage() {
     formData.append("customerId", values.customerId);
     formData.append("category", values.category);
     formData.append("description", values.description);
+
+    if (values.category === "TRANSACTION_ISSUE" && values.transactionId?.trim()) {
+      formData.append("transactionId", values.transactionId.trim());
+    }
 
     if (values.attachment) {
       formData.append("attachment", values.attachment, values.attachment.name);
@@ -183,8 +204,26 @@ export default function ChatSupportPage() {
                   rightSection={<ChevronDown size={16} />}
                   rightSectionPointerEvents="none"
                   {...form.getInputProps("category")}
+                  onChange={(value) => {
+                    form.setFieldValue("category", value ?? "");
+                    if (value !== "TRANSACTION_ISSUE") {
+                      form.setFieldValue("transactionId", "");
+                      form.clearFieldError("transactionId");
+                    }
+                  }}
                 />
               </div>
+
+              {isTransactionCategory ? (
+                <TextInput
+                  label="Transaction ID"
+                  required
+                  placeholder="Enter transaction ID"
+                  size="md"
+                  radius="md"
+                  {...form.getInputProps("transactionId")}
+                />
+              ) : null}
 
               <Textarea
                 label="Description"

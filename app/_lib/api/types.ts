@@ -1219,6 +1219,7 @@ export interface AgentSupportTicketDetailData {
   status: string;
   timestamp: string;
   customerEmail: string;
+  transactionId?: string | null;
   messages: AgentSupportTicketMessage[];
 }
 
