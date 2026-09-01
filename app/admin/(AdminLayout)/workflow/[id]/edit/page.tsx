@@ -17,7 +17,8 @@ import {
   adminApi,
   type WorkflowTemplateUpdatePayload,
 } from "@/app/admin/_services/admin-api";
-import ApprovalTypeModal, { type ApprovalTypeValue, approvalTypeLabel } from "../../_workflowComponents/ApprovalTypeModal";
+import ApprovalTypeModal from "../../_workflowComponents/ApprovalTypeModal";
+import { approvalTypeLabel, type ApprovalTypeValue } from "../../../workflow/utils/workflows";
 import EscalationProtocolModal from "../../_workflowComponents/EscalationProtocolModal";
 import AssignToModal, { AssignableUser, AssignableRole } from "../../_workflowComponents/AssignToModal";
 import WorkflowLineItem, {

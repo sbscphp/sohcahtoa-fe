@@ -14,10 +14,12 @@ import {
   useWorkflowManagementList,
   type WorkflowManagementTableRow,
 } from "../hooks/useWorkflowManagementList";
+import { approvalTypeLabel, type ApprovalTypeValue } from "../../../workflow/utils/workflows";
 
 const workflowHeaders = [
   { label: "Workflow name", key: "name" },
-  { label: "Workflow Type", key: "workflowType" },
+  // { label: "Workflow Type", key: "workflowType" },
+  { label: "Approval Type", key: "approvalType" },
   { label: "Workflow Action", key: "workflowAction" },
   { label: "Status", key: "status" },
   { label: "Date Created", key: "dateCreated" },
@@ -58,8 +60,11 @@ export default function WorkflowManagementTable() {
         ID:{item.displayId}
       </Text>
     </div>,
-    <Text key="workflowType" size="sm">
-      {item.workflowType}
+    // <Text key="workflowType" size="sm">
+    //   {item.workflowType}
+    // </Text>,
+    <Text key="approvalType" size="sm">
+      {approvalTypeLabel(item.approvalType as ApprovalTypeValue)}
     </Text>,
     <Text key="workflowAction" size="sm">
       {item.workflowAction}

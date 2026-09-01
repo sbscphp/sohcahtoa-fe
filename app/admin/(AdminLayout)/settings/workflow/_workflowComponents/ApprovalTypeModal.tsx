@@ -2,6 +2,6 @@
 
 export {
   default,
-  type ApprovalTypeValue,
-  approvalTypeLabel,
 } from "../../../workflow/_workflowComponents/ApprovalTypeModal";
+
+export { type ApprovalTypeValue, approvalTypeLabel } from "../../../workflow/utils/workflows";
