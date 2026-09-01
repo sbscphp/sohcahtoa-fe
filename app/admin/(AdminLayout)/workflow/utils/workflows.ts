@@ -1,6 +1,6 @@
 export const APPROVAL_TYPE_OPTIONS: ApprovalTypeOption[] = [
-    { value: "TRANSACTION", label: "Compliance Review" },
-    { value: "DISBURSEMENT", label: "Operations Review" },
+    { value: "TRANSACTION", label: "Compliance Review Approval" },
+    { value: "DISBURSEMENT", label: "Operations Review Approval" },
     { value: "REFUND", label: "Transaction Refund Approval" },
     { value: "RATE", label: "Rate Approval" },
 ];
