@@ -11,7 +11,7 @@ import { SuccessModal } from "@/app/admin/_components/SuccessModal";
 import WorkflowLineView from "../_workflowComponents/WorkflowLineView";
 import { useWorkflowTemplateDetails } from "../hooks/useWorkflowTemplateDetails";
 import { useWorkflowTemplateStatusActions } from "../hooks/useWorkflowTemplateStatusActions";
-import { approvalTypeLabel } from "../_workflowComponents/ApprovalTypeModal";
+import { approvalTypeLabel } from "../../../workflow/utils/workflows";
 
 type WorkflowStatus = "Active" | "Deactivated" | "Draft" | "Archived";
 

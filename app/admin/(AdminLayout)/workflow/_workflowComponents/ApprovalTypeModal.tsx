@@ -3,24 +3,7 @@
 import { useState } from "react";
 import { Modal, TextInput, Radio, Text } from "@mantine/core";
 import { Search } from "lucide-react";
-
-export type ApprovalTypeValue = "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT";
-
-interface ApprovalTypeOption {
-  value: ApprovalTypeValue;
-  label: string;
-}
-
-const APPROVAL_TYPE_OPTIONS: ApprovalTypeOption[] = [
-  { value: "TRANSACTION", label: "Compliance Review" },
-  { value: "DISBURSEMENT", label: "Operations Review" },
-  { value: "REFUND", label: "Transaction Refund Approval" },
-  { value: "RATE", label: "Rate Approval" },
-];
-
-export function approvalTypeLabel(value: ApprovalTypeValue | ""): string {
-  return APPROVAL_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? "";
-}
+import { APPROVAL_TYPE_OPTIONS, ApprovalTypeValue } from "../utils/workflows";
 
 interface ApprovalTypeModalProps {
   opened: boolean;

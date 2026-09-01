@@ -35,6 +35,7 @@ export interface WorkflowManagementTableRow {
   workflowAction: string;
   status: "Active" | "Deactivated" | "Draft";
   dateCreated: string;
+  approvalType: string;
   timeCreated: string;
 }
 
@@ -103,6 +104,7 @@ function normalizeItem(
     displayId: displayId || id || "--",
     name: asString(record.workflowName, "--"),
     workflowType: asString(record.workflowType, "--"),
+    approvalType: asString(record.approvalType, "--"),
     workflowAction: asString(record.workflowAction, "--"),
     status: mapWorkflowManagementStatus(record.status),
     dateCreated: formatDate(dateCreated),
