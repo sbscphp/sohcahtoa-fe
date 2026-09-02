@@ -62,7 +62,7 @@ export default function CurrencySelector({
               <span className="text-base leading-none" aria-hidden>
                 <Image
                   src={getCurrencyFlagUrl(currency.code) ?? ""}
-                  alt={currency.name}
+                  alt={currency.name ?? currency.code}
                   width={24}
                   height={24}
                 />
