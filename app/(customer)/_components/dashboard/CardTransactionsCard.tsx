@@ -2,7 +2,6 @@
 
 import { LucideIcon } from "lucide-react";
 import { formatCurrency } from "../../_lib/formatCurrency";
-import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import SectionHeader from "./SectionHeader";
 import SeeAllButton from "./SeeAllButton";
 import TransactionListItem from "./TransactionListItem";
@@ -18,6 +17,7 @@ type CardTransactionItem = {
   secondaryText: string;
   amount: number;
   amountVariant: "debit" | "credit";
+  currency?: string;
 };
 
 /** Wire to card transactions API when available. */
@@ -25,7 +25,6 @@ const CARD_TRANSACTIONS: CardTransactionItem[] = [];
 
 export default function CardTransactionsCard() {
   const router = useRouter();
-  const currencyCode = useSelectedCurrencyCode();
 
   return (
     <div className="flex flex-col rounded-2xl bg-[#FAFAFA] p-2 shadow-sm">
@@ -46,8 +45,8 @@ export default function CardTransactionsCard() {
               secondaryText={tx.secondaryText}
               amount={
                 tx.amountVariant === "debit"
-                  ? `-${formatCurrency(Math.abs(tx.amount), currencyCode).formatted}`
-                  : formatCurrency(tx.amount, currencyCode).formatted
+                  ? `-${formatCurrency(Math.abs(tx.amount), tx.currency || "USD").formatted}`
+                  : formatCurrency(tx.amount, tx.currency || "USD").formatted
               }
               amountVariant={tx.amountVariant}
             />

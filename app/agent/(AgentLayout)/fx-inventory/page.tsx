@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Group, Select } from "@mantine/core";
 import { ListFilter } from "lucide-react";
-import { CurrencySelectorWithSearch } from "@/app/agent/(AgentLayout)/rate-calculator/_components/CurrencySelectorWithSearch";
+import { CurrencySelectorWithSearch } from "@/app/(customer)/_components/dashboard/CurrencySelectorWithSearch";
 import {
   CURRENCIES,
   formatCurrencyAmount,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, Text, Group, Stack, Button, Badge } from "@mantine/core";
 import { Info, ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
-import { CurrencySelectorWithSearch } from "@/app/agent/(AgentLayout)/rate-calculator/_components/CurrencySelectorWithSearch";
+import { CurrencySelectorWithSearch } from "@/app/(customer)/_components/dashboard/CurrencySelectorWithSearch";
 import { CURRENCIES, getCurrencyByCode, type Currency } from "@/app/(customer)/_lib/currency";
 import { getCurrencySymbol } from "@/app/(customer)/_lib/currency";
 

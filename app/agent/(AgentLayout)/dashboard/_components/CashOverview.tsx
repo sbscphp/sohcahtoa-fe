@@ -7,7 +7,7 @@ import { IconWallet, IconWalletAdd, IconRecieve } from "@/components/icons";
 import { formatCurrency } from "@/app/(customer)/_lib/currency";
 import SectionCard from "@/app/(customer)/_components/dashboard/SectionCard";
 import FxActionButton from "@/app/(customer)/_components/dashboard/FxActionButton";
-import { CurrencySelectorWithSearch } from "@/app/agent/(AgentLayout)/rate-calculator/_components/CurrencySelectorWithSearch";
+import { CurrencySelectorWithSearch } from "@/app/(customer)/_components/dashboard/CurrencySelectorWithSearch";
 import {
   CURRENCIES,
   getCurrencyByCode,

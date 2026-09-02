@@ -10,7 +10,7 @@ import { agentKeys } from "@/app/_lib/api/query-keys";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import type { AgentSupportTicketDetailData } from "@/app/_lib/api/types";
 import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
-import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { getSupportStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import Loader from "@/components/loader";
 
 function getCategoryLabel(category: string): string {
@@ -66,7 +66,7 @@ export default function ViewSupportRequestPage() {
           </div>
           <div className="flex flex-col w-full gap-1 py-2 items-end text-right">
             <span className="text-[#6C6969] text-sm font-normal">Status</span>
-            <span style={getStatusBadge(detail.status)}>{detail.status}</span>
+            <span style={getSupportStatusBadge(detail.status)}>{detail.status}</span>
           </div>
           <div className="flex flex-col w-full gap-1 py-2 items-start">
             <span className="text-[#6C6969] text-sm font-normal">Reference</span>

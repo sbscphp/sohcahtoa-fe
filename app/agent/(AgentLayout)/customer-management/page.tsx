@@ -1,8 +1,9 @@
 "use client";
 
 import type {
-  AgentCustomerSummary,
+  AgentCustomerSegment,
   AgentCustomerStatsResponse,
+  AgentCustomerSummary,
 } from "@/app/_lib/api/types";
 import { useTable } from "@/app/_hooks/use-table";
 import { useCreateData, useFetchData } from "@/app/_lib/api/hooks";
@@ -11,12 +12,14 @@ import { notifications } from "@mantine/notifications";
 import { CustomerStatCards } from "./_components/CustomerStatCards";
 import CustomerTable from "./_components/CustomerTable";
 import { useAgentCustomers } from "./hooks/useAgentCustomers";
+import type { AgentCustomerFilterKey } from "./constant";
 
 export default function CustomerManagementPage() {
-  const table = useTable<"status">({
+  const table = useTable<AgentCustomerFilterKey>({
     initial: {
       q: "",
       selections: {},
+      dateRange: null,
       page: 1,
       limit: 10,
     },
@@ -24,7 +27,6 @@ export default function CustomerManagementPage() {
 
   const {
     customers,
-    statusFilter,
     isLoading,
     totalPages,
     exportParams,
@@ -72,6 +74,18 @@ export default function CustomerManagementPage() {
   const verifiedCustomers = stats?.verifiedCustomers ?? 0;
   const repeatCustomers = stats?.repeatCustomers ?? 0;
   const pendingKYC = stats?.pendingKyc ?? 0;
+  const activeSegment =
+    (table.selections.segment?.[0] as AgentCustomerSegment | undefined) ?? "ALL";
+
+  const handleSegmentChange = (segment: AgentCustomerSegment) => {
+    table.applyFilters({
+      selections: {
+        ...table.selections,
+        segment: segment === "ALL" ? [] : [segment],
+      },
+      dateRange: table.dateRange,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -80,6 +94,8 @@ export default function CustomerManagementPage() {
         verifiedCustomers={verifiedCustomers}
         repeatCustomers={repeatCustomers}
         pendingKYC={pendingKYC}
+        activeSegment={activeSegment}
+        onSegmentChange={handleSegmentChange}
       />
       <CustomerTable
         customers={customers as AgentCustomerSummary[]}
@@ -87,18 +103,18 @@ export default function CustomerManagementPage() {
         page={table.page ?? 1}
         totalPages={totalPages}
         search={table.searchValue}
-        filter={statusFilter}
+        filterValues={{
+          selections: table.selections,
+          dateRange: table.dateRange,
+        }}
         onSearchChange={(value) => {
           table.setSearch(value);
         }}
-        onFilterChange={(value) => {
-          table.setSelections(
-            value === "Filter By" || value === "All" ? {} : { status: [value] }
-          );
+        onFiltersApply={(values) => {
+          table.applyFilters(values);
         }}
         onPageChange={table.setPage}
         onExportClick={handleExportClick}
-        isExporting={exportMutation.isPending}
       />
     </div>
   );

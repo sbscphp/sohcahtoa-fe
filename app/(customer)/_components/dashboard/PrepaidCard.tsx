@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cardBackground } from "@/app/assets/asset";
 import { formatCurrency } from "../../_lib/formatCurrency";
-import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 
 const CARD_DETAILS_VISIBLE_KEY = "sohcahtoa-prepaid-card-details-visible";
 
@@ -13,6 +12,7 @@ type PrepaidCardProps = {
   validThru?: string;
   balance?: number;
   cardholderName?: string;
+  currencyCode?: string;
 };
 
 export default function PrepaidCard({
@@ -20,9 +20,9 @@ export default function PrepaidCard({
   validThru = "00/00",
   balance = 0,
   cardholderName = "",
+  currencyCode = "USD",
 }: PrepaidCardProps) {
   const [detailsVisible, setDetailsVisible] = useState(true);
-  const currencyCode = useSelectedCurrencyCode();
   const bgSrc = typeof cardBackground === "string" ? cardBackground : (cardBackground as { src: string }).src;
   const panDisplay = detailsVisible ? `.... ${lastFour}` : "•••• ••••";
   const dateDisplay = detailsVisible ? validThru : "••/••";

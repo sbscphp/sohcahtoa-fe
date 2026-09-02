@@ -514,10 +514,30 @@ export interface PaginationMetadata {
   totalPages: number;
 }
 
+export type AgentCustomerKycStatus =
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "PENDING_VERIFICATION"
+  | "VERIFIED"
+  | "REJECTED";
+
+export type AgentCustomerTypeFilter =
+  | "NIGERIAN_CITIZEN"
+  | "TOURIST"
+  | "EXPATRIATE";
+
+export type AgentCustomerSegment =
+  | "ALL"
+  | "VERIFIED"
+  | "RETURNING"
+  | "PENDING_KYC";
+
 export interface AgentCustomerListParams extends PaginationParams {
-  status?: string;
+  status?: AgentCustomerKycStatus | string;
   lastTransactionType?: string;
-  customerType?: string;
+  customerType?: AgentCustomerTypeFilter | string;
+  /** ALL (default), VERIFIED, RETURNING, or PENDING_KYC */
+  segment?: AgentCustomerSegment | string;
   fromDate?: string;
   toDate?: string;
   search?: string;

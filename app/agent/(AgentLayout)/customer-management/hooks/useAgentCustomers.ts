@@ -3,48 +3,73 @@
 import { useMemo } from "react";
 import { useFetchDataSeperateLoading } from "@/app/_lib/api/hooks";
 import { agentKeys } from "@/app/_lib/api/query-keys";
-import type { AgentCustomerExportParams, AgentCustomerListResponse } from "@/app/_lib/api/types";
+import type {
+  AgentCustomerExportParams,
+  AgentCustomerListParams,
+  AgentCustomerListResponse,
+  AgentCustomerSegment,
+} from "@/app/_lib/api/types";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import type { UseTableResult } from "@/app/_hooks/use-table";
+import { toDateRangeParams } from "@/app/_lib/utils/query-format";
+import type { AgentCustomerFilterKey } from "../constant";
 
-export type AgentCustomerUiStatusFilter =
-  | "Filter By"
-  | "All"
-  | "Pending"
-  | "Approved"
-  | "Rejected";
-
-function mapStatusFilterToApiStatus(status?: AgentCustomerUiStatusFilter) {
-  if (!status || status === "Filter By" || status === "All") return undefined;
-  if (status === "Approved") return "VERIFIED";
-  if (status === "Rejected") return "REJECTED";
-  return "NOT_STARTED";
+function firstSelection(
+  selections: Partial<Record<AgentCustomerFilterKey, string[]>>,
+  key: AgentCustomerFilterKey
+): string | undefined {
+  const value = selections[key]?.[0]?.trim();
+  return value || undefined;
 }
 
-type AgentCustomerSelectionKey = "status";
+function toIsoDateTime(dateOnly: string | undefined, endOfDay: boolean): string | undefined {
+  if (!dateOnly) return undefined;
+  return endOfDay ? `${dateOnly}T23:59:59.999Z` : `${dateOnly}T00:00:00.000Z`;
+}
 
-export function useAgentCustomers(
-  table: UseTableResult<AgentCustomerSelectionKey>
-) {
-  const statusFilter = (table.selections.status?.[0] ??
-    "Filter By") as AgentCustomerUiStatusFilter;
+export function useAgentCustomers(table: UseTableResult<AgentCustomerFilterKey>) {
+  const requestParams = useMemo<AgentCustomerListParams>(() => {
+    const segment = firstSelection(table.selections, "segment") as
+      | AgentCustomerSegment
+      | undefined;
+    const status = firstSelection(table.selections, "status");
+    const customerType = firstSelection(table.selections, "customerType");
+    const lastTransactionType = firstSelection(
+      table.selections,
+      "lastTransactionType"
+    );
+    const { startDate, endDate } = toDateRangeParams(table.dateRange);
 
-  const requestParams = useMemo(
-    () => ({
+    return {
       page: table.page ?? 1,
       limit: table.limit ?? 10,
       search: table.searchValue?.trim() || undefined,
-      status: mapStatusFilterToApiStatus(statusFilter),
-    }),
-    [statusFilter, table.limit, table.page, table.searchValue]
-  );
+      status,
+      customerType,
+      lastTransactionType,
+      segment: segment && segment !== "ALL" ? segment : undefined,
+      fromDate: toIsoDateTime(startDate, false),
+      toDate: toIsoDateTime(endDate, true),
+    };
+  }, [
+    table.dateRange,
+    table.limit,
+    table.page,
+    table.searchValue,
+    table.selections,
+  ]);
 
   const exportParams = useMemo<AgentCustomerExportParams>(
     () => ({
       search: requestParams.search,
       status: requestParams.status,
+      customerType: requestParams.customerType,
+      lastTransactionType: requestParams.lastTransactionType,
+      segment: requestParams.segment,
+      fromDate: requestParams.fromDate,
+      toDate: requestParams.toDate,
     }),
-    [requestParams.search, requestParams.status],
+    [requestParams]
   );
 
   const query = useFetchDataSeperateLoading<AgentCustomerListResponse>(
@@ -58,10 +83,10 @@ export function useAgentCustomers(
 
   return {
     customers,
-    statusFilter,
     exportParams,
-    page: pagination?.page ?? requestParams.page,
-    limit: pagination?.limit ?? requestParams.limit,
+    requestParams,
+    page: pagination?.page ?? requestParams.page ?? 1,
+    limit: pagination?.limit ?? requestParams.limit ?? 10,
     total: pagination?.total ?? customers.length,
     totalPages: pagination?.totalPages ?? 1,
     isLoading: query.isLoading,

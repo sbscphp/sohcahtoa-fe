@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "@mantine/core";
 import { formatCurrency } from "../../_lib/formatCurrency";
-import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import {
   buildDashboardTransactionListParams,
   FX_DASHBOARD_TAB_CONFIG,
@@ -30,7 +29,6 @@ export default function FxTransactionsCard() {
     getDefaultSubFilter(overviewTab)
   );
   const router = useRouter();
-  const currencyCode = useSelectedCurrencyCode();
 
   const subFilterTabs = FX_TRANSACTION_SUB_FILTERS[overviewTab];
   const activeSubFilterDef = getSubFilterDef(overviewTab, activeSubFilter);
@@ -90,7 +88,12 @@ export default function FxTransactionsCard() {
                       key={`${tx.id}-${i}`}
                       primaryText={tx.referenceNumber ?? tx.id}
                       secondaryText={formatHeaderDateTime(tx.createdAt)}
-                      amount={formatCurrency(Number(tx.foreignAmount ?? 0), currencyCode).formatted}
+                      amount={
+                        formatCurrency(
+                          Number(tx.foreignAmount ?? 0),
+                          tx.currency || "USD"
+                        ).formatted
+                      }
                     />
                   ))
                 )}

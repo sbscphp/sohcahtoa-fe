@@ -578,6 +578,7 @@ export const agentKeys = {
       status?: string;
       lastTransactionType?: string;
       customerType?: string;
+      segment?: string;
       fromDate?: string;
       toDate?: string;
       search?: string;

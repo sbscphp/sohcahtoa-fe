@@ -1,7 +1,6 @@
 "use client";
 
 import { formatCurrency } from "../../_lib/formatCurrency";
-import { useSelectedCurrencyCode } from "../../_lib/selected-currency-atom";
 import SectionHeader from "./SectionHeader";
 
 type FlowRowProps = {
@@ -33,7 +32,7 @@ function FlowRow({ label, value, barFillPercent, barColor }: FlowRowProps) {
 }
 
 export default function CardTransactionFlowsCard() {
-  const currencyCode = useSelectedCurrencyCode();
+  const currencyCode = "USD";
   const moneyIn = 0;
   const moneyOut = 0;
   const total = 0;

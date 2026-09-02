@@ -12,7 +12,7 @@ import {
   type PaginatedTableColumn,
 } from "@/app/(customer)/_components/common";
 import { formatHeaderDateTime } from "@/app/utils/helper/formatLocalDate";
-import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { getSupportStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import type { AgentSupportTicketListItem } from "@/app/_lib/api/types";
 
 interface SupportRequestRow {
@@ -90,7 +90,7 @@ export default function SupportHistoryPage() {
             key: "status",
             label: "Status",
             align: "center",
-            render: (row) => <div style={getStatusBadge(row.status)}>{row.status}</div>,
+            render: (row) => <div style={getSupportStatusBadge(row.status)}>{row.status}</div>,
           },
           {
             key: "view",

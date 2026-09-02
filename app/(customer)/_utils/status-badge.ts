@@ -40,6 +40,17 @@ const STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
   confirmed: { bg: "#D1FADF", textColor: "#027A48" },
 };
 
+
+const SUPPORT_STATUS_COLORS: Record<string, { bg: string; textColor: string }> = {
+  open: { bg: "#1D4ED8", textColor: "#FFFFFF" },
+  in_progress: { bg: "#B54708", textColor: "#FFFFFF" },
+  "in-progress": { bg: "#B54708", textColor: "#FFFFFF" },
+  resolved: { bg: "#027A48", textColor: "#FFFFFF" },
+  reopened: { bg: "#2563EB", textColor: "#FFFFFF" },
+  "re-opened": { bg: "#2563EB", textColor: "#FFFFFF" },
+  closed: { bg: "#6B7280", textColor: "#FFFFFF" },
+};
+
 export function normalizeStatus(status: string): string {
   return status.trim().toLowerCase().replace(/\s+/g, "_");
 }
@@ -57,11 +68,25 @@ export function getStatusColor(status: string): { bg: string; textColor: string 
   );
 }
 
-/**
- * Style object for a status pill. At most two lines, then ellipsis (…).
- */
-export function getStatusBadge(status: string): CSSProperties {
-  const { bg, textColor } = getStatusColor(status);
+export function getSupportStatusColor(status: string): {
+  bg: string;
+  textColor: string;
+} {
+  const underscored = normalizeStatus(status);
+  const hyphenated = underscored.replace(/_/g, "-");
+  return (
+    SUPPORT_STATUS_COLORS[underscored] ??
+    SUPPORT_STATUS_COLORS[hyphenated] ?? {
+      bg: "#6B7280",
+      textColor: "#FFFFFF",
+    }
+  );
+}
+
+function buildStatusBadgeStyle(
+  bg: string,
+  textColor: string
+): CSSProperties {
   return {
     display: "-webkit-box",
     WebkitBoxOrient: "vertical",
@@ -83,4 +108,18 @@ export function getStatusBadge(status: string): CSSProperties {
     color: textColor,
     wordBreak: "break-word",
   };
+}
+
+/**
+ * Style object for a status pill. At most two lines, then ellipsis (…).
+ */
+export function getStatusBadge(status: string): CSSProperties {
+  const { bg, textColor } = getStatusColor(status);
+  return buildStatusBadgeStyle(bg, textColor);
+}
+
+/** Support ticket status pill — colors match admin Change Status modal. */
+export function getSupportStatusBadge(status: string): CSSProperties {
+  const { bg, textColor } = getSupportStatusColor(status);
+  return buildStatusBadgeStyle(bg, textColor);
 }

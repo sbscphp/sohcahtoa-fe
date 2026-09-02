@@ -5,7 +5,7 @@ import {
   PaginatedTable,
   type PaginatedTableColumn
 } from "@/app/(customer)/_components/common";
-import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { getSupportStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { ActionIcon } from "@mantine/core";
 import { IconArrowRight } from "@/components/icons/IconArrowRight";
 import { useFetchData } from "@/app/_lib/api/hooks";
@@ -93,7 +93,7 @@ export default function SupportHistorySection() {
       label: "Status",
       align: "center",
       render: (row) => (
-        <div style={getStatusBadge(row.status)}>{row.status}</div>
+        <div style={getSupportStatusBadge(row.status)}>{row.status}</div>
       )
     },
     {

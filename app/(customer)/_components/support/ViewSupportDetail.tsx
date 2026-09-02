@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Button } from "@mantine/core";
-import { getStatusBadge } from "@/app/(customer)/_utils/status-badge";
+import { getSupportStatusBadge } from "@/app/(customer)/_utils/status-badge";
 import { useFetchSingleData } from "@/app/_lib/api/hooks";
 import { customerKeys } from "@/app/_lib/api/query-keys";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
@@ -102,7 +102,7 @@ export default function ViewSupportDetail({ id }: { id: string }) {
             align="right"
             label="Status"
             value={detail.status}
-            valueStyle={getStatusBadge(detail.status)}
+            valueStyle={getSupportStatusBadge(detail.status)}
           />
           <DetailRow label="Reference" value={detail.reference} />
           <DetailRow
