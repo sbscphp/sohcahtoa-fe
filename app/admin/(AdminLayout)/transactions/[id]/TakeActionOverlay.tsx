@@ -1529,17 +1529,17 @@ export default function TakeActionOverlay({
         onClose={() => setTransactionCompleteReviewSuccessOpen(false)}
         title={
           isDisbursementWorkflow
-            ? "Disbursement Approval Completed"
+            ? "Review Completed"
             : isRefundWorkflow
-              ? "Refund Approval Completed"
-              : "Action Approval Completed"
+              ? "Review Completed"
+              : "Review Completed"
         }
         message={
           isDisbursementWorkflow
-            ? "The disbursement stage has been successfully approved and the workflow will continue"
+            ? "The review has been successfully completed"
             : isRefundWorkflow
-              ? "The refund request has been successfully approved and the process is now complete"
-              : "The request/application has been successfully approved and the process is now complete"
+              ? "The review has been successfully completed"
+              : "The review has been successfully completed"
         }
         // primaryButtonText="View More Action Approval"
         // onPrimaryClick={navigateToTransactionsList}
