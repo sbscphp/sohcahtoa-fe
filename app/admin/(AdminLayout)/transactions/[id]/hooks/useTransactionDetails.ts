@@ -543,6 +543,14 @@ function buildOverview(
       value: pickString(raw.admissionType, stepData.admissionType),
     },
     {
+      label: "Pickup Location",
+      value: pickString(
+        details.pickupLocation,
+        cashPickup.pickupLocation,
+        asRecord(stepData.pickupLocation).name,
+      ),
+    },
+    {
       label: "Pick Up State",
       value: pickString(cashPickup.pickupState, stepData.pickupState),
     },
@@ -551,12 +559,11 @@ function buildOverview(
       value: pickString(cashPickup.pickupCity, stepData.pickupCity),
     },
     {
-      label: "Pickup Location",
+      label: "Pickup Address",
       value: pickString(
-        details.pickupLocation,
-        cashPickup.pickupLocation,
-        asRecord(stepData.pickupLocation).name,
-        asRecord(stepData.pickupLocation).address,
+        details.pickupAddress,
+        cashPickup.pickupAddress,
+        asRecord(stepData.pickupAddress).address,
       ),
     },
     {
