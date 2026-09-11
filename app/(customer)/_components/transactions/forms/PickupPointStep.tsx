@@ -24,27 +24,47 @@ import {
 import { domiciliaryAccountSchema } from "@/app/(customer)/_lib/domiciliary-account-schema";
 import DomiciliaryAccountFields from "@/app/(customer)/_components/transactions/forms/DomiciliaryAccountFields";
 
+function formatLocalIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function toIsoDateString(value: unknown): string | undefined {
   if (value == null || value === "") return undefined;
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) return undefined;
-    return value.toISOString().slice(0, 10);
+    return formatLocalIsoDate(value);
   }
   const s = String(value).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return undefined;
-  return d.toISOString().slice(0, 10);
+  return formatLocalIsoDate(d);
 }
 
 function toHHmm(value: unknown): string | undefined {
   if (value == null || value === "") return undefined;
   const s = String(value).trim();
-  const m = /^(\d{1,2}):(\d{2})/.exec(s);
+
+  const ampm = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i.exec(s);
+  if (ampm) {
+    let hours = Number(ampm[1]);
+    const minutes = ampm[2]!;
+    const period = ampm[4]!.toUpperCase();
+    if (period === "AM") {
+      if (hours === 12) hours = 0;
+    } else if (hours !== 12) {
+      hours += 12;
+    }
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  }
+
+  const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(s);
   if (!m) return undefined;
   return `${m[1]!.padStart(2, "0")}:${m[2]}`;
 }
-
 
 function toAmPmTime(value: unknown): string | undefined {
   const hhmm = toHHmm(value);
@@ -58,10 +78,20 @@ function toAmPmTime(value: unknown): string | undefined {
   return `${String(hours12).padStart(2, "0")}:${mStr} ${period}`;
 }
 
-function toStartOfDay(dateString: string) {
+function toStartOfLocalDay(dateString: string): Date {
   const trimmed = dateString.trim();
-  const isoLike = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
-  if (isoLike) return new Date(`${trimmed}T00:00:00.000Z`);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (match) {
+    return new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      0,
+      0,
+      0,
+      0
+    );
+  }
 
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return parsed;
@@ -69,15 +99,41 @@ function toStartOfDay(dateString: string) {
   return parsed;
 }
 
-function validatePickupDate(
-  data: { pickupDate?: string; preference?: "pickup" | "bank" },
+function isSameLocalDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/** When pickup is today, TimePicker `min` must be current local time (`hh:mm:ss`). */
+function getMinPickupTime(pickupDate: string | undefined): string | undefined {
+  const rawDate = pickupDate?.trim() ?? "";
+  if (!rawDate) return undefined;
+
+  const selectedDate = toStartOfLocalDay(rawDate);
+  if (Number.isNaN(selectedDate.getTime())) return undefined;
+
+  const now = new Date();
+  if (!isSameLocalDay(selectedDate, now)) return undefined;
+
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`;
+}
+
+function validatePickupDateTime(
+  data: {
+    pickupDate?: string;
+    pickupTime?: string;
+    preference?: "pickup" | "bank";
+  },
   ctx: z.RefinementCtx
 ) {
   if (data.preference === "bank") return;
   const rawDate = data.pickupDate?.trim() ?? "";
   if (!rawDate) return;
 
-  const selectedDate = toStartOfDay(rawDate);
+  const selectedDate = toStartOfLocalDay(rawDate);
   if (Number.isNaN(selectedDate.getTime())) {
     ctx.addIssue({
       code: "custom",
@@ -96,6 +152,32 @@ function validatePickupDate(
       path: ["pickupDate"],
       message: "Pick Up Date cannot be earlier than today",
     });
+    return;
+  }
+
+  const rawTime = data.pickupTime?.trim() ?? "";
+  if (!rawTime) return;
+
+  const hhmm = toHHmm(rawTime);
+  if (!hhmm) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["pickupTime"],
+      message: "Pick Up Time is invalid",
+    });
+    return;
+  }
+
+  const [hStr, mStr] = hhmm.split(":");
+  const scheduled = new Date(selectedDate);
+  scheduled.setHours(Number(hStr), Number(mStr), 0, 0);
+
+  if (scheduled.getTime() <= Date.now()) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["pickupTime"],
+      message: "Pick Up Time cannot be in the past",
+    });
   }
 }
 
@@ -107,7 +189,7 @@ const pickupOnlySchema = z
     pickupDate: z.string().min(1, "Date of collection is required"),
     pickupTime: z.string().min(1, "Time of collection is required"),
   })
-  .superRefine(validatePickupDate);
+  .superRefine(validatePickupDateTime);
 
 const pickupOrBankSchema = z
   .object({
@@ -139,7 +221,7 @@ const pickupOrBankSchema = z
     },
     { message: "Please select a bank account", path: ["selectedBankId"] }
   )
-  .superRefine(validatePickupDate);
+  .superRefine(validatePickupDateTime);
 
 export const PAYOUT_METHOD_OPTIONS = [
   {
@@ -201,7 +283,14 @@ const payoutMethodSchema = z
   )
   .superRefine((data, ctx) => {
     if (payoutMethodRequiresPickupLocation(data.payoutMethod)) {
-      validatePickupDate({ pickupDate: data.pickupDate, preference: "pickup" }, ctx);
+      validatePickupDateTime(
+        {
+          pickupDate: data.pickupDate,
+          pickupTime: data.pickupTime,
+          preference: "pickup",
+        },
+        ctx
+      );
     }
 
     if (payoutMethodRequiresDomiciliaryAccount(data.payoutMethod)) {
@@ -321,6 +410,12 @@ export default function PickupPointStep({
 }: Readonly<PickupPointStepProps>) {
   const isPickupOrBank = preferenceMode === "pickup-or-bank";
   const isPayoutMethodFlow = preferenceMode === "pickup-only" && enablePayoutMethod;
+
+  const minPickupDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   const pickupOnlyForm = useForm<PickupPointFormData>({
     initialValues: {
@@ -832,20 +927,17 @@ export default function PickupPointStep({
               key={pickupOrBankForm.key("pickupDate")}
               label="Date of collection"
               placeholder="DD MM YYYY"
-              minDate={new Date()}
+              minDate={minPickupDate}
               required
               size="md"
               valueFormat="YYYY-MM-DD"
               {...pickupOrBankForm.getInputProps("pickupDate")}
               onChange={(v) => {
-                let next = "";
-                if (typeof v === "string") {
-                  next = v;
-                } else if (v != null && typeof v === "object" && "getTime" in v) {
-                  next = (v as Date).toISOString().slice(0, 10);
-                }
+                const next = toIsoDateString(v) ?? "";
                 pickupOrBankForm.setFieldValue("pickupDate", next);
                 pickupOrBankForm.setFieldValue("locationId", "");
+                pickupOrBankForm.clearFieldError("pickupDate");
+                pickupOrBankForm.clearFieldError("pickupTime");
               }}
             />
             <TimePicker
@@ -855,9 +947,11 @@ export default function PickupPointStep({
               size="md"
               format="12h"
               {...pickupOrBankForm.getInputProps("pickupTime")}
+              min={getMinPickupTime(pickupOrBankForm.values.pickupDate)}
               onChange={(next) => {
                 pickupOrBankForm.setFieldValue("pickupTime", next);
                 pickupOrBankForm.setFieldValue("locationId", "");
+                pickupOrBankForm.clearFieldError("pickupTime");
               }}
             />
           </div>
@@ -921,20 +1015,17 @@ export default function PickupPointStep({
               key={payoutMethodForm.key("pickupDate")}
               label="Pick Up Date"
               placeholder="DD MM YYYY"
-              minDate={new Date()}
+              minDate={minPickupDate}
               required
               size="md"
               valueFormat="YYYY-MM-DD"
               {...payoutMethodForm.getInputProps("pickupDate")}
               onChange={(v) => {
-                let next = "";
-                if (typeof v === "string") {
-                  next = v;
-                } else if (v != null && typeof v === "object" && "getTime" in v) {
-                  next = (v as Date).toISOString().slice(0, 10);
-                }
+                const next = toIsoDateString(v) ?? "";
                 payoutMethodForm.setFieldValue("pickupDate", next);
                 payoutMethodForm.setFieldValue("locationId", "");
+                payoutMethodForm.clearFieldError("pickupDate");
+                payoutMethodForm.clearFieldError("pickupTime");
               }}
             />
             <TimePicker
@@ -944,9 +1035,11 @@ export default function PickupPointStep({
               size="md"
               format="12h"
               {...payoutMethodForm.getInputProps("pickupTime")}
+              min={getMinPickupTime(payoutMethodForm.values.pickupDate)}
               onChange={(next) => {
                 payoutMethodForm.setFieldValue("pickupTime", next);
                 payoutMethodForm.setFieldValue("locationId", "");
+                payoutMethodForm.clearFieldError("pickupTime");
               }}
             />
           </div>
@@ -1038,20 +1131,17 @@ export default function PickupPointStep({
               key={pickupOnlyForm.key("pickupDate")}
               label="Pick Up Date"
               placeholder="DD MM YYYY"
-              minDate={new Date()}
+              minDate={minPickupDate}
               required
               size="md"
               valueFormat="YYYY-MM-DD"
               {...pickupOnlyForm.getInputProps("pickupDate")}
               onChange={(v) => {
-                let next = "";
-                if (typeof v === "string") {
-                  next = v;
-                } else if (v != null && typeof v === "object" && "getTime" in v) {
-                  next = (v as Date).toISOString().slice(0, 10);
-                }
+                const next = toIsoDateString(v) ?? "";
                 pickupOnlyForm.setFieldValue("pickupDate", next);
                 pickupOnlyForm.setFieldValue("locationId", "");
+                pickupOnlyForm.clearFieldError("pickupDate");
+                pickupOnlyForm.clearFieldError("pickupTime");
               }}
             />
             <TimePicker
@@ -1061,9 +1151,11 @@ export default function PickupPointStep({
               size="md"
               format="12h"
               {...pickupOnlyForm.getInputProps("pickupTime")}
+              min={getMinPickupTime(pickupOnlyForm.values.pickupDate)}
               onChange={(next) => {
                 pickupOnlyForm.setFieldValue("pickupTime", next);
                 pickupOnlyForm.setFieldValue("locationId", "");
+                pickupOnlyForm.clearFieldError("pickupTime");
               }}
             />
           </div>
