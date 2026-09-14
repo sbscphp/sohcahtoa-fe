@@ -1082,6 +1082,23 @@ function resolveDisbursementApprovalProcess(
   return null;
 }
 
+function resolveRefundApprovalProcess(
+  data: AdminTransactionDetailsData | null,
+): AdminTransactionApprovalProcess | null {
+  if (!data) return null;
+  if (
+    data.refundApprovalProcess &&
+    typeof data.refundApprovalProcess === "object"
+  ) {
+    return data.refundApprovalProcess;
+  }
+  const nested = asRecord(data.raw).refundApprovalProcess;
+  if (nested && typeof nested === "object") {
+    return nested as AdminTransactionApprovalProcess;
+  }
+  return null;
+}
+
 function pickAssigneeId(assignee: unknown): string | null {
   const r = asRecord(assignee);
   const v = r.id ?? r.adminId ?? r.userId;
@@ -1215,6 +1232,14 @@ export function useTransactionDetails(
     [query.data?.data],
   );
 
+  const refundWorkflowStages = useMemo(
+    () =>
+      extractAllWorkflowStages(
+        resolveRefundApprovalProcess(query.data?.data ?? null),
+      ),
+    [query.data?.data],
+  );
+
   return {
     overview,
     receipt,
@@ -1223,6 +1248,7 @@ export function useTransactionDetails(
     workflowHistory,
     pendingWorkflowStages,
     disbursementWorkflowStages,
+    refundWorkflowStages,
     isApprovalOfficer: approvalUi.isApprovalOfficer,
     approvalState: approvalUi.approvalState,
     approvalProcessName: approvalUi.approvalProcessName,

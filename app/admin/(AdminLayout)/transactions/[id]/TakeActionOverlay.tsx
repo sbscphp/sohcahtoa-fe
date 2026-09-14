@@ -60,6 +60,8 @@ interface TakeActionOverlayProps {
   pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   /** All stages of the disbursement approval workflow, used to preview "Operations Review" before/after it is the active process. */
   disbursementWorkflowStages?: PendingWorkflowStageViewModel[];
+  /** All stages of the refund approval workflow, used to resolve real stage names/assignees and to preview "Refund Review" when it isn't the active process but has existing history. */
+  refundWorkflowStages?: PendingWorkflowStageViewModel[];
 }
 
 function getDocumentStatusBadgeStyle(status: string) {
@@ -177,6 +179,7 @@ function buildWorkflowSections(
   pendingWorkflowStages: PendingWorkflowStageViewModel[],
   approvalType?: string,
   disbursementWorkflowStages: PendingWorkflowStageViewModel[] = [],
+  refundWorkflowStages: PendingWorkflowStageViewModel[] = [],
 ): WorkflowSection[] {
   const groupBuckets: Record<
     WorkflowReviewGroupKey,
@@ -195,6 +198,7 @@ function buildWorkflowSections(
   });
 
   const completedOperationsCount = groupBuckets.OPERATIONS.length;
+  const completedRefundCount = groupBuckets.REFUND.length;
   const pendingGroupKey = getPendingReviewGroupKey(approvalType);
 
   // Surface "Operations Review" at all times (using the always-on disbursement approval
@@ -206,6 +210,15 @@ function buildWorkflowSections(
     ? disbursementWorkflowStages.slice(completedOperationsCount)
     : [];
 
+  // Unlike Operations, Refund is only ever previewed when it has already been touched
+  // (i.e. there's existing refund history) — a refund that was never initiated must stay
+  // invisible, per the "refund review is not always shown" rule. When Refund is the live
+  // process, pendingWorkflowStages below already covers it using approvalProcess directly.
+  const refundPreviewStages =
+    pendingGroupKey !== "REFUND" && completedRefundCount > 0
+      ? refundWorkflowStages.slice(completedRefundCount)
+      : [];
+
   return REVIEW_GROUP_ORDER.map((key): WorkflowSection | null => {
     const items = groupBuckets[key];
     const stages =
@@ -213,7 +226,9 @@ function buildWorkflowSections(
         ? pendingWorkflowStages
         : key === "OPERATIONS"
           ? operationsPreviewStages
-          : [];
+          : key === "REFUND"
+            ? refundPreviewStages
+            : [];
 
     // Nothing to show for this group (e.g. Refund when it's not applicable).
     if (items.length === 0 && stages.length === 0) return null;
@@ -375,6 +390,7 @@ export default function TakeActionOverlay({
   isLastWorkflowStage = false,
   pendingWorkflowStages = [],
   disbursementWorkflowStages = [],
+  refundWorkflowStages = [],
 }: TakeActionOverlayProps) {
   const isRefundWorkflow = isRefundApprovalType(approvalType);
   const isDisbursementWorkflow = isDisbursementApprovalType(approvalType);
@@ -764,7 +780,8 @@ export default function TakeActionOverlay({
     groupedWorkflowItems,
     pendingWorkflowStages,
     approvalType,
-    disbursementWorkflowStages
+    disbursementWorkflowStages,
+    refundWorkflowStages
   );
   // The only section whose pending stages reflect the live approval process — used to tell
   // apart the real "next to act" stage from a stale preview of a not-yet-active section.
@@ -860,13 +877,16 @@ export default function TakeActionOverlay({
                         return name && name !== "Pending Stage" ? name : undefined;
                       };
 
-                      // No backend "refund approval process" object exists to source real
-                      // stage names from, so fall back to a fixed ordered list, reusing its
-                      // last entry for any further steps.
+                      // Prefer the real stage name from refundApprovalProcess (mirrors
+                      // resolveOperationsStageName above); only fall back to the fixed
+                      // ordered list when that data is unavailable (e.g. older API
+                      // responses that don't yet include refundApprovalProcess).
                       const resolveRefundStageName = (
                         index: number,
                       ): string | undefined => {
                         if (!Number.isFinite(index) || index < 0) return undefined;
+                        const name = refundWorkflowStages[index]?.stageName;
+                        if (name && name !== "Pending Stage") return name;
                         const clampedIndex = Math.min(
                           index,
                           REFUND_STAGE_NAME_FALLBACKS.length - 1,

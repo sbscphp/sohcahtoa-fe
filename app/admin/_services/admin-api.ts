@@ -1202,6 +1202,8 @@ export interface AdminTransactionDetailsData {
   approvalProcess?: AdminTransactionApprovalProcess | null;
   /** Always-available disbursement approval workflow, independent of which process is currently active (see approvalProcess). */
   disbursementApprovalProcess?: AdminTransactionApprovalProcess | null;
+  /** Always-available refund approval workflow, independent of which process is currently active (see approvalProcess). */
+  refundApprovalProcess?: AdminTransactionApprovalProcess | null;
   paymentDetails?: AgentTransactionPaymentDetails | null;
   transactionSettlement?: AgentTransactionSettlementDetails | null;
 }
