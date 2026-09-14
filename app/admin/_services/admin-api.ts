@@ -1204,6 +1204,8 @@ export interface AdminTransactionDetailsData {
   disbursementApprovalProcess?: AdminTransactionApprovalProcess | null;
   /** Always-available refund approval workflow, independent of which process is currently active (see approvalProcess). */
   refundApprovalProcess?: AdminTransactionApprovalProcess | null;
+  /** Flat workflow line (same ids as raw.history) carrying admin name/role for each completed action. */
+  workflowLine?: RateWorkflowLineItem[] | null;
   paymentDetails?: AgentTransactionPaymentDetails | null;
   transactionSettlement?: AgentTransactionSettlementDetails | null;
 }

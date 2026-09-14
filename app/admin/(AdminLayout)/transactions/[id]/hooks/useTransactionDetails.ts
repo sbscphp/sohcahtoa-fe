@@ -79,6 +79,8 @@ export interface TransactionActionDocumentViewModel {
 export interface TransactionWorkflowHistoryItemViewModel {
   id: string;
   actorLabel: string;
+  /** Actor's role at the time of this action (from workflowLine.adminRole), empty when unknown. */
+  actorRole: string;
   actionLabel: string;
   statusLabel: string;
   date: string;
@@ -946,8 +948,31 @@ function toTimestampMs(createdAt: string): number {
   return Number.isNaN(ts) ? Number.NEGATIVE_INFINITY : ts;
 }
 
+/** Maps workflowLine entries by id -> { adminName, adminRole }, used to enrich raw.history items (which have `performedBy` but no role) with the actor's role. */
+function buildWorkflowLineActorMap(
+  workflowLine: unknown,
+): Map<string, { adminName?: string; adminRole?: string }> {
+  const map = new Map<string, { adminName?: string; adminRole?: string }>();
+  if (!Array.isArray(workflowLine)) return map;
+
+  for (const entry of workflowLine) {
+    const record = asRecord(entry);
+    const id = pickString(record.id);
+    if (id === "--") continue;
+
+    const adminName = pickString(record.adminName);
+    const adminRole = pickString(record.adminRole);
+    map.set(id, {
+      adminName: adminName === "--" ? undefined : adminName,
+      adminRole: adminRole === "--" ? undefined : adminRole,
+    });
+  }
+  return map;
+}
+
 function extractWorkflowHistory(
   raw: Record<string, unknown>,
+  workflowLine: unknown = [],
 ): TransactionWorkflowHistoryItemViewModel[] {
   const history = Array.isArray(raw.history)
     ? raw.history
@@ -961,6 +986,8 @@ function extractWorkflowHistory(
     return aTs - bTs;
   });
 
+  const actorMap = buildWorkflowLineActorMap(workflowLine);
+
   return sortedHistory
     .map((source): TransactionWorkflowHistoryItemViewModel | null => {
       const id = pickString(source.id);
@@ -968,10 +995,13 @@ function extractWorkflowHistory(
 
       const metadata = asRecord(source.metadata);
       const createdAt = pickString(source.createdAt);
+      const actorInfo = actorMap.get(id);
+      const actorRole = pickString(actorInfo?.adminRole);
 
       return {
         id,
-        actorLabel: pickString(source.performedBy, "System"),
+        actorLabel: pickString(actorInfo?.adminName, source.performedBy, "System"),
+        actorRole: actorRole === "--" ? "" : actorRole,
         actionLabel: formatEnum(source.action),
         statusLabel: getWorkflowStatusLabel(source.action),
         date: formatDate(createdAt),
@@ -1203,8 +1233,13 @@ export function useTransactionDetails(
     [query.data?.data?.raw],
   );
   const workflowHistory = useMemo(
-    () => extractWorkflowHistory(asRecord(query.data?.data?.raw)),
-    [query.data?.data?.raw],
+    () =>
+      extractWorkflowHistory(
+        asRecord(query.data?.data?.raw),
+        query.data?.data?.workflowLine ??
+          asRecord(query.data?.data?.raw).workflowLine,
+      ),
+    [query.data?.data?.raw, query.data?.data?.workflowLine],
   );
 
   const approvalUi = useMemo(

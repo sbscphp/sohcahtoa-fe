@@ -243,21 +243,35 @@ function buildWorkflowSections(
   }).filter((section): section is WorkflowSection => section !== null);
 }
 
+/** Avatar initials from a user's full name (e.g. "Anu Wapo" -> "AW"). */
+function getInitials(name: string): string {
+  return name
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 function renderWorkflowHistoryItemCard(
   item: TransactionWorkflowHistoryItemViewModel,
   groupLabel?: string,
 ) {
-  // When rendered inside a Workflow Line review-group section, headline with the section's
-  // label (e.g. "Operations Review") instead of the actor, matching the pending-stage card
-  // structure; the actor still shows up on the line below. Activities/Documentation tab
-  // callers omit `groupLabel` and keep the original actor-centric look.
-  const headline = groupLabel ?? item.actorLabel;
-  const groupTypeLabel = groupLabel?.replace(/\s*Review$/i, "");
-  const subtitle = groupLabel
-    ? `${groupTypeLabel} Approval • ${item.actorLabel}`
-    : item.documentType === "--"
-      ? item.actionLabel
-      : `${item.documentType} • ${item.actionLabel}`;
+  // Headline is always the actor (matching Activities/Documentation's actor-first look).
+  // When rendered inside a Workflow Line review-group section, the subtitle becomes the
+  // actor's role followed by the resolved stage name (rendered slightly bolder), instead
+  // of the document/action subtitle used by the Activities/Documentation tab callers
+  // (which omit `groupLabel`).
+  const headline = item.actorLabel;
+  const subtitle = groupLabel ? (
+    <>
+      {item.actorRole ? `${item.actorRole} • ` : ""}
+      <span className="font-medium text-body-heading-300">{groupLabel}</span>
+    </>
+  ) : item.documentType === "--"
+    ? item.actionLabel
+    : `${item.documentType} • ${item.actionLabel}`;
 
   return (
     <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
@@ -265,7 +279,7 @@ function renderWorkflowHistoryItemCard(
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group align="flex-start" gap="sm" wrap="nowrap">
           <Avatar radius="xl" size="md" color="#F5B89C">
-            {headline.slice(0, 2).toUpperCase()}
+            {getInitials(headline)}
           </Avatar>
 
           <div className="min-w-0 space-y-1">
@@ -316,9 +330,11 @@ function renderPendingStageCard(
   groupLabel: string,
   options?: { isNextToAct?: boolean; isStale?: boolean },
 ) {
-  // `stage.name` from the API is a sub-stage name (e.g. "Operations Approval"), not the
-  // review-group name, so the headline is always derived from the section it belongs to.
-  const groupTypeLabel = groupLabel.replace(/\s*Review$/i, "");
+  // Headline is the assignee awaiting action (matching Activities/Documentation's
+  // actor-first look). `groupLabel` here is the resolved stage name (e.g. "Operations
+  // Review" then "Operations Approval"), not the review-group name — it's shown in the
+  // subtitle alongside the assignee's role, rendered slightly bolder.
+  const headline = stage.assigneeName;
   // Subtly highlight whoever is actually next to act in the live workflow, and stale-out
   // pending stages that belong to a review section that isn't the active one (e.g. the
   // Operations Review preview shown while Compliance/Refund is the active process).
@@ -334,16 +350,16 @@ function renderPendingStageCard(
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group align="flex-start" gap="sm" wrap="nowrap">
           <Avatar radius="xl" size="md" color="#B0B0B0">
-            {groupLabel.slice(0, 2).toUpperCase()}
+            {getInitials(headline)}
           </Avatar>
 
           <div className="min-w-0 space-y-1">
             <Text fw={500} className="text-body-heading-300 break-all">
-              {groupLabel}
+              {headline}
             </Text>
             <Text size="xs" c="dimmed" className="text-body-text-50!">
-              {groupTypeLabel + " Approval • "}
-              {stage.assigneeName}
+              {stage.assigneeRole ? `${stage.assigneeRole} • ` : ""}
+              <span className="font-medium text-body-heading-300">{groupLabel}</span>
             </Text>
 
             {/* Date & Time */}
