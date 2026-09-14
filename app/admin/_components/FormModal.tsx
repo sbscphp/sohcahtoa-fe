@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import {
   Modal,
   Button,
@@ -15,6 +15,43 @@ import {
 } from "@mantine/core";
 import { X } from "lucide-react";
 import FileUpload from "./FileUpload";
+
+const NIGERIAN_PHONE_REGEX = /^(0\d{10}|\+234[1-9]\d{9})$/;
+const PHONE_ERROR_MESSAGE =
+  "Phone number must be 080… or +234… format (e.g., 08031234567 or +2348031234567)";
+const PHONE_CONTROL_KEYS = new Set([
+  "Backspace",
+  "Delete",
+  "Tab",
+  "Enter",
+  "Escape",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
+]);
+
+function normalizePhoneInput(value: string): string {
+  return value.trim().replace(/[\s()-]/g, "");
+}
+
+function isValidNigerianPhoneNumber(value: string): boolean {
+  return NIGERIAN_PHONE_REGEX.test(normalizePhoneInput(value));
+}
+
+function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^\d+\s]/g, "");
+}
+
+function handlePhoneKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (PHONE_CONTROL_KEYS.has(e.key)) return;
+  if (!/[0-9+\s]/.test(e.key)) {
+    e.preventDefault();
+  }
+}
 
 /* --------------------------------------------
 | Types
@@ -159,13 +196,11 @@ export default function   FormModal({
         newErrors[field.name] = "Invalid email address";
       }
 
-      // Phone validation (basic)
-      if (
-        field.type === "tel" &&
-        formData[field.name] &&
-        !/^[+]?[\d\s()-]+$/.test(formData[field.name])
-      ) {
-        newErrors[field.name] = "Invalid phone number";
+      // Phone validation: 080… (11 digits) or +234… (+234 + 10 digits)
+      if (field.type === "tel" && formData[field.name]) {
+        if (!isValidNigerianPhoneNumber(String(formData[field.name]))) {
+          newErrors[field.name] = PHONE_ERROR_MESSAGE;
+        }
       }
 
       // Number validation
@@ -212,13 +247,27 @@ export default function   FormModal({
     switch (field.type) {
       case "text":
       case "email":
+        inputElement = (
+          <TextInput
+            {...commonProps}
+            type={field.type}
+            value={formData[field.name] || ""}
+            onChange={(e) => handleChange(field.name, e.currentTarget.value)}
+          />
+        );
+        break;
+
       case "tel":
         inputElement = (
           <TextInput
             {...commonProps}
-            type={field.type === "tel" ? "number" : field.type}
+            type="tel"
+            inputMode="tel"
             value={formData[field.name] || ""}
-            onChange={(e) => handleChange(field.name, e.currentTarget.value)}
+            onKeyDown={handlePhoneKeyDown}
+            onChange={(e) =>
+              handleChange(field.name, sanitizePhoneInput(e.currentTarget.value))
+            }
           />
         );
         break;

@@ -79,6 +79,8 @@ export interface TransactionActionDocumentViewModel {
 export interface TransactionWorkflowHistoryItemViewModel {
   id: string;
   actorLabel: string;
+  /** Actor's role at the time of this action (from workflowLine.adminRole), empty when unknown. */
+  actorRole: string;
   actionLabel: string;
   statusLabel: string;
   date: string;
@@ -543,6 +545,14 @@ function buildOverview(
       value: pickString(raw.admissionType, stepData.admissionType),
     },
     {
+      label: "Pickup Location",
+      value: pickString(
+        details.pickupLocation,
+        cashPickup.pickupLocation,
+        asRecord(stepData.pickupLocation).name,
+      ),
+    },
+    {
       label: "Pick Up State",
       value: pickString(cashPickup.pickupState, stepData.pickupState),
     },
@@ -551,12 +561,11 @@ function buildOverview(
       value: pickString(cashPickup.pickupCity, stepData.pickupCity),
     },
     {
-      label: "Pickup Location",
+      label: "Pickup Address",
       value: pickString(
-        details.pickupLocation,
-        cashPickup.pickupLocation,
-        asRecord(stepData.pickupLocation).name,
-        asRecord(stepData.pickupLocation).address,
+        details.pickupAddress,
+        cashPickup.pickupAddress,
+        asRecord(stepData.pickupAddress).address,
       ),
     },
     {
@@ -939,8 +948,31 @@ function toTimestampMs(createdAt: string): number {
   return Number.isNaN(ts) ? Number.NEGATIVE_INFINITY : ts;
 }
 
+/** Maps workflowLine entries by id -> { adminName, adminRole }, used to enrich raw.history items (which have `performedBy` but no role) with the actor's role. */
+function buildWorkflowLineActorMap(
+  workflowLine: unknown,
+): Map<string, { adminName?: string; adminRole?: string }> {
+  const map = new Map<string, { adminName?: string; adminRole?: string }>();
+  if (!Array.isArray(workflowLine)) return map;
+
+  for (const entry of workflowLine) {
+    const record = asRecord(entry);
+    const id = pickString(record.id);
+    if (id === "--") continue;
+
+    const adminName = pickString(record.adminName);
+    const adminRole = pickString(record.adminRole);
+    map.set(id, {
+      adminName: adminName === "--" ? undefined : adminName,
+      adminRole: adminRole === "--" ? undefined : adminRole,
+    });
+  }
+  return map;
+}
+
 function extractWorkflowHistory(
   raw: Record<string, unknown>,
+  workflowLine: unknown = [],
 ): TransactionWorkflowHistoryItemViewModel[] {
   const history = Array.isArray(raw.history)
     ? raw.history
@@ -954,6 +986,8 @@ function extractWorkflowHistory(
     return aTs - bTs;
   });
 
+  const actorMap = buildWorkflowLineActorMap(workflowLine);
+
   return sortedHistory
     .map((source): TransactionWorkflowHistoryItemViewModel | null => {
       const id = pickString(source.id);
@@ -961,10 +995,13 @@ function extractWorkflowHistory(
 
       const metadata = asRecord(source.metadata);
       const createdAt = pickString(source.createdAt);
+      const actorInfo = actorMap.get(id);
+      const actorRole = pickString(actorInfo?.adminRole);
 
       return {
         id,
-        actorLabel: pickString(source.performedBy, "System"),
+        actorLabel: pickString(actorInfo?.adminName, source.performedBy, "System"),
+        actorRole: actorRole === "--" ? "" : actorRole,
         actionLabel: formatEnum(source.action),
         statusLabel: getWorkflowStatusLabel(source.action),
         date: formatDate(createdAt),
@@ -1075,6 +1112,23 @@ function resolveDisbursementApprovalProcess(
   return null;
 }
 
+function resolveRefundApprovalProcess(
+  data: AdminTransactionDetailsData | null,
+): AdminTransactionApprovalProcess | null {
+  if (!data) return null;
+  if (
+    data.refundApprovalProcess &&
+    typeof data.refundApprovalProcess === "object"
+  ) {
+    return data.refundApprovalProcess;
+  }
+  const nested = asRecord(data.raw).refundApprovalProcess;
+  if (nested && typeof nested === "object") {
+    return nested as AdminTransactionApprovalProcess;
+  }
+  return null;
+}
+
 function pickAssigneeId(assignee: unknown): string | null {
   const r = asRecord(assignee);
   const v = r.id ?? r.adminId ?? r.userId;
@@ -1179,8 +1233,13 @@ export function useTransactionDetails(
     [query.data?.data?.raw],
   );
   const workflowHistory = useMemo(
-    () => extractWorkflowHistory(asRecord(query.data?.data?.raw)),
-    [query.data?.data?.raw],
+    () =>
+      extractWorkflowHistory(
+        asRecord(query.data?.data?.raw),
+        query.data?.data?.workflowLine ??
+          asRecord(query.data?.data?.raw).workflowLine,
+      ),
+    [query.data?.data?.raw, query.data?.data?.workflowLine],
   );
 
   const approvalUi = useMemo(
@@ -1208,6 +1267,14 @@ export function useTransactionDetails(
     [query.data?.data],
   );
 
+  const refundWorkflowStages = useMemo(
+    () =>
+      extractAllWorkflowStages(
+        resolveRefundApprovalProcess(query.data?.data ?? null),
+      ),
+    [query.data?.data],
+  );
+
   return {
     overview,
     receipt,
@@ -1216,6 +1283,7 @@ export function useTransactionDetails(
     workflowHistory,
     pendingWorkflowStages,
     disbursementWorkflowStages,
+    refundWorkflowStages,
     isApprovalOfficer: approvalUi.isApprovalOfficer,
     approvalState: approvalUi.approvalState,
     approvalProcessName: approvalUi.approvalProcessName,

@@ -21,6 +21,7 @@ interface SettlementProps {
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
   pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   disbursementWorkflowStages?: PendingWorkflowStageViewModel[];
+  refundWorkflowStages?: PendingWorkflowStageViewModel[];
   transactionId?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -51,6 +52,7 @@ export default function Settlement({
   workflowHistory = [],
   pendingWorkflowStages = [],
   disbursementWorkflowStages = [],
+  refundWorkflowStages = [],
   transactionId,
   isLoading = false,
   isError = false,
@@ -95,6 +97,7 @@ export default function Settlement({
           workflowHistory={workflowHistory}
           pendingWorkflowStages={pendingWorkflowStages}
           disbursementWorkflowStages={disbursementWorkflowStages}
+          refundWorkflowStages={refundWorkflowStages}
           isApprovalOfficer={isApprovalOfficer}
           canActOnTransactionFooter={canActOnTransactionFooter}
           approvalState={approvalState}

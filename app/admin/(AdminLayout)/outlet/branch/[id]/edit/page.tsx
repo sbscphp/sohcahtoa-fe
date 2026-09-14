@@ -12,6 +12,7 @@ import { usePutData } from "@/app/_lib/api/hooks";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { adminRoutes } from "@/lib/adminRoutes";
 import { useOutletStates } from "../../../hooks/useOutletStates";
+import { useOutletCities } from "../../../../settings/hooks/useOutletCities";
 import { useBranchDetails } from "../../../hooks/useBranchDetails";
 import { useAgentsAll } from "../../../hooks/useAgentsAll";
 import { useQueryClient } from "@tanstack/react-query";
@@ -62,6 +63,7 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
   const [step, setStep] = useState<Step>(1);
   const [branchName, setBranchName] = useState("");
   const [state, setState] = useState<string | null>(null);
+  const [city, setCity] = useState<string | null>(null);
   const [branchManager, setBranchManager] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
   const [branchEmail, setBranchEmail] = useState("");
@@ -71,6 +73,21 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
   const trimmedBranchEmail = branchEmail.trim();
   const isManagerEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedManagerEmail);
   const isBranchEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedBranchEmail);
+
+  const {
+    cities,
+    isLoading: isCitiesLoading,
+    isFetching: isCitiesFetching,
+    isError: isCitiesError,
+  } = useOutletCities(state);
+  const hasCityOptions = cities.length > 0;
+  const isCitiesBusy = isCitiesLoading || isCitiesFetching;
+  const citySelectData = useMemo(() => {
+    if (city && !cities.some((option) => option.value === city)) {
+      return [{ value: city, label: city }, ...cities];
+    }
+    return cities;
+  }, [city, cities]);
 
   // Step 2: Select agent
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -129,6 +146,7 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
     queueMicrotask(() => {
       setBranchName(branch.name ?? "");
       setState(branch.state ?? null);
+      setCity(branch.city ?? null);
       setBranchManager(branch.branchManager ?? "");
       setManagerEmail(branch.email ?? "");
       setBranchEmail(branch.branchEmail ?? "");
@@ -162,6 +180,7 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
     () =>
       branchName.trim().length > 0 &&
       !!state &&
+      !!city &&
       branchManager.trim().length > 0 &&
       trimmedManagerEmail.length > 0 &&
       isManagerEmailValid &&
@@ -173,6 +192,7 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
       address,
       branchManager,
       branchName,
+      city,
       isBranchEmailValid,
       isManagerEmailValid,
       phoneNumber,
@@ -183,12 +203,13 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
   );
 
   const buildPayload = (): CreateBranchPayload | null => {
-    if (!state) return null;
+    if (!state || !city) return null;
 
     return {
       branchName: branchName.trim(),
       branchEmail: branchEmail.trim(),
       state,
+      city: city.trim(),
       address: address.trim(),
       branchManager: branchManager.trim(),
       email: managerEmail.trim(),
@@ -255,6 +276,15 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
       return;
     }
 
+    if (state && (isCitiesError || (!isCitiesBusy && !hasCityOptions && !city))) {
+      notifications.show({
+        title: "City Required",
+        message: "Unable to load city options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
     if (!isStep1Valid) {
       if (
         (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
@@ -285,6 +315,15 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
         title: "State Required",
         message:
           "Unable to load state options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (state && (isCitiesError || (!isCitiesBusy && !hasCityOptions && !city))) {
+      notifications.show({
+        title: "City Required",
+        message: "Unable to load city options. Please try again later.",
         color: "red",
       });
       return;
@@ -434,7 +473,10 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
                   placeholder={isStatesLoading ? "Loading states..." : "Select state"}
                   data={states}
                   value={state}
-                  onChange={setState}
+                  onChange={(value) => {
+                    setState(value);
+                    setCity(null);
+                  }}
                   required
                   radius="md"
                   searchable
@@ -444,16 +486,37 @@ function EditBranchPageInner({ branchId }: { branchId: string }) {
                     isStatesError ? "Unable to load states. Please try again later." : undefined
                   }
                 />
-
-                <TextInput
-                  label="Branch Manager"
-                  placeholder="e.g. Bashorun Dauda"
-                  value={branchManager}
-                  onChange={(e) => setBranchManager(e.currentTarget.value)}
+                <Select
+                  label="City"
+                  placeholder={
+                    !state
+                      ? "Select state first"
+                      : isCitiesBusy
+                        ? "Loading cities..."
+                        : "Select city"
+                  }
+                  data={citySelectData}
+                  value={city}
+                  onChange={setCity}
                   required
                   radius="md"
+                  searchable
+                  clearable
+                  disabled={!state || isCitiesBusy || (!hasCityOptions && !city)}
+                  error={
+                    isCitiesError ? "Unable to load cities. Please try again later." : undefined
+                  }
                 />
               </Group>
+
+              <TextInput
+                label="Branch Manager"
+                placeholder="e.g. Bashorun Dauda"
+                value={branchManager}
+                onChange={(e) => setBranchManager(e.currentTarget.value)}
+                required
+                radius="md"
+              />
 
               <Group grow align="flex-start">
                 <TextInput
