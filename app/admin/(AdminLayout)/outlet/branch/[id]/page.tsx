@@ -276,6 +276,10 @@ function BranchDetailPageInner({ branchId }: { branchId: string }) {
                   <DetailItem label="Branch Manager" value={branch.branchManager} />
                   <DetailItem label="State" value={branch.state} />
                   <DetailItem
+                    label="City"
+                    value={branch.city?.trim() ? branch.city : "--"}
+                  />
+                  <DetailItem
                     label="Branch Email"
                     value={branch.branchEmail?.trim() ? branch.branchEmail : "--"}
                   />

@@ -287,6 +287,7 @@ export interface BranchDetailsData {
   name: string;
   branchEmail: string;
   state: string;
+  city: string;
   address: string;
   branchManager: string;
   email: string;
@@ -305,6 +306,7 @@ export interface CreateBranchPayload {
   branchName: string;
   branchEmail: string;
   state: string;
+  city: string;
   address: string;
   branchManager: string;
   email: string;

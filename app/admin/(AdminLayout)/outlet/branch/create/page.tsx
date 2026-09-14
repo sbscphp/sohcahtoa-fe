@@ -13,6 +13,7 @@ import { useCreateData } from "@/app/_lib/api/hooks";
 import { adminApi, type CreateBranchPayload } from "@/app/admin/_services/admin-api";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useOutletStates } from "../../hooks/useOutletStates";
+import { useOutletCities } from "../../../settings/hooks/useOutletCities";
 import { useAgentsAll } from "../../hooks/useAgentsAll";
 
 export default function CreateBranchPage() {
@@ -22,6 +23,7 @@ export default function CreateBranchPage() {
   // Step 1: Basic Branch Information
   const [branchName, setBranchName] = useState("");
   const [state, setState] = useState<string | null>(null);
+  const [city, setCity] = useState<string | null>(null);
   const [branchManager, setBranchManager] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
   const [branchEmail, setBranchEmail] = useState("");
@@ -35,6 +37,21 @@ export default function CreateBranchPage() {
     error: statesError,
   } = useOutletStates();
   const hasStateOptions = states.length > 0;
+
+  const {
+    cities,
+    isLoading: isCitiesLoading,
+    isFetching: isCitiesFetching,
+    isError: isCitiesError,
+  } = useOutletCities(state);
+  const hasCityOptions = cities.length > 0;
+  const isCitiesBusy = isCitiesLoading || isCitiesFetching;
+  const citySelectData = useMemo(() => {
+    if (city && !cities.some((option) => option.value === city)) {
+      return [{ value: city, label: city }, ...cities];
+    }
+    return cities;
+  }, [city, cities]);
 
   const {
     agentOptions,
@@ -65,6 +82,7 @@ export default function CreateBranchPage() {
     () =>
       branchName.trim().length > 0 &&
       !!state &&
+      !!city &&
       branchManager.trim().length > 0 &&
       trimmedManagerEmail.length > 0 &&
       isManagerEmailValid &&
@@ -76,6 +94,7 @@ export default function CreateBranchPage() {
       address,
       branchManager,
       branchName,
+      city,
       isBranchEmailValid,
       isManagerEmailValid,
       phoneNumber,
@@ -160,6 +179,15 @@ export default function CreateBranchPage() {
       return;
     }
 
+    if (state && (isCitiesError || (!isCitiesBusy && !hasCityOptions))) {
+      notifications.show({
+        title: "City Required",
+        message: "Unable to load city options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
     if (!isStep1Valid) {
       if (
         (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
@@ -199,6 +227,15 @@ export default function CreateBranchPage() {
       return;
     }
 
+    if (state && (isCitiesError || (!isCitiesBusy && !hasCityOptions))) {
+      notifications.show({
+        title: "City Required",
+        message: "Unable to load city options. Please try again later.",
+        color: "red",
+      });
+      return;
+    }
+
     if (!isStep1Valid) {
       if (
         (trimmedManagerEmail.length > 0 && !isManagerEmailValid) ||
@@ -224,7 +261,7 @@ export default function CreateBranchPage() {
   };
 
   const handleConfirmCreate = () => {
-    if (!state || createBranchMutation.isPending) return;
+    if (!state || !city || createBranchMutation.isPending) return;
     if (!isManagerEmailValid || !isBranchEmailValid) {
       notifications.show({
         title: "Invalid Email Address",
@@ -238,6 +275,7 @@ export default function CreateBranchPage() {
       branchName: branchName.trim(),
       branchEmail: trimmedBranchEmail,
       state,
+      city: city.trim(),
       address: address.trim(),
       branchManager: branchManager.trim(),
       email: trimmedManagerEmail,
@@ -330,7 +368,10 @@ export default function CreateBranchPage() {
                   placeholder={isStatesLoading ? "Loading states..." : "Select state"}
                   data={states}
                   value={state}
-                  onChange={setState}
+                  onChange={(value) => {
+                    setState(value);
+                    setCity(null);
+                  }}
                   required
                   radius="md"
                   searchable
@@ -340,15 +381,37 @@ export default function CreateBranchPage() {
                     isStatesError ? "Unable to load states. Please try again later." : undefined
                   }
                 />
-                <TextInput
-                  label="Branch Manager"
-                  placeholder="e.g. Bashorun Dauda"
-                  value={branchManager}
-                  onChange={(e) => setBranchManager(e.currentTarget.value)}
+                <Select
+                  label="City"
+                  placeholder={
+                    !state
+                      ? "Select state first"
+                      : isCitiesBusy
+                        ? "Loading cities..."
+                        : "Select city"
+                  }
+                  data={citySelectData}
+                  value={city}
+                  onChange={setCity}
                   required
                   radius="md"
+                  searchable
+                  clearable
+                  disabled={!state || isCitiesBusy || (!hasCityOptions && !city)}
+                  error={
+                    isCitiesError ? "Unable to load cities. Please try again later." : undefined
+                  }
                 />
               </Group>
+
+              <TextInput
+                label="Branch Manager"
+                placeholder="e.g. Bashorun Dauda"
+                value={branchManager}
+                onChange={(e) => setBranchManager(e.currentTarget.value)}
+                required
+                radius="md"
+              />
 
               <Group grow align="flex-start">
                 <TextInput
