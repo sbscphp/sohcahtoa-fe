@@ -287,6 +287,7 @@ export interface BranchDetailsData {
   name: string;
   branchEmail: string;
   state: string;
+  city: string;
   address: string;
   branchManager: string;
   email: string;
@@ -305,6 +306,7 @@ export interface CreateBranchPayload {
   branchName: string;
   branchEmail: string;
   state: string;
+  city: string;
   address: string;
   branchManager: string;
   email: string;
@@ -1202,6 +1204,10 @@ export interface AdminTransactionDetailsData {
   approvalProcess?: AdminTransactionApprovalProcess | null;
   /** Always-available disbursement approval workflow, independent of which process is currently active (see approvalProcess). */
   disbursementApprovalProcess?: AdminTransactionApprovalProcess | null;
+  /** Always-available refund approval workflow, independent of which process is currently active (see approvalProcess). */
+  refundApprovalProcess?: AdminTransactionApprovalProcess | null;
+  /** Flat workflow line (same ids as raw.history) carrying admin name/role for each completed action. */
+  workflowLine?: RateWorkflowLineItem[] | null;
   paymentDetails?: AgentTransactionPaymentDetails | null;
   transactionSettlement?: AgentTransactionSettlementDetails | null;
 }

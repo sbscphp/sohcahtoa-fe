@@ -34,6 +34,7 @@ interface TakeActionButtonProps {
   workflowHistory?: TransactionWorkflowHistoryItemViewModel[];
   pendingWorkflowStages?: PendingWorkflowStageViewModel[];
   disbursementWorkflowStages?: PendingWorkflowStageViewModel[];
+  refundWorkflowStages?: PendingWorkflowStageViewModel[];
   /** When false, transaction-level footer actions (Complete Review / Take Action) are hidden. Default true (legacy). */
   canActOnTransactionFooter?: boolean;
   /** When true, per-document approval actions are shown (independent of assignee check). Default false. */
@@ -59,6 +60,7 @@ export default function TakeActionButton({
   workflowHistory = [],
   pendingWorkflowStages = [],
   disbursementWorkflowStages = [],
+  refundWorkflowStages = [],
   canActOnTransactionFooter = true,
   isApprovalOfficer = false,
   approvalState,
@@ -101,6 +103,7 @@ export default function TakeActionButton({
         workflowHistory={workflowHistory}
         pendingWorkflowStages={pendingWorkflowStages}
         disbursementWorkflowStages={disbursementWorkflowStages}
+        refundWorkflowStages={refundWorkflowStages}
         canActOnTransactionFooter={canActOnTransactionFooter}
         isApprovalOfficer={isApprovalOfficer}
         approvalState={approvalState}
