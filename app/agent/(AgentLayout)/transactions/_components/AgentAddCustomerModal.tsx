@@ -42,13 +42,24 @@ export function AgentAddCustomerModal({
       case "resident-bvn":
         return (
           <ResidentBvnStep
-            bvn={flow.bvn}
+            firstName={flow.residentFirstName}
+            lastName={flow.residentLastName}
             email={flow.residentEmail}
+            dateOfBirth={flow.residentDateOfBirth}
             phoneNumber={flow.residentPhone}
-            isSubmitting={flow.isSubmitting || flow.bvnConsent.isActive}
-            onBvnChange={flow.setBvn}
+            bvn={flow.bvn}
+            isSubmitting={
+              flow.isSubmitting || flow.bvnConsent.isActive || flow.isSendingOtp
+            }
+            isSendingOtp={flow.isSendingOtp}
+            fieldErrors={flow.residentFieldErrors}
+            showErrors={flow.showResidentErrors}
+            onFirstNameChange={flow.handleResidentFirstNameChange}
+            onLastNameChange={flow.handleResidentLastNameChange}
             onEmailChange={flow.setResidentEmail}
+            onDateOfBirthChange={flow.setResidentDateOfBirth}
             onPhoneNumberChange={flow.handleResidentPhoneChange}
+            onBvnChange={flow.setBvn}
             onContinue={flow.handleResidentBvnContinue}
             onBack={flow.handleBack}
           />

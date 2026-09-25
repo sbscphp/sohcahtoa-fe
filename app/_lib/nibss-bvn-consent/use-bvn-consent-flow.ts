@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { VerifyBvnRequest } from "@/app/_lib/api/types";
+import type { IgreeInitiateRequest } from "@/app/_lib/api/types";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import {
   openNibssConsentPortal,
@@ -129,7 +129,7 @@ export function useBvnConsentFlow({
   );
 
   const startConsent = useCallback(
-    async (payload: VerifyBvnRequest) => {
+    async (payload: IgreeInitiateRequest) => {
       cancel();
       setPhase("initiating");
       setStatusMessage(null);

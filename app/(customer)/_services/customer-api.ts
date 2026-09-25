@@ -59,6 +59,7 @@ import type {
   ValidateOtpRequestTourist,
   ValidateOtpResponse,
   VerifyBvnRequest,
+  IgreeInitiateRequest,
   InitiateBvnConsentResponse,
   BvnConsentStatusRequest,
   BvnConsentStatusResponse,
@@ -136,8 +137,12 @@ export const customerApi = {
 
     // Nigerian signup flow
     nigerian: {
+      /** @deprecated Consent Hub — use igreeInitiate. */
       verifyBvn: (data: VerifyBvnRequest) =>
         apiClient.post<InitiateBvnConsentResponse>(API_ENDPOINTS.auth.nigerian.verifyBvn, data, { skipAuth: true }),
+
+      igreeInitiate: (data: IgreeInitiateRequest) =>
+        apiClient.post<InitiateBvnConsentResponse>(API_ENDPOINTS.auth.nigerian.igreeInitiate, data, { skipAuth: true }),
 
       bvnConsentStatus: (data: BvnConsentStatusRequest) =>
         apiClient.post<BvnConsentStatusResponse>(API_ENDPOINTS.auth.nigerian.bvnConsentStatus, data, { skipAuth: true }),

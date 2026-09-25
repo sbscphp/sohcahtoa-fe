@@ -38,7 +38,9 @@ export const AGENT_API_ENDPOINTS = {
       upload: "/api/auth/kyc/passport/upload",
     },
     nigerian: {
+      /** @deprecated Consent Hub — use igreeInitiate. */
       verifyBvn: "/api/agent/customer-auth/verify-bvn",
+      igreeInitiate: "/api/agent/customer-auth/igree/initiate",
       bvnConsentStatus: "/api/agent/customer-auth/bvn-consent-status",
       sendOtp: "/api/agent/customer-auth/send-otp",
       resendOtp: "/api/agent/customer-auth/resend-otp",

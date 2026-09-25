@@ -1,9 +1,19 @@
 import type { BvnConsentStatusResponseData } from "@/app/_lib/api/types";
 
+type VerificationProfileExtras = {
+  bvn?: string;
+  userType?: string;
+  email?: string;
+  phoneNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+};
+
 /** Persists profile fields returned after NIBSS consent completes. */
 export function persistVerificationProfile(
   data: BvnConsentStatusResponseData,
-  extras?: { bvn?: string; userType?: string }
+  extras?: VerificationProfileExtras
 ): void {
   if (typeof window === "undefined") return;
 
@@ -11,10 +21,21 @@ export function persistVerificationProfile(
 
   if (extras?.bvn) sessionStorage.setItem("bvn", extras.bvn);
   if (extras?.userType) sessionStorage.setItem("userType", extras.userType);
-  if (data.email) sessionStorage.setItem("email", data.email);
+  if (extras?.dateOfBirth) sessionStorage.setItem("dateOfBirth", extras.dateOfBirth);
+
+  const email = data.email || extras?.email;
+  const phoneNumber = data.phoneNumber || extras?.phoneNumber;
+  const firstName = data.firstName || extras?.firstName;
+  const lastName = data.lastName || extras?.lastName;
+
+  if (email) sessionStorage.setItem("email", email);
   if (data.fullName) sessionStorage.setItem("fullName", data.fullName);
-  if (data.phoneNumber) sessionStorage.setItem("phoneNumber", data.phoneNumber);
+  if (phoneNumber) sessionStorage.setItem("phoneNumber", phoneNumber);
   if (data.address) sessionStorage.setItem("address", data.address);
-  if (data.firstName) sessionStorage.setItem("firstName", data.firstName);
-  if (data.lastName) sessionStorage.setItem("lastName", data.lastName);
+  if (firstName) sessionStorage.setItem("firstName", firstName);
+  if (lastName) sessionStorage.setItem("lastName", lastName);
+
+  if (!data.fullName && firstName && lastName) {
+    sessionStorage.setItem("fullName", `${firstName} ${lastName}`);
+  }
 }

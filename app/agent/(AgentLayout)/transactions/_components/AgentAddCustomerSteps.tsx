@@ -15,11 +15,6 @@ import type {
   AgentCustomerType,
   OtpDeliveryMethod,
 } from "@/app/agent/(AgentLayout)/transactions/_components/useAgentAddCustomerFlow";
-import {
-  isValidEmail,
-  isValidNigerianPhoneNumber,
-  normalizeNigerianPhoneInput,
-} from "@/app/_lib/nibss-bvn-consent/phone-validation";
 
 interface BackButtonProps {
   onBack: () => void;
@@ -121,33 +116,51 @@ function CustomerTypeOption({
 }
 
 interface ResidentBvnStepProps {
-  bvn: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  dateOfBirth: string;
   phoneNumber: string;
+  bvn: string;
   isSubmitting: boolean;
-  onBvnChange: (value: string) => void;
+  isSendingOtp?: boolean;
+  fieldErrors?: Partial<
+    Record<
+      "firstName" | "lastName" | "email" | "dateOfBirth" | "phoneNumber" | "bvn",
+      string
+    >
+  >;
+  showErrors?: boolean;
+  onFirstNameChange: (value: string) => void;
+  onLastNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
+  onDateOfBirthChange: (value: string) => void;
   onPhoneNumberChange: (value: string) => void;
+  onBvnChange: (value: string) => void;
   onContinue: () => void;
   onBack: () => void;
 }
 
 export function ResidentBvnStep({
-  bvn,
+  firstName,
+  lastName,
   email,
+  dateOfBirth,
   phoneNumber,
+  bvn,
   isSubmitting,
-  onBvnChange,
+  isSendingOtp = false,
+  fieldErrors = {},
+  showErrors = false,
+  onFirstNameChange,
+  onLastNameChange,
   onEmailChange,
+  onDateOfBirthChange,
   onPhoneNumberChange,
+  onBvnChange,
   onContinue,
   onBack,
 }: Readonly<ResidentBvnStepProps>) {
-  const isFormValid =
-    bvn.length === 11 &&
-    isValidEmail(email) &&
-    isValidNigerianPhoneNumber(normalizeNigerianPhoneInput(phoneNumber));
-
   return (
     <div className="space-y-6">
       <BackButton onBack={onBack} />
@@ -156,29 +169,56 @@ export function ResidentBvnStep({
           Add New Customer
         </h2>
         <p className="text-body-text-200 text-sm md:text-base">
-          Enter the customer&apos;s BVN and contact details. They will complete
-          NIBSS consent before OTP verification.
+          Enter the customer&apos;s identity details and BVN. They will complete
+          NIBSS iGree consent, then verify via email OTP.
         </p>
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="agent-customer-bvn" className="block text-heading-200 text-sm font-medium">
-            Enter BVN <span className="text-error-500">*</span>
-          </label>
-          <TextInput
-            id="agent-customer-bvn"
-            value={bvn}
-            onChange={(e) =>
-              onBvnChange(e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11))
-            }
-            placeholder="22234455555"
-            size="lg"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="agent-customer-first-name"
+              className="block text-heading-200 text-sm font-medium"
+            >
+              First Name <span className="text-error-500">*</span>
+            </label>
+            <TextInput
+              id="agent-customer-first-name"
+              value={firstName}
+              onChange={(e) => onFirstNameChange(e.currentTarget.value)}
+              placeholder="First name"
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.firstName : undefined}
+              autoComplete="given-name"
+            />
+          </div>
+          <div className="space-y-2">
+            <label
+              htmlFor="agent-customer-last-name"
+              className="block text-heading-200 text-sm font-medium"
+            >
+              Last Name <span className="text-error-500">*</span>
+            </label>
+            <TextInput
+              id="agent-customer-last-name"
+              value={lastName}
+              onChange={(e) => onLastNameChange(e.currentTarget.value)}
+              placeholder="Last name"
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.lastName : undefined}
+              autoComplete="family-name"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="agent-customer-email" className="block text-heading-200 text-sm font-medium">
+          <label
+            htmlFor="agent-customer-email"
+            className="block text-heading-200 text-sm font-medium"
+          >
             Email address <span className="text-error-500">*</span>
           </label>
           <TextInput
@@ -188,12 +228,39 @@ export function ResidentBvnStep({
             placeholder="customer@email.com"
             size="lg"
             type="email"
+            disabled={isSubmitting}
+            error={showErrors ? fieldErrors.email : undefined}
             autoComplete="email"
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="agent-customer-phone" className="block text-heading-200 text-sm font-medium">
+          <label
+            htmlFor="agent-customer-dob"
+            className="block text-heading-200 text-sm font-medium"
+          >
+            Date of Birth <span className="text-error-500">*</span>
+          </label>
+          <DateInput
+            id="agent-customer-dob"
+            placeholder="Select date of birth"
+            value={dateOfBirth.trim() ? new Date(dateOfBirth) : null}
+            onChange={(value) => onDateOfBirthChange(formatDateToIso(value))}
+            maxDate={new Date()}
+            size="lg"
+            disabled={isSubmitting}
+            error={showErrors ? fieldErrors.dateOfBirth : undefined}
+            rightSection={
+              <HugeiconsIcon icon={CalendarIcon} size={20} className="text-text-300!" />
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="agent-customer-phone"
+            className="block text-heading-200 text-sm font-medium"
+          >
             Phone number <span className="text-error-500">*</span>
           </label>
           <TextInput
@@ -204,14 +271,38 @@ export function ResidentBvnStep({
             size="lg"
             type="tel"
             maxLength={14}
+            disabled={isSubmitting}
+            error={showErrors ? fieldErrors.phoneNumber : undefined}
             autoComplete="tel"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="agent-customer-bvn"
+            className="block text-heading-200 text-sm font-medium"
+          >
+            Enter BVN <span className="text-error-500">*</span>
+          </label>
+          <TextInput
+            id="agent-customer-bvn"
+            value={bvn}
+            onChange={(e) =>
+              onBvnChange(e.currentTarget.value.replaceAll(/\D/g, "").slice(0, 11))
+            }
+            placeholder="22234455555"
+            size="lg"
+            disabled={isSubmitting}
+            error={showErrors ? fieldErrors.bvn : undefined}
+            inputMode="numeric"
+            maxLength={11}
           />
         </div>
       </div>
 
       <Button
         onClick={onContinue}
-        disabled={!isFormValid || isSubmitting}
+        disabled={isSubmitting}
         loading={isSubmitting}
         fullWidth
         radius="xl"
@@ -219,7 +310,11 @@ export function ResidentBvnStep({
         rightSection={!isSubmitting && <ArrowUpRight size={18} />}
         className="bg-primary-400 hover:bg-primary-500 text-[#FFF6F1] disabled:bg-primary-100 disabled:text-white disabled:cursor-not-allowed"
       >
-        {isSubmitting ? "Starting consent…" : "Continue to NIBSS consent"}
+        {isSendingOtp
+          ? "Sending email OTP…"
+          : isSubmitting
+            ? "Starting consent…"
+            : "Verify BVN"}
       </Button>
     </div>
   );

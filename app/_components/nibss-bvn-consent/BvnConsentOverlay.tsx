@@ -87,7 +87,7 @@ export function BvnConsentOverlay({
             </Button>
           )}
 
-          {(isWaiting || canRetry) && (
+          {canRetry && (
             <Button
               variant="outline"
               radius="xl"

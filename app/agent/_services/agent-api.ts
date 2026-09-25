@@ -42,6 +42,7 @@ import type {
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
   VerifyBvnRequest,
+  IgreeInitiateRequest,
   InitiateBvnConsentResponse,
   BvnConsentStatusRequest,
   BvnConsentStatusResponse,
@@ -340,9 +341,15 @@ export const agentApi = {
         ),
     },
     nigerian: {
+      /** @deprecated Consent Hub — use igreeInitiate. */
       verifyBvn: (data: VerifyBvnRequest) =>
         apiClient.post<InitiateBvnConsentResponse>(
           AGENT_API_ENDPOINTS.customerAuth.nigerian.verifyBvn,
+          data
+        ),
+      igreeInitiate: (data: IgreeInitiateRequest) =>
+        apiClient.post<InitiateBvnConsentResponse>(
+          AGENT_API_ENDPOINTS.customerAuth.nigerian.igreeInitiate,
           data
         ),
       bvnConsentStatus: (data: BvnConsentStatusRequest) =>

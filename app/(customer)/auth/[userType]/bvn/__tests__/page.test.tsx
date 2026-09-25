@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@/test-utils";
+import { render, screen, waitFor, fireEvent } from "@/test-utils";
 import userEvent from "@testing-library/user-event";
 import BVNPage from "../page";
 
@@ -21,6 +21,39 @@ vi.mock("next/navigation", () => ({
   useParams: () => mockUseParams(),
 }));
 
+vi.mock("@mantine/dates", () => ({
+  DateInput: ({
+    id,
+    value,
+    onChange,
+    placeholder,
+    error,
+    disabled,
+  }: {
+    id?: string;
+    value: Date | null;
+    onChange: (value: Date | null) => void;
+    placeholder?: string;
+    error?: string;
+    disabled?: boolean;
+  }) => (
+    <div>
+      <input
+        id={id}
+        aria-label="Date of Birth"
+        placeholder={placeholder}
+        disabled={disabled}
+        value={value ? value.toISOString().slice(0, 10) : ""}
+        onChange={(e) => {
+          const next = e.currentTarget.value;
+          onChange(next ? new Date(`${next}T00:00:00.000Z`) : null);
+        }}
+      />
+      {error ? <span>{error}</span> : null}
+    </div>
+  ),
+}));
+
 vi.mock("@/app/_lib/api/hooks", () => ({
   useCreateData: () => ({
     mutate: mockMutate,
@@ -32,7 +65,7 @@ vi.mock("@/app/(customer)/_services/customer-api", () => ({
   customerApi: {
     auth: {
       nigerian: {
-        verifyBvn: vi.fn(),
+        igreeInitiate: vi.fn(),
         bvnConsentStatus: vi.fn(),
         sendOtp: vi.fn(),
       },
@@ -58,7 +91,7 @@ vi.mock("@/app/_lib/nibss-bvn-consent/use-bvn-consent-flow", () => ({
         verificationToken: "test-verification-token",
         email: "test@example.com",
         fullName: "Test User",
-        phoneNumber: "+2341234567890",
+        phoneNumber: "+2348031234567",
         address: "123 Test St",
       });
       mockBvnConsentIsActive = false;
@@ -80,16 +113,6 @@ vi.mock("@/app/_components/nibss-bvn-consent/BvnConsentOverlay", () => ({
     opened ? <div data-testid="bvn-consent-overlay">Consent Overlay</div> : null,
 }));
 
-vi.mock("@/app/(customer)/_components/modals/OTPDeliveryModal", () => ({
-  OTPDeliveryModal: ({ opened, onClose, onContinue }: any) =>
-    opened ? (
-      <div data-testid="otp-delivery-modal">
-        <button onClick={() => onContinue("email")}>Continue with Email</button>
-        <button onClick={onClose}>Close</button>
-      </div>
-    ) : null,
-}));
-
 vi.mock("@/app/(customer)/_components/modals/VerifyBVNModal", () => ({
   VerifyBVNModal: ({ opened, onClose, onVerify }: any) =>
     opened ? (
@@ -100,7 +123,7 @@ vi.mock("@/app/(customer)/_components/modals/VerifyBVNModal", () => ({
     ) : null,
 }));
 
-describe("BVN Page - Citizen Onboarding", () => {
+describe("BVN Page - Citizen Onboarding (iGree)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseParams.mockReturnValue({ userType: "citizen" });
@@ -108,6 +131,9 @@ describe("BVN Page - Citizen Onboarding", () => {
     mockBvnConsentIsActive = false;
     sessionStorage.clear();
     sessionStorage.setItem("userType", "citizen");
+    mockMutate.mockImplementation((_payload, options) => {
+      options?.onSuccess?.({ success: true, data: {} });
+    });
   });
 
   afterEach(() => {
@@ -115,78 +141,79 @@ describe("BVN Page - Citizen Onboarding", () => {
     sessionStorage.clear();
   });
 
-  it("renders BVN field only", async () => {
+  it("renders iGree identity fields", async () => {
     render(<BVNPage />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
     });
-    expect(screen.queryByPlaceholderText(/example@email.com/i)).not.toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/\+2348031234567/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/date of birth/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/phone number/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^bvn$/i)).toBeInTheDocument();
   });
 
-  it("disables continue button until BVN is valid", async () => {
+  it("shows validation errors when submitting empty form", async () => {
     const user = userEvent.setup();
     render(<BVNPage />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /verify bvn/i })).toBeInTheDocument();
     });
 
-    const button = screen.getByRole("button", { name: /continue to nibss consent/i });
-    expect(button).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: /verify bvn/i }));
 
-    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
     await waitFor(() => {
-      expect(button).toBeEnabled();
+      expect(screen.getByText(/first name is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/last name is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/email address is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/date of birth is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/phone number is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/bvn is required/i)).toBeInTheDocument();
     });
+    expect(mockStartConsent).not.toHaveBeenCalled();
   });
 
-  it("starts NIBSS consent with bvn only", async () => {
+  it("starts iGree consent with full payload and sends email OTP", async () => {
     const user = userEvent.setup();
     render(<BVNPage />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^bvn$/i)).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
-    await user.click(screen.getByRole("button", { name: /continue to nibss consent/i }));
-
-    await waitFor(() => {
-      expect(mockStartConsent).toHaveBeenCalledWith({ bvn: "12345678901" });
+    await user.type(screen.getByLabelText(/first name/i), "John");
+    await user.type(screen.getByLabelText(/last name/i), "Smith");
+    await user.type(screen.getByLabelText(/email address/i), "john@example.com");
+    fireEvent.change(screen.getByLabelText(/date of birth/i), {
+      target: { value: "1990-01-01" },
     });
-  });
+    await user.type(screen.getByLabelText(/phone number/i), "8031234567");
+    await user.type(screen.getByLabelText(/^bvn$/i), "12345678901");
 
-  it("stores verification token and user data after consent completes", async () => {
-    const user = userEvent.setup();
-    render(<BVNPage />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
-    });
-
-    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
-    await user.click(screen.getByRole("button", { name: /continue to nibss consent/i }));
+    await user.click(screen.getByRole("button", { name: /verify bvn/i }));
 
     await waitFor(() => {
-      expect(sessionStorage.getItem("verificationToken")).toBe("test-verification-token");
-      expect(sessionStorage.getItem("bvn")).toBe("12345678901");
-      expect(sessionStorage.getItem("email")).toBe("test@example.com");
-      expect(sessionStorage.getItem("fullName")).toBe("Test User");
-      expect(sessionStorage.getItem("phoneNumber")).toBe("+2341234567890");
-      expect(sessionStorage.getItem("address")).toBe("123 Test St");
-    });
-  });
-
-  it("opens OTP delivery modal after successful consent", async () => {
-    const user = userEvent.setup();
-    render(<BVNPage />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter your bvn/i)).toBeInTheDocument();
+      expect(mockStartConsent).toHaveBeenCalledWith({
+        bvn: "12345678901",
+        firstName: "John",
+        lastName: "Smith",
+        email: "john@example.com",
+        dateOfBirth: "1990-01-01",
+        phoneNumber: "+2348031234567",
+      });
     });
 
-    await user.type(screen.getByPlaceholderText(/enter your bvn/i), "12345678901");
-    await user.click(screen.getByRole("button", { name: /continue to nibss consent/i }));
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        {
+          verificationToken: "test-verification-token",
+          verificationType: "email",
+        },
+        expect.any(Object)
+      );
+    });
 
     await waitFor(() => {
-      expect(screen.getByTestId("otp-delivery-modal")).toBeInTheDocument();
+      expect(screen.getByTestId("verify-bvn-modal")).toBeInTheDocument();
     });
   });
 

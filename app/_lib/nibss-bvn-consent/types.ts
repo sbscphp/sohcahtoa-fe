@@ -2,13 +2,13 @@ import type {
   ApiResponseWrapper,
   BvnConsentStatusRequest,
   BvnConsentStatusResponseData,
+  IgreeInitiateRequest,
   InitiateBvnConsentResponseData,
-  VerifyBvnRequest,
 } from "@/app/_lib/api/types";
 
 export type NigerianBvnConsentClient = {
   initiateConsent: (
-    data: VerifyBvnRequest
+    data: IgreeInitiateRequest
   ) => Promise<ApiResponseWrapper<InitiateBvnConsentResponseData>>;
   getConsentStatus: (
     data: BvnConsentStatusRequest

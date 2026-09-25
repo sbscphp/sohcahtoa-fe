@@ -8,12 +8,14 @@ import { agentKeys } from "@/app/_lib/api/query-keys";
 import { agentApi } from "@/app/agent/_services/agent-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
 import { PASSPORT_NUMBER_REGEX } from "@/app/(customer)/_utils/input-validation";
+import { sanitizePersonName } from "@/app/_lib/input-field-rules";
 import { agentNigerianBvnConsentClient } from "@/app/_lib/nibss-bvn-consent/clients";
+import { normalizeNigerianPhoneInput } from "@/app/_lib/nibss-bvn-consent/phone-validation";
 import {
-  isValidEmail,
-  isValidNigerianPhoneNumber,
-  normalizeNigerianPhoneInput,
-} from "@/app/_lib/nibss-bvn-consent/phone-validation";
+  toIgreeInitiatePayload,
+  validateIgreeForm,
+  type IgreeFormErrors,
+} from "@/app/_lib/nibss-bvn-consent/igree-form-validation";
 import { useBvnConsentFlow } from "@/app/_lib/nibss-bvn-consent/use-bvn-consent-flow";
 
 export type AgentCustomerType = "resident" | "tourist" | "expatriate";
@@ -38,6 +40,11 @@ export function useAgentAddCustomerFlow() {
   const [bvn, setBvn] = useState("");
   const [residentEmail, setResidentEmail] = useState("");
   const [residentPhone, setResidentPhone] = useState("");
+  const [residentFirstName, setResidentFirstName] = useState("");
+  const [residentLastName, setResidentLastName] = useState("");
+  const [residentDateOfBirth, setResidentDateOfBirth] = useState("");
+  const [residentFieldErrors, setResidentFieldErrors] = useState<IgreeFormErrors>({});
+  const [showResidentErrors, setShowResidentErrors] = useState(false);
   const [passportNumber, setPassportNumber] = useState("");
   const [passportFile, setPassportFile] = useState<FileWithPath | null>(null);
   const [email, setEmail] = useState("");
@@ -67,9 +74,47 @@ export function useAgentAddCustomerFlow() {
   const validateExpatriateOtpMutation = useCreateData(agentApi.customerAuth.expatriate.validateOtp);
   const createExpatriateAccountMutation = useCreateData(agentApi.customerAuth.expatriate.createAccount);
 
+  const sendResidentEmailOtp = useCallback(
+    (token: string) => {
+      setOtpDeliveryMethod("email");
+      setSelectedOtpMethod("email");
+      setIsSubmitting(true);
+
+      sendOtpMutation.mutate(
+        { verificationToken: token, verificationType: "email" },
+        {
+          onSuccess: (response) => {
+            setIsSubmitting(false);
+            if (response.success) {
+              setOtp("");
+              setIsOtpComplete(false);
+              setStep("verify-otp");
+            } else {
+              handleApiError(
+                { message: response.error?.message ?? "Failed to send OTP", status: 400 },
+                {
+                  customMessage:
+                    response.error?.message ?? "Failed to send email OTP. Please try again.",
+                }
+              );
+            }
+          },
+          onError: (error) => {
+            setIsSubmitting(false);
+            handleApiError(error, {
+              customMessage: "Failed to send email OTP. Please try again.",
+            });
+          },
+        }
+      );
+    },
+    [sendOtpMutation]
+  );
+
   const handleBvnConsentCompleted = useCallback(
     (data: { verificationToken?: string }) => {
       if (!data.verificationToken) {
+        setIsSubmitting(false);
         handleApiError(
           { message: "Missing verification token", status: 400 },
           { customMessage: "BVN consent completed but verification token is missing." }
@@ -78,10 +123,9 @@ export function useAgentAddCustomerFlow() {
       }
 
       setVerificationToken(data.verificationToken);
-      setIsSubmitting(false);
-      setStep("otp-delivery");
+      sendResidentEmailOtp(data.verificationToken);
     },
-    []
+    [sendResidentEmailOtp]
   );
 
   const handleBvnConsentFailed = useCallback(() => {
@@ -116,6 +160,11 @@ export function useAgentAddCustomerFlow() {
     setBvn("");
     setResidentEmail("");
     setResidentPhone("");
+    setResidentFirstName("");
+    setResidentLastName("");
+    setResidentDateOfBirth("");
+    setResidentFieldErrors({});
+    setShowResidentErrors(false);
     setPassportNumber("");
     setPassportFile(null);
     setEmail("");
@@ -167,6 +216,9 @@ export function useAgentAddCustomerFlow() {
     if (step === "verify-otp") {
       if (selectedType === "tourist") {
         setStep("tourist-details");
+      } else if (selectedType === "resident") {
+        setStep("resident-bvn");
+        resetOtpState();
       } else {
         setStep("otp-delivery");
       }
@@ -214,27 +266,36 @@ export function useAgentAddCustomerFlow() {
   };
 
   const handleResidentBvnContinue = () => {
-    const normalizedPhone = normalizeNigerianPhoneInput(residentPhone);
+    const formValues = {
+      firstName: residentFirstName,
+      lastName: residentLastName,
+      email: residentEmail,
+      dateOfBirth: residentDateOfBirth,
+      phoneNumber: residentPhone,
+      bvn,
+    };
+    const errors = validateIgreeForm(formValues);
+    setShowResidentErrors(true);
+    setResidentFieldErrors(errors);
 
-    if (
-      bvn.length !== 11 ||
-      !isValidEmail(residentEmail) ||
-      !isValidNigerianPhoneNumber(normalizedPhone) ||
-      bvnConsent.isActive
-    ) {
+    if (Object.keys(errors).length > 0 || bvnConsent.isActive) {
       return;
     }
 
     setIsSubmitting(true);
-    void bvnConsent.startConsent({
-      bvn,
-      email: residentEmail.trim(),
-      phoneNumber: normalizedPhone,
-    });
+    void bvnConsent.startConsent(toIgreeInitiatePayload(formValues));
   };
 
   const handleResidentPhoneChange = (value: string) => {
     setResidentPhone(normalizeNigerianPhoneInput(value));
+  };
+
+  const handleResidentFirstNameChange = (value: string) => {
+    setResidentFirstName(sanitizePersonName(value));
+  };
+
+  const handleResidentLastNameChange = (value: string) => {
+    setResidentLastName(sanitizePersonName(value));
   };
 
   const handleBvnConsentCancel = () => {
@@ -457,6 +518,14 @@ export function useAgentAddCustomerFlow() {
       return;
     }
 
+    if (selectedType === "resident") {
+      resendOtpMutation.mutate(
+        { verificationToken, verificationType: "email" },
+        callbacks
+      );
+      return;
+    }
+
     if (!otpDeliveryMethod) return;
 
     const payload = { verificationToken, verificationType: otpDeliveryMethod };
@@ -473,7 +542,11 @@ export function useAgentAddCustomerFlow() {
 
     if (selectedType !== "resident") {
       const callbacks = {
-        onSuccess: (validateRes: { success: boolean; data?: { validationToken?: string }; error?: { message?: string } }) => {
+        onSuccess: (validateRes: {
+          success: boolean;
+          data?: { validationToken?: string };
+          error?: { message?: string };
+        }) => {
           if (!validateRes.success) {
             setIsSubmitting(false);
             handleApiError(
@@ -492,13 +565,18 @@ export function useAgentAddCustomerFlow() {
               } else {
                 handleApiError(
                   { message: createRes.error?.message ?? "Account creation failed", status: 400 },
-                  { customMessage: createRes.error?.message ?? "Failed to create customer account. Please try again." }
+                  {
+                    customMessage:
+                      createRes.error?.message ?? "Failed to create customer account. Please try again.",
+                  }
                 );
               }
             },
             onError: (error: Error) => {
               setIsSubmitting(false);
-              handleApiError(error, { customMessage: "Failed to create customer account. Please try again." });
+              handleApiError(error, {
+                customMessage: "Failed to create customer account. Please try again.",
+              });
             },
           };
 
@@ -557,13 +635,18 @@ export function useAgentAddCustomerFlow() {
                 } else {
                   handleApiError(
                     { message: createRes.error?.message ?? "Account creation failed", status: 400 },
-                    { customMessage: createRes.error?.message ?? "Failed to create customer account. Please try again." }
+                    {
+                      customMessage:
+                        createRes.error?.message ?? "Failed to create customer account. Please try again.",
+                    }
                   );
                 }
               },
               onError: (error) => {
                 setIsSubmitting(false);
-                handleApiError(error, { customMessage: "Failed to create customer account. Please try again." });
+                handleApiError(error, {
+                  customMessage: "Failed to create customer account. Please try again.",
+                });
               },
             }
           );
@@ -586,6 +669,14 @@ export function useAgentAddCustomerFlow() {
     setResidentEmail,
     residentPhone,
     setResidentPhone,
+    residentFirstName,
+    residentLastName,
+    residentDateOfBirth,
+    setResidentDateOfBirth,
+    residentFieldErrors,
+    showResidentErrors,
+    handleResidentFirstNameChange,
+    handleResidentLastNameChange,
     handleResidentPhoneChange,
     bvnConsent,
     handleBvnConsentCancel,

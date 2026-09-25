@@ -34,17 +34,34 @@ export interface SignupRequest {
   phoneNumber: string;
 }
 
+/** @deprecated Consent Hub flow — prefer IgreeInitiateRequest / igree/initiate. */
 export interface VerifyBvnRequest {
   bvn: string;
   email?: string;
   phoneNumber?: string;
 }
 
+/** iGree Flow Step 1 — self-reported identity + BVN consent initiate. */
+export interface IgreeInitiateRequest {
+  bvn: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  phoneNumber: string;
+  email?: string;
+}
+
 /** Step 1a — NIBSS consent initiated (no verificationToken yet). */
 export interface InitiateBvnConsentResponseData {
+  /** Consent Hub session id, or iGree `state` normalized by the client. */
   sessionId: string;
+  /** Consent Hub URL, or iGree `authUrl` normalized by the client. */
   consentUrl: string;
   message?: string;
+  /** Raw iGree field — prefer sessionId after client normalization. */
+  state?: string;
+  /** Raw iGree field — prefer consentUrl after client normalization. */
+  authUrl?: string;
 }
 
 export type InitiateBvnConsentResponse = ApiResponseWrapper<InitiateBvnConsentResponseData>;

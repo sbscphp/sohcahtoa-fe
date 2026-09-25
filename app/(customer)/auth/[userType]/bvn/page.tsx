@@ -4,12 +4,23 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
 import { SecurityBadges } from "@/app/(customer)/_components/auth/SecurityBadges";
-import { OTPDeliveryModal } from "@/app/(customer)/_components/modals/OTPDeliveryModal";
 import { VerifyBVNModal } from "@/app/(customer)/_components/modals/VerifyBVNModal";
 import { BvnConsentOverlay } from "@/app/_components/nibss-bvn-consent/BvnConsentOverlay";
 import { TextInput, Button } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
-import { validateUserType, checkAndClearSessionIfUserTypeChanged } from "@/app/(customer)/_utils/auth-flow";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CalendarIcon } from "@hugeicons/core-free-icons";
+import {
+  validateUserType,
+  checkAndClearSessionIfUserTypeChanged,
+} from "@/app/(customer)/_utils/auth-flow";
+import { formatDateToIso } from "@/app/(customer)/_utils/input-validation";
+import {
+  INPUT_LIMITS,
+  sanitizeElevenDigitId,
+  sanitizePersonName,
+} from "@/app/_lib/input-field-rules";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
@@ -17,29 +28,130 @@ import { notifications } from "@mantine/notifications";
 import { customerNigerianBvnConsentClient } from "@/app/_lib/nibss-bvn-consent/clients";
 import { persistVerificationProfile } from "@/app/_lib/nibss-bvn-consent/persist-verification-profile";
 import { useBvnConsentFlow } from "@/app/_lib/nibss-bvn-consent/use-bvn-consent-flow";
+import { normalizeNigerianPhoneInput } from "@/app/_lib/nibss-bvn-consent/phone-validation";
+import {
+  toIgreeInitiatePayload,
+  validateIgreeForm,
+  type IgreeFormErrors,
+} from "@/app/_lib/nibss-bvn-consent/igree-form-validation";
 
 export default function BVNPage() {
   const router = useRouter();
   const params = useParams();
   const userType = validateUserType(params.userType);
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [bvn, setBvn] = useState("");
-  const [
-    otpDeliveryOpened,
-    { open: openOTPDelivery, close: closeOTPDelivery }
-  ] = useDisclosure(false);
+  const [fieldErrors, setFieldErrors] = useState<IgreeFormErrors>({});
+  const [showErrors, setShowErrors] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+
   const [verifyBVNOpened, { open: openVerifyBVN, close: closeVerifyBVN }] =
     useDisclosure(false);
-  const [deliveryMethod, setDeliveryMethod] = useState<
-    "phone" | "email" | null
-  >(null);
+
+  const formValues = {
+    firstName,
+    lastName,
+    email,
+    dateOfBirth,
+    phoneNumber,
+    bvn,
+  };
+
+  const sendOtpMutation = useCreateData(customerApi.auth.nigerian.sendOtp);
+
+  const sendEmailOtpAfterConsent = useCallback(
+    (verificationToken: string) => {
+      setIsSendingOtp(true);
+      sessionStorage.setItem("otpDeliveryMethod", "email");
+
+      sendOtpMutation.mutate(
+        {
+          verificationToken,
+          verificationType: "email",
+        },
+        {
+          onSuccess: (response) => {
+            setIsSendingOtp(false);
+            if (response.success) {
+              const otp = (response as { data?: { otp?: string } })?.data?.otp;
+              if (otp) {
+                notifications.show({
+                  title: "DEV OTP",
+                  message: `OTP: ${otp}`,
+                  color: "blue",
+                  autoClose: 8000,
+                });
+              }
+              openVerifyBVN();
+            } else {
+              handleApiError(
+                {
+                  message: response.error?.message || "Failed to send OTP",
+                  status: 400,
+                },
+                {
+                  customMessage:
+                    response.error?.message ||
+                    "Failed to send email OTP. Please try again.",
+                }
+              );
+            }
+          },
+          onError: (error) => {
+            setIsSendingOtp(false);
+            handleApiError(error, {
+              customMessage: "Failed to send email OTP. Please try again.",
+            });
+          },
+        }
+      );
+    },
+    [openVerifyBVN, sendOtpMutation]
+  );
 
   const handleConsentCompleted = useCallback(
     (data: Parameters<typeof persistVerificationProfile>[0]) => {
-      persistVerificationProfile(data, { bvn, userType: userType ?? undefined });
-      openOTPDelivery();
+      persistVerificationProfile(data, {
+        bvn,
+        userType: userType ?? undefined,
+        email: email.trim(),
+        phoneNumber: normalizeNigerianPhoneInput(phoneNumber),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        dateOfBirth: dateOfBirth.trim(),
+      });
+
+      const verificationToken =
+        data.verificationToken || sessionStorage.getItem("verificationToken");
+
+      if (!verificationToken) {
+        handleApiError(
+          { message: "Missing verification token", status: 400 },
+          {
+            customMessage:
+              "BVN consent completed but verification token is missing.",
+          }
+        );
+        return;
+      }
+
+      sendEmailOtpAfterConsent(verificationToken);
     },
-    [bvn, openOTPDelivery, userType]
+    [
+      bvn,
+      dateOfBirth,
+      email,
+      firstName,
+      lastName,
+      phoneNumber,
+      sendEmailOtpAfterConsent,
+      userType,
+    ]
   );
 
   const bvnConsent = useBvnConsentFlow({
@@ -56,66 +168,40 @@ export default function BVNPage() {
     checkAndClearSessionIfUserTypeChanged(userType);
   }, [userType, router]);
 
-  const isFormValid = bvn.length === 11;
+  useEffect(() => {
+    if (!showErrors) return;
+    setFieldErrors(
+      validateIgreeForm({
+        firstName,
+        lastName,
+        email,
+        dateOfBirth,
+        phoneNumber,
+        bvn,
+      })
+    );
+  }, [bvn, dateOfBirth, email, firstName, lastName, phoneNumber, showErrors]);
 
   const handleVerify = () => {
-    if (!isFormValid || !userType || bvnConsent.isActive) return;
+    const errors = validateIgreeForm(formValues);
+    setShowErrors(true);
+    setFieldErrors(errors);
 
-    void bvnConsent.startConsent({ bvn });
+    if (
+      Object.keys(errors).length > 0 ||
+      !userType ||
+      bvnConsent.isActive ||
+      isSendingOtp
+    ) {
+      return;
+    }
+
+    void bvnConsent.startConsent(toIgreeInitiatePayload(formValues));
   };
 
   const handleConsentCancel = () => {
     bvnConsent.cancel();
     bvnConsent.reset();
-  };
-
-  const sendOtpMutation = useCreateData(customerApi.auth.nigerian.sendOtp);
-
-  const handleOTPDeliveryContinue = (method: "phone" | "email") => {
-    const verificationToken = sessionStorage.getItem("verificationToken");
-
-    if (!verificationToken) {
-      handleApiError(
-        { message: "Missing verification token", status: 400 },
-        { customMessage: "Please complete BVN verification first." }
-      );
-      return;
-    }
-
-    setDeliveryMethod(method);
-    sessionStorage.setItem("otpDeliveryMethod", method);
-
-    sendOtpMutation.mutate(
-      {
-        verificationToken,
-        verificationType: method,
-      },
-      {
-        onSuccess: (response) => {
-          if (response.success) {
-            const otp = (response as { data?: { otp?: string } })?.data?.otp;
-            if (otp) {
-              notifications.show({
-                title: "DEV OTP",
-                message: `OTP: ${otp}`,
-                color: "blue",
-                autoClose: 8000,
-              });
-            }
-            closeOTPDelivery();
-            openVerifyBVN();
-          } else {
-            handleApiError(
-              { message: response.error?.message || "Failed to send OTP", status: 400 },
-              { customMessage: response.error?.message || "Failed to send OTP. Please try again." }
-            );
-          }
-        },
-        onError: (error) => {
-          handleApiError(error, { customMessage: "Failed to send OTP. Please try again." });
-        },
-      }
-    );
   };
 
   const handleBVNVerified = () => {
@@ -130,6 +216,7 @@ export default function BVNPage() {
 
   const consentOverlayOpen =
     bvnConsent.phase !== "idle" && bvnConsent.phase !== "completed";
+  const isSubmitting = bvnConsent.isActive || isSendingOtp;
 
   return (
     <>
@@ -139,6 +226,7 @@ export default function BVNPage() {
           leftSection={<ArrowLeft size={18} />}
           onClick={() => router.push("/auth/onboarding")}
           className="text-body-text-200 hover:text-body-text-300 p-0 h-auto"
+          disabled={isSubmitting}
         >
           Back
         </Button>
@@ -147,24 +235,145 @@ export default function BVNPage() {
             Let&apos;s Get you Started.
           </h1>
           <p className="text-body-text-100 text-base">
-            Please enter your BVN. You&apos;ll complete a quick NIBSS consent step
-            before we verify your identity.
+            Please enter your details and BVN. This is required for identity
+            verification and security. Your details are safe and will not be
+            shared.
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="block text-body-text-100 text-base font-medium">
+            <label
+              htmlFor="citizen-first-name"
+              className="block text-body-text-100 text-base font-medium"
+            >
+              First Name
+            </label>
+            <TextInput
+              id="citizen-first-name"
+              value={firstName}
+              onChange={(e) =>
+                setFirstName(sanitizePersonName(e.currentTarget.value))
+              }
+              placeholder="Enter first name"
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.firstName : undefined}
+              maxLength={INPUT_LIMITS.personName}
+              autoComplete="given-name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="citizen-last-name"
+              className="block text-body-text-100 text-base font-medium"
+            >
+              Last Name
+            </label>
+            <TextInput
+              id="citizen-last-name"
+              value={lastName}
+              onChange={(e) =>
+                setLastName(sanitizePersonName(e.currentTarget.value))
+              }
+              placeholder="Enter last name"
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.lastName : undefined}
+              maxLength={INPUT_LIMITS.personName}
+              autoComplete="family-name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="citizen-email"
+              className="block text-body-text-100 text-base font-medium"
+            >
+              Email Address
+            </label>
+            <TextInput
+              id="citizen-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
+              placeholder="you@email.com"
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.email : undefined}
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="citizen-dob"
+              className="block text-body-text-100 text-base font-medium"
+            >
+              Date of Birth
+            </label>
+            <DateInput
+              id="citizen-dob"
+              placeholder="Select date of birth"
+              value={dateOfBirth.trim() ? new Date(dateOfBirth) : null}
+              onChange={(value) => setDateOfBirth(formatDateToIso(value))}
+              maxDate={new Date()}
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.dateOfBirth : undefined}
+              rightSection={
+                <HugeiconsIcon
+                  icon={CalendarIcon}
+                  size={20}
+                  className="text-text-300!"
+                />
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="citizen-phone"
+              className="block text-body-text-100 text-base font-medium"
+            >
+              Phone Number
+            </label>
+            <TextInput
+              id="citizen-phone"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) =>
+                setPhoneNumber(normalizeNigerianPhoneInput(e.currentTarget.value))
+              }
+              placeholder="+2348031234567"
+              size="lg"
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.phoneNumber : undefined}
+              maxLength={14}
+              autoComplete="tel"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="citizen-bvn"
+              className="block text-body-text-100 text-base font-medium"
+            >
               BVN
             </label>
             <TextInput
+              id="citizen-bvn"
               value={bvn}
               onChange={(e) =>
-                setBvn(e.target.value.replace(/\D/g, "").slice(0, 11))
+                setBvn(sanitizeElevenDigitId(e.currentTarget.value))
               }
-              placeholder="Enter your BVN"
+              placeholder="Enter BVN"
               size="lg"
-              maxLength={11}
+              disabled={isSubmitting}
+              error={showErrors ? fieldErrors.bvn : undefined}
+              maxLength={INPUT_LIMITS.bvn}
+              inputMode="numeric"
             />
             <p className="text-text-200 text-sm">
               If you can&apos;t remember, please dial{" "}
@@ -176,16 +385,20 @@ export default function BVNPage() {
 
         <Button
           onClick={handleVerify}
-          disabled={!isFormValid || bvnConsent.isActive}
-          loading={bvnConsent.isActive}
+          disabled={isSubmitting}
+          loading={isSubmitting}
           variant="filled"
           size="lg"
           className="disabled:bg-primary-100! disabled:text-white! disabled:cursor-not-allowed"
           fullWidth
           radius="xl"
-          rightSection={!bvnConsent.isActive && <ArrowUpRight size={18} />}
+          rightSection={!isSubmitting && <ArrowUpRight size={18} />}
         >
-          {bvnConsent.isActive ? "Starting consent…" : "Continue to NIBSS consent"}
+          {bvnConsent.isActive
+            ? "Starting consent…"
+            : isSendingOtp
+              ? "Sending email OTP…"
+              : "Verify BVN"}
         </Button>
 
         <SecurityBadges />
@@ -201,21 +414,13 @@ export default function BVNPage() {
         onCancel={handleConsentCancel}
       />
 
-      <OTPDeliveryModal
-        opened={otpDeliveryOpened}
-        onClose={closeOTPDelivery}
-        onContinue={handleOTPDeliveryContinue}
+      <VerifyBVNModal
+        opened={verifyBVNOpened}
+        onClose={closeVerifyBVN}
+        onVerify={handleBVNVerified}
+        bvn={bvn}
+        deliveryMethod="email"
       />
-
-      {deliveryMethod && (
-        <VerifyBVNModal
-          opened={verifyBVNOpened}
-          onClose={closeVerifyBVN}
-          onVerify={handleBVNVerified}
-          bvn={bvn}
-          deliveryMethod={deliveryMethod}
-        />
-      )}
     </>
   );
 }

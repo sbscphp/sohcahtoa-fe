@@ -15,7 +15,9 @@ export const API_ENDPOINTS = {
     
     // Nigerian signup flow
     nigerian: {
+      /** @deprecated Consent Hub — use igreeInitiate. */
       verifyBvn: "/api/auth/signup/nigerian/verify-bvn",
+      igreeInitiate: "/api/auth/signup/nigerian/igree/initiate",
       bvnConsentStatus: "/api/auth/signup/nigerian/bvn-consent-status",
       sendOtp: "/api/auth/signup/nigerian/send-otp",
       resendOtp: "/api/auth/signup/nigerian/resend-otp",

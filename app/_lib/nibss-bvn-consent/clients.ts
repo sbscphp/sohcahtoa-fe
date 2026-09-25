@@ -1,21 +1,58 @@
 import { apiClient } from "@/app/_lib/api/client";
 import type { NigerianBvnConsentClient } from "@/app/_lib/nibss-bvn-consent/types";
+import { normalizeInitiateConsentData } from "@/app/_lib/nibss-bvn-consent/normalize-initiate-response";
 import { API_ENDPOINTS } from "@/app/(customer)/_services/endpoints";
 import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
 import type {
+  ApiResponseWrapper,
   BvnConsentStatusRequest,
   BvnConsentStatusResponse,
+  IgreeInitiateRequest,
   InitiateBvnConsentResponse,
-  VerifyBvnRequest,
+  InitiateBvnConsentResponseData,
 } from "@/app/_lib/api/types";
 
+async function initiateAndNormalize(
+  path: string,
+  data: IgreeInitiateRequest,
+  options?: { skipAuth?: boolean }
+): Promise<ApiResponseWrapper<InitiateBvnConsentResponseData>> {
+  const response = await apiClient.post<InitiateBvnConsentResponse>(
+    path,
+    data,
+    options
+  );
+
+  if (!response.success || !response.data) {
+    return response;
+  }
+
+  const normalized = normalizeInitiateConsentData(response.data);
+  if (!normalized) {
+    return {
+      ...response,
+      success: false,
+      data: undefined,
+      error: {
+        code: response.error?.code ?? "INVALID_CONSENT_RESPONSE",
+        message:
+          response.error?.message ??
+          "Invalid consent response from server. Missing session or redirect URL.",
+      },
+    };
+  }
+
+  return {
+    ...response,
+    data: normalized,
+  };
+}
+
 export const customerNigerianBvnConsentClient: NigerianBvnConsentClient = {
-  initiateConsent: (data: VerifyBvnRequest) =>
-    apiClient.post<InitiateBvnConsentResponse>(
-      API_ENDPOINTS.auth.nigerian.verifyBvn,
-      data,
-      { skipAuth: true }
-    ),
+  initiateConsent: (data: IgreeInitiateRequest) =>
+    initiateAndNormalize(API_ENDPOINTS.auth.nigerian.igreeInitiate, data, {
+      skipAuth: true,
+    }),
   getConsentStatus: (data: BvnConsentStatusRequest) =>
     apiClient.post<BvnConsentStatusResponse>(
       API_ENDPOINTS.auth.nigerian.bvnConsentStatus,
@@ -25,9 +62,9 @@ export const customerNigerianBvnConsentClient: NigerianBvnConsentClient = {
 };
 
 export const agentNigerianBvnConsentClient: NigerianBvnConsentClient = {
-  initiateConsent: (data: VerifyBvnRequest) =>
-    apiClient.post<InitiateBvnConsentResponse>(
-      AGENT_API_ENDPOINTS.customerAuth.nigerian.verifyBvn,
+  initiateConsent: (data: IgreeInitiateRequest) =>
+    initiateAndNormalize(
+      AGENT_API_ENDPOINTS.customerAuth.nigerian.igreeInitiate,
       data
     ),
   getConsentStatus: (data: BvnConsentStatusRequest) =>
