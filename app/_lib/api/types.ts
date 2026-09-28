@@ -66,6 +66,17 @@ export interface InitiateBvnConsentResponseData {
 
 export type InitiateBvnConsentResponse = ApiResponseWrapper<InitiateBvnConsentResponseData>;
 
+export interface IgreeCallbackRequest {
+  code: string;
+  state: string;
+}
+
+export interface IgreeCallbackResponseData {
+  message?: string;
+}
+
+export type IgreeCallbackResponse = ApiResponseWrapper<IgreeCallbackResponseData>;
+
 export interface BvnConsentStatusRequest {
   sessionId: string;
 }

@@ -7,6 +7,8 @@ import type {
   ApiResponseWrapper,
   BvnConsentStatusRequest,
   BvnConsentStatusResponse,
+  IgreeCallbackRequest,
+  IgreeCallbackResponse,
   IgreeInitiateRequest,
   InitiateBvnConsentResponse,
   InitiateBvnConsentResponseData,
@@ -53,6 +55,10 @@ export const customerNigerianBvnConsentClient: NigerianBvnConsentClient = {
     initiateAndNormalize(API_ENDPOINTS.auth.nigerian.igreeInitiate, data, {
       skipAuth: true,
     }),
+  submitIgreeCallback: (data: IgreeCallbackRequest) =>
+    apiClient.post<IgreeCallbackResponse>(API_ENDPOINTS.auth.nibss.igreeCallback, data, {
+      skipAuth: true,
+    }),
   getConsentStatus: (data: BvnConsentStatusRequest) =>
     apiClient.post<BvnConsentStatusResponse>(
       API_ENDPOINTS.auth.nigerian.bvnConsentStatus,
@@ -67,6 +73,8 @@ export const agentNigerianBvnConsentClient: NigerianBvnConsentClient = {
       AGENT_API_ENDPOINTS.customerAuth.nigerian.igreeInitiate,
       data
     ),
+  submitIgreeCallback: (data: IgreeCallbackRequest) =>
+    apiClient.post<IgreeCallbackResponse>(API_ENDPOINTS.auth.nibss.igreeCallback, data),
   getConsentStatus: (data: BvnConsentStatusRequest) =>
     apiClient.post<BvnConsentStatusResponse>(
       AGENT_API_ENDPOINTS.customerAuth.nigerian.bvnConsentStatus,

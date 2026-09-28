@@ -60,6 +60,8 @@ import type {
   ValidateOtpResponse,
   VerifyBvnRequest,
   IgreeInitiateRequest,
+  IgreeCallbackRequest,
+  IgreeCallbackResponse,
   InitiateBvnConsentResponse,
   BvnConsentStatusRequest,
   BvnConsentStatusResponse,
@@ -143,6 +145,9 @@ export const customerApi = {
 
       igreeInitiate: (data: IgreeInitiateRequest) =>
         apiClient.post<InitiateBvnConsentResponse>(API_ENDPOINTS.auth.nigerian.igreeInitiate, data, { skipAuth: true }),
+
+      igreeCallback: (data: IgreeCallbackRequest) =>
+        apiClient.post<IgreeCallbackResponse>(API_ENDPOINTS.auth.nibss.igreeCallback, data, { skipAuth: true }),
 
       bvnConsentStatus: (data: BvnConsentStatusRequest) =>
         apiClient.post<BvnConsentStatusResponse>(API_ENDPOINTS.auth.nigerian.bvnConsentStatus, data, { skipAuth: true }),

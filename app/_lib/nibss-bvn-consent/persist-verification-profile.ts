@@ -10,7 +10,7 @@ type VerificationProfileExtras = {
   dateOfBirth?: string;
 };
 
-/** Persists profile fields returned after NIBSS consent completes. */
+/** Writes consent profile fields into sessionStorage for later signup steps. */
 export function persistVerificationProfile(
   data: BvnConsentStatusResponseData,
   extras?: VerificationProfileExtras

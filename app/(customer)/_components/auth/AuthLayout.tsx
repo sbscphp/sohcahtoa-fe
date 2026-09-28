@@ -57,9 +57,9 @@ export function AuthLayout({ children, variant = "default" }: AuthLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen flex p-3">
+    <div className="h-screen flex p-3 overflow-hidden">
       {/* Left Column - Marketing/Information */}
-      <div className="hidden xl:flex xl:w-1/3 bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg">
+      <div className="hidden xl:flex xl:w-1/3 h-full bg-bg-card-2 p-8 xl:p-12 flex-col justify-between rounded-lg overflow-hidden">
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
@@ -132,9 +132,11 @@ export function AuthLayout({ children, variant = "default" }: AuthLayoutProps) {
         </div>
       </div>
 
-      {/* Right Column - Form Content */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full md:max-w-lg">{children}</div>
+      {/* Right Column - Form Content (scrolls independently when taller than left panel) */}
+      <div className="flex-1 h-full overflow-y-auto overscroll-contain p-6 lg:p-12">
+        <div className="w-full md:max-w-lg mx-auto my-auto min-h-full flex flex-col justify-center py-2">
+          {children}
+        </div>
       </div>
     </div>
   );

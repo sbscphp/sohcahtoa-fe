@@ -25,6 +25,11 @@ export const API_ENDPOINTS = {
       validateEmailOtp: "/api/auth/signup/nigerian/validate-email-otp",
       createAccount: "/api/auth/signup/nigerian/create-account",
     },
+
+    /** NIBSS iGree callback (code/state from cross-origin /igree page). */
+    nibss: {
+      igreeCallback: "/api/auth/nibss/igree/callback",
+    },
     
     tourist: {
       verifyPassport: "/api/auth/signup/tourist/verify-passport",

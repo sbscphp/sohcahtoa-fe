@@ -1,9 +1,6 @@
 import type { InitiateBvnConsentResponseData } from "@/app/_lib/api/types";
 
-/**
- * Normalize Consent Hub (`sessionId`/`consentUrl`) and iGree (`state`/`authUrl`)
- * initiate responses into the shape used by the consent flow hook.
- */
+/** Maps Consent Hub or iGree initiate fields into sessionId + consentUrl. */
 export function normalizeInitiateConsentData(
   data: InitiateBvnConsentResponseData
 ): InitiateBvnConsentResponseData | null {
