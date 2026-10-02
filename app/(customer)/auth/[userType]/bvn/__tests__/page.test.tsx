@@ -66,7 +66,7 @@ vi.mock("@/app/(customer)/_services/customer-api", () => ({
     auth: {
       nigerian: {
         igreeInitiate: vi.fn(),
-        bvnConsentStatus: vi.fn(),
+        igreeRetrieve: vi.fn(),
         sendOtp: vi.fn(),
       },
     },

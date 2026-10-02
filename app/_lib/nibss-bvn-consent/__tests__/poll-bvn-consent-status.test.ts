@@ -56,6 +56,31 @@ describe("pollBvnConsentStatus", () => {
     expect(fetchStatus).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps polling on CONSENT_VERIFIED", async () => {
+    const fetchStatus = vi
+      .fn()
+      .mockResolvedValueOnce({
+        success: true,
+        data: { status: "CONSENT_VERIFIED", message: "Retrying retrieval" },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { status: "COMPLETED", verificationToken: "token-789" },
+      });
+
+    const promise = pollBvnConsentStatus({
+      fetchStatus,
+      initialIntervalMs: 1000,
+      maxIntervalMs: 1000,
+    });
+
+    await vi.advanceTimersByTimeAsync(1000);
+    const result = await promise;
+
+    expect(result.verificationToken).toBe("token-789");
+    expect(fetchStatus).toHaveBeenCalledTimes(2);
+  });
+
   it("throws FAILED when status is FAILED", async () => {
     const fetchStatus = vi.fn().mockResolvedValue({
       success: true,

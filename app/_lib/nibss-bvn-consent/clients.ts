@@ -5,11 +5,11 @@ import { API_ENDPOINTS } from "@/app/(customer)/_services/endpoints";
 import { AGENT_API_ENDPOINTS } from "@/app/agent/_services/endpoints";
 import type {
   ApiResponseWrapper,
-  BvnConsentStatusRequest,
-  BvnConsentStatusResponse,
   IgreeCallbackRequest,
   IgreeCallbackResponse,
   IgreeInitiateRequest,
+  IgreeRetrieveRequest,
+  IgreeRetrieveResponse,
   InitiateBvnConsentResponse,
   InitiateBvnConsentResponseData,
 } from "@/app/_lib/api/types";
@@ -59,9 +59,9 @@ export const customerNigerianBvnConsentClient: NigerianBvnConsentClient = {
     apiClient.post<IgreeCallbackResponse>(API_ENDPOINTS.auth.nibss.igreeCallback, data, {
       skipAuth: true,
     }),
-  getConsentStatus: (data: BvnConsentStatusRequest) =>
-    apiClient.post<BvnConsentStatusResponse>(
-      API_ENDPOINTS.auth.nigerian.bvnConsentStatus,
+  retrieveBvnDetails: (data: IgreeRetrieveRequest) =>
+    apiClient.post<IgreeRetrieveResponse>(
+      API_ENDPOINTS.auth.nigerian.igreeRetrieve,
       data,
       { skipAuth: true }
     ),
@@ -75,9 +75,9 @@ export const agentNigerianBvnConsentClient: NigerianBvnConsentClient = {
     ),
   submitIgreeCallback: (data: IgreeCallbackRequest) =>
     apiClient.post<IgreeCallbackResponse>(API_ENDPOINTS.auth.nibss.igreeCallback, data),
-  getConsentStatus: (data: BvnConsentStatusRequest) =>
-    apiClient.post<BvnConsentStatusResponse>(
-      AGENT_API_ENDPOINTS.customerAuth.nigerian.bvnConsentStatus,
+  retrieveBvnDetails: (data: IgreeRetrieveRequest) =>
+    apiClient.post<IgreeRetrieveResponse>(
+      AGENT_API_ENDPOINTS.customerAuth.nigerian.igreeRetrieve,
       data
     ),
 };

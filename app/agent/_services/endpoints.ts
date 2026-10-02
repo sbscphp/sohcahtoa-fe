@@ -41,7 +41,7 @@ export const AGENT_API_ENDPOINTS = {
       /** @deprecated Consent Hub — use igreeInitiate. */
       verifyBvn: "/api/agent/customer-auth/verify-bvn",
       igreeInitiate: "/api/agent/customer-auth/igree/initiate",
-      bvnConsentStatus: "/api/agent/customer-auth/bvn-consent-status",
+      igreeRetrieve: "/api/agent/customer-auth/igree/retrieve",
       sendOtp: "/api/agent/customer-auth/send-otp",
       resendOtp: "/api/agent/customer-auth/resend-otp",
       validateOtp: "/api/agent/customer-auth/validate-otp",

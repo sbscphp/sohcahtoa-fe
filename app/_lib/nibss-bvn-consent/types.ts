@@ -1,10 +1,10 @@
 import type {
   ApiResponseWrapper,
-  BvnConsentStatusRequest,
-  BvnConsentStatusResponseData,
   IgreeCallbackRequest,
   IgreeCallbackResponseData,
   IgreeInitiateRequest,
+  IgreeRetrieveRequest,
+  IgreeRetrieveResponseData,
   InitiateBvnConsentResponseData,
 } from "@/app/_lib/api/types";
 
@@ -15,9 +15,9 @@ export type NigerianBvnConsentClient = {
   submitIgreeCallback: (
     data: IgreeCallbackRequest
   ) => Promise<ApiResponseWrapper<IgreeCallbackResponseData>>;
-  getConsentStatus: (
-    data: BvnConsentStatusRequest
-  ) => Promise<ApiResponseWrapper<BvnConsentStatusResponseData>>;
+  retrieveBvnDetails: (
+    data: IgreeRetrieveRequest
+  ) => Promise<ApiResponseWrapper<IgreeRetrieveResponseData>>;
 };
 
 export type BvnConsentFlowPhase =
@@ -28,4 +28,4 @@ export type BvnConsentFlowPhase =
   | "failed"
   | "timed_out";
 
-export type BvnConsentFlowResult = BvnConsentStatusResponseData;
+export type BvnConsentFlowResult = IgreeRetrieveResponseData;

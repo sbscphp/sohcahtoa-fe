@@ -77,27 +77,35 @@ export interface IgreeCallbackResponseData {
 
 export type IgreeCallbackResponse = ApiResponseWrapper<IgreeCallbackResponseData>;
 
-export interface BvnConsentStatusRequest {
+export interface IgreeRetrieveRequest {
   sessionId: string;
 }
 
-export type BvnConsentStatus = "PENDING" | "COMPLETED" | "FAILED";
+export type IgreeRetrieveStatus =
+  | "PENDING"
+  | "CONSENT_VERIFIED"
+  | "COMPLETED"
+  | "FAILED";
 
-export interface BvnConsentStatusResponseData {
-  status: BvnConsentStatus;
-  message?: string;
-  verificationToken?: string;
-  email?: string;
-  fullName?: string;
-  phoneNumber?: string;
-  address?: string;
+export interface IgreeRetrieveCustomer {
   firstName?: string;
   lastName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  email?: string;
+  phoneNumber?: string;
+  bvn?: string;
 }
 
-export type BvnConsentStatusResponse = ApiResponseWrapper<BvnConsentStatusResponseData>;
+export interface IgreeRetrieveResponseData {
+  status: IgreeRetrieveStatus;
+  message?: string;
+  verificationToken?: string;
+  customer?: IgreeRetrieveCustomer;
+}
 
-/** @deprecated Token is returned from bvn-consent-status when COMPLETED, not verify-bvn. */
+export type IgreeRetrieveResponse = ApiResponseWrapper<IgreeRetrieveResponseData>;
+
 export interface VerifyBvnResponseData {
   verificationToken: string;
   message: string;

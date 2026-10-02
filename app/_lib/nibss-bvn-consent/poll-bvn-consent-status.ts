@@ -1,4 +1,4 @@
-import type { ApiResponseWrapper, BvnConsentStatusResponseData } from "@/app/_lib/api/types";
+import type { ApiResponseWrapper, IgreeRetrieveResponseData } from "@/app/_lib/api/types";
 import {
   NIBSS_POLL_BACKOFF_MULTIPLIER,
   NIBSS_POLL_INITIAL_INTERVAL_MS,
@@ -17,14 +17,13 @@ export class BvnConsentPollError extends Error {
 }
 
 export type PollBvnConsentStatusOptions = {
-  fetchStatus: () => Promise<ApiResponseWrapper<BvnConsentStatusResponseData>>;
+  fetchStatus: () => Promise<ApiResponseWrapper<IgreeRetrieveResponseData>>;
   signal?: AbortSignal;
-  onTick?: (data: BvnConsentStatusResponseData) => void;
+  onTick?: (data: IgreeRetrieveResponseData) => void;
   initialIntervalMs?: number;
   maxIntervalMs?: number;
   maxDurationMs?: number;
   backoffMultiplier?: number;
-  /** When true, pauses polling while the document is hidden. */
   pauseWhenHidden?: boolean;
 };
 
@@ -78,13 +77,9 @@ function waitForDocumentVisible(signal?: AbortSignal): Promise<void> {
   });
 }
 
-/**
- * Polls bvn-consent-status until COMPLETED, FAILED, timeout, or abort.
- * Uses exponential backoff and skips requests while the tab is hidden.
- */
 export async function pollBvnConsentStatus(
   options: PollBvnConsentStatusOptions
-): Promise<BvnConsentStatusResponseData> {
+): Promise<IgreeRetrieveResponseData> {
   const {
     fetchStatus,
     signal,
@@ -115,7 +110,7 @@ export async function pollBvnConsentStatus(
     }
 
     inFlight = true;
-    let response: ApiResponseWrapper<BvnConsentStatusResponseData>;
+    let response: ApiResponseWrapper<IgreeRetrieveResponseData>;
 
     try {
       response = await fetchStatus();
@@ -125,7 +120,7 @@ export async function pollBvnConsentStatus(
 
     if (!response.success || !response.data) {
       throw new BvnConsentPollError(
-        response.error?.message ?? "Unable to check BVN consent status.",
+        response.error?.message ?? "Unable to retrieve BVN verification details.",
         "API_ERROR"
       );
     }
@@ -136,7 +131,7 @@ export async function pollBvnConsentStatus(
     if (data.status === "COMPLETED") {
       if (!data.verificationToken) {
         throw new BvnConsentPollError(
-          "Consent completed but verification token is missing.",
+          "Verification completed but token is missing.",
           "API_ERROR"
         );
       }
@@ -145,7 +140,7 @@ export async function pollBvnConsentStatus(
 
     if (data.status === "FAILED") {
       throw new BvnConsentPollError(
-        data.message ?? "BVN consent was not completed.",
+        data.message ?? "BVN verification failed.",
         "FAILED"
       );
     }
@@ -158,7 +153,7 @@ export async function pollBvnConsentStatus(
   }
 
   throw new BvnConsentPollError(
-    "BVN consent is taking longer than expected. Please try again.",
+    "BVN verification is taking longer than expected. Please try again.",
     "TIMED_OUT"
   );
 }

@@ -96,20 +96,20 @@ export function useBvnConsentFlow({
       abortRef.current = controller;
 
       setPhase("polling");
-      setStatusMessage("Consent received. Confirming verification…");
-      igreeLog("status after callback", { sessionId: activeSessionId });
+      setStatusMessage("Consent received. Retrieving verified BVN details…");
+      igreeLog("retrieve after callback", { sessionId: activeSessionId });
 
       try {
         const completed = await pollBvnConsentStatus({
           signal: controller.signal,
           fetchStatus: () =>
-            client.getConsentStatus({ sessionId: activeSessionId }),
+            client.retrieveBvnDetails({ sessionId: activeSessionId }),
           onTick: (data) => {
             if (data.message) setStatusMessage(data.message);
           },
         });
 
-        igreeLog("status COMPLETED", {
+        igreeLog("retrieve COMPLETED", {
           sessionId: activeSessionId,
           hasToken: Boolean(completed.verificationToken),
         });
@@ -125,7 +125,7 @@ export function useBvnConsentFlow({
         const message =
           error instanceof BvnConsentPollError
             ? error.message
-            : "Unable to confirm BVN consent. Please try again.";
+            : "Unable to retrieve BVN details. Please try again.";
 
         setPhase(
           error instanceof BvnConsentPollError && error.code === "TIMED_OUT"
