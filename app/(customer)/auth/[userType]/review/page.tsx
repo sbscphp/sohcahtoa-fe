@@ -46,101 +46,103 @@ export default function ReviewPage() {
 
     checkAndClearSessionIfUserTypeChanged(userType);
 
+    if (userType === "citizen") {
+      const verificationToken = sessionStorage.getItem("verificationToken");
+      const validationToken = sessionStorage.getItem("validationToken");
+      router.push(
+        verificationToken || validationToken
+          ? `/auth/${userType}/create-password`
+          : `/auth/${userType}/bvn`
+      );
+      return;
+    }
+
     const verificationToken = sessionStorage.getItem("verificationToken");
     if (!verificationToken) {
-      router.push(userType === "citizen" ? `/auth/${userType}/bvn` : `/auth/${userType}/upload-passport`);
-      return;
+      router.push(`/auth/${userType}/upload-passport`);
     }
   }, [userType, router]);
 
-  const sendEmailOtpNigerianMutation = useCreateData(customerApi.auth.nigerian.sendEmailOtp);
   const sendOtpTouristMutation = useCreateData(customerApi.auth.tourist.sendOtp);
 
   const handleSendOTP = () => {
-    if (userType && !isSendingOTP) {
-      setIsSendingOTP(true);
-      const onSuccess = (response: { success: boolean; data?: unknown; error?: { message?: string } }) => {
-        if (response.success) {
-          const otp =
-            response.data && typeof response.data === "object" && "otp" in response.data
-              ? (response.data as { otp?: unknown }).otp
-              : undefined;
-          if (typeof otp === "string" && otp) {
-            notifications.show({
-              title: "DEV OTP",
-              message: `OTP: ${otp}`,
-              color: "blue",
-              autoClose: 8000,
-            });
+    if (!userType || userType === "citizen" || isSendingOTP) return;
+
+    setIsSendingOTP(true);
+    const onSuccess = (response: {
+      success: boolean;
+      data?: unknown;
+      error?: { message?: string };
+    }) => {
+      if (response.success) {
+        const otp =
+          response.data &&
+          typeof response.data === "object" &&
+          "otp" in response.data
+            ? (response.data as { otp?: unknown }).otp
+            : undefined;
+        if (typeof otp === "string" && otp) {
+          notifications.show({
+            title: "DEV OTP",
+            message: `OTP: ${otp}`,
+            color: "blue",
+            autoClose: 8000,
+          });
+        }
+        setIsSendingOTP(false);
+        sessionStorage.setItem("userType", userType);
+        openOTPSent();
+      } else {
+        setIsSendingOTP(false);
+        handleApiError(
+          {
+            message: response.error?.message || "Failed to send OTP",
+            status: 400,
+          },
+          {
+            customMessage:
+              response.error?.message || "Failed to send OTP. Please try again.",
           }
-          setIsSendingOTP(false);
-          sessionStorage.setItem("userType", userType);
-          openOTPSent();
-        } else {
-          setIsSendingOTP(false);
-          handleApiError(
-            { message: response.error?.message || "Failed to send OTP", status: 400 },
-            { customMessage: response.error?.message || "Failed to send OTP. Please try again." }
-          );
-        }
-      };
-
-      const onError = (error: unknown) => {
-        setIsSendingOTP(false);
-        handleApiError(error, { customMessage: "Failed to send OTP. Please try again." });
-      };
-
-      if (userType === "citizen") {
-        const email = sessionStorage.getItem("email");
-        if (!email) {
-          setIsSendingOTP(false);
-          handleApiError(
-            { message: "Email required", status: 400 },
-            { customMessage: "Email not found. Please complete BVN verification first." }
-          );
-          return;
-        }
-        const validationToken = sessionStorage.getItem("validationToken");
-        if (!validationToken) {
-          setIsSendingOTP(false);
-          handleApiError(
-            { message: "Validation token required", status: 400 },
-            { customMessage: "Please complete OTP validation first." }
-          );
-          return;
-        }
-        sendEmailOtpNigerianMutation.mutate(
-          { email, verificationToken: validationToken },
-          { onSuccess, onError }
         );
-        return;
       }
+    };
 
-      const email = sessionStorage.getItem("email");
-      if (!email) {
-        setIsSendingOTP(false);
-        handleApiError(
-          { message: "Email required", status: 400 },
-          { customMessage: "Email not found. Please complete passport verification first." }
-        );
-        return;
-      }
+    const onError = (error: unknown) => {
+      setIsSendingOTP(false);
+      handleApiError(error, {
+        customMessage: "Failed to send OTP. Please try again.",
+      });
+    };
 
-      const verificationToken = sessionStorage.getItem("verificationToken");
-      if (!verificationToken) {
-        setIsSendingOTP(false);
-        handleApiError(
-          { message: "Verification token not found", status: 400 },
-          { customMessage: "Please complete passport verification first." }
-        );
-        return;
-      }
-
-      sendOtpTouristMutation.mutate(
-        { email, verificationToken },
-        { onSuccess, onError }
+    const email = sessionStorage.getItem("email");
+    if (!email) {
+      setIsSendingOTP(false);
+      handleApiError(
+        { message: "Email required", status: 400 },
+        {
+          customMessage:
+            "Email not found. Please complete passport verification first.",
+        }
       );
+      return;
     }
+
+    const verificationToken = sessionStorage.getItem("verificationToken");
+    if (!verificationToken) {
+      setIsSendingOTP(false);
+      handleApiError(
+        { message: "Verification token not found", status: 400 },
+        {
+          customMessage: "Please complete passport verification first.",
+        }
+      );
+      return;
+    }
+
+    sendOtpTouristMutation.mutate(
+      { email, verificationToken },
+      { onSuccess, onError }
+    );
   };
 
   const handleGoToEmail = () => {
@@ -150,11 +152,11 @@ export default function ReviewPage() {
     }
   };
 
-  if (!userType) {
+  if (!userType || userType === "citizen") {
     return null;
   }
 
-  const verificationSource = userType === "citizen" ? "BVN" : "passport";
+  const verificationSource = "passport";
 
   return (
     <>
@@ -162,7 +164,7 @@ export default function ReviewPage() {
         <Button
           variant="subtle"
           leftSection={<ArrowLeft size={18} />}
-          onClick={() => router.push(userType === "citizen" ? `/auth/${userType}/bvn` : `/auth/${userType}/upload-passport`)}
+          onClick={() => router.push(`/auth/${userType}/upload-passport`)}
           className="text-body-text-200 hover:text-body-text-300 p-0 h-auto"
         >
           Back

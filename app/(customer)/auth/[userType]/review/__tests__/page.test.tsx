@@ -1,12 +1,12 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@/test-utils";
+import { render, screen, waitFor, within } from "@/test-utils";
 import userEvent from "@testing-library/user-event";
 import ReviewPage from "../page";
 
 const mockPush = vi.fn();
 const mockMutate = vi.fn();
-const mockUseParams = vi.fn(() => ({ userType: "citizen" }));
+const mockUseParams = vi.fn(() => ({ userType: "tourist" }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -23,9 +23,6 @@ vi.mock("@/app/_lib/api/hooks", () => ({
 vi.mock("@/app/(customer)/_services/customer-api", () => ({
   customerApi: {
     auth: {
-      nigerian: {
-        sendEmailOtp: vi.fn(),
-      },
       tourist: {
         sendOtp: vi.fn(),
       },
@@ -42,7 +39,15 @@ vi.mock("@/app/(customer)/_components/auth/SecurityBadges", () => ({
 }));
 
 vi.mock("@/app/(customer)/_components/modals/OTPSentModal", () => ({
-  OTPSentModal: ({ opened, onClose, onGoToEmail }: any) =>
+  OTPSentModal: ({
+    opened,
+    onClose,
+    onGoToEmail,
+  }: {
+    opened: boolean;
+    onClose: () => void;
+    onGoToEmail: () => void;
+  }) =>
     opened ? (
       <div data-testid="otp-sent-modal">
         <button onClick={onGoToEmail}>Continue</button>
@@ -54,11 +59,10 @@ vi.mock("@/app/(customer)/_components/modals/OTPSentModal", () => ({
 describe("Review Page - Onboarding", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseParams.mockReturnValue({ userType: "citizen" });
+    mockUseParams.mockReturnValue({ userType: "tourist" });
     sessionStorage.clear();
-    sessionStorage.setItem("userType", "citizen");
+    sessionStorage.setItem("userType", "tourist");
     sessionStorage.setItem("verificationToken", "test-token");
-    sessionStorage.setItem("validationToken", "test-token");
     sessionStorage.setItem("fullName", "Test User");
     sessionStorage.setItem("email", "test@example.com");
     sessionStorage.setItem("phoneNumber", "+2341234567890");
@@ -68,6 +72,22 @@ describe("Review Page - Onboarding", () => {
   afterEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+  });
+
+  it("redirects citizen users to create-password when tokens exist", () => {
+    mockUseParams.mockReturnValue({ userType: "citizen" });
+    sessionStorage.setItem("userType", "citizen");
+    sessionStorage.setItem("validationToken", "test-token");
+    render(<ReviewPage />);
+    expect(mockPush).toHaveBeenCalledWith("/auth/citizen/create-password");
+  });
+
+  it("redirects citizen users to bvn when tokens are missing", () => {
+    mockUseParams.mockReturnValue({ userType: "citizen" });
+    sessionStorage.clear();
+    sessionStorage.setItem("userType", "citizen");
+    render(<ReviewPage />);
+    expect(mockPush).toHaveBeenCalledWith("/auth/citizen/bvn");
   });
 
   it("displays user information from sessionStorage", () => {
@@ -80,67 +100,29 @@ describe("Review Page - Onboarding", () => {
 
   it("displays nationality for expatriate users", () => {
     mockUseParams.mockReturnValue({ userType: "expatriate" });
+    sessionStorage.setItem("userType", "expatriate");
     sessionStorage.setItem("nationality", "Spain");
     sessionStorage.setItem("verificationToken", "test-token");
-    
+
     render(<ReviewPage />);
     expect(screen.getByText("Spain")).toBeInTheDocument();
   });
 
-  it("displays address for citizen users", () => {
+  it("renders continue button", () => {
     render(<ReviewPage />);
-    expect(screen.getByText("123 Test St")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /continue/i })
+    ).toBeInTheDocument();
   });
 
-  it("renders send OTP button", () => {
-    render(<ReviewPage />);
-    expect(screen.getByRole("button", { name: /send otp/i })).toBeInTheDocument();
-  });
-
-  it("calls sendEmailOtp API for citizen users", async () => {
+  it("calls sendOtp API for tourist users", async () => {
     const user = userEvent.setup();
-    mockMutate.mockImplementation((data, callbacks) => {
-      callbacks.onSuccess({
-        success: true,
-      });
+    mockMutate.mockImplementation((_data, callbacks) => {
+      callbacks.onSuccess({ success: true });
     });
 
     render(<ReviewPage />);
-    const button = screen.getByRole("button", { name: /send otp/i });
-    
-    await user.click(button);
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          email: "test@example.com",
-          verificationToken: "test-token",
-        }),
-        expect.any(Object)
-      );
-    });
-  });
-
-  it("calls sendOtp API for tourist/expatriate users", async () => {
-    const user = userEvent.setup();
-    mockUseParams.mockReturnValue({ userType: "tourist" });
-    sessionStorage.clear();
-    sessionStorage.setItem("userType", "tourist");
-    sessionStorage.setItem("verificationToken", "test-token");
-    sessionStorage.setItem("email", "test@example.com");
-    sessionStorage.setItem("fullName", "Test User");
-    sessionStorage.setItem("phoneNumber", "+2341234567890");
-
-    mockMutate.mockImplementation((data, callbacks) => {
-      callbacks.onSuccess({
-        success: true,
-      });
-    });
-
-    render(<ReviewPage />);
-    const button = screen.getByRole("button", { name: /send otp/i });
-    
-    await user.click(button);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
@@ -155,16 +137,12 @@ describe("Review Page - Onboarding", () => {
 
   it("opens OTP sent modal after successful OTP send", async () => {
     const user = userEvent.setup();
-    mockMutate.mockImplementation((data, callbacks) => {
-      callbacks.onSuccess({
-        success: true,
-      });
+    mockMutate.mockImplementation((_data, callbacks) => {
+      callbacks.onSuccess({ success: true });
     });
 
     render(<ReviewPage />);
-    const button = screen.getByRole("button", { name: /send otp/i });
-    
-    await user.click(button);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("otp-sent-modal")).toBeInTheDocument();
@@ -173,43 +151,37 @@ describe("Review Page - Onboarding", () => {
 
   it("redirects to verify-email page when continue is clicked from modal", async () => {
     const user = userEvent.setup();
-    mockMutate.mockImplementation((data, callbacks) => {
-      callbacks.onSuccess({
-        success: true,
-      });
+    mockMutate.mockImplementation((_data, callbacks) => {
+      callbacks.onSuccess({ success: true });
     });
 
     render(<ReviewPage />);
-    const button = screen.getByRole("button", { name: /send otp/i });
-    
-    await user.click(button);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("otp-sent-modal")).toBeInTheDocument();
     });
 
-    const continueButton = screen.getByRole("button", { name: /continue/i });
-    await user.click(continueButton);
+    await user.click(
+      within(screen.getByTestId("otp-sent-modal")).getByRole("button", {
+        name: /continue/i,
+      })
+    );
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/auth/citizen/verify-email");
+      expect(mockPush).toHaveBeenCalledWith("/auth/tourist/verify-email");
     });
   });
 
   it("redirects to onboarding if userType is missing", () => {
-    mockUseParams.mockReturnValue({ userType: undefined } as unknown as { userType: string });
+    mockUseParams.mockReturnValue({
+      userType: undefined,
+    } as unknown as { userType: string });
     render(<ReviewPage />);
     expect(mockPush).toHaveBeenCalledWith("/auth/onboarding");
   });
 
-  it("redirects to BVN page if verificationToken is missing for citizen", () => {
-    sessionStorage.removeItem("verificationToken");
-    render(<ReviewPage />);
-    expect(mockPush).toHaveBeenCalledWith("/auth/citizen/bvn");
-  });
-
   it("redirects to upload-passport page if verificationToken is missing for tourist", () => {
-    mockUseParams.mockReturnValue({ userType: "tourist" });
     sessionStorage.removeItem("verificationToken");
     render(<ReviewPage />);
     expect(mockPush).toHaveBeenCalledWith("/auth/tourist/upload-passport");
@@ -218,18 +190,13 @@ describe("Review Page - Onboarding", () => {
   it("handles API error on OTP send failure", async () => {
     const user = userEvent.setup();
     const { handleApiError } = await import("@/app/_lib/api/error-handler");
-    
-    mockMutate.mockImplementation((data, callbacks) => {
-      callbacks.onError({
-        message: "Failed to send OTP",
-        status: 400,
-      });
+
+    mockMutate.mockImplementation((_data, callbacks) => {
+      callbacks.onError({ message: "Failed", status: 400 });
     });
 
     render(<ReviewPage />);
-    const button = screen.getByRole("button", { name: /send otp/i });
-    
-    await user.click(button);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
 
     await waitFor(() => {
       expect(handleApiError).toHaveBeenCalled();

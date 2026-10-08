@@ -203,13 +203,14 @@ export interface ValidateOtpRequest {
 
 export interface ValidateOtpResponseData {
   message: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  // Note: validationToken may be present for next step, but not always in response
-  validationToken?: string; // Token to proceed to next step (email OTP for Nigerian, create-account for Tourist)
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  email?: string;
+  phoneNumber?: string;
+  address?: string;
+  validationToken?: string;
 }
 
 export type ValidateOtpResponse = ApiResponseWrapper<ValidateOtpResponseData>;

@@ -56,6 +56,7 @@ describe("Create Password Page - Onboarding", () => {
     mockUseParams.mockReturnValue({ userType: "citizen" });
     sessionStorage.clear();
     sessionStorage.setItem("userType", "citizen");
+    sessionStorage.setItem("verificationToken", "test-verification-token");
     sessionStorage.setItem("validationToken", "test-validation-token");
   });
 
@@ -77,7 +78,7 @@ describe("Create Password Page - Onboarding", () => {
     expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
     expect(screen.getByText(/uppercase letters/i)).toBeInTheDocument();
     expect(screen.getByText(/numbers/i)).toBeInTheDocument();
-    expect(screen.getByText(/special characters/i)).toBeInTheDocument();
+    expect(screen.getByText(/at least one symbol/i)).toBeInTheDocument();
   });
 
   it("disables create password button when password is empty", () => {
@@ -159,7 +160,7 @@ describe("Create Password Page - Onboarding", () => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           password: "Test123!@",
-          validationToken: "test-validation-token",
+          token: "test-verification-token",
         }),
         expect.any(Object)
       );
@@ -313,7 +314,7 @@ describe("Create Password Page - Onboarding", () => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           password: "Test123!@",
-          validationToken: "test-verification-token",
+          token: "test-verification-token",
         }),
         expect.any(Object)
       );
@@ -326,10 +327,11 @@ describe("Create Password Page - Onboarding", () => {
     expect(mockPush).toHaveBeenCalledWith("/auth/onboarding");
   });
 
-  it("redirects to verify-email if validationToken is missing for citizen", () => {
+  it("redirects to bvn if verification tokens are missing for citizen", () => {
     sessionStorage.removeItem("validationToken");
+    sessionStorage.removeItem("verificationToken");
     render(<CreatePasswordPage />);
-    expect(mockPush).toHaveBeenCalledWith("/auth/citizen/verify-email");
+    expect(mockPush).toHaveBeenCalledWith("/auth/citizen/bvn");
   });
 
   it("handles API error on account creation failure", async () => {

@@ -23,8 +23,10 @@ describe("auth-flow", () => {
       );
     });
 
-    it("returns review from bvn for citizen", () => {
-      expect(getNextStep("citizen", "bvn")).toBe("/auth/citizen/review");
+    it("returns create-password from bvn for citizen", () => {
+      expect(getNextStep("citizen", "bvn")).toBe(
+        "/auth/citizen/create-password"
+      );
     });
 
     it("returns review from upload-passport for tourist", () => {
@@ -33,15 +35,15 @@ describe("auth-flow", () => {
       );
     });
 
-    it("returns verify-email from review", () => {
-      expect(getNextStep("citizen", "review")).toBe(
-        "/auth/citizen/verify-email"
+    it("returns verify-email from review for tourist", () => {
+      expect(getNextStep("tourist", "review")).toBe(
+        "/auth/tourist/verify-email"
       );
     });
 
     it("returns create-password from verify-email", () => {
-      expect(getNextStep("citizen", "verify-email")).toBe(
-        "/auth/citizen/create-password"
+      expect(getNextStep("tourist", "verify-email")).toBe(
+        "/auth/tourist/create-password"
       );
     });
 
