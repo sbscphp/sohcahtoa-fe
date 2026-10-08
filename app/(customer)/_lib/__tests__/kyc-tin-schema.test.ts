@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   countTinDigits,
+  isMaskedTin,
   kycTinRequiredSchema,
   kycTinSchema,
   sanitizeTinInput,
@@ -33,7 +34,6 @@ describe("kyc-tin-schema", () => {
   it("rejects TIN outside 10–13 digits", () => {
     expect(kycTinSchema.safeParse("123456789").success).toBe(false);
     expect(kycTinRequiredSchema.safeParse("123456789").success).toBe(false);
-    // Extra digits are capped on sanitize; 14 raw digits normalize to valid 13
     expect(sanitizeTinInput("12345678901234")).toBe("1234567890123");
     expect(kycTinRequiredSchema.safeParse("12345678901234").success).toBe(true);
   });
@@ -41,5 +41,14 @@ describe("kyc-tin-schema", () => {
   it("sanitizes input to digits and hyphens only and caps at 13 digits", () => {
     expect(sanitizeTinInput("08ab120451-1001")).toBe("08120451-1001");
     expect(sanitizeTinInput("1234567890123456")).toBe("1234567890123");
+  });
+
+  it("preserves and accepts masked profile TIN values", () => {
+    expect(isMaskedTin("*******8901")).toBe(true);
+    expect(sanitizeTinInput("*******8901")).toBe("*******8901");
+    expect(sanitizeTinInput("081*****-1001")).toBe("081*****-1001");
+    expect(kycTinSchema.safeParse("*******8901").success).toBe(true);
+    expect(kycTinRequiredSchema.safeParse("*******8901").success).toBe(true);
+    expect(kycTinRequiredSchema.safeParse("081*****-1001").success).toBe(true);
   });
 });

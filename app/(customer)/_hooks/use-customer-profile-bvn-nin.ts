@@ -4,7 +4,10 @@ import { useEffect } from "react";
 import type { UseFormReturnType } from "@mantine/form";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "@/app/_lib/atoms/auth-atom";
-import { sanitizeTinInput } from "@/app/(customer)/_lib/kyc-tin-schema";
+import {
+  isMaskedTin,
+  sanitizeTinInput,
+} from "@/app/(customer)/_lib/kyc-tin-schema";
 
 type FormWithKycFields = {
   bvn: string;
@@ -119,10 +122,11 @@ export function useCustomerProfileBvnNin() {
     collectsBvnNin && bvn != null && bvn !== "" ? String(bvn) : "";
   const defaultNin =
     collectsBvnNin && nin != null && nin !== "" ? String(nin) : "";
-  const defaultTin =
-    collectsBvnNin && tin != null && tin !== ""
-      ? sanitizeTinInput(String(tin))
-      : "";
+  const defaultTin = (() => {
+    if (!collectsBvnNin || tin == null || tin === "") return "";
+    const raw = String(tin);
+    return isMaskedTin(raw) ? raw : sanitizeTinInput(raw);
+  })();
   return {
     defaultBvn,
     defaultNin,
