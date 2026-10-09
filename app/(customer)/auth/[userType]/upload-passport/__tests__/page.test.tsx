@@ -51,8 +51,35 @@ vi.mock("@/app/(customer)/_components/auth/SecurityBadges", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: any) => <img src={props.src} alt={props.alt} />,
+  default: (props: { src: string; alt: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={props.src} alt={props.alt} />
+  ),
 }));
+
+async function fillRequiredFields(
+  user: ReturnType<typeof userEvent.setup>,
+  options?: { skipFile?: boolean }
+) {
+  await user.type(screen.getByPlaceholderText(/enter first name/i), "Maria");
+  await user.type(screen.getByPlaceholderText(/enter last name/i), "Zhang");
+  await user.type(
+    screen.getByPlaceholderText(/enter passport number/i),
+    "A12345678"
+  );
+
+  if (!options?.skipFile) {
+    const file = new File(["test"], "passport.pdf", {
+      type: "application/pdf",
+    });
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    if (fileInput) {
+      await user.upload(fileInput, file);
+    }
+  }
+}
 
 describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
   beforeEach(() => {
@@ -68,13 +95,19 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
     sessionStorage.clear();
   });
 
-  it("renders passport number input and upload dropzone", () => {
+  it("renders name, passport number, and upload dropzone", () => {
     render(<UploadPassportPage />);
-    expect(screen.getByPlaceholderText(/enter passport number/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/enter first name/i)
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/enter last name/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/enter passport number/i)
+    ).toBeInTheDocument();
     expect(screen.getByText(/click to upload/i)).toBeInTheDocument();
   });
 
-  it("disables verify button when passport number is empty", () => {
+  it("disables verify button when required fields are empty", () => {
     render(<UploadPassportPage />);
     const button = screen.getByRole("button", { name: /upload document/i });
     expect(button).toBeDisabled();
@@ -83,36 +116,28 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
   it("disables verify button when file is not uploaded", async () => {
     const user = userEvent.setup();
     render(<UploadPassportPage />);
-    const input = screen.getByPlaceholderText(/enter passport number/i);
-    const button = screen.getByRole("button", { name: /upload document/i });
-
-    await user.type(input, "A12345678");
-    expect(button).toBeDisabled();
+    await fillRequiredFields(user, { skipFile: true });
+    expect(
+      screen.getByRole("button", { name: /upload document/i })
+    ).toBeDisabled();
   });
 
-  it("enables verify button when both passport number and file are provided", async () => {
+  it("enables verify button when name, passport number, and file are provided", async () => {
     const user = userEvent.setup();
     render(<UploadPassportPage />);
-
-    const input = screen.getByPlaceholderText(/enter passport number/i);
-    await user.type(input, "A12345678");
-
-    const file = new File(["test"], "passport.pdf", { type: "application/pdf" });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) {
-      await user.upload(fileInput, file);
-    }
+    await fillRequiredFields(user);
 
     await waitFor(() => {
-      const button = screen.getByRole("button", { name: /upload document/i });
-      expect(button).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: /upload document/i })
+      ).toBeEnabled();
     });
   });
 
-  it("calls upload API then verify API when verify button is clicked", async () => {
+  it("calls upload API then verify API with firstName and lastName", async () => {
     const user = userEvent.setup();
-    
-    mockUploadMutate.mockImplementation((data, callbacks) => {
+
+    mockUploadMutate.mockImplementation((_data, callbacks) => {
       callbacks.onSuccess({
         success: true,
         data: {
@@ -121,7 +146,7 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
       });
     });
 
-    mockVerifyMutate.mockImplementation((data, callbacks) => {
+    mockVerifyMutate.mockImplementation((_data, callbacks) => {
       callbacks.onSuccess({
         success: true,
         data: {
@@ -136,19 +161,9 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
     });
 
     render(<UploadPassportPage />);
-    
-    const input = screen.getByPlaceholderText(/enter passport number/i);
-    await user.type(input, "A12345678");
+    await fillRequiredFields(user);
 
-    // Simulate file upload
-    const file = new File(["test"], "passport.pdf", { type: "application/pdf" });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) {
-      await user.upload(fileInput, file);
-    }
-
-    const button = screen.getByRole("button", { name: /upload document/i });
-    await user.click(button);
+    await user.click(screen.getByRole("button", { name: /upload document/i }));
 
     await waitFor(() => {
       expect(mockUploadMutate).toHaveBeenCalled();
@@ -159,6 +174,8 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
         expect.objectContaining({
           passportNumber: "A12345678",
           passportDocumentUrl: "https://cloudinary.com/passport/abc123.jpg",
+          firstName: "Maria",
+          lastName: "Zhang",
         }),
         expect.any(Object)
       );
@@ -167,8 +184,8 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
 
   it("stores verification token and user data in sessionStorage on successful verification", async () => {
     const user = userEvent.setup();
-    
-    mockUploadMutate.mockImplementation((data, callbacks) => {
+
+    mockUploadMutate.mockImplementation((_data, callbacks) => {
       callbacks.onSuccess({
         success: true,
         data: {
@@ -177,7 +194,7 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
       });
     });
 
-    mockVerifyMutate.mockImplementation((data, callbacks) => {
+    mockVerifyMutate.mockImplementation((_data, callbacks) => {
       callbacks.onSuccess({
         success: true,
         data: {
@@ -193,22 +210,16 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
     });
 
     render(<UploadPassportPage />);
-    
-    const input = screen.getByPlaceholderText(/enter passport number/i);
-    await user.type(input, "A12345678");
-
-    const file = new File(["test"], "passport.pdf", { type: "application/pdf" });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) {
-      await user.upload(fileInput, file);
-    }
-
-    const button = screen.getByRole("button", { name: /upload document/i });
-    await user.click(button);
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: /upload document/i }));
 
     await waitFor(() => {
-      expect(sessionStorage.getItem("verificationToken")).toBe("test-verification-token");
+      expect(sessionStorage.getItem("verificationToken")).toBe(
+        "test-verification-token"
+      );
       expect(sessionStorage.getItem("passportNumber")).toBe("A12345678");
+      expect(sessionStorage.getItem("firstName")).toBe("Maria");
+      expect(sessionStorage.getItem("lastName")).toBe("Zhang");
       expect(sessionStorage.getItem("email")).toBe("maria@example.com");
       expect(sessionStorage.getItem("nationality")).toBe("Spain");
     });
@@ -223,8 +234,8 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
   it("handles upload API error", async () => {
     const user = userEvent.setup();
     const { handleApiError } = await import("@/app/_lib/api/error-handler");
-    
-    mockUploadMutate.mockImplementation((data, callbacks) => {
+
+    mockUploadMutate.mockImplementation((_data, callbacks) => {
       callbacks.onError({
         message: "Upload failed",
         status: 400,
@@ -232,18 +243,8 @@ describe("Upload Passport Page - Tourist/Expatriate Onboarding", () => {
     });
 
     render(<UploadPassportPage />);
-    
-    const input = screen.getByPlaceholderText(/enter passport number/i);
-    await user.type(input, "A12345678");
-
-    const file = new File(["test"], "passport.pdf", { type: "application/pdf" });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) {
-      await user.upload(fileInput, file);
-    }
-
-    const button = screen.getByRole("button", { name: /upload document/i });
-    await user.click(button);
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: /upload document/i }));
 
     await waitFor(() => {
       expect(handleApiError).toHaveBeenCalled();

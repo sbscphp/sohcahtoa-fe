@@ -117,6 +117,13 @@ export interface VerifyBvnResponseData {
 
 export type VerifyBvnResponse = ApiResponseWrapper<VerifyBvnResponseData>;
 
+export interface VerifyPassportRequest {
+  passportNumber: string;
+  passportDocumentUrl?: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface VerifyPassportResponseData {
   verificationToken: string;
   message: string;

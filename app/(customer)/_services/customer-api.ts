@@ -63,6 +63,7 @@ import type {
   IgreeRetrieveResponse,
   InitiateBvnConsentResponse,
   VerifyKycRequest,
+  VerifyPassportRequest,
   VerifyPassportResponse,
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
@@ -164,7 +165,7 @@ export const customerApi = {
 
     // Tourist signup flow
     tourist: {
-      verifyPassport: (data: { passportNumber: string; passportDocumentUrl?: string }) =>
+      verifyPassport: (data: VerifyPassportRequest) =>
         apiClient.post<VerifyPassportResponse>(API_ENDPOINTS.auth.tourist.verifyPassport, data, { skipAuth: true }),
 
       sendOtp: (data: SendOtpRequestTourist) =>
