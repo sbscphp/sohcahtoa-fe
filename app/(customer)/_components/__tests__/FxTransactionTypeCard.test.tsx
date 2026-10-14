@@ -9,7 +9,7 @@ describe("FxTransactionTypeCard", () => {
       <FxTransactionTypeCard
         icon={<User />}
         title="I am going on a Vacation"
-        description="Buy FX to cover your travel, accommodation"
+        description="Buy FX to cover your travel and accommodation"
       />
     );
     expect(screen.getByRole("heading", { name: /vacation/i })).toBeInTheDocument();
