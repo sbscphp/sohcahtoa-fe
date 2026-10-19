@@ -3,13 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import CustomStepper from "@/app/(customer)/_components/common/CustomStepper";
-import IMTOSelectStep, { type IMTOProvider } from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTOSelectStep";
+import IMTOSelectStep, {
+  type IMTOProvider,
+} from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTOSelectStep";
 import IMTOReferenceStep from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTOReferenceStep";
 import type { IMTOReferenceFormData } from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTOReferenceStep";
 import IMTOReferenceDetailsStep from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTOReferenceDetailsStep";
-import IMTODisbursementOptionsStep, {
-  type DisbursementOption,
-} from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTODisbursementOptionsStep";
+import IMTODisbursementOptionsStep from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTODisbursementOptionsStep";
 import IMTOLocationBankStep from "@/app/(customer)/_components/transactions/forms/receive-fx/imto/IMTOLocationBankStep";
 import { TransactionSuccessModal } from "@/app/(customer)/_components/modals/TransactionSuccessModal";
 
@@ -25,14 +25,11 @@ export default function AgentReceiveIMTOPage() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedImto, setSelectedImto] = useState<IMTOProvider | null>(null);
-  const [referenceData, setReferenceData] = useState<IMTOReferenceFormData | null>(null);
-  const [disbursementOption, setDisbursementOption] = useState<DisbursementOption | null>(null);
-  const [usdCashAmount, setUsdCashAmount] = useState("");
+  const [referenceData, setReferenceData] = useState<IMTOReferenceFormData | null>(
+    null
+  );
   const [locationBankData, setLocationBankData] = useState<{
     selectedBankId: string;
-    state?: string;
-    city?: string;
-    locationId?: string;
   } | null>(null);
   const [confirmationOpened, setConfirmationOpened] = useState(false);
 
@@ -48,7 +45,6 @@ export default function AgentReceiveIMTOPage() {
 
   const amountUsd = referenceData ? "$5,000.00" : "$0";
   const amountNgn = referenceData ? "NGN 7,500,000.00" : "NGN 0";
-  const amountLeftNgn = "NGN 600,000.00";
 
   const renderStep = () => {
     switch (stepIndex) {
@@ -92,20 +88,13 @@ export default function AgentReceiveIMTOPage() {
           <IMTODisbursementOptionsStep
             amountSentUsd={amountUsd}
             amountReceiveNgn={amountNgn}
-            selectedOption={disbursementOption}
-            usdCashAmount={usdCashAmount}
-            amountLeftNgn={amountLeftNgn}
-            onSelectOption={setDisbursementOption}
-            onUsdCashAmountChange={setUsdCashAmount}
             onSubmit={() => setStepIndex(4)}
             onBack={handleBack}
           />
         );
       case 4:
-        return disbursementOption ? (
+        return (
           <IMTOLocationBankStep
-            disbursementOption={disbursementOption}
-            balanceAmountNgn={amountLeftNgn}
             initialValues={locationBankData ?? undefined}
             onSubmit={(data) => {
               setLocationBankData(data);
@@ -113,7 +102,7 @@ export default function AgentReceiveIMTOPage() {
             }}
             onBack={handleBack}
           />
-        ) : null;
+        );
       default:
         return null;
     }

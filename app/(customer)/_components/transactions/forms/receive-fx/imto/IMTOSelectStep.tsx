@@ -2,7 +2,6 @@
 
 import SelectableOptionCard from "@/app/(customer)/_components/forms/SelectableOptionCard";
 import { Button } from "@mantine/core";
-import { IMTOAlert } from "./IMTOAlert";
 import { MONEYGRAM_LOGO, WESTERN_UNION_LOGO } from "./helper";
 
 export type IMTOProvider = "moneygram" | "western-union";
@@ -27,10 +26,6 @@ export default function IMTOSelectStep({
           Select IMTO Options
         </h2>
         <p className="text-[#6C6969]">Select your preferred option</p>
-      </div>
-
-      <div className="flex items-center justify-center">
-        <IMTOAlert />
       </div>
 
       <div className="flex flex-col gap-3">

@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@mantine/core";
-import { IMTOAlert } from "./IMTOAlert";
 
 interface IMTOReferenceDetailsStepProps {
   referenceNumber: string;
@@ -33,10 +32,6 @@ export default function IMTOReferenceDetailsStep({
         </p>
       </div>
 
-    <div className="flex items-center justify-center">
-    <IMTOAlert />
-    </div>
-    
       <div className="bg-bg-card rounded-2xl border border-gray-100 p-6 space-y-0">
         {/* Transaction Details / Ref */}
         <div className="flex justify-between items-start py-6 border-b border-gray-100">

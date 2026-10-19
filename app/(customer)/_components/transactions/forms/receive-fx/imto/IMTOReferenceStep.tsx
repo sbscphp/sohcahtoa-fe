@@ -8,7 +8,6 @@ import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod";
 import { MONEYGRAM_LOGO, WESTERN_UNION_LOGO } from "./helper";
-import { IMTOAlert } from "./IMTOAlert";
 import type { IMTOProvider } from "./IMTOSelectStep";
 
 const schema = z.object({
@@ -51,10 +50,6 @@ export default function IMTOReferenceStep({
           Select your preferred option
         </p>
       </div>
-
-    <div className="flex items-center justify-center">
-    <IMTOAlert />
-    </div>
 
       <div className="space-y-3">
         <SelectableOptionCard
