@@ -1,74 +1,50 @@
 "use client";
 
-import { Card, Text, SimpleGrid, Skeleton } from "@mantine/core";
+import {
+  BankIcon,
+  Clock01Icon,
+  Money03Icon,
+  BalanceScaleIcon,
+} from "@hugeicons/core-free-icons";
+import { StatCard } from "@/app/agent/_components/common";
+import { formatMoney } from "../_lib/format-fx";
+import type { InventorySummary } from "../_lib/types";
 
-export interface FxInventorySummaryCardValues {
-  cashReceivedFromCustomer: string;
-  cashReceivedFromAdmin: string;
-  cashDisbursedToAgent: string;
-  cashDisbursed: string;
+interface Props {
+  summary: InventorySummary;
+  currency: string;
 }
 
-interface SummaryCardsProps extends FxInventorySummaryCardValues {
-  isLoading?: boolean;
-}
+const pink = { iconBgColor: "bg-[#FFF1F3]", iconColor: "text-[#E5484D]" };
 
-const CARD_CONFIG: ReadonlyArray<{
-  key: keyof FxInventorySummaryCardValues;
-  title: string;
-}> = [
-  {
-    key: "cashReceivedFromCustomer",
-    title: "Cash received from customer",
-  },
-  {
-    key: "cashReceivedFromAdmin",
-    title: "Cash received from admin",
-  },
-  {
-    key: "cashDisbursedToAgent",
-    title: "Cash disbursed to agent",
-  },
-  {
-    key: "cashDisbursed",
-    title: "Cash disbursed",
-  },
-];
-
-export function SummaryCards({
-  cashReceivedFromCustomer,
-  cashReceivedFromAdmin,
-  cashDisbursedToAgent,
-  cashDisbursed,
-  isLoading = false,
-}: Readonly<SummaryCardsProps>) {
-  const values: FxInventorySummaryCardValues = {
-    cashReceivedFromCustomer,
-    cashReceivedFromAdmin,
-    cashDisbursedToAgent,
-    cashDisbursed,
-  };
-
+export function SummaryCards({ summary, currency }: Readonly<Props>) {
+  const pending = summary.pendingSettlements;
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-      {CARD_CONFIG.map((card) => (
-        <Card key={card.key} radius="lg" padding="lg" withBorder>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <Text size="sm" c="dimmed" mb="xs">
-                {card.title}
-              </Text>
-              {isLoading ? (
-                <Skeleton height={28} mt={4} radius="sm" />
-              ) : (
-                <Text fw={700} size="xl" className="text-body-heading-300">
-                  {values[card.key]}
-                </Text>
-              )}
-            </div>
-          </div>
-        </Card>
-      ))}
-    </SimpleGrid>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StatCard
+        icon={Money03Icon}
+        label="Available FX Inventory"
+        value={formatMoney(summary.availableFxInventory, currency)}
+        {...pink}
+      />
+      <StatCard
+        icon={BankIcon}
+        label="NGN Cash Available"
+        value={formatMoney(summary.ngnCashAvailable, "NGN")}
+        {...pink}
+      />
+      <StatCard
+        icon={Clock01Icon}
+        label="Pending Settlements"
+        value={`${pending} ${pending === 1 ? "Transaction" : "Transactions"}`}
+        {...pink}
+      />
+      <StatCard
+        icon={BalanceScaleIcon}
+        label="Inventory Variance"
+        value={`${formatMoney(0, "NGN")}/${formatMoney(summary.inventoryVariance, "USD")}`}
+        {...pink}
+      />
+    </div>
   );
 }
