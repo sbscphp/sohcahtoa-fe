@@ -4,13 +4,13 @@ import { useMemo } from "react";
 import { Button } from "@mantine/core";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
 import { formatAccounting } from "../_lib/format-fx";
-import type { CashLodgement, LodgementStatus } from "../_lib/types";
+import type { CashLodgement, LodgementDisplayStatus } from "../_lib/types";
 import { CurrencyCell, DateTimeCell, InventorySection, StatusPill, SummaryTile, SummaryTiles } from "./shared";
 
-const TONE: Record<LodgementStatus, "success" | "warning" | "danger"> = {
+const TONE: Record<LodgementDisplayStatus, "success" | "warning" | "danger"> = {
   Confirmed: "success",
   "Pending Verification": "warning",
-  "Needs Review": "warning",
+  Rejected: "danger",
 };
 
 const text = "text-sm leading-5 text-body-text-300";
@@ -18,10 +18,11 @@ const text = "text-sm leading-5 text-body-text-300";
 interface Props {
   rows: CashLodgement[];
   stats: { pendingVerification: number; confirmed: number; varianceRecorded: number };
+  isLoading: boolean;
   onLodge: () => void;
 }
 
-export function CashLodgementTab({ rows, stats, onLodge }: Readonly<Props>) {
+export function CashLodgementTab({ rows, stats, isLoading, onLodge }: Readonly<Props>) {
   const columns = useMemo<PaginatedTableColumn<CashLodgement>[]>(
     () => [
       { key: "currency", label: "Currency", render: (r) => <CurrencyCell code={r.currency} /> },
@@ -37,7 +38,7 @@ export function CashLodgementTab({ rows, stats, onLodge }: Readonly<Props>) {
         ),
       },
       { key: "status", label: "Status", render: (r) => <StatusPill label={r.status} tone={TONE[r.status]} /> },
-      { key: "submittedAt", label: "Submitted", render: (r) => <DateTimeCell iso={r.submittedAt} /> },
+      { key: "submittedAt", label: "Submitted", render: (r) => (r.submittedAt ? <DateTimeCell iso={r.submittedAt} /> : <span className={text}>—</span>) },
     ],
     [],
   );
@@ -46,7 +47,7 @@ export function CashLodgementTab({ rows, stats, onLodge }: Readonly<Props>) {
     <div className="space-y-4">
       <SummaryTiles>
         <SummaryTile label="Pending Verification" value={stats.pendingVerification} />
-        <SummaryTile label="Confirmed this period" value={stats.confirmed} />
+        <SummaryTile label="Confirmed" value={stats.confirmed} />
         <SummaryTile label="Variance Recorded" value={stats.varianceRecorded} tone="danger" />
       </SummaryTiles>
       <InventorySection
@@ -57,9 +58,11 @@ export function CashLodgementTab({ rows, stats, onLodge }: Readonly<Props>) {
             + Lodge Cash
           </Button>
         }
+        isLoading={isLoading}
         data={rows}
         columns={columns}
         keyExtractor={(r) => r.id}
+        emptyMessage="You haven’t lodged any cash yet."
       />
     </div>
   );

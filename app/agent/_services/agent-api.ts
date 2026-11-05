@@ -70,6 +70,12 @@ import type {
   AgentSupportTicketListResponse,
   AgentSupportTicketDetailResponse,
   AgentDashboardCashStatsPeriod,
+  AgentFxDisbursementStatus,
+  AgentFxInventoryListParams,
+  AgentFxInventoryListResponse,
+  AgentFxLodgeRequest,
+  AgentFxLodgmentStatus,
+  AgentFxRejectReceiptRequest,
   AgentDashboardCashStatsResponse,
   AgentDashboardBalanceResponse,
   AgentPaymentMovementListParams,
@@ -316,6 +322,30 @@ export const agentApi = {
         {
           params: { period, currency },
         }
+      ),
+  },
+
+  fxInventory: {
+    balances: () =>
+      apiClient.get<AgentFxInventoryListResponse>(AGENT_API_ENDPOINTS.fxInventory.balances),
+    lodgments: (params?: AgentFxInventoryListParams<AgentFxLodgmentStatus>) =>
+      apiClient.get<AgentFxInventoryListResponse>(AGENT_API_ENDPOINTS.fxInventory.lodgments, {
+        params: params as ApiRequestConfig["params"],
+      }),
+    disbursements: (params?: AgentFxInventoryListParams<AgentFxDisbursementStatus>) =>
+      apiClient.get<AgentFxInventoryListResponse>(AGENT_API_ENDPOINTS.fxInventory.disbursements, {
+        params: params as ApiRequestConfig["params"],
+      }),
+    lodge: (data: AgentFxLodgeRequest) =>
+      apiClient.post<AgentFxInventoryListResponse>(AGENT_API_ENDPOINTS.fxInventory.lodge, data),
+    confirmReceipt: (id: string) =>
+      apiClient.post<AgentFxInventoryListResponse>(
+        AGENT_API_ENDPOINTS.fxInventory.confirmReceipt(id),
+      ),
+    rejectReceipt: (id: string, data: AgentFxRejectReceiptRequest) =>
+      apiClient.post<AgentFxInventoryListResponse>(
+        AGENT_API_ENDPOINTS.fxInventory.rejectReceipt(id),
+        data,
       ),
   },
 

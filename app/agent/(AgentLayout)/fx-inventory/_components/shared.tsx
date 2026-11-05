@@ -102,7 +102,9 @@ export function InventorySection<T>({
   title,
   subtitle,
   action,
+  toolbar,
   onExport,
+  isLoading,
   data,
   columns,
   keyExtractor,
@@ -112,7 +114,10 @@ export function InventorySection<T>({
   title: string;
   subtitle: string;
   action?: ReactNode;
+  /** Extra controls (filters) shown before the action. */
+  toolbar?: ReactNode;
   onExport?: () => void;
+  isLoading?: boolean;
   data: T[];
   columns: PaginatedTableColumn<T>[];
   keyExtractor: (item: T, index: number) => string | number;
@@ -126,7 +131,10 @@ export function InventorySection<T>({
           <h2 className="text-lg font-semibold text-body-heading-300">{title}</h2>
           <p className="text-xs text-body-text-50">{subtitle}</p>
         </div>
-        {action ?? (onExport ? <ExportButton onClick={onExport} /> : null)}
+        <div className="flex flex-wrap items-center gap-2">
+          {toolbar}
+          {action ?? (onExport ? <ExportButton onClick={onExport} /> : null)}
+        </div>
       </div>
       <PaginatedTable
         data={data}
@@ -137,6 +145,7 @@ export function InventorySection<T>({
         }))}
         keyExtractor={keyExtractor}
         onRowClick={onRowClick}
+        isLoading={isLoading}
         emptyTitle="No data available yet"
         emptyMessage={emptyMessage ?? "Nothing to show here yet."}
       />
@@ -147,8 +156,9 @@ export function InventorySection<T>({
 export function StatusPill({
   label,
   tone,
-}: Readonly<{ label: string; tone: "success" | "warning" | "danger" }>) {
+}: Readonly<{ label: string; tone: "success" | "warning" | "danger" | "neutral" }>) {
   const styles = {
+    neutral: "bg-gray-100 text-gray-600",
     success: "bg-green-50 text-green-700",
     warning: "bg-orange-50 text-primary-400",
     danger: "bg-red-50 text-red-600",

@@ -1,113 +1,70 @@
-/** UI models for the agent FX Inventory page. Shapes follow the design until the backend responses are final. */
+/** UI models for the agent FX Inventory page (normalised from the API in `normalize.ts`). */
 
-export type InventoryTabValue =
-  | "position"
-  | "transactions"
-  | "pending-settlements"
-  | "reconciliation"
-  | "history"
-  | "cash-lodgement";
+export type InventoryTabValue = "position" | "transactions" | "received" | "cash-lodgement";
 
-export interface InventoryPositionRow {
+export type PositionStatus = "Reconciled" | "Variance";
+
+export interface PositionRow {
   currency: string;
-  openingBalance: number;
-  receivedFromAdmin: number | null;
+  openingBalance: number | null;
+  disbursedFromAdmin: number | null;
   purchasedFromCustomers: number | null;
   soldToCustomers: number | null;
   lodgedToHq: number | null;
-  adjustments: number;
-  closingBalance: number;
-  physicalCount: number;
-  variance: number;
+  closingBalance: number | null;
+  physicalCount: number | null;
+  variance: number | null;
+  status: PositionStatus;
 }
 
-export interface InventoryPositionTotals {
-  currency: string;
-  openingBalance: number;
-  receivedFromAdmin: number;
-  purchasedFromCustomers: number;
-  soldToCustomers: number;
-  lodgedToHq: number;
-  adjustments: number;
-  closingBalance: number;
-  physicalCount: number;
-  variance: number;
-}
+export type TransactionSettlementStatus = "Pending" | "Overdue" | "Settled" | "Rejected";
 
 export interface InventoryTransaction {
+  key: string;
   id: string;
   customerName: string;
   transactionType: string;
   currencyPair: string;
-  /** Signed foreign amount: negative = FX out, positive = FX in. */
-  fxAmount: number;
+  /** Signed foreign amount: positive = FX acquired from a customer, negative = FX given out. */
+  fxAmount: number | null;
   currency: string;
-  rate: number;
-  ngnAmount: number;
+  rate: number | null;
+  ngnAmount: number | null;
   date: string;
+  status: TransactionSettlementStatus;
 }
 
-export type SettlementStatus = "Pending" | "Overdue" | "Settled";
+export type DisbursementDisplayStatus = "Pending" | "Confirmed" | "Rejected";
 
-export interface PendingSettlement {
+export interface CashDisbursement {
   id: string;
-  customerName: string;
-  transactionType: string;
-  currencyPair: string;
-  fxAmount: number;
+  reference: string;
   currency: string;
-  ngnAmountOwed: number;
+  amount: number | null;
+  purpose: string;
+  disbursedBy: string;
   date: string;
-  status: SettlementStatus;
+  resolvedAt: string | null;
+  status: DisbursementDisplayStatus;
+  /** Admin-approved and waiting for the agent to confirm or reject receipt. */
+  awaitingConfirmation: boolean;
 }
 
-export type ReconciliationStatus = "Needs Review" | "Reconciled";
-
-export interface ReconciliationRow {
-  currency: string;
-  systemClosingBalance: number;
-  physicalCount: number;
-  variance: number;
-  variancePercent: number;
-  status: ReconciliationStatus;
-  lastUpdated: string;
-}
-
-export interface InventoryHistoryEntry {
-  id: string;
-  transactionId: string;
-  currency: string;
-  amount: number;
-  balanceAfter: number;
-  date: string;
-}
-
-export type LodgementStatus = "Confirmed" | "Pending Verification" | "Needs Review";
+export type LodgementDisplayStatus = "Confirmed" | "Pending Verification" | "Rejected";
 
 export interface CashLodgement {
   id: string;
   currency: string;
-  declaredAmount: number;
+  declaredAmount: number | null;
   amountReceived: number | null;
   variance: number | null;
-  status: LodgementStatus;
+  status: LodgementDisplayStatus;
   submittedAt: string;
 }
 
-export interface CashDisbursementNotice {
-  id: string;
-  agentName: string;
-  currency: string;
-  amount: number;
-  reference: string;
-  purpose: string;
-  disbursedBy: string;
-  disbursedAt: string;
-}
-
 export interface InventorySummary {
-  availableFxInventory: number;
-  ngnCashAvailable: number;
+  availableFxInventory: number | null;
+  ngnCashAvailable: number | null;
   pendingSettlements: number;
-  inventoryVariance: number;
+  cashLodgement: number | null;
 }

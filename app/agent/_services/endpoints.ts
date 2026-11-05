@@ -94,6 +94,17 @@ export const AGENT_API_ENDPOINTS = {
     calculate: "/api/agent/rates/calculate",
   },
 
+  fxInventory: {
+    balances: "/api/agent/fx-inventory/balances",
+    lodge: "/api/agent/fx-inventory/lodge",
+    lodgments: "/api/agent/fx-inventory/lodgments",
+    disbursements: "/api/agent/fx-inventory/disbursements",
+    confirmReceipt: (id: string) =>
+      `/api/agent/fx-inventory/disbursements/${id}/confirm-receipt`,
+    rejectReceipt: (id: string) =>
+      `/api/agent/fx-inventory/disbursements/${id}/reject-receipt`,
+  },
+
   dashboard: {
     recentTransactions: "/api/agent/dashboard/recent-transactions",
     transactionsByType: "/api/agent/dashboard/transactions-by-type",

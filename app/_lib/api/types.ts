@@ -515,6 +515,43 @@ export interface AgentDashboardBalanceData {
 export type AgentDashboardBalanceResponse =
   ApiResponseWrapper<AgentDashboardBalanceData>;
 
+export type AgentFxLodgmentStatus = "PENDING_VERIFICATION" | "CONFIRMED" | "REJECTED";
+
+export type AgentFxDisbursementStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "COMPLETED";
+
+export interface AgentFxInventoryListParams<TStatus extends string = string> {
+  status?: TStatus;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * The agent fx-inventory GET endpoints don't document their response bodies, so rows are kept
+ * loose here and normalised in `fx-inventory/_lib/normalize.ts`.
+ */
+export type AgentFxInventoryRecord = Record<string, unknown>;
+
+export interface AgentFxInventoryListResponse {
+  success: boolean;
+  data?: unknown;
+  pagination?: { page: number; limit: number; total: number; totalPages: number };
+  error?: { code: string; message: string };
+}
+
+export interface AgentFxLodgeRequest {
+  currency: string;
+  amount: number;
+  notes?: string;
+}
+
+export interface AgentFxRejectReceiptRequest {
+  reason: string;
+}
+
 export type AgentPaymentMovementType =
   | "cash_disbursed"
   | "cash_received_from_admin"

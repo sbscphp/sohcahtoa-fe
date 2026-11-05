@@ -5,64 +5,76 @@ import { TriangleAlert } from "lucide-react";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
 import { downloadCsv } from "../_lib/export-csv";
 import { formatAccounting } from "../_lib/format-fx";
-import type { InventoryPositionRow, InventoryPositionTotals } from "../_lib/types";
-import { CurrencyCell, InventorySection } from "./shared";
+import type { PositionRow } from "../_lib/types";
+import { CurrencyCell, InventorySection, StatusPill } from "./shared";
 
-type PositionTableRow =
-  | (InventoryPositionRow & { isTotal?: false })
-  | (InventoryPositionTotals & { isTotal: true });
+type PositionTableRow = (PositionRow & { isTotal?: false }) | { isTotal: true; flagged: number };
 
-const num = (v: number | null | undefined, currency: string, bold = false) => (
-  <span className={`text-sm ${bold ? "font-semibold" : "font-normal"} text-body-text-300`}>
-    {formatAccounting(v, currency)}
-  </span>
+const money = (v: number | null | undefined, currency: string) => (
+  <span className="text-sm text-body-text-300">{formatAccounting(v, currency)}</span>
 );
 
-const negative = (v: number | null | undefined, currency: string) => (
+const signed = (v: number | null | undefined, currency: string) => (
   <span className={`text-sm ${v != null && v < 0 ? "text-red-600" : "text-body-text-300"}`}>
     {formatAccounting(v, currency)}
   </span>
 );
 
 interface Props {
-  rows: InventoryPositionRow[];
-  totals: InventoryPositionTotals;
+  rows: PositionRow[];
   pendingLodgements: number;
+  isLoading: boolean;
 }
 
-export function InventoryPositionTab({ rows, totals, pendingLodgements }: Readonly<Props>) {
-  const data = useMemo<PositionTableRow[]>(() => [...rows, { ...totals, isTotal: true }], [rows, totals]);
+export function InventoryPositionTab({ rows, pendingLodgements, isLoading }: Readonly<Props>) {
+  const data = useMemo<PositionTableRow[]>(
+    () => [...rows, { isTotal: true, flagged: rows.filter((r) => r.status === "Variance").length }],
+    [rows],
+  );
 
-  const columns = useMemo<PaginatedTableColumn<PositionTableRow>[]>(
-    () => [
+  const columns = useMemo<PaginatedTableColumn<PositionTableRow>[]>(() => {
+    // The total row only carries the flagged count; every other cell is blank.
+    const cell =
+      (render: (r: PositionRow) => React.ReactNode) =>
+      (r: PositionTableRow) =>
+        r.isTotal ? null : render(r);
+    return [
       {
         key: "currency",
         label: "Currency",
         render: (r) =>
           r.isTotal ? (
-            <span className="text-sm font-semibold text-body-text-300">Total({r.currency})</span>
+            <span className="text-sm font-semibold text-body-text-300">Total</span>
           ) : (
             <CurrencyCell code={r.currency} />
           ),
       },
-      { key: "openingBalance", label: "Opening Balance", render: (r) => num(r.openingBalance, r.currency, r.isTotal) },
-      { key: "receivedFromAdmin", label: "Received from Admin", render: (r) => num(r.receivedFromAdmin, r.currency, r.isTotal) },
-      { key: "purchasedFromCustomers", label: "Purchased from Customers", render: (r) => num(r.purchasedFromCustomers, r.currency, r.isTotal) },
-      { key: "soldToCustomers", label: "Sold to Customers", render: (r) => negative(r.soldToCustomers, r.currency) },
-      { key: "lodgedToHq", label: "Lodged to HQ", render: (r) => negative(r.lodgedToHq, r.currency) },
-      { key: "adjustments", label: "Adjustments", render: (r) => num(r.adjustments, r.currency, r.isTotal) },
-      { key: "closingBalance", label: "Closing Balance", render: (r) => num(r.closingBalance, r.currency, r.isTotal) },
-      { key: "physicalCount", label: "Physical Count", render: (r) => num(r.physicalCount, r.currency, r.isTotal) },
-      { key: "variance", label: "Variance", render: (r) => negative(r.variance, r.currency) },
-      ],
-    [],
-  );
+      { key: "opening", label: "Opening Balance", render: cell((r) => money(r.openingBalance, r.currency)) },
+      { key: "admin", label: "Disbursed from Admin", render: cell((r) => money(r.disbursedFromAdmin, r.currency)) },
+      { key: "purchased", label: "Purchased from Customers", render: cell((r) => money(r.purchasedFromCustomers, r.currency)) },
+      { key: "sold", label: "Sold to Customers", render: cell((r) => signed(r.soldToCustomers, r.currency)) },
+      { key: "lodged", label: "Lodged to HQ", render: cell((r) => signed(r.lodgedToHq, r.currency)) },
+      { key: "closing", label: "Closing Balance", render: cell((r) => money(r.closingBalance, r.currency)) },
+      { key: "physical", label: "Physical Count", render: cell((r) => money(r.physicalCount, r.currency)) },
+      { key: "variance", label: "Variance", render: cell((r) => signed(r.variance, r.currency)) },
+      {
+        key: "status",
+        label: "Status",
+        render: (r) =>
+          r.isTotal ? (
+            <span className="text-sm font-medium text-body-text-300">{r.flagged} Flagged</span>
+          ) : (
+            <StatusPill label={r.status} tone={r.status === "Reconciled" ? "success" : "warning"} />
+          ),
+      },
+    ];
+  }, []);
 
   const handleExport = () =>
     downloadCsv(
       "fx-inventory-position",
-      ["Currency", "Opening", "Received from Admin", "Purchased", "Sold", "Lodged to HQ", "Adjustments", "Closing", "Physical Count", "Variance"],
-      rows.map((r) => [r.currency, r.openingBalance, r.receivedFromAdmin, r.purchasedFromCustomers, r.soldToCustomers, r.lodgedToHq, r.adjustments, r.closingBalance, r.physicalCount, r.variance]),
+      ["Currency", "Opening", "Disbursed from Admin", "Purchased", "Sold", "Lodged to HQ", "Closing", "Physical Count", "Variance", "Status"],
+      rows.map((r) => [r.currency, r.openingBalance, r.disbursedFromAdmin, r.purchasedFromCustomers, r.soldToCustomers, r.lodgedToHq, r.closingBalance, r.physicalCount, r.variance, r.status]),
     );
 
   return (
@@ -74,11 +86,10 @@ export function InventoryPositionTab({ rows, totals, pendingLodgements }: Readon
           </span>
           <div>
             <p className="text-base font-semibold text-body-text-400">
-              {pendingLodgements} cash {pendingLodgements === 1 ? "lodgment" : "lodgments"} awaiting HQ verification
+              {pendingLodgements} Cash {pendingLodgements === 1 ? "lodgment" : "lodgments"} awaiting HQ verification
             </p>
             <p className="text-xs text-body-text-100">
-              Cash you lodge to HQ stays in your available inventory until HQ confirms receipt — it moves to
-              “Confirmed” once verified, or “Variance Recorded” if the counted amount differs.
+              Cash you lodge to HQ stays in your available inventory until HQ confirms receipt.
             </p>
           </div>
         </div>
@@ -87,6 +98,7 @@ export function InventoryPositionTab({ rows, totals, pendingLodgements }: Readon
         title="FX Inventory Position"
         subtitle="Today’s opening-to-closing movement per currency"
         onExport={handleExport}
+        isLoading={isLoading}
         data={data}
         columns={columns}
         keyExtractor={(r) => (r.isTotal ? "total" : r.currency)}
