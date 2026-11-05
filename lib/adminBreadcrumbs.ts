@@ -276,6 +276,20 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  if (pathname === "/admin/settlement/disburse-cash") {
+    return [
+      { label: "Settlement Management", url: adminRoutes.adminSettlementFxInventory() },
+      { label: "Cash Disbursement" },
+    ];
+  }
+
+  if (/^\/admin\/settlement\/disbursements\/[^/]+$/.test(pathname)) {
+    return [
+      { label: "Settlement Management", url: adminRoutes.adminSettlementFxInventory() },
+      { label: "View Disbursement" },
+    ];
+  }
+
   // Default: no breadcrumbs
   return [];
 }

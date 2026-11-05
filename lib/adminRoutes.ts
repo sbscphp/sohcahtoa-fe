@@ -93,6 +93,10 @@ const adminSettingsWorkflowEdit = (id: string | number = ':id') =>
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;
 const adminSettlementRegisterEscrow = () => `${adminSettlement()}/register-escrow`;
+const adminSettlementFxInventory = () => `${adminSettlement()}?tab=fx-inventory`;
+const adminSettlementDisburseCash = () => `${adminSettlement()}/disburse-cash`;
+const adminSettlementDisbursementDetails = (id: string | number = ":id") =>
+  `${adminSettlement()}/disbursements/${id}`;
 
 // Transient wallet routes
 const adminTransientWallets = () => `${admin()}/transient-wallets`;
@@ -192,6 +196,9 @@ export const adminRoutes = {
   // Settlement
   adminSettlement,
   adminSettlementRegisterEscrow,
+  adminSettlementFxInventory,
+  adminSettlementDisburseCash,
+  adminSettlementDisbursementDetails,
 
   // Transient Wallets
   adminTransientWallets,
