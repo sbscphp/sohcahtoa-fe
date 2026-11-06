@@ -40,7 +40,6 @@ import type {
   AuthOtpValidateResponse,
   CustomerChangePasswordRequest,
   ChangePasswordResponse,
-  SendEmailOtpRequestNigerian,
   SendOtpRequestNigerian,
   SendOtpRequestTourist,
   SendOtpResponse,
@@ -53,8 +52,6 @@ import type {
   UpdateNotificationPreferencesRequest,
   UpdateTransactionRequest,
   UploadPassportResponse,
-  ValidateEmailOtpRequestNigerian,
-  ValidateEmailOtpResponse,
   ValidateOtpRequestNigerian,
   ValidateOtpRequestTourist,
   ValidateOtpResponse,
@@ -66,6 +63,7 @@ import type {
   IgreeRetrieveResponse,
   InitiateBvnConsentResponse,
   VerifyKycRequest,
+  VerifyPassportRequest,
   VerifyPassportResponse,
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
@@ -161,22 +159,13 @@ export const customerApi = {
       validateOtp: (data: ValidateOtpRequestNigerian) =>
         apiClient.post<ValidateOtpResponse>(API_ENDPOINTS.auth.nigerian.validateOtp, data, { skipAuth: true }),
 
-      sendEmailOtp: (data: SendEmailOtpRequestNigerian) =>
-        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.sendEmailOtp, data, { skipAuth: true }),
-
-      resendEmailOtp: (data: SendEmailOtpRequestNigerian) =>
-        apiClient.post<SendOtpResponse>(API_ENDPOINTS.auth.nigerian.resendEmailOtp, data, { skipAuth: true }),
-
-      validateEmailOtp: (data: ValidateEmailOtpRequestNigerian) =>
-        apiClient.post<ValidateEmailOtpResponse>(API_ENDPOINTS.auth.nigerian.validateEmailOtp, data, { skipAuth: true }),
-
       createAccount: (data: CreateNigerianAccountRequest) =>
         apiClient.post<LoginResponse>(API_ENDPOINTS.auth.nigerian.createAccount, data, { skipAuth: true }),
     },
 
     // Tourist signup flow
     tourist: {
-      verifyPassport: (data: { passportNumber: string; passportDocumentUrl?: string }) =>
+      verifyPassport: (data: VerifyPassportRequest) =>
         apiClient.post<VerifyPassportResponse>(API_ENDPOINTS.auth.tourist.verifyPassport, data, { skipAuth: true }),
 
       sendOtp: (data: SendOtpRequestTourist) =>

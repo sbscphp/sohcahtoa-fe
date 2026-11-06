@@ -117,6 +117,13 @@ export interface VerifyBvnResponseData {
 
 export type VerifyBvnResponse = ApiResponseWrapper<VerifyBvnResponseData>;
 
+export interface VerifyPassportRequest {
+  passportNumber: string;
+  passportDocumentUrl?: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface VerifyPassportResponseData {
   verificationToken: string;
   message: string;
@@ -203,13 +210,14 @@ export interface ValidateOtpRequest {
 
 export interface ValidateOtpResponseData {
   message: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  // Note: validationToken may be present for next step, but not always in response
-  validationToken?: string; // Token to proceed to next step (email OTP for Nigerian, create-account for Tourist)
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  email?: string;
+  phoneNumber?: string;
+  address?: string;
+  validationToken?: string;
 }
 
 export type ValidateOtpResponse = ApiResponseWrapper<ValidateOtpResponseData>;
@@ -506,6 +514,43 @@ export interface AgentDashboardBalanceData {
 
 export type AgentDashboardBalanceResponse =
   ApiResponseWrapper<AgentDashboardBalanceData>;
+
+export type AgentFxLodgmentStatus = "PENDING_VERIFICATION" | "CONFIRMED" | "REJECTED";
+
+export type AgentFxDisbursementStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "COMPLETED";
+
+export interface AgentFxInventoryListParams<TStatus extends string = string> {
+  status?: TStatus;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * The agent fx-inventory GET endpoints don't document their response bodies, so rows are kept
+ * loose here and normalised in `fx-inventory/_lib/normalize.ts`.
+ */
+export type AgentFxInventoryRecord = Record<string, unknown>;
+
+export interface AgentFxInventoryListResponse {
+  success: boolean;
+  data?: unknown;
+  pagination?: { page: number; limit: number; total: number; totalPages: number };
+  error?: { code: string; message: string };
+}
+
+export interface AgentFxLodgeRequest {
+  currency: string;
+  amount: number;
+  notes?: string;
+}
+
+export interface AgentFxRejectReceiptRequest {
+  reason: string;
+}
 
 export type AgentPaymentMovementType =
   | "cash_disbursed"

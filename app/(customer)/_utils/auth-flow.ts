@@ -18,6 +18,8 @@ export const getNextStep = (userType: UserType, currentStep: string): string => 
       }
 
     case "bvn":
+      return `${basePath}/create-password`;
+
     case "upload-passport":
       return `${basePath}/review`;
 

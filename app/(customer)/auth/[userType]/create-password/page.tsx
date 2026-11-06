@@ -47,18 +47,15 @@ export default function CreatePasswordPage() {
 
     const validationToken = sessionStorage.getItem("validationToken");
     const verificationToken = sessionStorage.getItem("verificationToken");
-    
+
     if (userType === "citizen") {
-      if (!validationToken) {
-        router.push(`/auth/${userType}/verify-email`);
+      if (!verificationToken && !validationToken) {
+        router.push(`/auth/${userType}/bvn`);
         return;
       }
-    } else {
-      // For expatriate/tourist, check for either token
-      if (!validationToken && !verificationToken) {
-        router.push(`/auth/${userType}/verify-email`);
-        return;
-      }
+    } else if (!validationToken && !verificationToken) {
+      router.push(`/auth/${userType}/verify-email`);
+      return;
     }
   }, [userType, router]);
 
@@ -91,17 +88,14 @@ export default function CreatePasswordPage() {
 
     const validationToken = sessionStorage.getItem("validationToken");
     const verificationToken = sessionStorage.getItem("verificationToken");
-    
-    let tokenToUse: string | null = null;
-    if (userType === "citizen") {
-      tokenToUse = validationToken;
-    } else {
-      tokenToUse = validationToken || verificationToken;
-    }
-    
+    const tokenToUse =
+      userType === "citizen"
+        ? verificationToken || validationToken
+        : validationToken || verificationToken;
+
     if (!tokenToUse) {
       handleApiError(
-        { message: "Validation token not found", status: 400 },
+        { message: "Verification token not found", status: 400 },
         { customMessage: "Please complete the previous steps first." }
       );
       return;
@@ -168,7 +162,13 @@ export default function CreatePasswordPage() {
         <Button
           variant="subtle"
           leftSection={<ArrowLeft size={18} />}
-          onClick={() => router.push(`/auth/${userType}/verify-email`)}
+          onClick={() =>
+            router.push(
+              userType === "citizen"
+                ? `/auth/${userType}/bvn`
+                : `/auth/${userType}/verify-email`
+            )
+          }
           className="text-body-text-200 hover:text-body-text-300 p-0 h-auto"
         >
           Back

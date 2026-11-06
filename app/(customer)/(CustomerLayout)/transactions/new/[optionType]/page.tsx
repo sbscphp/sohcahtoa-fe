@@ -8,7 +8,6 @@ import {
   GraduationCap,
   Hospital,
   Users,
-  Globe,
   Wallet,
 } from "lucide-react";
 
@@ -16,7 +15,7 @@ const FX_OPTIONS_BUY = [
   {
     icon: User,
     title: "I am going on a Vacation (PTA)",
-    description: "Buy FX to cover your travel, accommodation",
+    description: "Buy FX to cover your travel and accommodation",
     href: "/transactions/vacation",
   },
   {
@@ -43,12 +42,12 @@ const FX_OPTIONS_BUY = [
     description: "E.g International membership fee",
     href: "/transactions/professional-body",
   },
-  {
-    icon: Globe,
-    title: "I am Touring Nigeria",
-    description: "Buy FX to cover your travel, accommodation",
-    href: "/transactions/tourist",
-  },
+  // {
+  //   icon: Globe,
+  //   title: "I am Touring Nigeria",
+  //   description: "Buy FX to cover your travel, accommodation",
+  //   href: "/transactions/tourist",
+  // },
 ] as const;
 
 const FX_OPTIONS_SELL = [

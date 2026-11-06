@@ -64,7 +64,7 @@ export default function BVNPage() {
 
   const sendOtpMutation = useCreateData(customerApi.auth.nigerian.sendOtp);
 
-  const sendEmailOtpAfterConsent = useCallback(
+  const sendOtpAfterConsent = useCallback(
     (verificationToken: string) => {
       setIsSendingOtp(true);
       sessionStorage.setItem("otpDeliveryMethod", "email");
@@ -97,7 +97,7 @@ export default function BVNPage() {
                 {
                   customMessage:
                     response.error?.message ||
-                    "Failed to send email OTP. Please try again.",
+                    "Failed to send OTP. Please try again.",
                 }
               );
             }
@@ -105,7 +105,7 @@ export default function BVNPage() {
           onError: (error) => {
             setIsSendingOtp(false);
             handleApiError(error, {
-              customMessage: "Failed to send email OTP. Please try again.",
+              customMessage: "Failed to send OTP. Please try again.",
             });
           },
         }
@@ -140,7 +140,7 @@ export default function BVNPage() {
         return;
       }
 
-      sendEmailOtpAfterConsent(verificationToken);
+      sendOtpAfterConsent(verificationToken);
     },
     [
       bvn,
@@ -149,7 +149,7 @@ export default function BVNPage() {
       firstName,
       lastName,
       phoneNumber,
-      sendEmailOtpAfterConsent,
+      sendOtpAfterConsent,
       userType,
     ]
   );

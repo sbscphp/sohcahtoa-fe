@@ -1,74 +1,73 @@
 "use client";
 
-import { Card, Text, SimpleGrid, Skeleton } from "@mantine/core";
+import type { ReactNode } from "react";
+import { Select } from "@mantine/core";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  BankIcon,
+  Clock01Icon,
+  Money03Icon,
+  Wallet01Icon,
+} from "@hugeicons/core-free-icons";
+import { formatMoney } from "../_lib/format-fx";
+import type { InventorySummary } from "../_lib/types";
 
-export interface FxInventorySummaryCardValues {
-  cashReceivedFromCustomer: string;
-  cashReceivedFromAdmin: string;
-  cashDisbursedToAgent: string;
-  cashDisbursed: string;
+interface Props {
+  summary: InventorySummary;
+  currency: string;
+  currencies: string[];
+  onCurrencyChange: (code: string) => void;
 }
 
-interface SummaryCardsProps extends FxInventorySummaryCardValues {
-  isLoading?: boolean;
-}
-
-const CARD_CONFIG: ReadonlyArray<{
-  key: keyof FxInventorySummaryCardValues;
-  title: string;
-}> = [
-  {
-    key: "cashReceivedFromCustomer",
-    title: "Cash received from customer",
-  },
-  {
-    key: "cashReceivedFromAdmin",
-    title: "Cash received from admin",
-  },
-  {
-    key: "cashDisbursedToAgent",
-    title: "Cash disbursed to agent",
-  },
-  {
-    key: "cashDisbursed",
-    title: "Cash disbursed",
-  },
-];
-
-export function SummaryCards({
-  cashReceivedFromCustomer,
-  cashReceivedFromAdmin,
-  cashDisbursedToAgent,
-  cashDisbursed,
-  isLoading = false,
-}: Readonly<SummaryCardsProps>) {
-  const values: FxInventorySummaryCardValues = {
-    cashReceivedFromCustomer,
-    cashReceivedFromAdmin,
-    cashDisbursedToAgent,
-    cashDisbursed,
-  };
-
+function InventoryCard({
+  icon,
+  label,
+  value,
+  aside,
+}: Readonly<{ icon: typeof Money03Icon; label: string; value: string; aside?: ReactNode }>) {
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-      {CARD_CONFIG.map((card) => (
-        <Card key={card.key} radius="lg" padding="lg" withBorder>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <Text size="sm" c="dimmed" mb="xs">
-                {card.title}
-              </Text>
-              {isLoading ? (
-                <Skeleton height={28} mt={4} radius="sm" />
-              ) : (
-                <Text fw={700} size="xl" className="text-body-heading-300">
-                  {values[card.key]}
-                </Text>
-              )}
-            </div>
-          </div>
-        </Card>
-      ))}
-    </SimpleGrid>
+    <div className="flex items-center gap-2 rounded-xl border-[1.5px] border-gray-100 bg-white p-4">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[#FFF1F3]">
+        <HugeiconsIcon icon={icon} className="size-6 text-[#E5484D]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <p className="text-xs text-[#8F8B8B]">{label}</p>
+          {aside}
+        </div>
+        <p className="truncate text-lg font-bold leading-[26px] text-[#323131]">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+export function SummaryCards({ summary, currency, currencies, onCurrencyChange }: Readonly<Props>) {
+  const pending = summary.pendingSettlements;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <InventoryCard
+        icon={Money03Icon}
+        label="Available FX Inventory"
+        value={formatMoney(summary.availableFxInventory, currency)}
+        aside={
+          <Select
+            size="xs"
+            w={72}
+            data={currencies}
+            value={currency}
+            onChange={(v) => v && onCurrencyChange(v)}
+            allowDeselect={false}
+            aria-label="Inventory currency"
+          />
+        }
+      />
+      <InventoryCard icon={BankIcon} label="NGN Cash Available" value={formatMoney(summary.ngnCashAvailable, "NGN")} />
+      <InventoryCard
+        icon={Clock01Icon}
+        label="Pending Settlements"
+        value={`${pending} ${pending === 1 ? "Transaction" : "Transactions"}`}
+      />
+      <InventoryCard icon={Wallet01Icon} label="Cash Lodgement" value={formatMoney(summary.cashLodgement, "NGN")} />
+    </div>
   );
 }

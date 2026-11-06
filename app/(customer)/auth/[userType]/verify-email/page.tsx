@@ -8,7 +8,11 @@ import { Button } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
-import { validateUserType, getNextStep, checkAndClearSessionIfUserTypeChanged } from "@/app/(customer)/_utils/auth-flow";
+import {
+  validateUserType,
+  getNextStep,
+  checkAndClearSessionIfUserTypeChanged,
+} from "@/app/(customer)/_utils/auth-flow";
 import { useCreateData } from "@/app/_lib/api/hooks";
 import { customerApi } from "@/app/(customer)/_services/customer-api";
 import { handleApiError } from "@/app/_lib/api/error-handler";
@@ -34,32 +38,33 @@ export default function VerifyEmailPage() {
 
     checkAndClearSessionIfUserTypeChanged(userType);
 
-    const storedEmail = sessionStorage.getItem("email");
-    
     if (userType === "citizen") {
-      const validationToken = sessionStorage.getItem("validationToken");
-      if (!storedEmail || !validationToken) {
-        router.push(`/auth/${userType}/review`);
-        return;
-      }
-    } else {
       const verificationToken = sessionStorage.getItem("verificationToken");
-      if (!storedEmail || !verificationToken) {
-        router.push(`/auth/${userType}/review`);
-        return;
-      }
+      const validationToken = sessionStorage.getItem("validationToken");
+      router.push(
+        verificationToken || validationToken
+          ? `/auth/${userType}/create-password`
+          : `/auth/${userType}/bvn`
+      );
+      return;
     }
 
-    if (storedEmail) {
-      setUserEmail(storedEmail);
+    const storedEmail = sessionStorage.getItem("email");
+    const verificationToken = sessionStorage.getItem("verificationToken");
+    if (!storedEmail || !verificationToken) {
+      router.push(`/auth/${userType}/review`);
+      return;
     }
+
+    setUserEmail(storedEmail);
   }, [userType, router]);
 
-  const validateEmailOtpNigerianMutation = useCreateData(customerApi.auth.nigerian.validateEmailOtp);
-  const validateOtpTouristMutation = useCreateData(customerApi.auth.tourist.validateOtp);
-
-  const resendEmailOtpNigerianMutation = useCreateData(customerApi.auth.nigerian.resendEmailOtp);
-  const resendOtpTouristMutation = useCreateData(customerApi.auth.tourist.resendOtp);
+  const validateOtpTouristMutation = useCreateData(
+    customerApi.auth.tourist.validateOtp
+  );
+  const resendOtpTouristMutation = useCreateData(
+    customerApi.auth.tourist.resendOtp
+  );
 
   const handleOTPComplete = (completedOtp: string) => {
     setOtp(completedOtp);
@@ -67,176 +72,160 @@ export default function VerifyEmailPage() {
   };
 
   const handleVerify = () => {
-    if (isComplete && userType && !isValidating) {
-      setIsValidating(true);
-      
-      const onSuccess = (response: { success: boolean; data?: { firstName?: string; lastName?: string; email?: string; phoneNumber?: string; address?: string; validationToken?: string; message?: string; verified?: boolean }; error?: { message?: string } }) => {
-        if (response.success && response.data) {
-          if (userType === "citizen") {
-            if (response.data.validationToken) {
-              sessionStorage.setItem("validationToken", response.data.validationToken);
-            }
-            if (response.data.message) {
-              setSuccessMessage(response.data.message);
-            } else {
-              setSuccessMessage("Your email has been successfully verified. Continue below to complete account creation.");
-            }
-          } else {
-            if (response.data.firstName) sessionStorage.setItem("firstName", response.data.firstName);
-            if (response.data.lastName) sessionStorage.setItem("lastName", response.data.lastName);
-            if (response.data.email) sessionStorage.setItem("email", response.data.email);
-            if (response.data.phoneNumber) sessionStorage.setItem("phoneNumber", response.data.phoneNumber);
-            if (response.data.address) sessionStorage.setItem("address", response.data.address);
-            if (response.data.firstName && response.data.lastName) {
-              sessionStorage.setItem("fullName", `${response.data.firstName} ${response.data.lastName}`);
-            }
-            if (response.data.validationToken) {
-              sessionStorage.setItem("validationToken", response.data.validationToken);
-            }
-            if (response.data.message) {
-              setSuccessMessage(response.data.message);
-            } else {
-              setSuccessMessage("Your email has been successfully verified. Continue below to complete account creation.");
-            }
-          }
-          
-          setIsValidating(false);
-          setSuccessOpened(true);
-        } else {
-          setIsValidating(false);
-          handleApiError(
-            { message: response.error?.message || "OTP validation failed", status: 400 },
-            { customMessage: response.error?.message || "Invalid OTP. Please check and try again." }
-          );
-        }
-      };
-
-      const onError = (error: unknown) => {
-        setIsValidating(false);
-        handleApiError(error, { customMessage: "Failed to validate OTP. Please try again." });
-      };
-
-      if (userType === "citizen") {
-        const email = sessionStorage.getItem("email");
-        const validationToken = sessionStorage.getItem("validationToken");
-        
-        if (!email || !validationToken) {
-          setIsValidating(false);
-          handleApiError(
-            { message: "Missing required data", status: 400 },
-            { customMessage: "Please complete the previous steps first." }
-          );
-          return;
-        }
-        
-        validateEmailOtpNigerianMutation.mutate(
-          {
-            email,
-            otp,
-            verificationToken: validationToken,
-          },
-          { onSuccess, onError }
-        );
-      } else {
-        const verificationToken = sessionStorage.getItem("verificationToken");
-        
-        if (!userEmail) {
-          setIsValidating(false);
-          handleApiError(
-            { message: "Email required", status: 400 },
-            { customMessage: "Email not found. Please complete passport verification first." }
-          );
-          return;
-        }
-        
-        if (!verificationToken) {
-          setIsValidating(false);
-          handleApiError(
-            { message: "Missing required data", status: 400 },
-            { customMessage: "Please complete the previous steps first." }
-          );
-          return;
-        }
-        
-        validateOtpTouristMutation.mutate(
-          {
-            email: userEmail,
-            otp,
-            verificationToken,
-          },
-          { onSuccess, onError }
-        );
-      }
+    if (!isComplete || !userType || userType === "citizen" || isValidating) {
+      return;
     }
+
+    setIsValidating(true);
+
+    const verificationToken = sessionStorage.getItem("verificationToken");
+
+    if (!userEmail) {
+      setIsValidating(false);
+      handleApiError(
+        { message: "Email required", status: 400 },
+        {
+          customMessage:
+            "Email not found. Please complete passport verification first.",
+        }
+      );
+      return;
+    }
+
+    if (!verificationToken) {
+      setIsValidating(false);
+      handleApiError(
+        { message: "Missing required data", status: 400 },
+        { customMessage: "Please complete the previous steps first." }
+      );
+      return;
+    }
+
+    validateOtpTouristMutation.mutate(
+      {
+        email: userEmail,
+        otp,
+        verificationToken,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.success && response.data) {
+            if (response.data.firstName) {
+              sessionStorage.setItem("firstName", response.data.firstName);
+            }
+            if (response.data.lastName) {
+              sessionStorage.setItem("lastName", response.data.lastName);
+            }
+            if (response.data.email) {
+              sessionStorage.setItem("email", response.data.email);
+            }
+            if (response.data.phoneNumber) {
+              sessionStorage.setItem("phoneNumber", response.data.phoneNumber);
+            }
+            if (response.data.address) {
+              sessionStorage.setItem("address", response.data.address);
+            }
+            if (response.data.firstName && response.data.lastName) {
+              sessionStorage.setItem(
+                "fullName",
+                `${response.data.firstName} ${response.data.lastName}`
+              );
+            }
+            if (response.data.validationToken) {
+              sessionStorage.setItem(
+                "validationToken",
+                response.data.validationToken
+              );
+            }
+            setSuccessMessage(
+              response.data.message ||
+                "Your email has been successfully verified. Continue below to complete account creation."
+            );
+            setIsValidating(false);
+            setSuccessOpened(true);
+          } else {
+            setIsValidating(false);
+            handleApiError(
+              {
+                message: response.error?.message || "OTP validation failed",
+                status: 400,
+              },
+              {
+                customMessage:
+                  response.error?.message ||
+                  "Invalid OTP. Please check and try again.",
+              }
+            );
+          }
+        },
+        onError: (error) => {
+          setIsValidating(false);
+          handleApiError(error, {
+            customMessage: "Failed to validate OTP. Please try again.",
+          });
+        },
+      }
+    );
   };
 
   const handleResend = () => {
+    if (!userType || userType === "citizen") return;
+
     setIsResending(true);
     setOtp("");
     setIsComplete(false);
 
-    const onSuccess = (response: { success: boolean; data?: { message?: string }; error?: { message?: string } }) => {
+    const verificationToken = sessionStorage.getItem("verificationToken");
+    if (!verificationToken || !userEmail) {
       setIsResending(false);
-      if (response.success) {
-        setOtp("");
-        setIsComplete(false);
-        notifications.show({
-          title: "OTP Resent",
-          message: response.data?.message || "OTP has been resent to your email address.",
-          color: "green",
-          autoClose: 5000,
-        });
-      } else {
-        handleApiError(
-          { message: response.error?.message || "Failed to resend OTP", status: 400 },
-          { customMessage: response.error?.message || "Failed to resend OTP. Please try again." }
-        );
-      }
-    };
-
-    const onError = (error: unknown) => {
-      setIsResending(false);
-      handleApiError(error, { customMessage: "Failed to resend OTP. Please try again." });
-    };
-
-    if (userType === "citizen") {
-      const email = sessionStorage.getItem("email");
-      const validationToken = sessionStorage.getItem("validationToken");
-      
-      if (!email || !validationToken) {
-        setIsResending(false);
-        handleApiError(
-          { message: "Missing required data", status: 400 },
-          { customMessage: "Please complete the previous steps first." }
-        );
-        return;
-      }
-      
-      resendEmailOtpNigerianMutation.mutate(
-        {
-          email,
-          verificationToken: validationToken,
-        },
-        { onSuccess, onError }
+      handleApiError(
+        { message: "Missing required data", status: 400 },
+        { customMessage: "Please complete the previous steps first." }
       );
-    } else {
-      const verificationToken = sessionStorage.getItem("verificationToken");
-      if (!verificationToken || !userEmail) {
-        setIsResending(false);
-        handleApiError(
-          { message: "Missing required data", status: 400 },
-          { customMessage: "Please complete the previous steps first." }
-        );
-        return;
-      }
-      resendOtpTouristMutation.mutate(
-        {
-          email: userEmail,
-          verificationToken,
-        },
-        { onSuccess, onError }
-      );
+      return;
     }
+
+    resendOtpTouristMutation.mutate(
+      {
+        email: userEmail,
+        verificationToken,
+      },
+      {
+        onSuccess: (response) => {
+          setIsResending(false);
+          if (response.success) {
+            setOtp("");
+            setIsComplete(false);
+            notifications.show({
+              title: "OTP Resent",
+              message:
+                response.data?.message ||
+                "OTP has been resent to your email address.",
+              color: "green",
+              autoClose: 5000,
+            });
+          } else {
+            handleApiError(
+              {
+                message: response.error?.message || "Failed to resend OTP",
+                status: 400,
+              },
+              {
+                customMessage:
+                  response.error?.message ||
+                  "Failed to resend OTP. Please try again.",
+              }
+            );
+          }
+        },
+        onError: (error) => {
+          setIsResending(false);
+          handleApiError(error, {
+            customMessage: "Failed to resend OTP. Please try again.",
+          });
+        },
+      }
+    );
   };
 
   const handleSuccessContinue = () => {
@@ -252,7 +241,7 @@ export default function VerifyEmailPage() {
     setSuccessMessage("");
   };
 
-  if (!userType) {
+  if (!userType || userType === "citizen") {
     return null;
   }
 
@@ -305,7 +294,10 @@ export default function VerifyEmailPage() {
         opened={successOpened}
         onClose={handleSuccessClose}
         title="Email Verified Successfully"
-        message={successMessage || "Your email has been successfully verified. Continue below to complete account creation."}
+        message={
+          successMessage ||
+          "Your email has been successfully verified. Continue below to complete account creation."
+        }
         buttonText="Continue"
         onButtonClick={handleSuccessContinue}
       />

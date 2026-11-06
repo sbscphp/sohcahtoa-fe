@@ -58,6 +58,7 @@ export function VerifyBVNModal({ opened, onClose, onVerify, bvn, deliveryMethod 
               // Store user data from validate-otp response
               if (response.data.firstName) sessionStorage.setItem("firstName", response.data.firstName);
               if (response.data.lastName) sessionStorage.setItem("lastName", response.data.lastName);
+              if (response.data.dateOfBirth) sessionStorage.setItem("dateOfBirth", response.data.dateOfBirth);
               if (response.data.email) sessionStorage.setItem("email", response.data.email);
               if (response.data.phoneNumber) sessionStorage.setItem("phoneNumber", response.data.phoneNumber);
               if (response.data.address) sessionStorage.setItem("address", response.data.address);
@@ -105,7 +106,7 @@ export function VerifyBVNModal({ opened, onClose, onVerify, bvn, deliveryMethod 
     setSuccessMessage("");
     onClose();
     const userType = sessionStorage.getItem("userType") || "citizen";
-    router.push(`/auth/${userType}/review`);
+    router.push(`/auth/${userType}/create-password`);
   };
 
   const handleSuccessClose = () => {

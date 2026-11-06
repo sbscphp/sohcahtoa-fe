@@ -22,9 +22,6 @@ export const API_ENDPOINTS = {
       sendOtp: "/api/auth/signup/nigerian/send-otp",
       resendOtp: "/api/auth/signup/nigerian/resend-otp",
       validateOtp: "/api/auth/signup/nigerian/validate-otp",
-      sendEmailOtp: "/api/auth/signup/nigerian/send-email-otp",
-      resendEmailOtp: "/api/auth/signup/nigerian/resend-email-otp",
-      validateEmailOtp: "/api/auth/signup/nigerian/validate-email-otp",
       createAccount: "/api/auth/signup/nigerian/create-account",
     },
 

@@ -568,6 +568,15 @@ export const agentKeys = {
       [...agentKeys.dashboard.all, "balance", period, currency] as const,
   },
 
+  fxInventory: {
+    all: ["agent", "fx-inventory"] as const,
+    balances: () => [...agentKeys.fxInventory.all, "balances"] as const,
+    lodgments: (params?: { status?: string; page?: number; limit?: number }) =>
+      [...agentKeys.fxInventory.all, "lodgments", params] as const,
+    disbursements: (params?: { status?: string; page?: number; limit?: number }) =>
+      [...agentKeys.fxInventory.all, "disbursements", params] as const,
+  },
+
   customers: {
     all: ["agent", "customers"] as const,
     stats: () => [...agentKeys.customers.all, "stats"] as const,
