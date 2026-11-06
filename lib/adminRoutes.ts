@@ -47,6 +47,9 @@ const adminTicketUpdate = (id: string | number = ':id') => `${adminTickets()}/ed
 
 // Outlet routes
 const adminOutlet = () => `${admin()}/outlet`;
+const adminOutletAgentFxInventory = () => `${adminOutlet()}?tab=agent-fx-inventory`;
+const adminOutletAgentFxInventoryDetails = (id: string | number = ":id") =>
+  `${adminOutlet()}/agent-fx-inventory/${id}`;
 const adminOutletFranchiseCreate = () => `${adminOutlet()}/franchise/create`;
 const adminOutletFranchiseDetails = (id: string | number = ':id') => `${adminOutlet()}/franchise/${id}`;
 const adminOutletFranchiseTransactionDetail = (franchiseId: string | number, txId: string) =>
@@ -93,6 +96,12 @@ const adminSettingsWorkflowEdit = (id: string | number = ':id') =>
 //settlement routes
 const adminSettlement = () => `${admin()}/settlement`;
 const adminSettlementRegisterEscrow = () => `${adminSettlement()}/register-escrow`;
+const adminSettlementFxInventory = () => `${adminSettlement()}?tab=fx-inventory`;
+const adminSettlementDisburseCash = () => `${adminSettlement()}/disburse-cash`;
+const adminSettlementDisbursementDetails = (id: string | number = ":id") =>
+  `${adminSettlement()}/disbursements/${id}`;
+const adminSettlementLodgmentDetails = (id: string | number = ":id") =>
+  `${adminSettlement()}/lodgements/${id}`;
 
 // Transient wallet routes
 const adminTransientWallets = () => `${admin()}/transient-wallets`;
@@ -152,6 +161,8 @@ export const adminRoutes = {
   
   // Outlet
   adminOutlet,
+  adminOutletAgentFxInventory,
+  adminOutletAgentFxInventoryDetails,
   adminOutletFranchiseCreate,
   adminOutletFranchiseDetails,
   adminOutletFranchiseTransactionDetail,
@@ -192,6 +203,10 @@ export const adminRoutes = {
   // Settlement
   adminSettlement,
   adminSettlementRegisterEscrow,
+  adminSettlementFxInventory,
+  adminSettlementDisburseCash,
+  adminSettlementDisbursementDetails,
+  adminSettlementLodgmentDetails,
 
   // Transient Wallets
   adminTransientWallets,
