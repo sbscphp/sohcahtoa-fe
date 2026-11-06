@@ -9,18 +9,29 @@ import { getCurrencyFlagUrl } from "../_lib/currency";
 
 type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 
+type CurrencySelectorMode = "primary" | "secondary";
+
 interface CurrencySelectorProps {
   value?: CurrencyCode | null;
   onChange?: (value: CurrencyCode) => void;
   disabled?: boolean;
   currencyCodes?: CurrencyCode[];
+  mode?: CurrencySelectorMode;
 }
+
+const TRIGGER_CLASS: Record<CurrencySelectorMode, string> = {
+  primary:
+    "flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-2.5 text-xs font-normal leading-4 text-body-text-400 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+  secondary:
+    "flex shrink-0 items-center gap-1.5 rounded-full border border-gray-900 bg-gray-900 px-2.5 py-2.5 text-xs font-normal leading-4 text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+};
 
 export default function CurrencySelector({
   value,
   onChange,
   disabled,
   currencyCodes,
+  mode = "primary",
 }: CurrencySelectorProps) {
   const currencies = useMemo(() => {
     if (currencyCodes && currencyCodes.length > 0) {
@@ -53,16 +64,28 @@ export default function CurrencySelector({
         <button
           type="button"
           disabled={disabled}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-2.5 text-xs font-normal leading-4 text-body-text-400 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className={TRIGGER_CLASS[mode]}
         >
-          <span className="text-base leading-none" aria-hidden>
-            <Image
-              src={getCurrencyFlagUrl(selected.code) ?? ""}
-              alt={selected.name}
-              width={24}
-              height={24}
-            />
-          </span>
+          {mode === "secondary" ? (
+            <span className="size-6 shrink-0 overflow-hidden rounded-full" aria-hidden>
+              <Image
+                src={getCurrencyFlagUrl(selected.code) ?? ""}
+                alt={selected.name}
+                width={24}
+                height={24}
+                className="size-full object-cover"
+              />
+            </span>
+          ) : (
+            <span className="text-base leading-none" aria-hidden>
+              <Image
+                src={getCurrencyFlagUrl(selected.code) ?? ""}
+                alt={selected.name}
+                width={24}
+                height={24}
+              />
+            </span>
+          )}
           <span>{selected.code}</span>
           <ChevronDown className="size-3 shrink-0" aria-hidden />
         </button>

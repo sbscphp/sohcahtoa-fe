@@ -1,4 +1,5 @@
 import { adminRoutes } from './adminRoutes';
+import { getAgentFxInventoryDetail } from '@/app/admin/(AdminLayout)/outlet/_data/agentFxInventoryMock';
 
 export type Breadcrumb = {
   label: string;
@@ -137,6 +138,17 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
       { label: 'Outlet', url: adminRoutes.adminOutlet() },
       { label: 'Branch Details', url: adminRoutes.adminOutletBranchDetails(branchId) },
       { label: 'Edit Branch Details' },
+    ];
+  }
+
+  // Agent FX Inventory Details: /admin/outlet/agent-fx-inventory/:id
+  if (/^\/admin\/outlet\/agent-fx-inventory\/[^/]+$/.test(pathname)) {
+    const agentId = decodeURIComponent(pathname.split('/')[4] ?? '');
+    const detail = getAgentFxInventoryDetail(agentId);
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Agent FX Inventory', url: adminRoutes.adminOutletAgentFxInventory() },
+      { label: detail ? `${detail.agentName} FX Inventory` : 'FX Inventory' },
     ];
   }
 
