@@ -312,7 +312,7 @@ export default function DisbursementTakeActionDrawer({
             </Tabs>
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <div className="flex items-center justify-center gap-3 border-t border-gray-100 px-6 py-4">
             {hasPendingStage ? (
               <CustomButton buttonType="primary" onClick={() => setCommentOpen(true)}>
                 Complete Review
