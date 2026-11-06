@@ -232,3 +232,77 @@ export function getDisbursementDetail(id: string): DisbursementDetail | null {
     status: row.status,
   };
 }
+
+export type LodgmentCurrency = "NGN" | "USD";
+
+export interface LodgmentDetail {
+  id: string;
+  reference: string;
+  agentName: string;
+  agentId: string;
+  recordedDate: string;
+  recordedTime: string;
+  currency: LodgmentCurrency;
+  returnedAmount: number;
+  returnedAmountLabel: string;
+  updatedAmount: number | null;
+  updatedAmountLabel: string;
+  varianceLabel: string;
+  status: LodgmentStatus;
+  updatedBy: string;
+  dateConfirmed: string;
+  timeConfirmed: string;
+}
+
+function parseMoney(value: string | null): number | null {
+  if (!value) return null;
+  const numeric = Number(value.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+export function formatLodgmentAmount(amount: number, currency: LodgmentCurrency) {
+  const formatted = amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return currency === "NGN" ? `₦${formatted}` : `$${formatted}`;
+}
+
+export function lodgmentVarianceLabel(
+  returnedAmount: number,
+  updatedAmount: number | null,
+  currency: LodgmentCurrency
+) {
+  if (updatedAmount === null) return "-";
+  return formatLodgmentAmount(Math.abs(returnedAmount - updatedAmount), currency);
+}
+
+export function getLodgmentDetail(id: string): LodgmentDetail | null {
+  const row = LODGMENT_ROWS.find((item) => item.id === id);
+  if (!row) return null;
+
+  const currency: LodgmentCurrency = row.amountLodged.startsWith("₦") ? "NGN" : "USD";
+  const returnedAmount = parseMoney(row.amountLodged) ?? 0;
+  const updatedAmount = parseMoney(row.updatedAmount);
+  const referenceNumber = 1830 + Number(row.id.replace(/\D/g, "") || 0);
+  const isConfirmed = row.status === "Confirmed";
+
+  return {
+    id: row.id,
+    reference: String(referenceNumber),
+    agentName: row.agentName,
+    agentId: row.agentId,
+    recordedDate: row.date,
+    recordedTime: row.time,
+    currency,
+    returnedAmount,
+    returnedAmountLabel: row.amountLodged,
+    updatedAmount,
+    updatedAmountLabel: row.updatedAmount ?? "-",
+    varianceLabel: lodgmentVarianceLabel(returnedAmount, updatedAmount, currency),
+    status: row.status,
+    updatedBy: isConfirmed ? "Victoria Paschal" : "-",
+    dateConfirmed: isConfirmed ? row.date : "-",
+    timeConfirmed: isConfirmed ? row.time : "-",
+  };
+}

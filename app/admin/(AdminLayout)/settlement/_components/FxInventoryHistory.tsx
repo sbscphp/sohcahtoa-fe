@@ -173,7 +173,10 @@ export default function FxInventoryHistory() {
       status={item.status}
       color={item.status === "Confirmed" ? CONFIRMED_STATUS_COLOR : undefined}
     />,
-    <RowActionIcon key="action" onClick={() => undefined} />,
+    <RowActionIcon
+      key="action"
+      onClick={() => router.push(adminRoutes.adminSettlementLodgmentDetails(item.id))}
+    />,
   ];
 
   const handleExport = () => {

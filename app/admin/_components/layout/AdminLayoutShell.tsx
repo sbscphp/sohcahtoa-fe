@@ -39,7 +39,7 @@ function AdminLayoutShellContent({
     if (pathname?.startsWith('/admin/transient-wallets')) return 'Transient Wallets';
     if (pathname?.startsWith('/admin/settlement')) return 'Settlement Management';
     if (pathname?.startsWith('/admin/agent')) return 'Agent';
-    if (pathname?.startsWith('/admin/outlet')) return 'Outlet';
+    if (pathname?.startsWith('/admin/outlet')) return 'Outlet Management';
     if (pathname?.startsWith('/admin/customer')) return 'Customer Management';
     if (pathname?.startsWith('/admin/tickets')) return 'Tickets';
     if (pathname?.startsWith('/admin/settings/rate')) return 'Rate Management';

@@ -290,6 +290,13 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  if (/^\/admin\/settlement\/lodgements\/[^/]+$/.test(pathname)) {
+    return [
+      { label: "Settlement Management", url: adminRoutes.adminSettlementFxInventory() },
+      { label: "View Cash Lodgment" },
+    ];
+  }
+
   // Default: no breadcrumbs
   return [];
 }
