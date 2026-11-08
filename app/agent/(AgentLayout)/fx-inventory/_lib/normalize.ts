@@ -159,27 +159,32 @@ function toNumber(v: string | number | null | undefined): number | null {
 
 export function normalizeTransactions(items: TransactionListItem[]): InventoryTransaction[] {
   return items.map((t, i) => {
+    // The agent list returns snake_case fields (transaction_date, transaction_status, mode, customer_email);
+    // the camelCase ones are kept as fallbacks for other list endpoints.
     const raw = t as unknown as Rec;
-    const id = t.referenceNumber ?? t.reference_number ?? t.transactionId ?? t.id;
-    const amount = toNumber(t.foreignAmount);
-    // SELL group = bureau acquired FX from the customer (+); BUY / remittance = FX handed out (-).
-    const fxAmount = amount == null ? null : t.group === "SELL" ? amount : -amount;
-    const createdAt = t.createdAt ?? t.transaction_date ?? "";
+    const rawId = pickString(raw, ["transaction_id", "transactionId", "id"]) ?? String(i);
+    const id = pickString(raw, ["referenceNumber", "reference_number"]) ?? rawId;
+    const mode = pickString(raw, ["mode", "group"]);
+    const amount = toNumber(pickString(raw, ["foreignAmount"]) ?? pickNumber(raw, ["foreignAmount"]));
+    // SELL = bureau acquired FX from the customer (+); BUY / remittance = FX handed out (-).
+    const fxAmount = amount == null ? null : mode === "SELL" ? amount : -amount;
+    const date = pickString(raw, ["transaction_date", "createdAt", "created_at"]) ?? "";
+    const currency = (pickString(raw, ["currency"]) ?? "").toUpperCase();
     return {
-      key: `${t.id}-${i}`,
+      key: `${rawId}-${i}`,
       id,
       customerName:
         personName(raw.customer) ??
-        pickString(raw, ["customerName", "customer_name", "customer_full_name", "customerFullName"]) ??
+        pickString(raw, ["customerName", "customer_name", "customer_full_name", "customerFullName", "customer_email"]) ??
         "—",
-      transactionType: transactionTypeLabel(t.type ?? t.transaction_type, t.group),
-      currencyPair: `${t.currency}-NGN`,
+      transactionType: transactionTypeLabel(pickString(raw, ["transaction_type", "type"]), mode),
+      currencyPair: `${currency}-NGN`,
       fxAmount,
-      currency: t.currency,
-      rate: toNumber(t.exchangeRate),
-      ngnAmount: toNumber(t.nairaEquivalent),
-      date: createdAt,
-      status: settlementStatus(t.status ?? t.transaction_status ?? "", createdAt),
+      currency,
+      rate: pickNumber(raw, ["exchangeRate", "exchange_rate", "rate"]) ?? null,
+      ngnAmount: pickNumber(raw, ["nairaEquivalent", "naira_equivalent", "ngnAmount"]) ?? null,
+      date,
+      status: settlementStatus(pickString(raw, ["transaction_status", "status"]) ?? "", date),
     };
   });
 }
