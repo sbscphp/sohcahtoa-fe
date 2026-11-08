@@ -535,12 +535,30 @@ export interface AgentFxInventoryListParams<TStatus extends string = string> {
  */
 export type AgentFxInventoryRecord = Record<string, unknown>;
 
+export interface AgentFxPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface AgentFxInventoryListResponse {
   success: boolean;
   data?: unknown;
-  pagination?: { page: number; limit: number; total: number; totalPages: number };
+  /** The fx-inventory list endpoints nest pagination under metadata. */
+  metadata?: { pagination?: AgentFxPagination };
+  pagination?: AgentFxPagination;
   error?: { code: string; message: string };
 }
+
+export interface AgentTransactionStatsData {
+  total: number;
+  pending: number;
+  settled: number;
+  rejected: number;
+}
+
+export type AgentTransactionStatsResponse = ApiResponseWrapper<AgentTransactionStatsData>;
 
 export interface AgentFxLodgeRequest {
   currency: string;

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Button, Collapse } from "@mantine/core";
 import { ChevronDown, TriangleAlert } from "lucide-react";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
+import { useReceivedData } from "../hooks/useFxInventory";
 import { downloadCsv } from "../_lib/export-csv";
 import { formatDateTime, formatMoney } from "../_lib/format-fx";
 import type { CashDisbursement, DisbursementDisplayStatus } from "../_lib/types";
@@ -18,16 +19,14 @@ const TONE: Record<DisbursementDisplayStatus, "success" | "warning" | "danger"> 
 const text = "text-sm leading-5 text-body-text-300";
 
 interface Props {
-  rows: CashDisbursement[];
-  stats: { awaiting: number; confirmed: number; rejected: number };
-  isLoading: boolean;
   onConfirm: (item: CashDisbursement) => void;
   onReject: (item: CashDisbursement) => void;
 }
 
-export function InventoryReceivedTab({ rows, stats, isLoading, onConfirm, onReject }: Readonly<Props>) {
+export function InventoryReceivedTab({ onConfirm, onReject }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
-  const awaiting = useMemo(() => rows.filter((r) => r.awaitingConfirmation), [rows]);
+  const [page, setPage] = useState(1);
+  const { rows, awaitingRows: awaiting, stats, totalPages, isLoading, errorMessage } = useReceivedData(page);
 
   const columns = useMemo<PaginatedTableColumn<CashDisbursement>[]>(
     () => [
@@ -127,6 +126,10 @@ export function InventoryReceivedTab({ rows, stats, isLoading, onConfirm, onReje
         subtitle="Every cash release from HQ to this agent, whatever its status"
         onExport={handleExport}
         isLoading={isLoading}
+        errorMessage={errorMessage}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
         data={rows}
         columns={columns}
         keyExtractor={(r) => r.id}

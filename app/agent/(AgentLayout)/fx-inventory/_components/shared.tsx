@@ -105,6 +105,10 @@ export function InventorySection<T>({
   toolbar,
   onExport,
   isLoading,
+  errorMessage,
+  page,
+  totalPages,
+  onPageChange,
   data,
   columns,
   keyExtractor,
@@ -118,6 +122,11 @@ export function InventorySection<T>({
   toolbar?: ReactNode;
   onExport?: () => void;
   isLoading?: boolean;
+  errorMessage?: string | null;
+  /** Server-side paging: pass all three. Omit for a client-side table. */
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   data: T[];
   columns: PaginatedTableColumn<T>[];
   keyExtractor: (item: T, index: number) => string | number;
@@ -136,6 +145,7 @@ export function InventorySection<T>({
           {action ?? (onExport ? <ExportButton onClick={onExport} /> : null)}
         </div>
       </div>
+      {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
       <PaginatedTable
         data={data}
         columns={columns.map((c) => ({
@@ -146,6 +156,9 @@ export function InventorySection<T>({
         keyExtractor={keyExtractor}
         onRowClick={onRowClick}
         isLoading={isLoading}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
         emptyTitle="No data available yet"
         emptyMessage={emptyMessage ?? "Nothing to show here yet."}
       />

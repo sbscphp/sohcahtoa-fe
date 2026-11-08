@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Group, Select, Tabs, Text } from "@mantine/core";
+import { Group, Select, Tabs } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { ListFilter } from "lucide-react";
 import { SuccessModal } from "@/app/(customer)/_components/modals/SuccessModal";
-import { CURRENCIES } from "@/app/(customer)/_lib/currency";
 import type { AgentDashboardCashStatsPeriod } from "@/app/_lib/api/types";
 import { useHydratedProfileDisplay } from "@/app/_lib/hooks/use-hydrated-profile-display";
 import {
@@ -14,7 +13,7 @@ import {
 } from "@/app/agent/_lib/dashboard-period";
 import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 import { SELECT_WIDTH } from "../../utils/constants";
-import { useFxInventory } from "./hooks/useFxInventory";
+import { FX_CODES, useFxMutations, useFxSummary } from "./hooks/useFxInventory";
 import type { CashDisbursement, InventoryTabValue } from "./_lib/types";
 import { SummaryCards } from "./_components/SummaryCards";
 import { InventoryPositionTab } from "./_components/InventoryPositionTab";
@@ -31,13 +30,12 @@ const TABS: ReadonlyArray<{ value: InventoryTabValue; label: string }> = [
   { value: "cash-lodgement", label: "Cash Lodgement" },
 ];
 
-const CURRENCY_CODES = CURRENCIES.map((c) => c.code);
-const FX_CODES = CURRENCY_CODES.filter((c) => c !== "NGN");
+const LODGE_CURRENCIES = [...FX_CODES, "NGN"];
 
 type ReceiptAction = { mode: "confirm" | "reject"; item: CashDisbursement };
 
 export default function FXInventoryPage() {
-  const [currency, setCurrency] = useState<string>(FX_CODES[0] ?? "USD");
+  const [pickedCurrency, setPickedCurrency] = useState<string | null>(null);
   const [period, setPeriod] = useState<AgentDashboardCashStatsPeriod>(DEFAULT_AGENT_DASHBOARD_PERIOD);
   const [tab, setTab] = useState<InventoryTabValue>("position");
 
@@ -45,7 +43,8 @@ export default function FXInventoryPage() {
   const [receipt, setReceipt] = useState<ReceiptAction | null>(null);
   const [feedback, setFeedback] = useState<"confirmed" | "rejected" | null>(null);
 
-  const inventory = useFxInventory(period, currency);
+  const { summary, currency, currencies } = useFxSummary(period, pickedCurrency);
+  const mutations = useFxMutations();
   const { displayName } = useHydratedProfileDisplay({ fallbackName: "Agent" });
 
   const showError = (title: string, error: unknown) =>
@@ -71,17 +70,11 @@ export default function FXInventoryPage() {
         />
       </Group>
 
-      {inventory.errorMessage && (
-        <Text size="sm" c="red">
-          {inventory.errorMessage}
-        </Text>
-      )}
-
       <SummaryCards
-        summary={inventory.summary}
+        summary={summary}
         currency={currency}
-        currencies={FX_CODES}
-        onCurrencyChange={setCurrency}
+        currencies={currencies}
+        onCurrencyChange={setPickedCurrency}
       />
 
       <Tabs
@@ -106,36 +99,19 @@ export default function FXInventoryPage() {
 
         <div className="pt-4">
           <Tabs.Panel value="position">
-            <InventoryPositionTab
-              rows={inventory.positionRows}
-              pendingLodgements={inventory.pendingLodgements}
-              isLoading={inventory.isLoading}
-            />
+            <InventoryPositionTab period={period} />
           </Tabs.Panel>
           <Tabs.Panel value="transactions">
-            <TransactionsTab
-              rows={inventory.transactions}
-              stats={inventory.transactionStats}
-              currency={currency}
-              isLoading={inventory.isLoading}
-            />
+            <TransactionsTab period={period} currency={currency} />
           </Tabs.Panel>
           <Tabs.Panel value="received">
             <InventoryReceivedTab
-              rows={inventory.disbursements}
-              stats={inventory.disbursementStats}
-              isLoading={inventory.isLoading}
               onConfirm={(item) => setReceipt({ mode: "confirm", item })}
               onReject={(item) => setReceipt({ mode: "reject", item })}
             />
           </Tabs.Panel>
           <Tabs.Panel value="cash-lodgement">
-            <CashLodgementTab
-              rows={inventory.lodgements}
-              stats={inventory.lodgementStats}
-              isLoading={inventory.isLoading}
-              onLodge={() => setLodgeOpen(true)}
-            />
+            <CashLodgementTab onLodge={() => setLodgeOpen(true)} />
           </Tabs.Panel>
         </div>
       </Tabs>
@@ -143,11 +119,11 @@ export default function FXInventoryPage() {
       <LodgeCashModal
         opened={lodgeOpen}
         onClose={() => setLodgeOpen(false)}
-        currencies={CURRENCY_CODES}
+        currencies={LODGE_CURRENCIES}
         defaultCurrency={currency}
-        isPending={inventory.lodgeCash.isPending}
+        isPending={mutations.lodgeCash.isPending}
         onSubmit={(code, amount, notes) =>
-          inventory.lodgeCash.mutate(
+          mutations.lodgeCash.mutate(
             { currency: code, amount, ...(notes ? { notes } : {}) },
             {
               onSuccess: () => {
@@ -172,9 +148,9 @@ export default function FXInventoryPage() {
             onClose={() => setReceipt(null)}
             item={receipt.item}
             agentName={displayName}
-            isPending={inventory.confirmReceipt.isPending}
+            isPending={mutations.confirmReceipt.isPending}
             onConfirm={() =>
-              inventory.confirmReceipt.mutate(receipt.item.id, {
+              mutations.confirmReceipt.mutate(receipt.item.id, {
                 onSuccess: () => {
                   setReceipt(null);
                   setFeedback("confirmed");
@@ -188,9 +164,9 @@ export default function FXInventoryPage() {
             onClose={() => setReceipt(null)}
             item={receipt.item}
             agentName={displayName}
-            isPending={inventory.rejectReceipt.isPending}
+            isPending={mutations.rejectReceipt.isPending}
             onSubmit={(reason) =>
-              inventory.rejectReceipt.mutate(
+              mutations.rejectReceipt.mutate(
                 { id: receipt.item.id, reason },
                 {
                   onSuccess: () => {

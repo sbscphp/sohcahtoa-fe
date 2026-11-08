@@ -76,6 +76,7 @@ import type {
   AgentFxLodgeRequest,
   AgentFxLodgmentStatus,
   AgentFxRejectReceiptRequest,
+  AgentTransactionStatsResponse,
   AgentDashboardCashStatsResponse,
   AgentDashboardBalanceResponse,
   AgentPaymentMovementListParams,
@@ -539,7 +540,7 @@ export const agentApi = {
         apiClient.download(AGENT_API_ENDPOINTS.transactions.receipt(transactionId)),
 
       stats: () =>
-        apiClient.get(AGENT_API_ENDPOINTS.transactions.stats),
+        apiClient.get<AgentTransactionStatsResponse>(AGENT_API_ENDPOINTS.transactions.stats),
 
       paymentMovements: (params: AgentPaymentMovementListParams) =>
         apiClient.get<AgentPaymentMovementsResponse>(

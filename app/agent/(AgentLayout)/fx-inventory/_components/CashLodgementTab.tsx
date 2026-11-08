@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@mantine/core";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
+import { useLodgementData } from "../hooks/useFxInventory";
 import { formatAccounting } from "../_lib/format-fx";
 import type { CashLodgement, LodgementDisplayStatus } from "../_lib/types";
 import { CurrencyCell, DateTimeCell, InventorySection, StatusPill, SummaryTile, SummaryTiles } from "./shared";
@@ -15,14 +16,10 @@ const TONE: Record<LodgementDisplayStatus, "success" | "warning" | "danger"> = {
 
 const text = "text-sm leading-5 text-body-text-300";
 
-interface Props {
-  rows: CashLodgement[];
-  stats: { pendingVerification: number; confirmed: number; varianceRecorded: number };
-  isLoading: boolean;
-  onLodge: () => void;
-}
+export function CashLodgementTab({ onLodge }: Readonly<{ onLodge: () => void }>) {
+  const [page, setPage] = useState(1);
+  const { rows, stats, totalPages, isLoading, errorMessage } = useLodgementData(page);
 
-export function CashLodgementTab({ rows, stats, isLoading, onLodge }: Readonly<Props>) {
   const columns = useMemo<PaginatedTableColumn<CashLodgement>[]>(
     () => [
       { key: "currency", label: "Currency", render: (r) => <CurrencyCell code={r.currency} /> },
@@ -59,6 +56,10 @@ export function CashLodgementTab({ rows, stats, isLoading, onLodge }: Readonly<P
           </Button>
         }
         isLoading={isLoading}
+        errorMessage={errorMessage}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
         data={rows}
         columns={columns}
         keyExtractor={(r) => r.id}

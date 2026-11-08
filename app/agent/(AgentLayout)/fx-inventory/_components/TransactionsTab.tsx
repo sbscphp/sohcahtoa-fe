@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { Select } from "@mantine/core";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
+import type { AgentDashboardCashStatsPeriod } from "@/app/_lib/api/types";
+import { useTransactionsData } from "../hooks/useFxInventory";
 import { downloadCsv } from "../_lib/export-csv";
 import { formatDateTime, formatMoney, formatPlainNumber } from "../_lib/format-fx";
 import type { InventoryTransaction, TransactionSettlementStatus } from "../_lib/types";
@@ -15,24 +17,29 @@ const TONE: Record<TransactionSettlementStatus, "success" | "warning" | "danger"
   Rejected: "danger",
 };
 
-const STATUS_OPTIONS = ["All Statuses", "Pending", "Overdue", "Settled", "Rejected"];
+/** Filter values are the API's own transaction statuses, so filtering happens on the server. */
+const STATUS_OPTIONS = [
+  { value: "", label: "All Statuses" },
+  { value: "AWAITING_VERIFICATION", label: "Awaiting verification" },
+  { value: "AWAITING_DEPOSIT", label: "Awaiting deposit" },
+  { value: "ADMIN_APPROVAL_PENDING", label: "Awaiting approval" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "COMPLETED", label: "Settled" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
 
 const text = "text-sm leading-5 text-body-text-300";
 
 interface Props {
-  rows: InventoryTransaction[];
-  stats: { totalFxPurchased: number; totalFxSold: number; transactionsThisPeriod: number };
+  period: AgentDashboardCashStatsPeriod;
   currency: string;
-  isLoading: boolean;
 }
 
-export function TransactionsTab({ rows, stats, currency, isLoading }: Readonly<Props>) {
-  const [status, setStatus] = useState("All Statuses");
-
-  const filtered = useMemo(
-    () => (status === "All Statuses" ? rows : rows.filter((r) => r.status === status)),
-    [rows, status],
-  );
+export function TransactionsTab({ period, currency }: Readonly<Props>) {
+  const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const { rows, totalPages, stats, isLoading, errorMessage } = useTransactionsData(period, currency, status || undefined, page);
 
   const columns = useMemo<PaginatedTableColumn<InventoryTransaction>[]>(
     () => [
@@ -54,11 +61,12 @@ export function TransactionsTab({ rows, stats, currency, isLoading }: Readonly<P
     [],
   );
 
+  // Exports the rows on screen (the current page and filter).
   const handleExport = () =>
     downloadCsv(
       "fx-inventory-transactions",
       ["Transaction ID", "Customer", "Type", "Pair", "FX Amount", "Rate (NGN)", "NGN Amount", "Status", "Date"],
-      filtered.map((r) => [r.id, r.customerName, r.transactionType, r.currencyPair, r.fxAmount, r.rate, r.ngnAmount, r.status, formatDateTime(r.date)]),
+      rows.map((r) => [r.id, r.customerName, r.transactionType, r.currencyPair, r.fxAmount, r.rate, r.ngnAmount, r.status, formatDateTime(r.date)]),
     );
 
   return (
@@ -66,7 +74,7 @@ export function TransactionsTab({ rows, stats, currency, isLoading }: Readonly<P
       <SummaryTiles>
         <SummaryTile label="Total FX Purchased" value={formatMoney(stats.totalFxPurchased, currency)} />
         <SummaryTile label="Total FX Sold" value={formatMoney(stats.totalFxSold, currency)} />
-        <SummaryTile label="Transactions" value={stats.transactionsThisPeriod} />
+        <SummaryTile label="Transactions" value={stats.transactions} />
       </SummaryTiles>
       <InventorySection
         title="Transactions"
@@ -74,18 +82,25 @@ export function TransactionsTab({ rows, stats, currency, isLoading }: Readonly<P
         toolbar={
           <Select
             size="sm"
-            w={150}
+            w={190}
             radius="xl"
             data={STATUS_OPTIONS}
             value={status}
-            onChange={(v) => v && setStatus(v)}
+            onChange={(v) => {
+              setStatus(v ?? "");
+              setPage(1);
+            }}
             allowDeselect={false}
             aria-label="Filter by status"
           />
         }
         onExport={handleExport}
         isLoading={isLoading}
-        data={filtered}
+        errorMessage={errorMessage}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        data={rows}
         columns={columns}
         keyExtractor={(r) => r.key}
       />

@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
+import type { AgentDashboardCashStatsPeriod } from "@/app/_lib/api/types";
+import { usePositionData } from "../hooks/useFxInventory";
 import { downloadCsv } from "../_lib/export-csv";
 import { formatAccounting } from "../_lib/format-fx";
 import type { PositionRow } from "../_lib/types";
@@ -20,13 +22,9 @@ const signed = (v: number | null | undefined, currency: string) => (
   </span>
 );
 
-interface Props {
-  rows: PositionRow[];
-  pendingLodgements: number;
-  isLoading: boolean;
-}
+export function InventoryPositionTab({ period }: Readonly<{ period: AgentDashboardCashStatsPeriod }>) {
+  const { rows, pendingLodgements, isLoading, errorMessage } = usePositionData(period);
 
-export function InventoryPositionTab({ rows, pendingLodgements, isLoading }: Readonly<Props>) {
   const data = useMemo<PositionTableRow[]>(
     () => [...rows, { isTotal: true, flagged: rows.filter((r) => r.status === "Variance").length }],
     [rows],
@@ -96,9 +94,10 @@ export function InventoryPositionTab({ rows, pendingLodgements, isLoading }: Rea
       )}
       <InventorySection
         title="FX Inventory Position"
-        subtitle="Today’s opening-to-closing movement per currency"
+        subtitle="Opening-to-closing movement per currency for the selected period"
         onExport={handleExport}
         isLoading={isLoading}
+        errorMessage={errorMessage}
         data={data}
         columns={columns}
         keyExtractor={(r) => (r.isTotal ? "total" : r.currency)}
