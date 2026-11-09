@@ -449,6 +449,22 @@ export const adminKeys = {
       ] as const,
   },
 
+  fxInventory: {
+    all: ["admin", "fx-inventory"] as const,
+    lodgments: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+    }) => [...adminKeys.fxInventory.all, "lodgments", params] as const,
+    disbursements: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+    }) => [...adminKeys.fxInventory.all, "disbursements", params] as const,
+  },
+
   regulatory: {
     all: ["admin", "regulatory"] as const,
     compliance: {

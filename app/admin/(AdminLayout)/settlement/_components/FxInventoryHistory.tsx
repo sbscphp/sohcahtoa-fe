@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Group, Select, Tabs, Text, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -11,16 +11,23 @@ import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { adminRoutes } from "@/lib/adminRoutes";
+import type {
+  FxInventoryDisbursementStatus,
+  FxInventoryLodgmentStatus,
+} from "@/app/admin/_services/admin-api";
 import {
-  DISBURSEMENT_ROWS,
-  DISBURSEMENT_STATUS_OPTIONS,
-  LODGMENT_ROWS,
-  LODGMENT_STATUS_OPTIONS,
-  type DisbursementRow,
-  type LodgmentRow,
-} from "../_data/fxInventoryMock";
+  FX_INVENTORY_DISBURSEMENT_PAGE_SIZE,
+  FX_INVENTORY_DISBURSEMENT_STATUS_OPTIONS,
+  useFxInventoryDisbursements,
+  type FxInventoryDisbursementRow,
+} from "../hooks/useFxInventoryDisbursements";
+import {
+  FX_INVENTORY_LODGMENT_PAGE_SIZE,
+  FX_INVENTORY_LODGMENT_STATUS_OPTIONS,
+  useFxInventoryLodgments,
+  type FxInventoryLodgmentRow,
+} from "../hooks/useFxInventoryLodgments";
 
-const PAGE_SIZE = 6;
 const CONFIRMED_STATUS_COLOR = "#027A48";
 
 type HistoryTab = "disbursement" | "lodgments";
@@ -42,16 +49,6 @@ const LODGMENT_HEADERS = [
   { label: "Status", key: "status" },
   { label: "Action", key: "action" },
 ];
-
-function matchesAgent(name: string, agentId: string, query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
-  return (
-    name.toLowerCase().includes(normalized) ||
-    agentId.toLowerCase().includes(normalized) ||
-    `id:${agentId}`.includes(normalized)
-  );
-}
 
 function escapeCsv(value: string) {
   return `"${value.replaceAll('"', '""')}"`;
@@ -96,17 +93,6 @@ function TimestampCell({ date, time }: { date: string; time: string }) {
   );
 }
 
-function paginate<T>(rows: T[], page: number) {
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * PAGE_SIZE;
-  return {
-    page: safePage,
-    totalPages,
-    rows: rows.slice(start, start + PAGE_SIZE),
-  };
-}
-
 export default function FxInventoryHistory() {
   const router = useRouter();
   const [historyTab, setHistoryTab] = useState<HistoryTab>("disbursement");
@@ -117,33 +103,57 @@ export default function FxInventoryHistory() {
 
   const statusOptions =
     historyTab === "disbursement"
-      ? DISBURSEMENT_STATUS_OPTIONS
-      : LODGMENT_STATUS_OPTIONS;
+      ? FX_INVENTORY_DISBURSEMENT_STATUS_OPTIONS
+      : FX_INVENTORY_LODGMENT_STATUS_OPTIONS;
 
-  const filteredDisbursements = useMemo(
-    () =>
-      DISBURSEMENT_ROWS.filter(
-        (row) =>
-          matchesAgent(row.agentName, row.agentId, debouncedSearch) &&
-          (statusFilter === "All" || row.status === statusFilter)
-      ),
-    [debouncedSearch, statusFilter]
+  const searchQuery = debouncedSearch.trim() || undefined;
+
+  const disbursementStatus =
+    historyTab === "disbursement" && statusFilter !== "All"
+      ? (statusFilter as FxInventoryDisbursementStatus)
+      : undefined;
+
+  const {
+    disbursements,
+    isLoading: disbursementsLoading,
+    isFetching: disbursementsFetching,
+    isError: disbursementsError,
+    totalPages: disbursementTotalPages,
+  } = useFxInventoryDisbursements(
+    {
+      page,
+      limit: FX_INVENTORY_DISBURSEMENT_PAGE_SIZE,
+      search: searchQuery,
+      status: disbursementStatus,
+    },
+    historyTab === "disbursement"
   );
 
-  const filteredLodgments = useMemo(
-    () =>
-      LODGMENT_ROWS.filter(
-        (row) =>
-          matchesAgent(row.agentName, row.agentId, debouncedSearch) &&
-          (statusFilter === "All" || row.status === statusFilter)
-      ),
-    [debouncedSearch, statusFilter]
+  const lodgmentStatus =
+    historyTab === "lodgments" && statusFilter !== "All"
+      ? (statusFilter as FxInventoryLodgmentStatus)
+      : undefined;
+
+  const {
+    lodgments,
+    isLoading: lodgmentsLoading,
+    isFetching: lodgmentsFetching,
+    isError: lodgmentsError,
+    totalPages: lodgmentTotalPages,
+  } = useFxInventoryLodgments(
+    {
+      page,
+      limit: FX_INVENTORY_LODGMENT_PAGE_SIZE,
+      search: searchQuery,
+      status: lodgmentStatus,
+    },
+    historyTab === "lodgments"
   );
 
-  const disbursementPage = paginate(filteredDisbursements, page);
-  const lodgmentPage = paginate(filteredLodgments, page);
+  const disbursementPageCount = Math.max(disbursementTotalPages, 1);
+  const lodgmentPageCount = Math.max(lodgmentTotalPages, 1);
 
-  const renderDisbursementRow = (item: DisbursementRow) => [
+  const renderDisbursementRow = (item: FxInventoryDisbursementRow) => [
     <AgentCell key="agent" name={item.agentName} agentId={item.agentId} />,
     <Text key="amount" size="sm" fw={500}>
       {item.amount}
@@ -159,7 +169,7 @@ export default function FxInventoryHistory() {
     />,
   ];
 
-  const renderLodgmentRow = (item: LodgmentRow) => [
+  const renderLodgmentRow = (item: FxInventoryLodgmentRow) => [
     <AgentCell key="agent" name={item.agentName} agentId={item.agentId} />,
     <Text key="amountLodged" size="sm" fw={500}>
       {item.amountLodged}
@@ -194,7 +204,7 @@ export default function FxInventoryHistory() {
           "Workflow Stage",
           "Status",
         ],
-        filteredDisbursements.map((row) => [
+        disbursements.map((row) => [
           row.agentName,
           row.agentId,
           row.amount,
@@ -218,7 +228,7 @@ export default function FxInventoryHistory() {
         "Time",
         "Status",
       ],
-      filteredLodgments.map((row) => [
+      lodgments.map((row) => [
         row.agentName,
         row.agentId,
         row.amountLodged,
@@ -302,17 +312,24 @@ export default function FxInventoryHistory() {
           {historyTab === "disbursement" ? (
             <DynamicTableSection
               headers={DISBURSEMENT_HEADERS}
-              data={disbursementPage.rows}
+              data={disbursementsError ? [] : disbursements}
+              loading={disbursementsLoading || disbursementsFetching}
               renderItems={renderDisbursementRow}
-              emptyTitle="No disbursements found"
-              emptyMessage="No disbursements match your search or filter."
+              emptyTitle={
+                disbursementsError ? "Could not load disbursements" : "No disbursements found"
+              }
+              emptyMessage={
+                disbursementsError
+                  ? "Something went wrong while loading disbursements. Try again."
+                  : "No disbursements match your search or filter."
+              }
               pagination={
-                disbursementPage.rows.length > 0
+                !disbursementsError && disbursements.length > 0
                   ? {
-                      page: disbursementPage.page,
-                      totalPages: disbursementPage.totalPages,
+                      page,
+                      totalPages: disbursementPageCount,
                       onNext: () =>
-                        setPage((current) => Math.min(current + 1, disbursementPage.totalPages)),
+                        setPage((current) => Math.min(current + 1, disbursementPageCount)),
                       onPrevious: () => setPage((current) => Math.max(current - 1, 1)),
                       onPageChange: setPage,
                     }
@@ -322,17 +339,22 @@ export default function FxInventoryHistory() {
           ) : (
             <DynamicTableSection
               headers={LODGMENT_HEADERS}
-              data={lodgmentPage.rows}
+              data={lodgmentsError ? [] : lodgments}
+              loading={lodgmentsLoading || lodgmentsFetching}
               renderItems={renderLodgmentRow}
-              emptyTitle="No lodgments found"
-              emptyMessage="No lodgments match your search or filter."
+              emptyTitle={lodgmentsError ? "Could not load lodgments" : "No lodgments found"}
+              emptyMessage={
+                lodgmentsError
+                  ? "Something went wrong while loading lodgments. Try again."
+                  : "No lodgments match your search or filter."
+              }
               pagination={
-                lodgmentPage.rows.length > 0
+                !lodgmentsError && lodgments.length > 0
                   ? {
-                      page: lodgmentPage.page,
-                      totalPages: lodgmentPage.totalPages,
+                      page,
+                      totalPages: lodgmentPageCount,
                       onNext: () =>
-                        setPage((current) => Math.min(current + 1, lodgmentPage.totalPages)),
+                        setPage((current) => Math.min(current + 1, lodgmentPageCount)),
                       onPrevious: () => setPage((current) => Math.max(current - 1, 1)),
                       onPageChange: setPage,
                     }

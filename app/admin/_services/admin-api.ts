@@ -1351,6 +1351,72 @@ export interface SettlementDashboardStats {
   totalEscrowAccounts: number;
 }
 
+export type FxInventoryLodgmentStatus =
+  | "PENDING_VERIFICATION"
+  | "CONFIRMED"
+  | "REJECTED";
+
+export type FxInventoryLodgmentsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: FxInventoryLodgmentStatus;
+};
+
+export interface FxInventoryLodgmentListItem {
+  id: string;
+  referenceNumber: string;
+  agentId: string;
+  agentName: string;
+  branchId: string;
+  currency: string;
+  statedAmount: number;
+  confirmedAmount: number | null;
+  varianceAmount: number | null;
+  notes: string | null;
+  status: string;
+  submittedAt: string;
+}
+
+export type FxInventoryDisbursementStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "COMPLETED";
+
+export type FxInventoryDisbursementsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: FxInventoryDisbursementStatus;
+};
+
+export interface FxInventoryDisbursementListItem {
+  id: string;
+  referenceNumber: string;
+  agentId: string;
+  agentName: string;
+  branchId: string;
+  currency: string;
+  amount: number;
+  disbursedAmount?: number | null;
+  workflowStage: string | null;
+  workflowStageName?: string | null;
+  currentWorkflowStage?: string | null;
+  status: string;
+  disbursedAt: string | null;
+  submittedAt?: string | null;
+  createdAt?: string | null;
+  purpose: string | null;
+  notes: string | null;
+}
+
 export interface AdminNotificationItem {
   id: string;
   userId: string;
@@ -2549,6 +2615,21 @@ export const adminApi = {
     }) =>
       apiClient.get<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.settlement.fundingTransactions,
+        { params }
+      ),
+  },
+
+  // ==================== FX Inventory ====================
+  fxInventory: {
+    listLodgments: (params?: FxInventoryLodgmentsListParams) =>
+      apiClient.get<ApiResponse<FxInventoryLodgmentListItem[]>>(
+        API_ENDPOINTS.admin.fxInventory.lodgments,
+        { params }
+      ),
+
+    listDisbursements: (params?: FxInventoryDisbursementsListParams) =>
+      apiClient.get<ApiResponse<FxInventoryDisbursementListItem[]>>(
+        API_ENDPOINTS.admin.fxInventory.disbursements,
         { params }
       ),
   },

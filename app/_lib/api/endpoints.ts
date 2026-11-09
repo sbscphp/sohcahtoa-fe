@@ -295,6 +295,10 @@ export const API_ENDPOINTS = {
       escrowAccounts: "/api/admin/settlement/escrow-accounts",
       fundingTransactions: "/api/admin/settlement",
     },
+    fxInventory: {
+      lodgments: "/api/admin/fx-inventory/lodgments",
+      disbursements: "/api/admin/fx-inventory/disbursements",
+    },
     regulatory: {
       compliance: {
         dashboard: "/api/admin/regulatory/compliance/dashboard",
