@@ -6,6 +6,7 @@ export {
   coerceRateWorkflowLines,
   coerceWorkflowLinesForApprovalType,
   DISBURSEMENT_WORKFLOW_TYPE_OPTIONS,
+  FX_CASH_DISBURSEMENT_WORKFLOW_TYPE_OPTIONS,
   getAllowedWorkflowTypes,
   getDefaultWorkflowType,
   RATE_WORKFLOW_TYPE_OPTIONS,
