@@ -1405,16 +1405,23 @@ export interface FxInventoryDisbursementListItem {
   branchId: string;
   currency: string;
   amount: number;
-  disbursedAmount?: number | null;
-  workflowStage: string | null;
-  workflowStageName?: string | null;
-  currentWorkflowStage?: string | null;
-  status: string;
-  disbursedAt: string | null;
-  submittedAt?: string | null;
-  createdAt?: string | null;
   purpose: string | null;
-  notes: string | null;
+  status: string;
+  autoApproved: boolean;
+  initiatedBy: string | null;
+  initiatedAt: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectedBy: string | null;
+  rejectedAt: string | null;
+  decisionReason: string | null;
+}
+
+export interface CreateFxInventoryDisbursementPayload {
+  agentId: string;
+  amount: number;
+  currency: string;
+  purpose?: string;
 }
 
 export interface AdminNotificationItem {
@@ -2631,6 +2638,12 @@ export const adminApi = {
       apiClient.get<ApiResponse<FxInventoryDisbursementListItem[]>>(
         API_ENDPOINTS.admin.fxInventory.disbursements,
         { params }
+      ),
+
+    createDisbursement: (body: CreateFxInventoryDisbursementPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.disbursements,
+        body
       ),
   },
 

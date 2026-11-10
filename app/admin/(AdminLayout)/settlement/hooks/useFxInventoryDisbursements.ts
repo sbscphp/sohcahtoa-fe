@@ -106,25 +106,21 @@ function statusLabel(status: string): string {
 }
 
 function workflowStageLabel(raw: Record<string, unknown>): string {
-  const direct = firstString(raw, ["workflowStage", "workflowStageName"]);
-  if (direct) return direct;
+  if (raw.autoApproved === true) return "Auto Approved";
 
-  const current = raw.currentWorkflowStage;
-  if (typeof current === "string" && current.trim()) return current.trim();
-  if (current && typeof current === "object") {
-    const record = current as Record<string, unknown>;
-    const nested = firstString(record, ["name", "label", "stage"]);
-    if (nested) return nested;
-  }
-
+  const status = asString(raw.status).trim().toUpperCase();
+  if (status === "PENDING_APPROVAL") return "Pending Approval";
+  if (status === "APPROVED") return "Approved";
+  if (status === "REJECTED") return "Rejected";
+  if (status === "COMPLETED") return "Completed";
   return "--";
 }
 
 function parseDisbursement(raw: Record<string, unknown>): FxInventoryDisbursementRow {
   const currency = asString(raw.currency, "NGN");
-  const amount = toAmount(raw.amount) ?? toAmount(raw.disbursedAmount);
+  const amount = toAmount(raw.amount);
   const { date, time } = formatDateTime(
-    firstString(raw, ["disbursedAt", "submittedAt", "createdAt"])
+    firstString(raw, ["initiatedAt", "approvedAt", "rejectedAt"])
   );
 
   return {

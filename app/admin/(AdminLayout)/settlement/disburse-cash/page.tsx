@@ -6,16 +6,22 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { NumberInput, Select, Textarea } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
+import CurrencySelector from "@/app/admin/_components/CurrencySelector";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import type { Currency } from "@/app/admin/_lib/constants";
+import { getCurrencySymbol } from "@/app/admin/_lib/currency";
+import { adminApi } from "@/app/admin/_services/admin-api";
+import { useAgentsAll } from "@/app/admin/(AdminLayout)/outlet/hooks/useAgentsAll";
 import { adminRoutes } from "@/lib/adminRoutes";
-import { DISBURSE_CASH_AGENTS } from "../_data/fxInventoryMock";
 
-const CURRENCIES = [
-  { value: "NGN", label: "NGN" },
-  { value: "USD", label: "USD" },
-];
+type CurrencyCode = Currency["code"];
 
 const disburseCashSchema = z.object({
   agent: z.string().min(1, "Agent is required"),
@@ -28,12 +34,19 @@ type DisburseCashFormValues = z.infer<typeof disburseCashSchema>;
 
 export default function DisburseCashPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const {
+    agentOptions,
+    isLoading: isAgentsLoading,
+    isError: isAgentsError,
+  } = useAgentsAll();
 
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<DisburseCashFormValues>({
     resolver: zodResolver(disburseCashSchema),
@@ -44,11 +57,41 @@ export default function DisburseCashPage() {
     },
   });
 
+  const createDisbursement = useCreateData(adminApi.fxInventory.createDisbursement, {
+    onSuccess: () => {
+      setConfirmOpen(false);
+      setSuccessOpen(true);
+      void queryClient.invalidateQueries({ queryKey: [...adminKeys.fxInventory.all] });
+    },
+    onError: (error) => {
+      const apiResponse = (error as unknown as ApiError).data as ApiResponse | undefined;
+      notifications.show({
+        title: "Disbursement Failed",
+        message:
+          apiResponse?.error?.message ??
+          error.message ??
+          "Unable to create this disbursement. Please try again.",
+        color: "red",
+      });
+    },
+  });
+
   const currency = useWatch({ control, name: "currency" });
-  const amountPrefix = currency === "USD" ? "$ " : "₦ ";
+  const amountPrefix = `${getCurrencySymbol(currency || "NGN")} `;
 
   const returnToInventory = () => {
     router.push(adminRoutes.adminSettlementFxInventory());
+  };
+
+  const handleConfirm = () => {
+    const values = getValues();
+    const purpose = values.purpose?.trim();
+    createDisbursement.mutate({
+      agentId: values.agent,
+      amount: values.amount,
+      currency: values.currency,
+      ...(purpose ? { purpose } : {}),
+    });
   };
 
   return (
@@ -73,18 +116,28 @@ export default function DisburseCashPage() {
                 label="Agent"
                 withAsterisk
                 placeholder="Select agent"
-                data={DISBURSE_CASH_AGENTS}
+                data={agentOptions}
                 value={field.value}
                 onChange={(value) => field.onChange(value ?? "")}
-                error={errors.agent?.message}
+                error={
+                  isAgentsError
+                    ? "Unable to load agents. Please try again later."
+                    : errors.agent?.message
+                }
                 radius="md"
+                searchable
+                disabled={isAgentsLoading || isAgentsError || agentOptions.length === 0}
               />
             )}
           />
 
           <div>
             <p className="mb-1 text-sm font-medium text-gray-900">Amount</p>
-            <div className="flex items-start gap-2">
+            <div
+              className={`flex items-center gap-2 rounded-md border bg-white px-3 py-1 focus-within:border-primary-400 ${
+                errors.amount ? "border-red-500" : "border-gray-200"
+              }`}
+            >
               <Controller
                 name="amount"
                 control={control}
@@ -98,8 +151,15 @@ export default function DisburseCashPage() {
                     hideControls
                     value={field.value}
                     onChange={(value) => field.onChange(typeof value === "number" ? value : undefined)}
-                    error={errors.amount?.message}
-                    radius="md"
+                    styles={{
+                      input: {
+                        background: "transparent",
+                        border: "none",
+                        boxShadow: "none",
+                        padding: 0,
+                        height: "fit-content",
+                      },
+                    }}
                   />
                 )}
               />
@@ -107,18 +167,18 @@ export default function DisburseCashPage() {
                 name="currency"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    data={CURRENCIES}
-                    value={field.value}
-                    onChange={(value) => field.onChange(value ?? "NGN")}
-                    w={110}
-                    radius="md"
-                    allowDeselect={false}
-                    aria-label="Currency"
-                  />
+                  <div className="shrink-0">
+                    <CurrencySelector
+                      value={field.value as CurrencyCode}
+                      onChange={field.onChange}
+                    />
+                  </div>
                 )}
               />
             </div>
+            {errors.amount?.message ? (
+              <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>
+            ) : null}
           </div>
 
           <Controller
@@ -154,10 +214,8 @@ export default function DisburseCashPage() {
         message="Are you sure you want to send this money to the selected agent? This disbursement will go through approval before agent can be funded."
         primaryButtonText="Yes, Continue"
         secondaryButtonText="No, Close"
-        onPrimary={() => {
-          setConfirmOpen(false);
-          setSuccessOpen(true);
-        }}
+        loading={createDisbursement.isPending}
+        onPrimary={handleConfirm}
         onSecondary={() => setConfirmOpen(false)}
       />
 
