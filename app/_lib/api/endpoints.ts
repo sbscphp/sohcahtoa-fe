@@ -308,6 +308,8 @@ export const API_ENDPOINTS = {
         `/api/admin/fx-inventory/disbursements/${id}/approve`,
       rejectDisbursement: (id: string) =>
         `/api/admin/fx-inventory/disbursements/${id}/reject`,
+      agents: "/api/admin/fx-inventory/agents",
+      agentsExport: "/api/admin/fx-inventory/agents/export",
     },
     regulatory: {
       compliance: {

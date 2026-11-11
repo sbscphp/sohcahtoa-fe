@@ -1360,6 +1360,27 @@ export interface FxInventoryStats {
   lodgmentsByStatus: Record<string, number>;
 }
 
+export type FxInventoryAgentsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export interface FxInventoryAgentListItem {
+  agentId: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  branchId: string;
+  branchName: string;
+  totalDisbursements: number;
+  totalLodgments: number;
+}
+
 export type FxInventoryLodgmentStatus =
   | "PENDING_VERIFICATION"
   | "CONFIRMED"
@@ -2768,6 +2789,25 @@ export const adminApi = {
         API_ENDPOINTS.admin.fxInventory.rejectDisbursement(id),
         body
       ),
+
+    listAgents: (params?: FxInventoryAgentsListParams) =>
+      apiClient.get<ApiResponse<FxInventoryAgentListItem[]>>(
+        API_ENDPOINTS.admin.fxInventory.agents,
+        { params }
+      ),
+
+    exportAgents: async (params?: FxInventoryAgentsListParams) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.fxInventory.agentsExport,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
   },
 
   // ==================== Regulatory ====================

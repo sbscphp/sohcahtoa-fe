@@ -467,6 +467,11 @@ export const adminKeys = {
     }) => [...adminKeys.fxInventory.all, "disbursements", params] as const,
     disbursement: (id: string) =>
       [...adminKeys.fxInventory.all, "disbursement", id] as const,
+    agents: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }) => [...adminKeys.fxInventory.all, "agents", params] as const,
   },
 
   regulatory: {
