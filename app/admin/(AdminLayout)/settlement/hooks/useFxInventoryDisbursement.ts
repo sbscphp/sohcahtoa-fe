@@ -156,8 +156,8 @@ function pickAssigneeId(assignee: UnknownRecord): string | null {
 
 function stageDecision(action: string): "approved" | "rejected" | null {
   const normalized = action.trim().toUpperCase();
-  if (normalized.endsWith("STAGE_APPROVED")) return "approved";
-  if (normalized.endsWith("STAGE_REJECTED")) return "rejected";
+  if (normalized.endsWith("APPROVED")) return "approved";
+  if (normalized.endsWith("REJECTED")) return "rejected";
   return null;
 }
 
