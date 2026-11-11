@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Button, Group, Select, Text } from "@mantine/core";
+import { Button, Group, Select, Skeleton, Text } from "@mantine/core";
 import { ChevronDown, Clock, Coins, ListFilter, Scale, Upload } from "lucide-react";
 import CurrencySelector from "@/app/admin/_components/CurrencySelector";
 import StatCard from "@/app/admin/_components/StatCard";
 import { CURRENCIES } from "@/app/admin/_lib/constants";
 import { getCurrencyFlagUrl } from "@/app/admin/_lib/currency";
+import { formatCurrency } from "@/app/utils/helper/formatCurrency";
 import type { AmountCell } from "../../_data/agentFxInventoryMock";
+import { useFxInventoryAgentOverview } from "../../hooks/useFxInventoryAgentOverview";
 
 const PAGE_SIZE = 6;
 
@@ -98,38 +100,71 @@ function PeriodControls() {
   );
 }
 
-export function InventoryOverview() {
+function isCurrencyCode(value?: string): value is CurrencyCode {
+  return CURRENCIES.some((currency) => currency.code === value);
+}
+
+function moneyLabel(amount: number | null | undefined, currency: string, isError: boolean) {
+  if (isError || amount === null || amount === undefined) return "—";
+  return formatCurrency(amount, currency) || "—";
+}
+
+function pendingLabel(count: number | null | undefined, isError: boolean) {
+  if (isError || count === null || count === undefined) return "—";
+  return `${count} ${count === 1 ? "Transaction" : "Transactions"}`;
+}
+
+export function InventoryOverview({ agentId }: { agentId: string }) {
+  const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId);
+  const currency = isCurrencyCode(overview?.currency) ? overview.currency : "USD";
+
   return (
     <section className="rounded-xl bg-white p-5">
       <Group justify="space-between" align="center" wrap="wrap" mb="md">
         <h2 className="text-base font-semibold">Inventory Overview</h2>
-        <PeriodControls />
+        <Group gap="sm">
+          <CurrencySelector readOnly mode="secondary" value={currency} />
+          <Button variant="default" radius="xl" rightSection={<ChevronDown size={14} />}>
+            Date: Today
+          </Button>
+        </Group>
       </Group>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Available FX Inventory"
-          value="$20,000"
-          icon={<Coins className="h-5 w-5 text-primary-400" />}
-          iconBg="bg-primary-00"
-        />
-        <StatCard
-          title="NGN Cash Available"
-          value="₦5,135,000"
-          icon={<Coins className="h-5 w-5 text-primary-300" />}
-          iconBg="bg-primary-00"
-        />
-        <StatCard
-          title="Pending Settlements"
-          value="3 Transactions"
-          icon={<Clock className="h-5 w-5 text-yellow-600" />}
-          iconBg="bg-yellow-100"
-        />
-        <StatCard
-          title="Cash Lodgement"
-          value="₦5,135,000"
-          icon={<Scale className="h-5 w-5 text-blue-600" />}
-          iconBg="bg-blue-100"
-        />
+        {isLoading ? (
+          <>
+            <Skeleton height={72} radius="md" />
+            <Skeleton height={72} radius="md" />
+            <Skeleton height={72} radius="md" />
+            <Skeleton height={72} radius="md" />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Available FX Inventory"
+              value={moneyLabel(overview?.availableFxInventory, currency, isError)}
+              icon={<Coins className="h-5 w-5 text-primary-400" />}
+              iconBg="bg-primary-00"
+            />
+            <StatCard
+              title="NGN Cash Available"
+              value={moneyLabel(overview?.ngnCashAvailable, "NGN", isError)}
+              icon={<Coins className="h-5 w-5 text-primary-300" />}
+              iconBg="bg-primary-00"
+            />
+            <StatCard
+              title="Pending Settlements"
+              value={pendingLabel(overview?.pendingSettlements, isError)}
+              icon={<Clock className="h-5 w-5 text-yellow-600" />}
+              iconBg="bg-yellow-100"
+            />
+            <StatCard
+              title="Cash Lodgement"
+              value={moneyLabel(overview?.cashLodgement, "NGN", isError)}
+              icon={<Scale className="h-5 w-5 text-blue-600" />}
+              iconBg="bg-blue-100"
+            />
+          </>
+        )}
       </div>
     </section>
   );

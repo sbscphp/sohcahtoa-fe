@@ -472,6 +472,8 @@ export const adminKeys = {
       limit?: number;
       search?: string;
     }) => [...adminKeys.fxInventory.all, "agents", params] as const,
+    agentOverview: (agentId: string) =>
+      [...adminKeys.fxInventory.all, "agent-overview", agentId] as const,
   },
 
   regulatory: {

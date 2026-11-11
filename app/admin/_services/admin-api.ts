@@ -1369,6 +1369,20 @@ export type FxInventoryAgentsListParams = Record<
   search?: string;
 };
 
+export interface FxInventoryAgentOverview {
+  agentId: string;
+  agentName: string;
+  currency: string;
+  period: {
+    from: string;
+    to: string;
+  };
+  availableFxInventory: number;
+  ngnCashAvailable: number;
+  pendingSettlements: number;
+  cashLodgement: number;
+}
+
 export interface FxInventoryAgentListItem {
   agentId: string;
   name: string;
@@ -2808,6 +2822,11 @@ export const adminApi = {
 
       return new Blob([response], { type: "text/csv;charset=utf-8;" });
     },
+
+    getAgentOverview: (agentId: string) =>
+      apiClient.get<ApiResponse<FxInventoryAgentOverview>>(
+        API_ENDPOINTS.admin.fxInventory.agentOverview(agentId)
+      ),
   },
 
   // ==================== Regulatory ====================

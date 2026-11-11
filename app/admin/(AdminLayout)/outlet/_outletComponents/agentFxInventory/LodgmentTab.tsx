@@ -32,7 +32,7 @@ const LODGMENT_HEADERS = [
   { label: "Action", key: "action" },
 ];
 
-export default function LodgmentTab() {
+export default function LodgmentTab({ agentId }: { agentId: string }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -91,7 +91,7 @@ export default function LodgmentTab() {
 
   return (
     <div className="space-y-4">
-      <InventoryOverview />
+      <InventoryOverview agentId={agentId} />
       <section className="rounded-lg bg-white p-5">
         <Group justify="space-between" wrap="wrap" mb="md">
           <div className="flex items-center gap-4">

@@ -15,9 +15,9 @@ export default function AgentFxInventoryDetail({
   agentId: string;
   tab: DetailTab;
 }) {
-  if (tab === "inventory-position") return <InventoryPositionTab />;
+  if (tab === "inventory-position") return <InventoryPositionTab agentId={agentId} />;
   if (tab === "transactions") return <TransactionsTab agentId={agentId} />;
-  if (tab === "disbursement") return <DisbursementTab />;
-  if (tab === "lodgment") return <LodgmentTab />;
+  if (tab === "disbursement") return <DisbursementTab agentId={agentId} />;
+  if (tab === "lodgment") return <LodgmentTab agentId={agentId} />;
   return <OverviewTab agentId={agentId} />;
 }

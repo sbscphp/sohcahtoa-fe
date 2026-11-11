@@ -110,7 +110,7 @@ export default function CurrencySelector({
           {!readOnly && <ChevronDown className="size-3 shrink-0" aria-hidden />}
         </button>
       </Menu.Target>
-      <Menu.Dropdown className="max-h-[250px] overflow-y-auto">
+      <Menu.Dropdown className="max-h-62.5 overflow-y-auto">
         {currencies.map((currency) => (
           <Menu.Item
             key={currency.code}

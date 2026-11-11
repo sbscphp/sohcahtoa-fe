@@ -38,7 +38,7 @@ type PositionViewRow =
   | { kind: "currency"; row: InventoryPositionRow }
   | { kind: "total" };
 
-export default function InventoryPositionTab() {
+export default function InventoryPositionTab({ agentId }: { agentId: string }) {
   const [filter, setFilter] = useState<string | null>(null);
 
   const currencyRows = useMemo(
@@ -126,7 +126,7 @@ export default function InventoryPositionTab() {
 
   return (
     <div className="space-y-4">
-      <InventoryOverview />
+      <InventoryOverview agentId={agentId} />
       <section className="rounded-lg bg-white p-5">
         <Group justify="space-between" align="flex-start" wrap="wrap" mb="md">
           <div>
