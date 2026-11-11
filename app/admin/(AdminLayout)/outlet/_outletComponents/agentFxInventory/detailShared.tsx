@@ -90,7 +90,7 @@ function PeriodControls() {
 
   return (
     <Group gap="sm">
-      <CurrencySelector mode="secondary" value={currency} onChange={setCurrency} />
+      <CurrencySelector readOnly={true} mode="secondary" value={currency} onChange={setCurrency} />
       <Button variant="default" radius="xl" rightSection={<ChevronDown size={14} />}>
         Date: Today
       </Button>

@@ -1,6 +1,5 @@
 "use client";
 
-import type { AgentFxInventoryDetail as AgentFxDetail } from "../_data/agentFxInventoryMock";
 import DisbursementTab from "./agentFxInventory/DisbursementTab";
 import InventoryPositionTab from "./agentFxInventory/InventoryPositionTab";
 import LodgmentTab from "./agentFxInventory/LodgmentTab";
@@ -10,15 +9,15 @@ import TransactionsTab from "./agentFxInventory/TransactionsTab";
 type DetailTab = "overview" | "inventory-position" | "transactions" | "disbursement" | "lodgment";
 
 export default function AgentFxInventoryDetail({
-  detail,
+  agentId,
   tab,
 }: {
-  detail: AgentFxDetail;
+  agentId: string;
   tab: DetailTab;
 }) {
   if (tab === "inventory-position") return <InventoryPositionTab />;
-  if (tab === "transactions") return <TransactionsTab />;
+  if (tab === "transactions") return <TransactionsTab agentId={agentId} />;
   if (tab === "disbursement") return <DisbursementTab />;
   if (tab === "lodgment") return <LodgmentTab />;
-  return <OverviewTab detail={detail} />;
+  return <OverviewTab agentId={agentId} />;
 }

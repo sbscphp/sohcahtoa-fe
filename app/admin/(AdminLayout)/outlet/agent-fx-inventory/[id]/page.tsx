@@ -4,8 +4,9 @@ import { useCallback, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import EmptySection from "@/app/admin/_components/EmptySection";
 import { HeaderTabs } from "@/app/admin/_components/HeaderTabs";
+import LoadingState from "@/app/admin/_components/LoadingState";
 import { useSetHeaderContent } from "@/app/admin/_hooks/useSetHeaderContent";
-import { getAgentFxInventoryDetail } from "../../_data/agentFxInventoryMock";
+import { useAgentDetails } from "../../../agent/hooks/useAgentDetails";
 import AgentFxInventoryDetail from "../../_outletComponents/AgentFxInventoryDetail";
 
 const DETAIL_TABS = [
@@ -27,25 +28,10 @@ function resolveTab(param: string | null): DetailTabId {
 
 export default function AgentFxInventoryDetailPage() {
   const params = useParams<{ id: string }>();
-  const detail = getAgentFxInventoryDetail(params?.id ?? "");
-
-  if (!detail) {
-    return (
-      <EmptySection
-        format="secondary"
-        title="Agent not found"
-        description="This agent is not in the current FX inventory list."
-      />
-    );
-  }
-
-  return <AgentFxInventoryDetailScreen key={detail.id} detailId={detail.id} />;
-}
-
-function AgentFxInventoryDetailScreen({ detailId }: { detailId: string }) {
+  const agentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const detail = getAgentFxInventoryDetail(detailId);
+  const { agent, isLoading, isNotFound } = useAgentDetails(agentId);
   const activeTab = resolveTab(searchParams.get("tab"));
 
   const handleTabChange = useCallback(
@@ -70,9 +56,22 @@ function AgentFxInventoryDetailScreen({ detailId }: { detailId: string }) {
 
   useSetHeaderContent(headerContent);
 
-  if (!detail) return null;
+  if (isLoading) {
+    return <LoadingState />;
+  }
 
-  return <div className="mt-5">
-    <AgentFxInventoryDetail detail={detail} tab={activeTab} />
-  </div>;
+  if (!agentId || !agent || isNotFound) {
+    return (
+      <EmptySection
+        title="Agent Not Found"
+        description="The requested agent could not be found or may have been removed."
+      />
+    );
+  }
+
+  return (
+    <div className="mt-5">
+      <AgentFxInventoryDetail agentId={agentId} tab={activeTab} />
+    </div>
+  );
 }
