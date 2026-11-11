@@ -451,6 +451,7 @@ export const adminKeys = {
 
   fxInventory: {
     all: ["admin", "fx-inventory"] as const,
+    stats: () => [...adminKeys.fxInventory.all, "stats"] as const,
     lodgments: (params?: {
       page?: number;
       limit?: number;

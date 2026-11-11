@@ -296,6 +296,7 @@ export const API_ENDPOINTS = {
       fundingTransactions: "/api/admin/settlement",
     },
     fxInventory: {
+      stats: "/api/admin/fx-inventory/stats",
       lodgments: "/api/admin/fx-inventory/lodgments",
       lodgmentById: (id: string) => `/api/admin/fx-inventory/lodgments/${id}`,
       confirmLodgment: (id: string) => `/api/admin/fx-inventory/lodgments/${id}/confirm`,

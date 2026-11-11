@@ -1351,6 +1351,15 @@ export interface SettlementDashboardStats {
   totalEscrowAccounts: number;
 }
 
+export interface FxInventoryStats {
+  totalDisbursements: number;
+  totalLodgments: number;
+  pendingApprovals: number;
+  approvedDisbursements: number;
+  disbursementsByStatus: Record<string, number>;
+  lodgmentsByStatus: Record<string, number>;
+}
+
 export type FxInventoryLodgmentStatus =
   | "PENDING_VERIFICATION"
   | "CONFIRMED"
@@ -2703,6 +2712,11 @@ export const adminApi = {
 
   // ==================== FX Inventory ====================
   fxInventory: {
+    getStats: () =>
+      apiClient.get<ApiResponse<FxInventoryStats>>(
+        API_ENDPOINTS.admin.fxInventory.stats
+      ),
+
     listLodgments: (params?: FxInventoryLodgmentsListParams) =>
       apiClient.get<ApiResponse<FxInventoryLodgmentListItem[]>>(
         API_ENDPOINTS.admin.fxInventory.lodgments,
