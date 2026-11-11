@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { useParams } from "next/navigation";
+import { notifications } from "@mantine/notifications";
+import { useQueryClient } from "@tanstack/react-query";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 import EmptySection from "@/app/admin/_components/EmptySection";
+import LoadingState from "@/app/admin/_components/LoadingState";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import {
-  formatLodgmentAmount,
-  getLodgmentDetail,
-  lodgmentVarianceLabel,
-  type LodgmentStatus,
-} from "../../_data/fxInventoryMock";
+  adminApi,
+  type ConfirmFxInventoryLodgmentPayload,
+  type RejectFxInventoryLodgmentPayload,
+} from "@/app/admin/_services/admin-api";
 import LodgmentTakeAction from "../../_components/LodgmentTakeAction";
+import { useFxInventoryLodgment } from "../../hooks/useFxInventoryLodgment";
 
 const CONFIRMED_GREEN = "#027A48";
 
@@ -23,21 +28,59 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function confirmationStamp(date: Date) {
-  const dateLabel = date
-    .toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    .replace(", ", " ");
-  const timeLabel = date
-    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
-    .toLowerCase();
-  return { dateLabel, timeLabel };
+function actionErrorMessage(error: Error) {
+  const apiResponse = (error as unknown as ApiError).data as ApiResponse | undefined;
+  return (
+    apiResponse?.error?.message ??
+    error.message ??
+    "Unable to update this lodgment. Please try again."
+  );
 }
 
 export default function ViewLodgmentPage() {
   const params = useParams<{ id: string }>();
-  const detail = getLodgmentDetail(params.id);
+  const id = params.id;
+  const queryClient = useQueryClient();
+  const { detail, isLoading, isError } = useFxInventoryLodgment(id);
 
-  if (!detail) {
+  const refreshLodgment = () => {
+    void queryClient.invalidateQueries({
+      queryKey: [...adminKeys.fxInventory.lodgment(id)],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: [...adminKeys.fxInventory.all],
+    });
+  };
+
+  const notifyError = (error: Error) => {
+    notifications.show({
+      title: "Lodgment update failed",
+      message: actionErrorMessage(error),
+      color: "red",
+    });
+  };
+
+  const confirmLodgment = useCreateData(
+    (body: ConfirmFxInventoryLodgmentPayload) => adminApi.fxInventory.confirmLodgment(id, body),
+    {
+      onSuccess: refreshLodgment,
+      onError: notifyError,
+    }
+  );
+
+  const rejectLodgment = useCreateData(
+    (body: RejectFxInventoryLodgmentPayload) => adminApi.fxInventory.rejectLodgment(id, body),
+    {
+      onSuccess: refreshLodgment,
+      onError: notifyError,
+    }
+  );
+
+  if (isLoading) {
+    return <LoadingState />;
+  }
+
+  if (isError || !detail) {
     return (
       <EmptySection
         format="secondary"
@@ -47,37 +90,7 @@ export default function ViewLodgmentPage() {
     );
   }
 
-  return <LodgmentDetails key={detail.id} detail={detail} />;
-}
-
-function LodgmentDetails({
-  detail,
-}: {
-  detail: NonNullable<ReturnType<typeof getLodgmentDetail>>;
-}) {
-  const [status, setStatus] = useState<LodgmentStatus>(detail.status);
-  const [updatedAmount, setUpdatedAmount] = useState<number | null>(detail.updatedAmount);
-  const [updatedBy, setUpdatedBy] = useState(detail.updatedBy);
-  const [dateConfirmed, setDateConfirmed] = useState(detail.dateConfirmed);
-  const [timeConfirmed, setTimeConfirmed] = useState(detail.timeConfirmed);
-
-  const updatedAmountLabel =
-    updatedAmount === null
-      ? "-"
-      : formatLodgmentAmount(updatedAmount, detail.currency);
-  const varianceLabel = lodgmentVarianceLabel(
-    detail.returnedAmount,
-    updatedAmount,
-    detail.currency
-  );
-
-  const markConfirmed = () => {
-    const stamp = confirmationStamp(new Date());
-    setStatus("Confirmed");
-    setUpdatedBy("Victoria Paschal");
-    setDateConfirmed(stamp.dateLabel);
-    setTimeConfirmed(stamp.timeLabel);
-  };
+  const confirmAmount = detail.confirmedAmount ?? detail.statedAmount;
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm">
@@ -90,20 +103,39 @@ function LodgmentDetails({
             <span>
               {detail.recordedDate} | {detail.recordedTime}
             </span>
-            <StatusBadge status={status} color={status === "Confirmed" ? CONFIRMED_GREEN : undefined} />
+            <StatusBadge
+              status={detail.status}
+              color={detail.status === "Confirmed" ? CONFIRMED_GREEN : undefined}
+            />
           </div>
         </div>
-        {status === "Pending" ? (
-          <LodgmentTakeAction
-            agentName={detail.agentName}
-            currency={detail.currency}
-            returnedAmount={detail.returnedAmount}
-            updatedAmount={updatedAmount}
-            onSaveAmount={setUpdatedAmount}
-            onConfirm={markConfirmed}
-            onReject={() => setStatus("Rejected")}
-          />
-        ) : null}
+        <LodgmentTakeAction
+          canAct={detail.rawStatus === "PENDING_VERIFICATION"}
+          agentName={detail.agentName}
+          currency={detail.currency}
+          returnedAmount={detail.statedAmount ?? 0}
+          updatedAmount={detail.confirmedAmount}
+          onSaveAmount={async (amount) => {
+            await confirmLodgment.mutateAsync({ confirmedAmount: amount, reason: "" });
+          }}
+          onConfirm={async () => {
+            if (confirmAmount == null) {
+              notifications.show({
+                title: "Lodgment update failed",
+                message: "Amount is required",
+                color: "red",
+              });
+              throw new Error("Amount is required");
+            }
+            await confirmLodgment.mutateAsync({
+              confirmedAmount: confirmAmount,
+              reason: "",
+            });
+          }}
+          onReject={async () => {
+            await rejectLodgment.mutateAsync({ reason: "" });
+          }}
+        />
       </div>
 
       <section className="py-6">
@@ -115,12 +147,12 @@ function LodgmentDetails({
           <DetailField label="Time Lodged" value={detail.recordedTime} />
           <DetailField label="Currency Type" value={detail.currency} />
           <DetailField label="Returned Amount" value={detail.returnedAmountLabel} />
-          <DetailField label="Updated Amount" value={updatedAmountLabel} />
-          <DetailField label="Variance" value={varianceLabel} />
-          <DetailField label="Status" value={status} />
-          <DetailField label="Updated By" value={updatedBy} />
-          <DetailField label="Date Confirmed" value={dateConfirmed} />
-          <DetailField label="Time Confirmed" value={timeConfirmed} />
+          <DetailField label="Updated Amount" value={detail.updatedAmountLabel} />
+          <DetailField label="Variance" value={detail.varianceLabel} />
+          <DetailField label="Status" value={detail.status} />
+          <DetailField label="Updated By" value={detail.updatedBy} />
+          <DetailField label="Date Confirmed" value={detail.dateConfirmed} />
+          <DetailField label="Time Confirmed" value={detail.timeConfirmed} />
         </div>
       </section>
     </div>

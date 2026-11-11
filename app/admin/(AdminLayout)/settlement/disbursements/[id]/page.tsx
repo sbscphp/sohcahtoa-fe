@@ -2,11 +2,24 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useAtomValue } from "jotai";
+import { notifications } from "@mantine/notifications";
+import { useQueryClient } from "@tanstack/react-query";
+import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
+import { useCreateData } from "@/app/_lib/api/hooks";
+import { adminKeys } from "@/app/_lib/api/query-keys";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import EmptySection from "@/app/admin/_components/EmptySection";
+import LoadingState from "@/app/admin/_components/LoadingState";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
-import { getDisbursementDetail } from "../../_data/fxInventoryMock";
+import { adminUserAtom } from "@/app/admin/_lib/atoms/admin-auth-atom";
+import {
+  adminApi,
+  type ApproveFxInventoryDisbursementPayload,
+  type RejectFxInventoryDisbursementPayload,
+} from "@/app/admin/_services/admin-api";
 import DisbursementTakeActionDrawer from "../../_components/DisbursementTakeActionDrawer";
+import { useFxInventoryDisbursement } from "../../hooks/useFxInventoryDisbursement";
 
 const CONFIRMED_GREEN = "#027A48";
 
@@ -19,12 +32,65 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
+function actionErrorMessage(error: Error) {
+  const apiResponse = (error as unknown as ApiError).data as ApiResponse | undefined;
+  return (
+    apiResponse?.error?.message ??
+    error.message ??
+    "Unable to update this disbursement. Please try again."
+  );
+}
+
 export default function ViewDisbursementPage() {
   const params = useParams<{ id: string }>();
-  const detail = getDisbursementDetail(params.id);
+  const id = params.id;
+  const queryClient = useQueryClient();
+  const adminUser = useAtomValue(adminUserAtom);
   const [takeActionOpen, setTakeActionOpen] = useState(false);
+  const { detail, isLoading, isError } = useFxInventoryDisbursement(id, {
+    adminUserId: adminUser?.id,
+  });
 
-  if (!detail) {
+  const refreshDisbursement = () => {
+    void queryClient.invalidateQueries({
+      queryKey: [...adminKeys.fxInventory.disbursement(id)],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: [...adminKeys.fxInventory.all],
+    });
+  };
+
+  const notifyError = (error: Error) => {
+    notifications.show({
+      title: "Disbursement update failed",
+      message: actionErrorMessage(error),
+      color: "red",
+    });
+  };
+
+  const approveDisbursement = useCreateData(
+    (body: ApproveFxInventoryDisbursementPayload) =>
+      adminApi.fxInventory.approveDisbursement(id, body),
+    {
+      onSuccess: refreshDisbursement,
+      onError: notifyError,
+    }
+  );
+
+  const rejectDisbursement = useCreateData(
+    (body: RejectFxInventoryDisbursementPayload) =>
+      adminApi.fxInventory.rejectDisbursement(id, body),
+    {
+      onSuccess: refreshDisbursement,
+      onError: notifyError,
+    }
+  );
+
+  if (isLoading) {
+    return <LoadingState />;
+  }
+
+  if (isError || !detail) {
     return (
       <EmptySection
         format="secondary"
@@ -43,11 +109,11 @@ export default function ViewDisbursementPage() {
           </h2>
           <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
             <span>
-              {detail.recordedDate} | {detail.recordedTime}
+              {detail.requestedDate} | {detail.requestedTime}
             </span>
             <StatusBadge
-              status={detail.status}
-              color={detail.status === "Approved" ? CONFIRMED_GREEN : undefined}
+              status={detail.statusLabel}
+              color={detail.statusLabel === "Approved" ? CONFIRMED_GREEN : undefined}
             />
           </div>
         </div>
@@ -61,13 +127,13 @@ export default function ViewDisbursementPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <DetailField label="Agent Name" value={detail.agentName} />
           <DetailField label="Agent ID" value={detail.agentId} />
-          <DetailField label="Date Requested" value={detail.dateRequested} />
-          <DetailField label="Time Requested" value={detail.timeRequested} />
+          <DetailField label="Date Requested" value={detail.requestedDate} />
+          <DetailField label="Time Requested" value={detail.requestedTime} />
           <DetailField label="Currency Type" value={detail.currency} />
-          <DetailField label="Requested Amount" value={detail.requestedAmount} />
+          <DetailField label="Requested Amount" value={detail.amountLabel} />
           <DetailField label="Requestor" value={detail.requestor} />
           <DetailField label="Workflow Stage" value={detail.workflowStageLabel} />
-          <DetailField label="Request Status" value={detail.requestStatus} />
+          <DetailField label="Request Status" value={detail.statusLabel} />
           <DetailField label="Purpose" value={detail.purpose} />
         </div>
       </section>
@@ -77,17 +143,27 @@ export default function ViewDisbursementPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <DetailField
             label={`Current Inventory Value (${detail.currency})`}
-            value={detail.inventoryValue}
+            value={detail.inventoryValueLabel}
           />
-          <DetailField label="Amount After Disbursement" value={detail.amountAfterDisbursement} />
+          <DetailField label="Amount After Disbursement" value={detail.amountAfterLabel} />
         </div>
       </section>
 
       <DisbursementTakeActionDrawer
-        key={detail.id}
         opened={takeActionOpen}
         onClose={() => setTakeActionOpen(false)}
-        status={detail.status}
+        processName={detail.processName}
+        statusLabel={detail.statusLabel}
+        approvalState={detail.approvalState}
+        stages={detail.stages}
+        activities={detail.activities}
+        canAct={detail.canAct}
+        onApprove={async (reason) => {
+          await approveDisbursement.mutateAsync({ reason });
+        }}
+        onReject={async (reason) => {
+          await rejectDisbursement.mutateAsync({ reason });
+        }}
       />
     </div>
   );

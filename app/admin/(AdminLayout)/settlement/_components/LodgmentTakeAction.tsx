@@ -7,19 +7,20 @@ import { X } from "lucide-react";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
+import { getCurrencySymbol } from "@/app/admin/_lib/currency";
 import { adminRoutes } from "@/lib/adminRoutes";
-import type { LodgmentCurrency } from "../_data/fxInventoryMock";
 
 type ActionFlow = "confirm" | "reject" | "save" | null;
 
 interface LodgmentTakeActionProps {
   agentName: string;
-  currency: LodgmentCurrency;
+  currency: string;
   returnedAmount: number;
   updatedAmount: number | null;
-  onSaveAmount: (amount: number) => void;
-  onConfirm: () => void;
-  onReject: () => void;
+  canAct?: boolean;
+  onSaveAmount: (amount: number) => Promise<void>;
+  onConfirm: () => Promise<void>;
+  onReject: () => Promise<void>;
 }
 
 export default function LodgmentTakeAction({
@@ -27,6 +28,7 @@ export default function LodgmentTakeAction({
   currency,
   returnedAmount,
   updatedAmount,
+  canAct = true,
   onSaveAmount,
   onConfirm,
   onReject,
@@ -38,9 +40,10 @@ export default function LodgmentTakeAction({
   const [pendingAmount, setPendingAmount] = useState<number | null>(null);
   const [flow, setFlow] = useState<ActionFlow>(null);
   const [successFlow, setSuccessFlow] = useState<ActionFlow>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const currencyOptions = [{ value: currency, label: currency }];
-  const amountPrefix = currency === "NGN" ? "₦ " : "$ ";
+  const amountPrefix = `${getCurrencySymbol(currency)} `;
 
   const openEdit = () => {
     setDraftAmount(updatedAmount ?? 0);
@@ -68,38 +71,48 @@ export default function LodgmentTakeAction({
     setPendingAmount(null);
   };
 
+  const runAction = async (action: () => Promise<void>, success: Exclude<ActionFlow, null>) => {
+    setSubmitting(true);
+    try {
+      await action();
+      setFlow(null);
+      setPendingAmount(null);
+      setSuccessFlow(success);
+    } catch {
+      // The caller shows the error and keeps the confirmation open.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const applySave = () => {
-    if (pendingAmount !== null) onSaveAmount(pendingAmount);
-    setFlow(null);
-    setSuccessFlow("save");
+    if (pendingAmount === null) return;
+    const amount = pendingAmount;
+    void runAction(() => onSaveAmount(amount), "save");
   };
 
-  const finishConfirm = () => {
+  const finishSuccess = () => {
     setSuccessFlow(null);
-    onConfirm();
-  };
-
-  const finishReject = () => {
-    setSuccessFlow(null);
-    onReject();
   };
 
   return (
     <>
-      <Menu position="bottom-end" shadow="md" radius="md" width={180}>
-        <Menu.Target>
-          <Button color="orange" radius="xl">
-            Take Action
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Item onClick={openEdit}>Edit</Menu.Item>
-          <Menu.Divider />
-          <Menu.Item onClick={() => setFlow("confirm")}>Confirm</Menu.Item>
-          <Menu.Divider />
-          <Menu.Item onClick={() => setFlow("reject")}>Reject</Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
+      {canAct ? (
+        <Menu position="bottom-end" shadow="md" radius="md" width={180}>
+          <Menu.Target>
+            <Button color="orange" radius="xl">
+              Take Action
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item onClick={openEdit}>Edit</Menu.Item>
+            <Menu.Divider />
+            <Menu.Item onClick={() => setFlow("confirm")}>Confirm</Menu.Item>
+            <Menu.Divider />
+            <Menu.Item onClick={() => setFlow("reject")}>Reject</Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      ) : null}
 
       <Modal
         opened={editOpen}
@@ -198,9 +211,9 @@ export default function LodgmentTakeAction({
         message="You are about to mark this Cash Lodgment as confirmed. Once confirmed, the cash lodgment will be received."
         primaryButtonText="Yes, Confirm Amount"
         secondaryButtonText="No, Close"
+        loading={submitting && flow === "confirm"}
         onPrimary={() => {
-          setFlow(null);
-          setSuccessFlow("confirm");
+          void runAction(onConfirm, "confirm");
         }}
         onSecondary={closeFlow}
       />
@@ -212,9 +225,9 @@ export default function LodgmentTakeAction({
         message="You are about to reject this cash lodgment. Once rejected, the agent will be notified."
         primaryButtonText="Yes, Reject"
         secondaryButtonText="No, Close"
+        loading={submitting && flow === "reject"}
         onPrimary={() => {
-          setFlow(null);
-          setSuccessFlow("reject");
+          void runAction(onReject, "reject");
         }}
         onSecondary={closeFlow}
       />
@@ -226,28 +239,29 @@ export default function LodgmentTakeAction({
         message="Are you sure, save and update this changes? Kindly note that this new changes would override the existing data."
         primaryButtonText="Yes, Save and Update Changes"
         secondaryButtonText="No, Close"
+        loading={submitting && flow === "save"}
         onPrimary={applySave}
         onSecondary={closeFlow}
       />
 
       <SuccessModal
         opened={successFlow === "confirm"}
-        onClose={finishConfirm}
+        onClose={finishSuccess}
         title="Amount Confirmed"
         message="The cash lodgment has been confirmed"
         primaryButtonText="Close"
         primaryButtonVariant="outline"
-        onPrimaryClick={finishConfirm}
+        onPrimaryClick={finishSuccess}
       />
 
       <SuccessModal
         opened={successFlow === "reject"}
-        onClose={finishReject}
+        onClose={finishSuccess}
         title="Cash Lodgment Rejected"
         message="The cash lodgment has been rejected"
         primaryButtonText="Close"
         primaryButtonVariant="outline"
-        onPrimaryClick={finishReject}
+        onPrimaryClick={finishSuccess}
       />
 
       <SuccessModal

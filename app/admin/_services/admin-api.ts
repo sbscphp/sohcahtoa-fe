@@ -1381,6 +1381,42 @@ export interface FxInventoryLodgmentListItem {
   submittedAt: string;
 }
 
+export interface FxInventoryLodgmentAgent {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface FxInventoryLodgmentDetail {
+  id: string;
+  referenceNumber: string;
+  status: string;
+  agent: FxInventoryLodgmentAgent;
+  branchId: string;
+  currency: string;
+  statedAmount: number;
+  confirmedAmount: number | null;
+  varianceAmount: number | null;
+  notes: string | null;
+  submittedAt: string;
+  confirmedBy: string | null;
+  confirmedByName: string | null;
+  confirmedAt: string | null;
+  rejectedBy: string | null;
+  rejectedByName: string | null;
+  rejectedAt: string | null;
+  decisionReason: string | null;
+}
+
+export interface ConfirmFxInventoryLodgmentPayload {
+  confirmedAmount: number;
+  reason: string;
+}
+
+export interface RejectFxInventoryLodgmentPayload {
+  reason: string;
+}
+
 export type FxInventoryDisbursementStatus =
   | "PENDING_APPROVAL"
   | "APPROVED"
@@ -1422,6 +1458,45 @@ export interface CreateFxInventoryDisbursementPayload {
   amount: number;
   currency: string;
   purpose?: string;
+}
+
+export interface FxInventoryDisbursementWorkflowLineItem {
+  id: string;
+  timestamp: string;
+  adminId?: string | null;
+  adminName?: string | null;
+  adminRole?: string | null;
+  title?: string | null;
+  outcome?: string | null;
+  comment?: string | null;
+  action?: string | null;
+}
+
+export interface FxInventoryDisbursementApprovalDetail {
+  id: string;
+  referenceNumber: string;
+  status: string;
+  agent: FxInventoryLodgmentAgent;
+  currency: string;
+  amount: number;
+  purpose: string | null;
+  requestedAt: string;
+  initiator: {
+    name: string;
+    email: string;
+  } | null;
+  currentInventoryBalance: number | null;
+  balanceAfterDisbursement: number | null;
+  approvalProcess: AdminTransactionApprovalProcess | null;
+  workflowLine: FxInventoryDisbursementWorkflowLineItem[] | null;
+}
+
+export interface ApproveFxInventoryDisbursementPayload {
+  reason: string;
+}
+
+export interface RejectFxInventoryDisbursementPayload {
+  reason: string;
 }
 
 export interface AdminNotificationItem {
@@ -2634,6 +2709,23 @@ export const adminApi = {
         { params }
       ),
 
+    getLodgment: (id: string) =>
+      apiClient.get<ApiResponse<FxInventoryLodgmentDetail>>(
+        API_ENDPOINTS.admin.fxInventory.lodgmentById(id)
+      ),
+
+    confirmLodgment: (id: string, body: ConfirmFxInventoryLodgmentPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.confirmLodgment(id),
+        body
+      ),
+
+    rejectLodgment: (id: string, body: RejectFxInventoryLodgmentPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.rejectLodgment(id),
+        body
+      ),
+
     listDisbursements: (params?: FxInventoryDisbursementsListParams) =>
       apiClient.get<ApiResponse<FxInventoryDisbursementListItem[]>>(
         API_ENDPOINTS.admin.fxInventory.disbursements,
@@ -2643,6 +2735,23 @@ export const adminApi = {
     createDisbursement: (body: CreateFxInventoryDisbursementPayload) =>
       apiClient.post<ApiResponse<unknown>>(
         API_ENDPOINTS.admin.fxInventory.disbursements,
+        body
+      ),
+
+    getDisbursementApproval: (id: string) =>
+      apiClient.get<ApiResponse<FxInventoryDisbursementApprovalDetail>>(
+        API_ENDPOINTS.admin.fxInventory.disbursementApproval(id)
+      ),
+
+    approveDisbursement: (id: string, body: ApproveFxInventoryDisbursementPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.approveDisbursement(id),
+        body
+      ),
+
+    rejectDisbursement: (id: string, body: RejectFxInventoryDisbursementPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.rejectDisbursement(id),
         body
       ),
   },

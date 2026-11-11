@@ -297,7 +297,16 @@ export const API_ENDPOINTS = {
     },
     fxInventory: {
       lodgments: "/api/admin/fx-inventory/lodgments",
+      lodgmentById: (id: string) => `/api/admin/fx-inventory/lodgments/${id}`,
+      confirmLodgment: (id: string) => `/api/admin/fx-inventory/lodgments/${id}/confirm`,
+      rejectLodgment: (id: string) => `/api/admin/fx-inventory/lodgments/${id}/reject`,
       disbursements: "/api/admin/fx-inventory/disbursements",
+      disbursementApproval: (id: string) =>
+        `/api/admin/fx-inventory/disbursements/${id}/approval`,
+      approveDisbursement: (id: string) =>
+        `/api/admin/fx-inventory/disbursements/${id}/approve`,
+      rejectDisbursement: (id: string) =>
+        `/api/admin/fx-inventory/disbursements/${id}/reject`,
     },
     regulatory: {
       compliance: {

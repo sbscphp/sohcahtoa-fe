@@ -1,195 +1,210 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { Avatar, Button, Drawer, Group, Modal, Tabs, Text, Textarea, Title } from "@mantine/core";
+import { Avatar, Button, Drawer, Group, Tabs, Text, Title } from "@mantine/core";
 import Image from "next/image";
 import Connector from "../../../_components/assets/Connector.png";
 import AdminTabButton from "@/app/admin/_components/AdminTabButton";
+import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
-import type { DisbursementStatus } from "../_data/fxInventoryMock";
+import type {
+  DisbursementActivityCard,
+  DisbursementStageCard,
+  DisbursementStageState,
+} from "../hooks/useFxInventoryDisbursement";
 
-type StageKind = "review" | "approval";
-type StageState = "pending" | "completed" | "rejected";
+const STAGE_BADGE_LABEL: Record<DisbursementStageState, string> = {
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+};
 
-interface WorkflowStage {
-  id: string;
-  name: string;
-  role: string;
-  initials: string;
-  avatarClass: string;
-  kind: StageKind;
-  state: StageState;
-  comment?: string;
-  actedAt?: string;
-}
-
-const STAGE_TEMPLATES: Array<Omit<WorkflowStage, "state" | "comment" | "actedAt">> = [
-  {
-    id: "sodiq",
-    name: "Sodiq Olajide",
-    role: "Lead of Internal Control",
-    initials: "SO",
-    avatarClass: "bg-primary-25 text-primary-500",
-    kind: "review",
-  },
-  {
-    id: "moshood",
-    name: "Moshood Aremu",
-    role: "Finance Manager",
-    initials: "MA",
-    avatarClass: "bg-orange-100 text-orange-700",
-    kind: "review",
-  },
-  {
-    id: "jide",
-    name: "Jide Jadeosola",
-    role: "Head of Settlement",
-    initials: "JJ",
-    avatarClass: "bg-green-100 text-green-700",
-    kind: "approval",
-  },
-];
-
-const COMPLETED_COMMENT =
-  "This is the comment box, and it very long and it can be very long like this, but only collect the insight of the admin person, as inputted when they completed their action";
-const COMPLETED_ACTED_AT = "April 11, 11:00 am";
-
-const STATUS_COLOR: Record<StageState, string> = {
+const STAGE_BADGE_COLOR: Record<DisbursementStageState, string> = {
   pending: "#B54708",
-  completed: "#027A48",
+  approved: "#027A48",
   rejected: "#B42318",
 };
 
-function stageLabel(stage: WorkflowStage) {
-  if (stage.state === "rejected") return "Rejected";
-  if (stage.state === "completed") {
-    return stage.kind === "approval" ? "Approval Completed" : "Review Completed";
-  }
-  return stage.kind === "approval" ? "Approval Pending" : "Review Pending";
+const STAGE_SUBTITLE: Record<DisbursementStageState, string> = {
+  pending: "Awaiting Action",
+  approved: "Action Taken",
+  rejected: "Action Taken",
+};
+
+/** Avatar initials from a full name (e.g. "Anu Wapo" -> "AW"). */
+function getInitials(name: string): string {
+  return name
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
-function stageSubtitle(stage: WorkflowStage) {
-  if (stage.state === "pending") return "Awaiting Action";
-  if (stage.state === "completed") return "Action Taken";
-  return "Rejected";
+function DateTimeRow({ date, time }: { date: string; time: string }) {
+  return (
+    <Group gap={6} mt={4}>
+      <Text size="xs" c="dimmed" className="text-body-text-200 border-r border-[#E1E0E0] pr-3">
+        📅 {date}
+      </Text>
+      <Text size="xs" c="dimmed" className="text-body-text-200">
+        ⏰ {time}
+      </Text>
+    </Group>
+  );
 }
 
-function stageKindLabel(kind: StageKind) {
-  return kind === "approval" ? "Approval" : "Review";
+function CommentBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
+      <Text size="xs" className="text-body-text-200 leading-relaxed">
+        {children}
+      </Text>
+    </div>
+  );
 }
 
-function splitActedAt(actedAt: string) {
-  const separator = actedAt.indexOf(", ");
-  if (separator < 0) return { date: actedAt, time: "--" };
-  return {
-    date: actedAt.slice(0, separator),
-    time: actedAt.slice(separator + 2),
-  };
+function StageCard({ stage }: { stage: DisbursementStageCard }) {
+  const isPending = stage.state === "pending";
+  const containerClass =
+    isPending && stage.isCurrent
+      ? "bg-gray-25 border border-primary-100"
+      : isPending && stage.isStale
+        ? "bg-gray-25 opacity-60"
+        : "bg-[#F7F7F7]";
+
+  return (
+    <div className={`${containerClass} rounded-lg p-5 mb-0 space-y-4!`}>
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Group align="flex-start" gap="sm" wrap="nowrap">
+          <Avatar radius="xl" size="md" color={isPending ? "#B0B0B0" : "#F5B89C"}>
+            {getInitials(stage.actorName)}
+          </Avatar>
+
+          <div className="min-w-0 space-y-1">
+            <Text fw={500} className="text-body-heading-300 break-all">
+              {stage.actorName}
+            </Text>
+            <Text size="xs" c="dimmed" className="text-body-text-50!">
+              {stage.actorRole ? `${stage.actorRole} • ` : ""}
+              <span className="font-medium text-body-heading-300">{stage.stageName}</span>
+            </Text>
+            <DateTimeRow date={stage.date} time={stage.time} />
+          </div>
+        </Group>
+
+        <div className="text-right shrink-0">
+          <StatusBadge
+            status={STAGE_BADGE_LABEL[stage.state]}
+            color={STAGE_BADGE_COLOR[stage.state]}
+            size="xs"
+          />
+          <Text size="xs" c="dimmed" className="text-body-text-50! block mt-1">
+            {STAGE_SUBTITLE[stage.state]}
+          </Text>
+        </div>
+      </Group>
+
+      {!isPending ? <CommentBox>{stage.comment || "No comment provided"}</CommentBox> : null}
+    </div>
+  );
 }
 
-function buildStages(status: DisbursementStatus): WorkflowStage[] {
-  if (status === "Approved") {
-    return STAGE_TEMPLATES.map((stage) => ({
-      ...stage,
-      state: "completed",
-      comment: COMPLETED_COMMENT,
-      actedAt: COMPLETED_ACTED_AT,
-    }));
-  }
+function ActivityCard({ activity }: { activity: DisbursementActivityCard }) {
+  return (
+    <div className="bg-[#F7F7F7] rounded-lg p-5 mb-0 space-y-4!">
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Group align="flex-start" gap="sm" wrap="nowrap">
+          <Avatar radius="xl" size="md" color="#F5B89C">
+            {getInitials(activity.actorName)}
+          </Avatar>
 
-  if (status === "Rejected") {
-    return STAGE_TEMPLATES.map((stage, index) =>
-      index === STAGE_TEMPLATES.length - 1
-        ? { ...stage, state: "rejected" }
-        : {
-            ...stage,
-            state: "completed",
-            comment: COMPLETED_COMMENT,
-            actedAt: COMPLETED_ACTED_AT,
-          }
-    );
-  }
+          <div className="min-w-0 space-y-1">
+            <Text fw={500} className="text-body-heading-300 break-all">
+              {activity.actorName}
+            </Text>
+            <Text size="xs" c="dimmed" className="text-body-text-50!">
+              {activity.actorRole ? `${activity.actorRole} • ` : ""}
+              <span className="font-medium text-body-heading-300">{activity.title}</span>
+            </Text>
+            <DateTimeRow date={activity.date} time={activity.time} />
+          </div>
+        </Group>
 
-  return STAGE_TEMPLATES.map((stage) => ({ ...stage, state: "pending" }));
+        <div className="text-right shrink-0">
+          <StatusBadge status={activity.outcomeLabel} size="xs" />
+          <Text size="xs" c="dimmed" className="text-body-text-50! block mt-1">
+            Action Taken
+          </Text>
+        </div>
+      </Group>
+
+      {activity.comment ? <CommentBox>{activity.comment}</CommentBox> : null}
+    </div>
+  );
 }
 
-function formatActedAt(date: Date) {
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+function EmptyPanel({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="rounded-lg border border-[#EAECF0] bg-white p-6 text-center">
+      <Text fw={600} className="text-body-heading-300">
+        {title}
+      </Text>
+      <Text size="sm" className="text-body-text-200 mt-1">
+        {message}
+      </Text>
+    </div>
+  );
 }
 
 interface DisbursementTakeActionDrawerProps {
   opened: boolean;
   onClose: () => void;
-  status: DisbursementStatus;
+  processName?: string;
+  statusLabel: string;
+  approvalState?: string;
+  stages: DisbursementStageCard[];
+  activities: DisbursementActivityCard[];
+  canAct: boolean;
+  onApprove: (reason: string) => Promise<void>;
+  onReject: (reason: string) => Promise<void>;
 }
+
+type ActionFlow = "approve" | "reject";
 
 export default function DisbursementTakeActionDrawer({
   opened,
   onClose,
-  status,
+  processName,
+  statusLabel,
+  approvalState,
+  stages,
+  activities,
+  canAct,
+  onApprove,
+  onReject,
 }: DisbursementTakeActionDrawerProps) {
-  const [stages, setStages] = useState(() => buildStages(status));
-  const [commentOpen, setCommentOpen] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [comment, setComment] = useState("");
-  const [commentError, setCommentError] = useState("");
-  const [pendingCompletion, setPendingCompletion] = useState<{
-    comment: string;
-    actedAt: string;
-  } | null>(null);
+  const [flow, setFlow] = useState<ActionFlow | null>(null);
+  const [successFlow, setSuccessFlow] = useState<ActionFlow | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const nextPendingIndex = stages.findIndex((stage) => stage.state === "pending");
-  const hasPendingStage = nextPendingIndex >= 0;
-
-  const closeComment = () => {
-    setCommentOpen(false);
-    setComment("");
-    setCommentError("");
-  };
-
-  const submitComment = () => {
-    const trimmed = comment.trim();
-    if (!trimmed) {
-      setCommentError("Comment is required");
-      return;
+  const runAction = async (
+    action: () => Promise<void>,
+    success: ActionFlow
+  ) => {
+    setSubmitting(true);
+    try {
+      await action();
+      setFlow(null);
+      setSuccessFlow(success);
+    } catch {
+      // The page shows the error notification and the confirmation stays open.
+    } finally {
+      setSubmitting(false);
     }
-
-    setPendingCompletion({ comment: trimmed, actedAt: formatActedAt(new Date()) });
-    closeComment();
-    setSuccessOpen(true);
-  };
-
-  const applyCompletion = () => {
-    if (!pendingCompletion) {
-      setSuccessOpen(false);
-      return;
-    }
-
-    setStages((current) => {
-      const nextIndex = current.findIndex((stage) => stage.state === "pending");
-      if (nextIndex < 0) return current;
-      return current.map((stage, index) =>
-        index === nextIndex
-          ? {
-              ...stage,
-              state: "completed",
-              comment: pendingCompletion.comment,
-              actedAt: pendingCompletion.actedAt,
-            }
-          : stage
-      );
-    });
-
-    setPendingCompletion(null);
-    setSuccessOpen(false);
   };
 
   return (
@@ -209,175 +224,137 @@ export default function DisbursementTakeActionDrawer({
             <div className="space-y-1 mb-3">
               <Title order={4} className="text-body-heading-300 font-bold! text-xl!">
                 <span className="text-body-text-50!">Request: </span>
-                Disbursement Review and Approval
+                {processName || "Disbursement Review and Approval"}
               </Title>
               <Text size="sm" className="text-body-text-50!">
                 Take action on disbursement
               </Text>
             </div>
 
-
             <Tabs
               color="orange"
-              
-              value="workflow"
+              defaultValue="workflow"
               className="flex flex-col flex-1 min-h-0 rounded-lg overflow-hidden"
             >
               <Tabs.List className="border-b border-[#EAECF0] px-1 pt-1 mb-4">
                 <AdminTabButton value="workflow">Workflow Line</AdminTabButton>
+                <AdminTabButton value="activities">Activities</AdminTabButton>
               </Tabs.List>
 
               <Tabs.Panel value="workflow">
-                <div className="space-y-5">
-                  {stages.map((stage, index) => {
-                    const isPending = stage.state === "pending";
-                    const containerClass = isPending
-                      ? index === nextPendingIndex
-                        ? "bg-gray-25 border border-primary-100"
-                        : "bg-[#F7F7F7]"
-                      : "bg-[#F7F7F7]";
-                    const { date, time } =
-                      stage.state === "completed" && stage.actedAt
-                        ? splitActedAt(stage.actedAt)
-                        : { date: "--", time: "--" };
+                <div className="mb-4 flex items-center gap-3">
+                  <StatusBadge status={statusLabel} size="md" />
+                  {approvalState ? (
+                    <Text size="sm" className="text-body-text-200">
+                      {approvalState}
+                    </Text>
+                  ) : null}
+                </div>
 
-                    return (
+                {stages.length === 0 ? (
+                  <EmptyPanel
+                    title="No workflow stages available"
+                    message="No approval workflow has been set up for this disbursement."
+                  />
+                ) : (
+                  <div className="space-y-5">
+                    {stages.map((stage, index) => (
                       <Fragment key={stage.id}>
-                        <div className={`${containerClass} rounded-lg p-5 mb-0 space-y-4!`}>
-                          <Group justify="space-between" align="flex-start" wrap="nowrap">
-                            <Group align="flex-start" gap="sm" wrap="nowrap">
-                              <Avatar
-                                radius="xl"
-                                size="md"
-                                color={isPending ? "#B0B0B0" : "#F5B89C"}
-                              >
-                                {stage.initials}
-                              </Avatar>
-
-                              <div className="min-w-0 space-y-1">
-                                <Text fw={500} className="text-body-heading-300 break-all">
-                                  {stage.name}
-                                </Text>
-                                <Text size="xs" c="dimmed" className="text-body-text-50!">
-                                  {stage.role} •{" "}
-                                  <span className="font-medium text-body-heading-300">
-                                    {stageKindLabel(stage.kind)}
-                                  </span>
-                                </Text>
-
-                                <Group gap={6} mt={4}>
-                                  <Text
-                                    size="xs"
-                                    c="dimmed"
-                                    className="text-body-text-200 border-r border-[#E1E0E0] pr-3"
-                                  >
-                                    📅 {date}
-                                  </Text>
-                                  <Text size="xs" c="dimmed" className="text-body-text-200">
-                                    ⏰ {time}
-                                  </Text>
-                                </Group>
-                              </div>
-                            </Group>
-
-                            <div className="text-right shrink-0">
-                              <StatusBadge
-                                status={stageLabel(stage)}
-                                color={STATUS_COLOR[stage.state]}
-                                size="xs"
-                              />
-                              <Text size="xs" c="dimmed" className="text-body-text-50! block mt-1">
-                                {stageSubtitle(stage)}
-                              </Text>
-                            </div>
-                          </Group>
-
-                          {stage.state === "completed" && stage.comment ? (
-                            <div className="bg-white border border-[#E1E0E0] rounded-lg p-4">
-                              <Text size="xs" className="text-body-text-200 leading-relaxed">
-                                {stage.comment}
-                              </Text>
-                            </div>
-                          ) : null}
-                        </div>
-
+                        <StageCard stage={stage} />
                         {index < stages.length - 1 ? (
                           <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
                         ) : null}
                       </Fragment>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
+              </Tabs.Panel>
+
+              <Tabs.Panel value="activities">
+                {activities.length === 0 ? (
+                  <EmptyPanel
+                    title="No activity recorded"
+                    message="No additional activity has been recorded for this disbursement yet."
+                  />
+                ) : (
+                  <div className="space-y-5">
+                    {activities.map((activity, index) => (
+                      <Fragment key={activity.id}>
+                        <ActivityCard activity={activity} />
+                        {index < activities.length - 1 ? (
+                          <Image src={Connector} alt="connector" className="ml-8 -my-0.5" />
+                        ) : null}
+                      </Fragment>
+                    ))}
+                  </div>
+                )}
               </Tabs.Panel>
             </Tabs>
           </div>
 
-          <div className="flex items-center justify-center gap-3 border-t border-gray-100 px-6 py-4">
-            {hasPendingStage ? (
-              <CustomButton buttonType="primary" onClick={() => setCommentOpen(true)}>
+          {canAct ? (
+            <div className="flex items-center justify-center gap-3 border-t border-gray-100 px-6 py-4">
+              <CustomButton buttonType="primary" onClick={() => setFlow("approve")}>
                 Complete Review
               </CustomButton>
-            ) : null}
-            <Button variant="default" radius="xl" onClick={onClose}>
-              Close
-            </Button>
-          </div>
+              <Button
+                variant="outline"
+                color="red"
+                radius="xl"
+                onClick={() => setFlow("reject")}
+              >
+                Reject
+              </Button>
+            </div>
+          ) : null}
         </div>
       </Drawer>
 
-      <Modal
-        opened={commentOpen}
-        onClose={closeComment}
-        centered
-        withCloseButton={false}
-        radius="lg"
-        padding="xl"
-        zIndex={4000}
-        overlayProps={{ opacity: 0.3, blur: 2 }}
-      >
-        <div className="flex flex-col items-center text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-00 text-2xl text-primary-400">
-            !
-          </div>
-          <h2 className="mt-4 text-xl font-bold text-gray-900">Complete Review ?</h2>
-          <p className="mt-2 text-sm text-gray-500">
-            You are about to mark this request as reviewed. Once confirmed, your review will be
-            submitted and passed on to the next stage for approval
-          </p>
-        </div>
+      <ApprovalActionConfirmModal
+        opened={flow === "approve"}
+        onClose={() => setFlow(null)}
+        title="Complete Review ?"
+        message="You are about to approve this disbursement stage. Once confirmed, your review will be recorded and passed on to the next stage for approval."
+        primaryButtonText="Yes, Complete Review"
+        secondaryButtonText="No, Close"
+        commentRequired={false}
+        isLoading={submitting && flow === "approve"}
+        onConfirm={(comment) => {
+          void runAction(() => onApprove(comment), "approve");
+        }}
+      />
 
-        <Textarea
-          className="mt-5"
-          label="Comment"
-          withAsterisk
-          placeholder="Start Typing"
-          minRows={3}
-          value={comment}
-          error={commentError}
-          onChange={(event) => {
-            setComment(event.currentTarget.value);
-            if (commentError) setCommentError("");
-          }}
-        />
-
-        <div className="mt-5 space-y-3">
-          <Button fullWidth radius="xl" color="orange" onClick={submitComment}>
-            Yes, Complete Review
-          </Button>
-          <Button fullWidth radius="xl" variant="outline" color="gray" onClick={closeComment}>
-            No, Close
-          </Button>
-        </div>
-      </Modal>
+      <ApprovalActionConfirmModal
+        opened={flow === "reject"}
+        onClose={() => setFlow(null)}
+        title="Reject Disbursement?"
+        message="You are about to reject this disbursement. Once confirmed, the disbursement will be declined and no further processing will take place."
+        primaryButtonText="Yes, Reject Disbursement"
+        secondaryButtonText="No, Close"
+        isLoading={submitting && flow === "reject"}
+        onConfirm={(comment) => {
+          void runAction(() => onReject(comment), "reject");
+        }}
+      />
 
       <SuccessModal
-        opened={successOpen}
-        onClose={applyCompletion}
-        zIndex={4000}
+        opened={successFlow === "approve"}
+        onClose={() => setSuccessFlow(null)}
+        zIndex={4100}
         title="Review Completed"
         message="The review has been successfully completed and forwarded to the next stage for review or approval"
         primaryButtonText="Close"
-        onPrimaryClick={applyCompletion}
+        onPrimaryClick={() => setSuccessFlow(null)}
+      />
+
+      <SuccessModal
+        opened={successFlow === "reject"}
+        onClose={() => setSuccessFlow(null)}
+        zIndex={4100}
+        title="Disbursement Rejected"
+        message="The disbursement has been successfully rejected and will not proceed"
+        primaryButtonText="Close"
+        onPrimaryClick={() => setSuccessFlow(null)}
       />
     </>
   );
