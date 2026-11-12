@@ -21,7 +21,7 @@ export interface WorkflowTemplateDetailsViewModel {
   workflowAction: string;
   description: string;
   workflowType: string;
-  approvalType: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "";
+  approvalType: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "FX_CASH_DISBURSEMENT" | "";
   minAmount: number | null;
   maxAmount: number | null;
   personnelProcesses: ViewWorkflowLine[];
@@ -50,7 +50,7 @@ export interface WorkflowTemplateEditData {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
-  approvalType: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "";
+  approvalType: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "FX_CASH_DISBURSEMENT" | "";
   minAmount: number | null;
   maxAmount: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
@@ -196,9 +196,17 @@ function normalizeTemplate(data: WorkflowTemplateDetailsData | null): WorkflowTe
   const normalizedProcessType = asString(data.processType, "RIGID_LINEAR").toUpperCase();
   const normalizedStatus = asString(data.status, "ACTIVE").toUpperCase();
 
-  const approvalTypeNormalized = ((): "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "" => {
+  const approvalTypeNormalized = ((): "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "FX_CASH_DISBURSEMENT" | "" => {
     const v = asString(data.approvalType ?? "").toUpperCase();
-    if (v === "TRANSACTION" || v === "REFUND" || v === "RATE" || v === "DISBURSEMENT") return v;
+    if (
+      v === "TRANSACTION" ||
+      v === "REFUND" ||
+      v === "RATE" ||
+      v === "DISBURSEMENT" ||
+      v === "FX_CASH_DISBURSEMENT"
+    ) {
+      return v;
+    }
     return "";
   })();
 

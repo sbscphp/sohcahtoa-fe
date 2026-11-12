@@ -295,6 +295,28 @@ export const API_ENDPOINTS = {
       escrowAccounts: "/api/admin/settlement/escrow-accounts",
       fundingTransactions: "/api/admin/settlement",
     },
+    fxInventory: {
+      stats: "/api/admin/fx-inventory/stats",
+      lodgments: "/api/admin/fx-inventory/lodgments",
+      lodgmentById: (id: string) => `/api/admin/fx-inventory/lodgments/${id}`,
+      confirmLodgment: (id: string) => `/api/admin/fx-inventory/lodgments/${id}/confirm`,
+      rejectLodgment: (id: string) => `/api/admin/fx-inventory/lodgments/${id}/reject`,
+      disbursements: "/api/admin/fx-inventory/disbursements",
+      disbursementApproval: (id: string) =>
+        `/api/admin/fx-inventory/disbursements/${id}/approval`,
+      approveDisbursement: (id: string) =>
+        `/api/admin/fx-inventory/disbursements/${id}/approve`,
+      rejectDisbursement: (id: string) =>
+        `/api/admin/fx-inventory/disbursements/${id}/reject`,
+      agents: "/api/admin/fx-inventory/agents",
+      agentsExport: "/api/admin/fx-inventory/agents/export",
+      agentOverview: (agentId: string) =>
+        `/api/admin/fx-inventory/agents/${agentId}/overview`,
+      agentInventoryPosition: (agentId: string) =>
+        `/api/admin/fx-inventory/agents/${agentId}/inventory-position`,
+      agentInventoryPositionExport: (agentId: string) =>
+        `/api/admin/fx-inventory/agents/${agentId}/inventory-position/export`,
+    },
     regulatory: {
       compliance: {
         dashboard: "/api/admin/regulatory/compliance/dashboard",

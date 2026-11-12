@@ -1131,7 +1131,7 @@ export interface WorkflowTemplateUpdatePayload {
   name: string;
   description: string;
   type: "REVIEW" | "APPROVAL";
-  approvalType?: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT";
+  approvalType?: "TRANSACTION" | "REFUND" | "RATE" | "DISBURSEMENT" | "FX_CASH_DISBURSEMENT";
   minAmount?: number | null;
   maxAmount?: number | null;
   processType: "RIGID_LINEAR" | "FLEXIBLE";
@@ -1349,6 +1349,232 @@ export interface SettlementDashboardStats {
   currentBalance: number;
   pendingReconciliation: number;
   totalEscrowAccounts: number;
+}
+
+export interface FxInventoryStats {
+  totalDisbursements: number;
+  totalLodgments: number;
+  pendingApprovals: number;
+  approvedDisbursements: number;
+  disbursementsByStatus: Record<string, number>;
+  lodgmentsByStatus: Record<string, number>;
+}
+
+export type FxInventoryAgentsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export interface FxInventoryAgentOverview {
+  agentId: string;
+  agentName: string;
+  currency: string;
+  period: {
+    from: string;
+    to: string;
+  };
+  availableFxInventory: number;
+  ngnCashAvailable: number;
+  pendingSettlements: number;
+  cashLodgement: number;
+}
+
+export type FxInventoryAgentPositionStatus = "reconciled" | "variance";
+
+export type FxInventoryAgentPositionParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  status?: FxInventoryAgentPositionStatus;
+};
+
+export interface FxInventoryAgentPositionRow {
+  currency: string;
+  openingBalance: number | null;
+  disbursedFromAdmin: number | null;
+  purchasedFromCustomers: number | null;
+  soldToCustomers: number | null;
+  lodgedToHq: number | null;
+  closingBalance: number | null;
+  physicalCount: number | null;
+  variance: number | null;
+}
+
+export interface FxInventoryAgentPosition {
+  agentId: string;
+  agentName: string;
+  period: {
+    from: string;
+    to: string;
+  };
+  rows: FxInventoryAgentPositionRow[];
+  total: FxInventoryAgentPositionRow;
+}
+
+export interface FxInventoryAgentListItem {
+  agentId: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  branchId: string;
+  branchName: string;
+  totalDisbursements: number;
+  totalLodgments: number;
+}
+
+export type FxInventoryLodgmentStatus =
+  | "PENDING_VERIFICATION"
+  | "CONFIRMED"
+  | "REJECTED";
+
+export type FxInventoryLodgmentsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: FxInventoryLodgmentStatus;
+  agentId?: string;
+};
+
+export interface FxInventoryLodgmentListItem {
+  id: string;
+  referenceNumber: string;
+  agentId: string;
+  agentName: string;
+  branchId: string;
+  currency: string;
+  statedAmount: number;
+  confirmedAmount: number | null;
+  varianceAmount: number | null;
+  notes: string | null;
+  status: string;
+  submittedAt: string;
+}
+
+export interface FxInventoryLodgmentAgent {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface FxInventoryLodgmentDetail {
+  id: string;
+  referenceNumber: string;
+  status: string;
+  agent: FxInventoryLodgmentAgent;
+  branchId: string;
+  currency: string;
+  statedAmount: number;
+  confirmedAmount: number | null;
+  varianceAmount: number | null;
+  notes: string | null;
+  submittedAt: string;
+  confirmedBy: string | null;
+  confirmedByName: string | null;
+  confirmedAt: string | null;
+  rejectedBy: string | null;
+  rejectedByName: string | null;
+  rejectedAt: string | null;
+  decisionReason: string | null;
+}
+
+export interface ConfirmFxInventoryLodgmentPayload {
+  confirmedAmount: number;
+  reason: string;
+}
+
+export interface RejectFxInventoryLodgmentPayload {
+  reason: string;
+}
+
+export type FxInventoryDisbursementStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "COMPLETED";
+
+export type FxInventoryDisbursementsListParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: FxInventoryDisbursementStatus;
+  agentId?: string;
+};
+
+export interface FxInventoryDisbursementListItem {
+  id: string;
+  referenceNumber: string;
+  agentId: string;
+  agentName: string;
+  branchId: string;
+  currency: string;
+  amount: number;
+  purpose: string | null;
+  status: string;
+  autoApproved: boolean;
+  initiatedBy: string | null;
+  initiatedAt: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectedBy: string | null;
+  rejectedAt: string | null;
+  decisionReason: string | null;
+}
+
+export interface CreateFxInventoryDisbursementPayload {
+  agentId: string;
+  amount: number;
+  currency: string;
+  purpose?: string;
+}
+
+export interface FxInventoryDisbursementWorkflowLineItem {
+  id: string;
+  timestamp: string;
+  adminId?: string | null;
+  adminName?: string | null;
+  adminRole?: string | null;
+  title?: string | null;
+  outcome?: string | null;
+  comment?: string | null;
+  action?: string | null;
+}
+
+export interface FxInventoryDisbursementApprovalDetail {
+  id: string;
+  referenceNumber: string;
+  status: string;
+  agent: FxInventoryLodgmentAgent;
+  currency: string;
+  amount: number;
+  purpose: string | null;
+  requestedAt: string;
+  initiator: {
+    name: string;
+    email: string;
+  } | null;
+  currentInventoryBalance: number | null;
+  balanceAfterDisbursement: number | null;
+  approvalProcess: AdminTransactionApprovalProcess | null;
+  workflowLine: FxInventoryDisbursementWorkflowLineItem[] | null;
+}
+
+export interface ApproveFxInventoryDisbursementPayload {
+  reason: string;
+}
+
+export interface RejectFxInventoryDisbursementPayload {
+  reason: string;
 }
 
 export interface AdminNotificationItem {
@@ -2551,6 +2777,115 @@ export const adminApi = {
         API_ENDPOINTS.admin.settlement.fundingTransactions,
         { params }
       ),
+  },
+
+  // ==================== FX Inventory ====================
+  fxInventory: {
+    getStats: () =>
+      apiClient.get<ApiResponse<FxInventoryStats>>(
+        API_ENDPOINTS.admin.fxInventory.stats
+      ),
+
+    listLodgments: (params?: FxInventoryLodgmentsListParams) =>
+      apiClient.get<ApiResponse<FxInventoryLodgmentListItem[]>>(
+        API_ENDPOINTS.admin.fxInventory.lodgments,
+        { params }
+      ),
+
+    getLodgment: (id: string) =>
+      apiClient.get<ApiResponse<FxInventoryLodgmentDetail>>(
+        API_ENDPOINTS.admin.fxInventory.lodgmentById(id)
+      ),
+
+    confirmLodgment: (id: string, body: ConfirmFxInventoryLodgmentPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.confirmLodgment(id),
+        body
+      ),
+
+    rejectLodgment: (id: string, body: RejectFxInventoryLodgmentPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.rejectLodgment(id),
+        body
+      ),
+
+    listDisbursements: (params?: FxInventoryDisbursementsListParams) =>
+      apiClient.get<ApiResponse<FxInventoryDisbursementListItem[]>>(
+        API_ENDPOINTS.admin.fxInventory.disbursements,
+        { params }
+      ),
+
+    createDisbursement: (body: CreateFxInventoryDisbursementPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.disbursements,
+        body
+      ),
+
+    getDisbursementApproval: (id: string) =>
+      apiClient.get<ApiResponse<FxInventoryDisbursementApprovalDetail>>(
+        API_ENDPOINTS.admin.fxInventory.disbursementApproval(id)
+      ),
+
+    approveDisbursement: (id: string, body: ApproveFxInventoryDisbursementPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.approveDisbursement(id),
+        body
+      ),
+
+    rejectDisbursement: (id: string, body: RejectFxInventoryDisbursementPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.rejectDisbursement(id),
+        body
+      ),
+
+    listAgents: (params?: FxInventoryAgentsListParams) =>
+      apiClient.get<ApiResponse<FxInventoryAgentListItem[]>>(
+        API_ENDPOINTS.admin.fxInventory.agents,
+        { params }
+      ),
+
+    exportAgents: async (params?: FxInventoryAgentsListParams) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.fxInventory.agentsExport,
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
+
+    getAgentOverview: (agentId: string) =>
+      apiClient.get<ApiResponse<FxInventoryAgentOverview>>(
+        API_ENDPOINTS.admin.fxInventory.agentOverview(agentId)
+      ),
+
+    getAgentInventoryPosition: (
+      agentId: string,
+      params?: FxInventoryAgentPositionParams
+    ) =>
+      apiClient.get<ApiResponse<FxInventoryAgentPosition>>(
+        API_ENDPOINTS.admin.fxInventory.agentInventoryPosition(agentId),
+        { params }
+      ),
+
+    exportAgentInventoryPosition: async (
+      agentId: string,
+      params?: FxInventoryAgentPositionParams
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.fxInventory.agentInventoryPositionExport(agentId),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
   },
 
   // ==================== Regulatory ====================

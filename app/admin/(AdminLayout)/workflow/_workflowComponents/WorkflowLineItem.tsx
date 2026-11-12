@@ -36,6 +36,7 @@ export const ALL_WORKFLOW_TYPE_OPTIONS = [
   "Operations Review",
   "Operations Approval",
   "Disbursement Confirmation",
+  "Cash Disbursement Confirmation",
   "Refund Approval",
 ] as const;
 
@@ -45,6 +46,11 @@ export const DISBURSEMENT_WORKFLOW_TYPE_OPTIONS = [
   "Operations Review",
   "Operations Approval",
   "Disbursement Confirmation",
+] as const;
+export const FX_CASH_DISBURSEMENT_WORKFLOW_TYPE_OPTIONS = [
+  "Operations Review",
+  "Operations Approval",
+  "Cash Disbursement Confirmation",
 ] as const;
 export const REFUND_WORKFLOW_TYPE_OPTIONS = ["Refund approval", "Internal Control review", "Refund disbursement confirmation"] as const;
 
@@ -56,6 +62,8 @@ export function getAllowedWorkflowTypes(approvalType: string): string[] {
       return [...TRANSACTION_WORKFLOW_TYPE_OPTIONS];
     case "DISBURSEMENT":
       return [...DISBURSEMENT_WORKFLOW_TYPE_OPTIONS];
+    case "FX_CASH_DISBURSEMENT":
+      return [...FX_CASH_DISBURSEMENT_WORKFLOW_TYPE_OPTIONS];
     case "REFUND":
       return [...REFUND_WORKFLOW_TYPE_OPTIONS];
     default:
@@ -72,7 +80,7 @@ export function getDefaultWorkflowType(approvalType: string): string {
 /**
  * Align workflow line types with the selected approval type:
  * - RATE / TRANSACTION / REFUND auto-fill their single allowed type
- * - DISBURSEMENT keeps a type if still allowed, otherwise clears it
+ * - DISBURSEMENT / FX_CASH_DISBURSEMENT keep a type if still allowed, otherwise clear it
  */
 export function coerceWorkflowLinesForApprovalType(
   lines: WorkflowLine[],
