@@ -28,6 +28,8 @@ const STATUS_LABELS: Record<FxInventoryDisbursementStatus, string> = {
 
 export interface FxInventoryDisbursementRow {
   id: string;
+  reference: string;
+  currency: string;
   agentName: string;
   agentId: string;
   amount: string;
@@ -125,6 +127,8 @@ function parseDisbursement(raw: Record<string, unknown>): FxInventoryDisbursemen
 
   return {
     id: asString(raw.id),
+    reference: asString(raw.referenceNumber).trim() || "--",
+    currency: currency || "--",
     agentName: asString(raw.agentName, "--"),
     agentId: asString(raw.agentId, "--"),
     amount: formatAmount(amount, currency) ?? "-",
@@ -171,8 +175,9 @@ export function useFxInventoryDisbursements(
   const limit = params.limit ?? FX_INVENTORY_DISBURSEMENT_PAGE_SIZE;
   const search = params.search?.trim() || undefined;
   const status = params.status;
+  const agentId = params.agentId?.trim() || undefined;
 
-  const queryParams = { page, limit, search, status };
+  const queryParams = { page, limit, search, status, agentId };
 
   const query = useFetchDataSeperateLoading<DisbursementsListResponse>(
     [...adminKeys.fxInventory.disbursements(queryParams)],

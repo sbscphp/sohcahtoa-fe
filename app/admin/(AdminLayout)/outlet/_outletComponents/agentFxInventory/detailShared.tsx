@@ -224,7 +224,13 @@ export function FilterSelect({
   );
 }
 
-export function ExportButton({ onClick }: { onClick: () => void }) {
+export function ExportButton({
+  onClick,
+  loading = false,
+}: {
+  onClick: () => void;
+  loading?: boolean;
+}) {
   return (
     <Button
       variant="outline"
@@ -232,6 +238,8 @@ export function ExportButton({ onClick }: { onClick: () => void }) {
       radius="xl"
       rightSection={<Upload size={16} />}
       onClick={onClick}
+      loading={loading}
+      disabled={loading}
     >
       Export
     </Button>

@@ -1383,6 +1383,38 @@ export interface FxInventoryAgentOverview {
   cashLodgement: number;
 }
 
+export type FxInventoryAgentPositionStatus = "reconciled" | "variance";
+
+export type FxInventoryAgentPositionParams = Record<
+  string,
+  string | number | boolean | null | undefined
+> & {
+  status?: FxInventoryAgentPositionStatus;
+};
+
+export interface FxInventoryAgentPositionRow {
+  currency: string;
+  openingBalance: number | null;
+  disbursedFromAdmin: number | null;
+  purchasedFromCustomers: number | null;
+  soldToCustomers: number | null;
+  lodgedToHq: number | null;
+  closingBalance: number | null;
+  physicalCount: number | null;
+  variance: number | null;
+}
+
+export interface FxInventoryAgentPosition {
+  agentId: string;
+  agentName: string;
+  period: {
+    from: string;
+    to: string;
+  };
+  rows: FxInventoryAgentPositionRow[];
+  total: FxInventoryAgentPositionRow;
+}
+
 export interface FxInventoryAgentListItem {
   agentId: string;
   name: string;
@@ -1408,6 +1440,7 @@ export type FxInventoryLodgmentsListParams = Record<
   limit?: number;
   search?: string;
   status?: FxInventoryLodgmentStatus;
+  agentId?: string;
 };
 
 export interface FxInventoryLodgmentListItem {
@@ -1475,6 +1508,7 @@ export type FxInventoryDisbursementsListParams = Record<
   limit?: number;
   search?: string;
   status?: FxInventoryDisbursementStatus;
+  agentId?: string;
 };
 
 export interface FxInventoryDisbursementListItem {
@@ -2827,6 +2861,31 @@ export const adminApi = {
       apiClient.get<ApiResponse<FxInventoryAgentOverview>>(
         API_ENDPOINTS.admin.fxInventory.agentOverview(agentId)
       ),
+
+    getAgentInventoryPosition: (
+      agentId: string,
+      params?: FxInventoryAgentPositionParams
+    ) =>
+      apiClient.get<ApiResponse<FxInventoryAgentPosition>>(
+        API_ENDPOINTS.admin.fxInventory.agentInventoryPosition(agentId),
+        { params }
+      ),
+
+    exportAgentInventoryPosition: async (
+      agentId: string,
+      params?: FxInventoryAgentPositionParams
+    ) => {
+      const response = await apiClient.get<Blob | string>(
+        API_ENDPOINTS.admin.fxInventory.agentInventoryPositionExport(agentId),
+        { params }
+      );
+
+      if (response instanceof Blob) {
+        return response;
+      }
+
+      return new Blob([response], { type: "text/csv;charset=utf-8;" });
+    },
   },
 
   // ==================== Regulatory ====================

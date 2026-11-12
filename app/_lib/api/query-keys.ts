@@ -457,6 +457,7 @@ export const adminKeys = {
       limit?: number;
       search?: string;
       status?: string;
+      agentId?: string;
     }) => [...adminKeys.fxInventory.all, "lodgments", params] as const,
     lodgment: (id: string) => [...adminKeys.fxInventory.all, "lodgment", id] as const,
     disbursements: (params?: {
@@ -464,6 +465,7 @@ export const adminKeys = {
       limit?: number;
       search?: string;
       status?: string;
+      agentId?: string;
     }) => [...adminKeys.fxInventory.all, "disbursements", params] as const,
     disbursement: (id: string) =>
       [...adminKeys.fxInventory.all, "disbursement", id] as const,
@@ -474,6 +476,11 @@ export const adminKeys = {
     }) => [...adminKeys.fxInventory.all, "agents", params] as const,
     agentOverview: (agentId: string) =>
       [...adminKeys.fxInventory.all, "agent-overview", agentId] as const,
+    agentInventoryPosition: (
+      agentId: string,
+      params?: { status?: string }
+    ) =>
+      [...adminKeys.fxInventory.all, "agent-inventory-position", agentId, params] as const,
   },
 
   regulatory: {

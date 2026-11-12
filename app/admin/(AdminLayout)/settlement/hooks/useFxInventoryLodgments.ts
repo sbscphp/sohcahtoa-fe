@@ -26,6 +26,8 @@ const STATUS_LABELS: Record<FxInventoryLodgmentStatus, string> = {
 
 export interface FxInventoryLodgmentRow {
   id: string;
+  reference: string;
+  currency: string;
   agentName: string;
   agentId: string;
   amountLodged: string;
@@ -103,6 +105,8 @@ function parseLodgment(raw: Record<string, unknown>): FxInventoryLodgmentRow {
 
   return {
     id: asString(raw.id),
+    reference: asString(raw.referenceNumber).trim() || "--",
+    currency: currency || "--",
     agentName: asString(raw.agentName, "--"),
     agentId: asString(raw.agentId, "--"),
     amountLodged: formatAmount(statedAmount, currency) ?? "-",
@@ -149,8 +153,9 @@ export function useFxInventoryLodgments(
   const limit = params.limit ?? FX_INVENTORY_LODGMENT_PAGE_SIZE;
   const search = params.search?.trim() || undefined;
   const status = params.status;
+  const agentId = params.agentId?.trim() || undefined;
 
-  const queryParams = { page, limit, search, status };
+  const queryParams = { page, limit, search, status, agentId };
 
   const query = useFetchDataSeperateLoading<LodgmentsListResponse>(
     [...adminKeys.fxInventory.lodgments(queryParams)],

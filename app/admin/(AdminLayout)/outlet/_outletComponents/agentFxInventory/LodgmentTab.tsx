@@ -1,25 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Group, Text, TextInput } from "@mantine/core";
+import { useRouter } from "next/navigation";
+import { Group, Select, Text, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Search } from "lucide-react";
+import { ListFilter, Search } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import type { FxInventoryLodgmentStatus } from "@/app/admin/_services/admin-api";
+import { adminRoutes } from "@/lib/adminRoutes";
 import {
-  AGENT_FX_LODGMENTS,
-  type AgentFxLodgmentRow,
-} from "../../_data/agentFxInventoryMock";
+  FX_INVENTORY_LODGMENT_PAGE_SIZE,
+  FX_INVENTORY_LODGMENT_STATUS_OPTIONS,
+  useFxInventoryLodgments,
+  type FxInventoryLodgmentRow,
+} from "../../../settlement/hooks/useFxInventoryLodgments";
 import {
   CONFIRMED_COLOR,
   CurrencyLabel,
   ExportButton,
-  FilterSelect,
   InventoryOverview,
   TimestampCell,
   downloadCsv,
-  paginate,
 } from "./detailShared";
 
 const LODGMENT_HEADERS = [
@@ -33,26 +36,31 @@ const LODGMENT_HEADERS = [
 ];
 
 export default function LodgmentTab({ agentId }: { agentId: string }) {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("All");
   const [debouncedSearch] = useDebouncedValue(search, 350);
+  const searchQuery = debouncedSearch.trim() || undefined;
+  const status =
+    statusFilter !== "All" ? (statusFilter as FxInventoryLodgmentStatus) : undefined;
 
-  const filtered = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase();
-    return AGENT_FX_LODGMENTS.filter((row) => {
-      const matchesQuery =
-        !query ||
-        row.reference.toLowerCase().includes(query) ||
-        row.currency.toLowerCase().includes(query);
-      const matchesFilter = !filter || row.status === filter;
-      return matchesQuery && matchesFilter;
-    });
-  }, [debouncedSearch, filter]);
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: FX_INVENTORY_LODGMENT_PAGE_SIZE,
+      search: searchQuery,
+      status,
+      agentId,
+    }),
+    [agentId, page, searchQuery, status]
+  );
 
-  const pageResult = paginate(filtered, page);
+  const { lodgments, isLoading, isFetching, isError, totalPages } =
+    useFxInventoryLodgments(queryParams);
+  const pageCount = Math.max(totalPages, 1);
 
-  const renderRow = (item: AgentFxLodgmentRow) => [
+  const renderRow = (item: FxInventoryLodgmentRow) => [
     <Text key="reference" size="sm" fw={500}>
       {item.reference}
     </Text>,
@@ -61,7 +69,7 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
       {item.amountLodged}
     </Text>,
     <Text key="updated" size="sm">
-      {item.updatedAmount}
+      {item.updatedAmount ?? "-"}
     </Text>,
     <TimestampCell key="timestamp" date={item.date} time={item.time} />,
     <StatusBadge
@@ -69,7 +77,10 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
       status={item.status}
       color={item.status === "Confirmed" ? CONFIRMED_COLOR : undefined}
     />,
-    <RowActionIcon key="action" onClick={() => undefined} />,
+    <RowActionIcon
+      key="action"
+      onClick={() => router.push(adminRoutes.adminSettlementLodgmentDetails(item.id))}
+    />,
   ];
 
   const handleExport = () => {
@@ -77,11 +88,11 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
     downloadCsv(
       `agent-fx-lodgments-${dateStamp}.csv`,
       ["Reference", "Currency", "Amount Lodged", "Updated Amount", "Date", "Time", "Status"],
-      filtered.map((row) => [
+      lodgments.map((row) => [
         row.reference,
         row.currency,
         row.amountLodged,
-        row.updatedAmount,
+        row.updatedAmount ?? "-",
         row.date,
         row.time,
         row.status,
@@ -109,30 +120,43 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
             />
           </div>
           <Group>
-            <FilterSelect
-              value={filter}
-              data={["Pending", "Confirmed", "Rejected"]}
+            <Select
+              value={statusFilter}
               onChange={(value) => {
-                setFilter(value);
+                setStatusFilter(value ?? "All");
                 setPage(1);
               }}
+              data={FX_INVENTORY_LODGMENT_STATUS_OPTIONS}
+              radius="xl"
+              w={150}
+              rightSection={<ListFilter size={16} />}
+              aria-label="Filter by status"
             />
             <ExportButton onClick={handleExport} />
           </Group>
         </Group>
         <DynamicTableSection
           headers={LODGMENT_HEADERS}
-          data={pageResult.rows}
+          data={isError ? [] : lodgments}
+          loading={isLoading || isFetching}
           renderItems={renderRow}
-          emptyTitle="No Lodgments Found"
-          emptyMessage="There are currently no lodgments to display."
-          pagination={{
-            page: pageResult.currentPage,
-            totalPages: pageResult.totalPages,
-            onNext: () => setPage((value) => Math.min(value + 1, pageResult.totalPages)),
-            onPrevious: () => setPage((value) => Math.max(value - 1, 1)),
-            onPageChange: setPage,
-          }}
+          emptyTitle={isError ? "Could not load lodgments" : "No Lodgments Found"}
+          emptyMessage={
+            isError
+              ? "Something went wrong while loading lodgments. Try again."
+              : "There are currently no lodgments to display."
+          }
+          pagination={
+            !isError && lodgments.length > 0
+              ? {
+                  page,
+                  totalPages: pageCount,
+                  onNext: () => setPage((value) => Math.min(value + 1, pageCount)),
+                  onPrevious: () => setPage((value) => Math.max(value - 1, 1)),
+                  onPageChange: setPage,
+                }
+              : undefined
+          }
         />
       </section>
     </div>

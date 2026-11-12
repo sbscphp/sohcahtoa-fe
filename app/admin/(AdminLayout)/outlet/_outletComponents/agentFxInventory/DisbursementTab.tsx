@@ -1,25 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Group, Text, TextInput } from "@mantine/core";
+import { useRouter } from "next/navigation";
+import { Group, Select, Text, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Plus, Search } from "lucide-react";
+import { ListFilter, Plus, Search } from "lucide-react";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import RowActionIcon from "@/app/admin/_components/RowActionIcon";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import type { FxInventoryDisbursementStatus } from "@/app/admin/_services/admin-api";
+import { adminRoutes } from "@/lib/adminRoutes";
 import {
-  AGENT_FX_DISBURSEMENTS,
-  type AgentFxDisbursementRow,
-} from "../../_data/agentFxInventoryMock";
+  FX_INVENTORY_DISBURSEMENT_PAGE_SIZE,
+  FX_INVENTORY_DISBURSEMENT_STATUS_OPTIONS,
+  useFxInventoryDisbursements,
+  type FxInventoryDisbursementRow,
+} from "../../../settlement/hooks/useFxInventoryDisbursements";
 import {
   CurrencyLabel,
   ExportButton,
-  FilterSelect,
   InventoryOverview,
   TimestampCell,
   downloadCsv,
-  paginate,
 } from "./detailShared";
 
 const DISBURSEMENT_HEADERS = [
@@ -33,26 +36,31 @@ const DISBURSEMENT_HEADERS = [
 ];
 
 export default function DisbursementTab({ agentId }: { agentId: string }) {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("All");
   const [debouncedSearch] = useDebouncedValue(search, 350);
+  const searchQuery = debouncedSearch.trim() || undefined;
+  const status =
+    statusFilter !== "All" ? (statusFilter as FxInventoryDisbursementStatus) : undefined;
 
-  const filtered = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase();
-    return AGENT_FX_DISBURSEMENTS.filter((row) => {
-      const matchesQuery =
-        !query ||
-        row.reference.toLowerCase().includes(query) ||
-        row.currency.toLowerCase().includes(query);
-      const matchesFilter = !filter || row.status === filter;
-      return matchesQuery && matchesFilter;
-    });
-  }, [debouncedSearch, filter]);
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: FX_INVENTORY_DISBURSEMENT_PAGE_SIZE,
+      search: searchQuery,
+      status,
+      agentId,
+    }),
+    [agentId, page, searchQuery, status]
+  );
 
-  const pageResult = paginate(filtered, page);
+  const { disbursements, isLoading, isFetching, isError, totalPages } =
+    useFxInventoryDisbursements(queryParams);
+  const pageCount = Math.max(totalPages, 1);
 
-  const renderRow = (item: AgentFxDisbursementRow) => [
+  const renderRow = (item: FxInventoryDisbursementRow) => [
     <Text key="reference" size="sm" fw={500}>
       {item.reference}
     </Text>,
@@ -65,7 +73,10 @@ export default function DisbursementTab({ agentId }: { agentId: string }) {
       {item.workflowStage}
     </Text>,
     <StatusBadge key="status" status={item.status} />,
-    <RowActionIcon key="action" onClick={() => undefined} />,
+    <RowActionIcon
+      key="action"
+      onClick={() => router.push(adminRoutes.adminSettlementDisbursementDetails(item.id))}
+    />,
   ];
 
   const handleExport = () => {
@@ -73,7 +84,7 @@ export default function DisbursementTab({ agentId }: { agentId: string }) {
     downloadCsv(
       `agent-fx-disbursements-${dateStamp}.csv`,
       ["Reference", "Currency", "Amount Disbursed", "Date", "Time", "Workflow Stage", "Status"],
-      filtered.map((row) => [
+      disbursements.map((row) => [
         row.reference,
         row.currency,
         row.amount,
@@ -105,19 +116,23 @@ export default function DisbursementTab({ agentId }: { agentId: string }) {
             />
           </div>
           <Group>
-            <FilterSelect
-              value={filter}
-              data={["Pending", "Approved", "Rejected"]}
+            <Select
+              value={statusFilter}
               onChange={(value) => {
-                setFilter(value);
+                setStatusFilter(value ?? "All");
                 setPage(1);
               }}
+              data={FX_INVENTORY_DISBURSEMENT_STATUS_OPTIONS}
+              radius="xl"
+              w={150}
+              rightSection={<ListFilter size={16} />}
+              aria-label="Filter by status"
             />
             <ExportButton onClick={handleExport} />
             <CustomButton
               buttonType="primary"
               rightSection={<Plus size={16} />}
-              onClick={() => undefined}
+              onClick={() => router.push(adminRoutes.adminSettlementDisburseCash())}
             >
               Disburse Cash
             </CustomButton>
@@ -125,17 +140,26 @@ export default function DisbursementTab({ agentId }: { agentId: string }) {
         </Group>
         <DynamicTableSection
           headers={DISBURSEMENT_HEADERS}
-          data={pageResult.rows}
+          data={isError ? [] : disbursements}
+          loading={isLoading || isFetching}
           renderItems={renderRow}
-          emptyTitle="No Disbursements Found"
-          emptyMessage="There are currently no disbursements to display."
-          pagination={{
-            page: pageResult.currentPage,
-            totalPages: pageResult.totalPages,
-            onNext: () => setPage((value) => Math.min(value + 1, pageResult.totalPages)),
-            onPrevious: () => setPage((value) => Math.max(value - 1, 1)),
-            onPageChange: setPage,
-          }}
+          emptyTitle={isError ? "Could not load disbursements" : "No Disbursements Found"}
+          emptyMessage={
+            isError
+              ? "Something went wrong while loading disbursements. Try again."
+              : "There are currently no disbursements to display."
+          }
+          pagination={
+            !isError && disbursements.length > 0
+              ? {
+                  page,
+                  totalPages: pageCount,
+                  onNext: () => setPage((value) => Math.min(value + 1, pageCount)),
+                  onPrevious: () => setPage((value) => Math.max(value - 1, 1)),
+                  onPageChange: setPage,
+                }
+              : undefined
+          }
         />
       </section>
     </div>
