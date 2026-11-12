@@ -560,6 +560,13 @@ export interface AgentTransactionStatsData {
 
 export type AgentTransactionStatsResponse = ApiResponseWrapper<AgentTransactionStatsData>;
 
+export interface AgentFxInventoryExportParams {
+  currency?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface AgentFxLodgeRequest {
   currency: string;
   amount: number;

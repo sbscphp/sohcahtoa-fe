@@ -2,9 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Button, Collapse } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { ChevronDown, TriangleAlert } from "lucide-react";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
-import { useReceivedData } from "../hooks/useFxInventory";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { fetchAllPages, useReceivedData } from "../hooks/useFxInventory";
+import { normalizeDisbursements } from "../_lib/normalize";
+import { getAgentApiErrorMessage } from "@/app/agent/_utils/api-error-message";
 import { downloadCsv } from "../_lib/export-csv";
 import { formatDateTime, formatMoney } from "../_lib/format-fx";
 import type { CashDisbursement, DisbursementDisplayStatus } from "../_lib/types";
@@ -42,12 +46,25 @@ export function InventoryReceivedTab({ onConfirm, onReject }: Readonly<Props>) {
     [],
   );
 
-  const handleExport = () =>
-    downloadCsv(
-      "fx-inventory-received",
-      ["Date", "Reference", "Currency", "Amount", "Purpose", "Disbursed by", "Resolved", "Status"],
-      rows.map((r) => [r.date ? formatDateTime(r.date) : "", r.reference, r.currency, r.amount, r.purpose, r.disbursedBy, r.resolvedAt ? formatDateTime(r.resolvedAt) : "", r.status]),
-    );
+  // The backend has no disbursements export, so page through the list and export every row.
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const all = normalizeDisbursements(
+        await fetchAllPages((p, limit) => agentApi.fxInventory.disbursements({ page: p, limit })),
+      );
+      downloadCsv(
+        "fx-inventory-received",
+        ["Date", "Reference", "Currency", "Amount", "Purpose", "Disbursed by", "Resolved", "Status"],
+        all.map((r) => [r.date ? formatDateTime(r.date) : "", r.reference, r.currency, r.amount, r.purpose, r.disbursedBy, r.resolvedAt ? formatDateTime(r.resolvedAt) : "", r.status]),
+      );
+    } catch (error) {
+      notifications.show({ title: "Export failed", message: getAgentApiErrorMessage(error, "Unable to export. Please try again."), color: "red" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -125,6 +142,7 @@ export function InventoryReceivedTab({ onConfirm, onReject }: Readonly<Props>) {
         title="All Disbursements"
         subtitle="Every cash release from HQ to this agent, whatever its status"
         onExport={handleExport}
+        exporting={exporting}
         isLoading={isLoading}
         errorMessage={errorMessage}
         page={page}

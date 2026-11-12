@@ -84,7 +84,7 @@ export default function FXInventoryPage() {
         keepMounted={false}
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100">
-          <Tabs.List className="flex min-w-0 max-w-full flex-nowrap! gap-6 overflow-x-auto!">
+          <Tabs.List className="flex min-w-0 max-w-full flex-nowrap! gap-6 overflow-x-auto! overflow-y-hidden!">
             {TABS.map((t) => (
               <Tabs.Tab
                 key={t.value}

@@ -71,6 +71,7 @@ import type {
   AgentSupportTicketDetailResponse,
   AgentDashboardCashStatsPeriod,
   AgentFxDisbursementStatus,
+  AgentFxInventoryExportParams,
   AgentFxInventoryListParams,
   AgentFxInventoryListResponse,
   AgentFxLodgeRequest,
@@ -549,6 +550,11 @@ export const agentApi = {
             params: params as unknown as ApiRequestConfig["params"],
           }
         ),
+
+      fxInventoryExport: (params?: AgentFxInventoryExportParams) =>
+        apiClient.download(AGENT_API_ENDPOINTS.transactions.fxInventoryExport, {
+          params: params as ApiRequestConfig["params"],
+        }),
 
       paymentMovementsExport: (params: AgentPaymentMovementExportParams) =>
         apiClient.download(AGENT_API_ENDPOINTS.transactions.paymentsMovementsExport, {

@@ -82,7 +82,7 @@ const TIGHT = "[&&]:sm:pl-3! [&&]:sm:pr-3!";
 const outlineBtn =
   "h-10 gap-1.5 border-text-50! bg-white! px-4 py-2.5 font-medium text-sm leading-5 text-[#4D4B4B]! hover:border-[#E88A58]! hover:bg-[#FFF6F1]! hover:text-[#E36C2F]!";
 
-export function ExportButton({ onClick }: Readonly<{ onClick: () => void }>) {
+export function ExportButton({ onClick, loading }: Readonly<{ onClick: () => void; loading?: boolean }>) {
   return (
     <Button
       variant="outline"
@@ -90,6 +90,7 @@ export function ExportButton({ onClick }: Readonly<{ onClick: () => void }>) {
       radius="xl"
       rightSection={<HugeiconsIcon icon={UploadIcon} className="h-3.5 w-3.5" />}
       onClick={onClick}
+      loading={loading}
       className={outlineBtn}
     >
       Export
@@ -104,6 +105,7 @@ export function InventorySection<T>({
   action,
   toolbar,
   onExport,
+  exporting,
   isLoading,
   errorMessage,
   page,
@@ -121,6 +123,7 @@ export function InventorySection<T>({
   /** Extra controls (filters) shown before the action. */
   toolbar?: ReactNode;
   onExport?: () => void;
+  exporting?: boolean;
   isLoading?: boolean;
   errorMessage?: string | null;
   /** Server-side paging: pass all three. Omit for a client-side table. */
@@ -142,7 +145,7 @@ export function InventorySection<T>({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {toolbar}
-          {action ?? (onExport ? <ExportButton onClick={onExport} /> : null)}
+          {action ?? (onExport ? <ExportButton onClick={onExport} loading={exporting} /> : null)}
         </div>
       </div>
       {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}

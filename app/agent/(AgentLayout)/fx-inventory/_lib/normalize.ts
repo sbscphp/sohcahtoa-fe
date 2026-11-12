@@ -88,6 +88,11 @@ export function normalizeDisbursements(data: unknown): CashDisbursement[] {
       pickString(r, ["disbursedByName", "disbursed_by_name", "adminName", "admin_name"]) ??
       "—";
     const id = pickString(r, ["id", "disbursementId", "disbursement_id"]) ?? `disbursement-${i}`;
+    // Rejecting a receipt keeps the disbursement APPROVED server-side and only stamps receiptRejectedAt,
+    // so the agent's own decision is read from there.
+    const receiptRejectedAt = pickString(r, ["receiptRejectedAt", "receipt_rejected_at"]) ?? null;
+    const rejectedByAgent = raw === "APPROVED" && receiptRejectedAt != null;
+    const canConfirm = typeof r.canConfirmReceipt === "boolean" ? r.canConfirmReceipt : true;
     return {
       id,
       reference: pickString(r, ["reference", "referenceNumber", "reference_number", "ref"]) ?? id,
@@ -95,10 +100,19 @@ export function normalizeDisbursements(data: unknown): CashDisbursement[] {
       amount: pickNumber(r, ["amount", "disbursedAmount", "disbursed_amount"]) ?? null,
       purpose: pickString(r, ["purpose", "reason", "notes"]) ?? "—",
       disbursedBy: role && name !== "—" ? `${name} (${role})` : name,
-      date: pickString(r, ["createdAt", "created_at", "disbursedAt", "date"]) ?? "",
-      resolvedAt: pickString(r, ["completedAt", "completed_at", "confirmedAt", "resolvedAt", "rejectedAt"]) ?? null,
-      status: DISBURSEMENT_STATUS[raw] ?? "Pending",
-      awaitingConfirmation: raw === "APPROVED",
+      date: pickString(r, ["initiatedAt", "createdAt", "created_at", "approvedAt", "disbursedAt", "date"]) ?? "",
+      resolvedAt:
+        pickString(r, [
+          "receiptConfirmedAt",
+          "receiptRejectedAt",
+          "rejectedAt",
+          "completedAt",
+          "completed_at",
+          "confirmedAt",
+          "resolvedAt",
+        ]) ?? null,
+      status: rejectedByAgent ? "Rejected" : (DISBURSEMENT_STATUS[raw] ?? "Pending"),
+      awaitingConfirmation: raw === "APPROVED" && !rejectedByAgent && canConfirm,
     };
   });
 }

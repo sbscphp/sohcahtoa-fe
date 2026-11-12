@@ -37,6 +37,42 @@ describe("fx-inventory normalisers", () => {
     ]);
   });
 
+  it("reads disbursement dates and treats an agent-rejected receipt as Rejected, not awaiting", () => {
+    const base = {
+      currency: "NGN",
+      amount: 10000,
+      purpose: "Test 1",
+      initiatedBy: "ffffffff-0000-0000-0000-000000000001",
+      initiatedAt: "2026-11-12T10:57:21.871Z",
+      canConfirmReceipt: true,
+    };
+    const [pending, rejected, completed] = normalizeDisbursements([
+      { ...base, id: "a", referenceNumber: "FXD-A", status: "APPROVED", receiptRejectedAt: null },
+      {
+        ...base,
+        id: "b",
+        referenceNumber: "FXD-B",
+        status: "APPROVED",
+        receiptRejectedAt: "2026-11-12T11:27:12.991Z",
+        receiptRejectionReason: "Done",
+      },
+      {
+        ...base,
+        id: "c",
+        referenceNumber: "FXD-C",
+        status: "COMPLETED",
+        canConfirmReceipt: false,
+        receiptConfirmedAt: "2026-11-12T11:01:56.847Z",
+      },
+    ]);
+
+    expect(pending).toMatchObject({ status: "Pending", awaitingConfirmation: true, date: base.initiatedAt, resolvedAt: null });
+    expect(rejected).toMatchObject({ status: "Rejected", awaitingConfirmation: false, resolvedAt: "2026-11-12T11:27:12.991Z" });
+    expect(completed).toMatchObject({ status: "Confirmed", awaitingConfirmation: false, resolvedAt: "2026-11-12T11:01:56.847Z" });
+    // initiatedBy is only a user id, so no name is shown.
+    expect(pending.disbursedBy).toBe("—");
+  });
+
   it("handles empty balances and disbursements", () => {
     expect(normalizeBalances([])).toEqual({});
     expect(normalizeDisbursements([])).toEqual([]);

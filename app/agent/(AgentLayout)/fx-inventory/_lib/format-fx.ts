@@ -3,7 +3,10 @@ import { formatShortDate, formatShortTime } from "@/app/utils/helper/formatLocal
 
 /** Whole-number-friendly money: "$20,000", but keeps cents when present. */
 export function formatMoney(value: number | null | undefined, currency: string): string {
-  return formatCurrencyAmount(value, currency, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  if (value == null) return formatCurrencyAmount(value, currency);
+  const text = formatCurrencyAmount(Math.abs(value), currency, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  // Sign goes before the symbol: "-$11,000", not "$-11,000".
+  return value < 0 ? `-${text}` : text;
 }
 
 /** Money with accounting-style negatives, e.g. `(£1,200)`. Null renders as an em dash. */

@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { Select } from "@mantine/core";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
 import type { AgentDashboardCashStatsPeriod } from "@/app/_lib/api/types";
-import { useTransactionsData } from "../hooks/useFxInventory";
-import { downloadCsv } from "../_lib/export-csv";
-import { formatDateTime, formatMoney, formatPlainNumber } from "../_lib/format-fx";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { useBackendExport, useTransactionsData } from "../hooks/useFxInventory";
+import { formatMoney, formatPlainNumber } from "../_lib/format-fx";
 import type { InventoryTransaction, TransactionSettlementStatus } from "../_lib/types";
 import { DateTimeCell, InventorySection, SignedAmount, StatusPill, SummaryTile, SummaryTiles } from "./shared";
 
@@ -61,13 +61,11 @@ export function TransactionsTab({ period, currency }: Readonly<Props>) {
     [],
   );
 
-  // Exports the rows on screen (the current page and filter).
-  const handleExport = () =>
-    downloadCsv(
-      "fx-inventory-transactions",
-      ["Transaction ID", "Customer", "Type", "Pair", "FX Amount", "Rate (NGN)", "NGN Amount", "Status", "Date"],
-      rows.map((r) => [r.id, r.customerName, r.transactionType, r.currencyPair, r.fxAmount, r.rate, r.ngnAmount, r.status, formatDateTime(r.date)]),
-    );
+  // Backend export: every transaction matching the status filter, not just this page.
+  const exporter = useBackendExport(
+    () => agentApi.transactions.export(status ? { status } : undefined),
+    "fx-inventory-transactions",
+  );
 
   return (
     <div className="space-y-4">
@@ -94,7 +92,8 @@ export function TransactionsTab({ period, currency }: Readonly<Props>) {
             aria-label="Filter by status"
           />
         }
-        onExport={handleExport}
+        onExport={exporter.run}
+        exporting={exporter.isPending}
         isLoading={isLoading}
         errorMessage={errorMessage}
         page={page}

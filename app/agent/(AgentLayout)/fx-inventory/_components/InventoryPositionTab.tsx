@@ -4,8 +4,8 @@ import { useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
 import type { PaginatedTableColumn } from "@/app/agent/_components/common";
 import type { AgentDashboardCashStatsPeriod } from "@/app/_lib/api/types";
-import { usePositionData } from "../hooks/useFxInventory";
-import { downloadCsv } from "../_lib/export-csv";
+import { agentApi } from "@/app/agent/_services/agent-api";
+import { useBackendExport, usePositionData } from "../hooks/useFxInventory";
 import { formatAccounting } from "../_lib/format-fx";
 import type { PositionRow } from "../_lib/types";
 import { CurrencyCell, InventorySection, StatusPill } from "./shared";
@@ -68,12 +68,8 @@ export function InventoryPositionTab({ period }: Readonly<{ period: AgentDashboa
     ];
   }, []);
 
-  const handleExport = () =>
-    downloadCsv(
-      "fx-inventory-position",
-      ["Currency", "Opening", "Disbursed from Admin", "Purchased", "Sold", "Lodged to HQ", "Closing", "Physical Count", "Variance", "Status"],
-      rows.map((r) => [r.currency, r.openingBalance, r.disbursedFromAdmin, r.purchasedFromCustomers, r.soldToCustomers, r.lodgedToHq, r.closingBalance, r.physicalCount, r.variance, r.status]),
-    );
+  // Backend export: SUMMARY per currency plus per-transaction DETAIL rows.
+  const exporter = useBackendExport(() => agentApi.transactions.fxInventoryExport(), "fx-inventory");
 
   return (
     <div className="space-y-4">
@@ -95,7 +91,8 @@ export function InventoryPositionTab({ period }: Readonly<{ period: AgentDashboa
       <InventorySection
         title="FX Inventory Position"
         subtitle="Opening-to-closing movement per currency for the selected period"
-        onExport={handleExport}
+        onExport={exporter.run}
+        exporting={exporter.isPending}
         isLoading={isLoading}
         errorMessage={errorMessage}
         data={data}
