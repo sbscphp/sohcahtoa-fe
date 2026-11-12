@@ -9,18 +9,37 @@ import { getCurrencyFlagUrl } from "../_lib/currency";
 
 type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 
+type CurrencySelectorMode = "primary" | "secondary";
+
 interface CurrencySelectorProps {
   value?: CurrencyCode | null;
   onChange?: (value: CurrencyCode) => void;
   disabled?: boolean;
+  readOnly?: boolean;
   currencyCodes?: CurrencyCode[];
+  mode?: CurrencySelectorMode;
 }
+
+const TRIGGER_BASE_CLASS =
+  "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-2.5 text-xs font-normal leading-4";
+
+const TRIGGER_MODE_CLASS: Record<CurrencySelectorMode, string> = {
+  primary: "border-gray-100 bg-white text-body-text-400",
+  secondary: "border-gray-900 bg-gray-900 text-white",
+};
+
+const TRIGGER_INTERACTIVE_CLASS =
+  "transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+
+const TRIGGER_READONLY_CLASS = "cursor-default";
 
 export default function CurrencySelector({
   value,
   onChange,
   disabled,
+  readOnly,
   currencyCodes,
+  mode = "primary",
 }: CurrencySelectorProps) {
   const currencies = useMemo(() => {
     if (currencyCodes && currencyCodes.length > 0) {
@@ -41,33 +60,57 @@ export default function CurrencySelector({
   }, [internalSelected, value, currencies]);
 
   const handleSelect = (currency: (typeof CURRENCIES)[number]) => {
+    if (readOnly) return;
     if (!value) {
       setInternalSelected(currency);
     }
     onChange?.(currency.code);
   };
 
+  const triggerClassName = [
+    TRIGGER_BASE_CLASS,
+    TRIGGER_MODE_CLASS[mode],
+    readOnly ? TRIGGER_READONLY_CLASS : TRIGGER_INTERACTIVE_CLASS,
+  ].join(" ");
+
   return (
-    <Menu position="bottom-end" width={220} closeOnItemClick disabled={disabled}>
+    <Menu
+      position="bottom-end"
+      width={220}
+      closeOnItemClick
+      disabled={disabled || readOnly}
+    >
       <Menu.Target>
         <button
           type="button"
           disabled={disabled}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-2.5 text-xs font-normal leading-4 text-body-text-400 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className={triggerClassName}
         >
-          <span className="text-base leading-none" aria-hidden>
-            <Image
-              src={getCurrencyFlagUrl(selected.code) ?? ""}
-              alt={selected.name}
-              width={24}
-              height={24}
-            />
-          </span>
+          {mode === "secondary" ? (
+            <span className="size-6 shrink-0 overflow-hidden rounded-full" aria-hidden>
+              <Image
+                src={getCurrencyFlagUrl(selected.code) ?? ""}
+                alt={selected.name}
+                width={24}
+                height={24}
+                className="size-full object-cover"
+              />
+            </span>
+          ) : (
+            <span className="text-base leading-none" aria-hidden>
+              <Image
+                src={getCurrencyFlagUrl(selected.code) ?? ""}
+                alt={selected.name}
+                width={24}
+                height={24}
+              />
+            </span>
+          )}
           <span>{selected.code}</span>
-          <ChevronDown className="size-3 shrink-0" aria-hidden />
+          {!readOnly && <ChevronDown className="size-3 shrink-0" aria-hidden />}
         </button>
       </Menu.Target>
-      <Menu.Dropdown className="max-h-[250px] overflow-y-auto">
+      <Menu.Dropdown className="max-h-62.5 overflow-y-auto">
         {currencies.map((currency) => (
           <Menu.Item
             key={currency.code}

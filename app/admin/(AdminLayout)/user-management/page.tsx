@@ -63,7 +63,7 @@ export default function UserManagementPage() {
   useSetHeaderContent(headerContent);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-5">
       {activeTab === "user" && <UserManagement />}
       {activeTab === "roles" && <UserRoles />}
       {activeTab === "department" && <Departments />}

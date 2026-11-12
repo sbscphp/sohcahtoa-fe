@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Divider, Menu, Skeleton, Stack, Text } from "@mantine/core";
-import { useParams } from "next/navigation";
+import { Button, Divider, Flex, Menu, Skeleton, Stack, Text } from "@mantine/core";
+import { useParams, useRouter } from "next/navigation";
 import { Download } from "lucide-react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { DetailItem } from "@/app/admin/_components/DetailItem";
@@ -22,6 +22,8 @@ import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import AgentTransactionsTable from "../_agentComponents/AgentTransactionsTable";
 import { useManagementLookups } from "../../user-management/hooks/useManagementLookups";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
+import { adminRoutes } from "@/lib/adminRoutes";
 
 type AgentStatus = "Active" | "Deactivated" | "Pending";
 
@@ -49,6 +51,7 @@ const formatNaira = (amount: number): string =>
 
 export default function AgentDetailsPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const agentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const {
@@ -288,6 +291,10 @@ export default function AgentDetailsPage() {
     );
   }
 
+  const handleFxInventory = () => {
+    router.push(adminRoutes.adminOutletAgentFxInventoryDetails(agentId));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header + Agent Details Card */}
@@ -318,38 +325,41 @@ export default function AgentDetailsPage() {
             </div>
           </Stack>
 
-          <Menu position="bottom-end" shadow="md" width={160}>
-            <Menu.Target>
-              <Button
-                radius="xl"
-                size="md"
-                color="#DD4F05"
-                className="self-start md:self-auto"
-                disabled={
-                  !agentData || isAgentLoading || toggleStatusMutation.isPending
-                }
-              >
-                Take Action
-              </Button>
-            </Menu.Target>
+          <Flex justify="flex-end" align="center" gap={"md"}>
+            <CustomButton buttonType="secondary" size="md" radius="xl" onClick={handleFxInventory}>FX Inventory</CustomButton>
+            <Menu position="bottom-end" shadow="md" width={160}>
+              <Menu.Target>
+                <Button
+                  radius="xl"
+                  size="md"
+                  color="#DD4F05"
+                  className="self-start md:self-auto"
+                  disabled={
+                    !agentData || isAgentLoading || toggleStatusMutation.isPending
+                  }
+                >
+                  Take Action
+                </Button>
+              </Menu.Target>
 
-            <Menu.Dropdown>
-              <Menu.Item onClick={() => setEditModalOpened(true)}>
-                Edit
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={() => {
-                  setStatusAction(
-                    isCurrentlyActive ? "deactivate" : "reactivate",
-                  );
-                  setStatusConfirmOpened(true);
-                }}
-              >
-                {isCurrentlyActive ? "Deactivate" : "Reactivate"}
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+              <Menu.Dropdown>
+                <Menu.Item onClick={() => setEditModalOpened(true)}>
+                  Edit
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={() => {
+                    setStatusAction(
+                      isCurrentlyActive ? "deactivate" : "reactivate",
+                    );
+                    setStatusConfirmOpened(true);
+                  }}
+                >
+                  {isCurrentlyActive ? "Deactivate" : "Reactivate"}
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Flex>
         </div>
 
         <Divider />

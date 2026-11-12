@@ -154,7 +154,7 @@ export default function TransactionPage() {
   useSetHeaderContent(headerContent);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-5  ">
       {activeTab === "transactions" && <TransactionsTabContent />}
       {activeTab === "transaction-workflows" && <WorkflowActionSection />}
     </div>

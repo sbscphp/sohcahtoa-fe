@@ -1,4 +1,5 @@
 import { adminRoutes } from './adminRoutes';
+import { getAgentFxInventoryDetail } from '@/app/admin/(AdminLayout)/outlet/_data/agentFxInventoryMock';
 
 export type Breadcrumb = {
   label: string;
@@ -140,6 +141,17 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
     ];
   }
 
+  // Agent FX Inventory Details: /admin/outlet/agent-fx-inventory/:id
+  if (/^\/admin\/outlet\/agent-fx-inventory\/[^/]+$/.test(pathname)) {
+    const agentId = decodeURIComponent(pathname.split('/')[4] ?? '');
+    const detail = getAgentFxInventoryDetail(agentId);
+    return [
+      { label: 'Outlet', url: adminRoutes.adminOutlet() },
+      { label: 'Agent FX Inventory', url: adminRoutes.adminOutletAgentFxInventory() },
+      { label: detail ? `${detail.agentName} FX Inventory` : 'FX Inventory' },
+    ];
+  }
+
   // Branch Transaction Detail: /admin/outlet/branch/:id/transactions
   if (/^\/admin\/outlet\/branch\/[^/]+\/transactions\/[^/]+$/.test(pathname)) {
     const branchId = pathname.split('/')[4];
@@ -273,6 +285,27 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
       { label: 'Settings', url: adminRoutes.adminSettings() },
       { label: 'Workflow Configuration', url: adminRoutes.adminSettingsWorkflowConfiguration() },
       { label: 'Workflow Details' },
+    ];
+  }
+
+  if (pathname === "/admin/settlement/disburse-cash") {
+    return [
+      { label: "Settlement Management", url: adminRoutes.adminSettlementFxInventory() },
+      { label: "Cash Disbursement" },
+    ];
+  }
+
+  if (/^\/admin\/settlement\/disbursements\/[^/]+$/.test(pathname)) {
+    return [
+      { label: "Settlement Management", url: adminRoutes.adminSettlementFxInventory() },
+      { label: "View Disbursement" },
+    ];
+  }
+
+  if (/^\/admin\/settlement\/lodgements\/[^/]+$/.test(pathname)) {
+    return [
+      { label: "Settlement Management", url: adminRoutes.adminSettlementFxInventory() },
+      { label: "View Cash Lodgment" },
     ];
   }
 
