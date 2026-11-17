@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Menu, Modal, NumberInput, Select, TextInput } from "@mantine/core";
 import { X } from "lucide-react";
+import { ApprovalActionConfirmModal } from "@/app/admin/_components/ApprovalActionConfirmModal";
 import { ConfirmationModal } from "@/app/admin/_components/ConfirmationModal";
 import { CustomButton } from "@/app/admin/_components/CustomButton";
 import { SuccessModal } from "@/app/admin/_components/SuccessModal";
@@ -20,7 +21,7 @@ interface LodgmentTakeActionProps {
   canAct?: boolean;
   onSaveAmount: (amount: number) => Promise<void>;
   onConfirm: () => Promise<void>;
-  onReject: () => Promise<void>;
+  onReject: (reason: string) => Promise<void>;
 }
 
 export default function LodgmentTakeAction({
@@ -218,18 +219,18 @@ export default function LodgmentTakeAction({
         onSecondary={closeFlow}
       />
 
-      <ConfirmationModal
+      <ApprovalActionConfirmModal
         opened={flow === "reject"}
         onClose={closeFlow}
         title="Reject Lodgment?"
         message="You are about to reject this cash lodgment. Once rejected, the agent will be notified."
         primaryButtonText="Yes, Reject"
         secondaryButtonText="No, Close"
-        loading={submitting && flow === "reject"}
-        onPrimary={() => {
-          void runAction(onReject, "reject");
+        commentPlaceholder="Enter a reason"
+        isLoading={submitting && flow === "reject"}
+        onConfirm={(reason) => {
+          void runAction(() => onReject(reason), "reject");
         }}
-        onSecondary={closeFlow}
       />
 
       <ConfirmationModal

@@ -66,8 +66,9 @@ function formatDateTime(value: unknown): string {
     return "--\n--";
   }
 
-  const day = date.toLocaleDateString("en-CA");
+  const day = date.toLocaleDateString("en-CA", { timeZone: "UTC" });
   const time = date.toLocaleTimeString("en-US", {
+    timeZone: "UTC",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
