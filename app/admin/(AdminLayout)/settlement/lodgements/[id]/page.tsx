@@ -132,8 +132,8 @@ export default function ViewLodgmentPage() {
               reason: "",
             });
           }}
-          onReject={async () => {
-            await rejectLodgment.mutateAsync({ reason: "" });
+          onReject={async (reason) => {
+            await rejectLodgment.mutateAsync({ reason });
           }}
         />
       </div>

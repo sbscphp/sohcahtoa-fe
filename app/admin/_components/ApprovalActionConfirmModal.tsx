@@ -117,10 +117,13 @@ export function ApprovalActionConfirmModal({
         )}
         <div className="w-full space-y-1.5 text-left">
           <Text size="sm" fw={500} className="text-body-heading-300">
-            Comment{" "}
-            <span className="text-red-500" aria-hidden>
-              *
-            </span>
+            Comment
+            {commentRequired ? (
+              <span className="text-red-500" aria-hidden>
+                {" "}
+                *
+              </span>
+            ) : null}
           </Text>
           <Textarea
             placeholder={commentPlaceholder}
