@@ -224,16 +224,27 @@ export function InventoryOverview({
   );
 }
 
-export function TransactionOverview({ agentId }: { agentId: string }) {
+export function TransactionOverview({
+  agentId,
+  onPeriodChange,
+}: {
+  agentId: string;
+  onPeriodChange?: (filters: FxPeriodFilters) => void;
+}) {
   const [period, setPeriod] = useState<FxPeriodFilters>({});
   const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId, period);
   const currency = isCurrencyCode(overview?.currency) ? overview.currency : period.currency;
+
+  const handlePeriodChange = (filters: FxPeriodFilters) => {
+    setPeriod(filters);
+    onPeriodChange?.(filters);
+  };
 
   return (
     <section className="rounded-xl bg-white p-5">
       <Group justify="space-between" align="center" wrap="wrap" mb="md">
         <h2 className="text-base font-semibold">Transaction Overview</h2>
-        <PeriodControls onChange={setPeriod} />
+        <PeriodControls onChange={handlePeriodChange} />
       </Group>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {isLoading ? (

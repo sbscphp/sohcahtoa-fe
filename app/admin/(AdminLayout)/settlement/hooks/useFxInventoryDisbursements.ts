@@ -176,8 +176,11 @@ export function useFxInventoryDisbursements(
   const search = params.search?.trim() || undefined;
   const status = params.status;
   const agentId = params.agentId?.trim() || undefined;
+  const currency = params.currency?.trim() || undefined;
+  const dateFrom = params.dateFrom?.trim() || undefined;
+  const dateTo = params.dateTo?.trim() || undefined;
 
-  const queryParams = { page, limit, search, status, agentId };
+  const queryParams = { page, limit, search, status, agentId, currency, dateFrom, dateTo };
 
   const query = useFetchDataSeperateLoading<DisbursementsListResponse>(
     [...adminKeys.fxInventory.disbursements(queryParams)],

@@ -1453,6 +1453,9 @@ export type FxInventoryLodgmentsListParams = Record<
   search?: string;
   status?: FxInventoryLodgmentStatus;
   agentId?: string;
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export interface FxInventoryLodgmentListItem {
@@ -1521,6 +1524,9 @@ export type FxInventoryDisbursementsListParams = Record<
   search?: string;
   status?: FxInventoryDisbursementStatus;
   agentId?: string;
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export interface FxInventoryDisbursementListItem {

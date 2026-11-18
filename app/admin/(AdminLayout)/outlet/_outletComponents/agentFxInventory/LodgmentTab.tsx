@@ -23,6 +23,7 @@ import {
   InventoryOverview,
   TimestampCell,
   downloadCsv,
+  type FxPeriodFilters,
 } from "./detailShared";
 
 const LODGMENT_HEADERS = [
@@ -40,6 +41,7 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [period, setPeriod] = useState<FxPeriodFilters>({});
   const [debouncedSearch] = useDebouncedValue(search, 350);
   const searchQuery = debouncedSearch.trim() || undefined;
   const status =
@@ -52,8 +54,11 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
       search: searchQuery,
       status,
       agentId,
+      currency: period.currency,
+      dateFrom: period.dateFrom,
+      dateTo: period.dateTo,
     }),
-    [agentId, page, searchQuery, status]
+    [agentId, page, period, searchQuery, status]
   );
 
   const { lodgments, isLoading, isFetching, isError, totalPages } =
@@ -102,7 +107,13 @@ export default function LodgmentTab({ agentId }: { agentId: string }) {
 
   return (
     <div className="space-y-4">
-      <InventoryOverview agentId={agentId} />
+      <InventoryOverview
+        agentId={agentId}
+        onPeriodChange={(filters) => {
+          setPeriod(filters);
+          setPage(1);
+        }}
+      />
       <section className="rounded-lg bg-white p-5">
         <Group justify="space-between" wrap="wrap" mb="md">
           <div className="flex items-center gap-4">

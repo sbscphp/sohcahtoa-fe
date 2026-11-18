@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Group, Select, Text, TextInput } from "@mantine/core";
 import { Search } from "lucide-react";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
@@ -32,6 +32,8 @@ interface AgentTransaction {
 
 interface AgentTransactionsTableProps {
   agentId: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 interface ApiTransactionItem {
@@ -64,11 +66,15 @@ interface AgentTransactionQueryParams {
   limit: number;
   search?: string;
   status?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 interface AgentTransactionExportParams {
   search?: string;
   status?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 function parseNumber(value: unknown): number {
@@ -117,6 +123,8 @@ function mapTransaction(item: ApiTransactionItem): AgentTransaction {
 
 export default function AgentTransactionsTable({
   agentId,
+  dateFrom,
+  dateTo,
 }: AgentTransactionsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -124,6 +132,10 @@ export default function AgentTransactionsTable({
   const [statusFilter, setStatusFilter] = useState<string | null>("All");
   const [page, setPage] = useState(1);
   const pageSize = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [dateFrom, dateTo]);
   const queryParams: AgentTransactionQueryParams = useMemo(() => {
     const uiStatus =
       !statusFilter || statusFilter === "All"
@@ -144,8 +156,10 @@ export default function AgentTransactionsTable({
       limit: pageSize,
       search: debouncedSearch.trim() || undefined,
       status,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
     };
-  }, [debouncedSearch, page, pageSize, statusFilter]);
+  }, [dateFrom, dateTo, debouncedSearch, page, pageSize, statusFilter]);
 
   const query = useFetchDataSeperateLoading<AgentTransactionsResponse>(
     agentId
@@ -176,8 +190,10 @@ export default function AgentTransactionsTable({
     () => ({
       search: queryParams.search,
       status: queryParams.status,
+      dateFrom: queryParams.dateFrom,
+      dateTo: queryParams.dateTo,
     }),
-    [queryParams.search, queryParams.status]
+    [queryParams.dateFrom, queryParams.dateTo, queryParams.search, queryParams.status]
   );
 
   const exportTransactionsMutation = useGetExportData(
