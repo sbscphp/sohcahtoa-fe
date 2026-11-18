@@ -92,7 +92,7 @@ function PeriodControls() {
 
   return (
     <Group gap="sm">
-      <CurrencySelector readOnly={true} mode="secondary" value={currency} onChange={setCurrency} />
+      <CurrencySelector mode="secondary" value={currency} onChange={setCurrency} />
       <Button variant="default" radius="xl" rightSection={<ChevronDown size={14} />}>
         Date: Today
       </Button>
@@ -122,12 +122,7 @@ export function InventoryOverview({ agentId }: { agentId: string }) {
     <section className="rounded-xl bg-white p-5">
       <Group justify="space-between" align="center" wrap="wrap" mb="md">
         <h2 className="text-base font-semibold">Inventory Overview</h2>
-        <Group gap="sm">
-          <CurrencySelector readOnly mode="secondary" value={currency} />
-          <Button variant="default" radius="xl" rightSection={<ChevronDown size={14} />}>
-            Date: Today
-          </Button>
-        </Group>
+        <PeriodControls />
       </Group>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {isLoading ? (

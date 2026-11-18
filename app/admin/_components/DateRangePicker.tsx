@@ -1,6 +1,5 @@
 import { DatePickerInput } from "@mantine/dates";
 import { CiCalendar } from "react-icons/ci";
-import "@mantine/dates/styles.css";
 import { useState } from "react";
 
 interface DateRangePickerProps {
