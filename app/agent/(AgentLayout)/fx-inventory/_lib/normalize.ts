@@ -49,8 +49,11 @@ export function unwrapList(data: unknown, depth = 0): Rec[] {
   return [];
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function personName(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
+  // A bare string is often just a user id (e.g. disbursedBy), which is never worth showing.
+  if (typeof value === "string") return value.trim() && !UUID_RE.test(value.trim()) ? value.trim() : undefined;
   if (!isRec(value)) return undefined;
   const full = pickString(value, ["fullName", "full_name", "name"]);
   if (full) return full;
@@ -81,11 +84,12 @@ export function normalizeDisbursements(data: unknown): CashDisbursement[] {
   return unwrapList(data).map((r, i) => {
     const raw = (pickString(r, ["status"]) ?? "").toUpperCase();
     const role = pickString(r, ["disbursedByRole", "adminRole", "role"]);
+    // The API sends the admin's name as disbursedByName; disbursedBy / initiatedBy are only user ids.
     const name =
+      pickString(r, ["disbursedByName", "disbursed_by_name", "adminName", "admin_name", "approvedByName"]) ??
       personName(r.disbursedBy) ??
       personName(r.admin) ??
       personName(r.createdBy) ??
-      pickString(r, ["disbursedByName", "disbursed_by_name", "adminName", "admin_name"]) ??
       "—";
     const id = pickString(r, ["id", "disbursementId", "disbursement_id"]) ?? `disbursement-${i}`;
     // Rejecting a receipt keeps the disbursement APPROVED server-side and only stamps receiptRejectedAt,

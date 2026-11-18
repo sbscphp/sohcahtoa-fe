@@ -118,7 +118,7 @@ export function InventoryReceivedTab({ onConfirm, onReject }: Readonly<Props>) {
                         {d.currency} {d.amount == null ? "—" : d.amount.toLocaleString("en-US")} from Admin
                       </p>
                       <p className="text-xs text-body-text-100">
-                        {d.purpose} · Disbursed by {d.disbursedBy}
+                        {d.purpose}{d.disbursedBy !== "—" ? ` · Disbursed by ${d.disbursedBy}` : ""}
                         {d.date ? ` · ${formatDateTime(d.date)}` : ""} · Ref {d.reference}
                       </p>
                     </div>

@@ -73,6 +73,25 @@ describe("fx-inventory normalisers", () => {
     expect(pending.disbursedBy).toBe("—");
   });
 
+  it("shows disbursedByName, never the user id in disbursedBy", () => {
+    const [withName, idOnly] = normalizeDisbursements([
+      {
+        id: "x",
+        referenceNumber: "FXD-X",
+        currency: "NGN",
+        amount: 600,
+        status: "REJECTED",
+        disbursedBy: "ffffffff-0000-0000-0000-000000000001",
+        disbursedByName: "Super Admin",
+        initiatedAt: "2026-11-12T10:44:48.089Z",
+        rejectedAt: "2026-11-12T10:48:59.925Z",
+      },
+      { id: "y", referenceNumber: "FXD-Y", currency: "NGN", amount: 1, status: "APPROVED", disbursedBy: "ffffffff-0000-0000-0000-000000000001" },
+    ]);
+    expect(withName).toMatchObject({ disbursedBy: "Super Admin", status: "Rejected", resolvedAt: "2026-11-12T10:48:59.925Z" });
+    expect(idOnly.disbursedBy).toBe("—");
+  });
+
   it("handles empty balances and disbursements", () => {
     expect(normalizeBalances([])).toEqual({});
     expect(normalizeDisbursements([])).toEqual([]);

@@ -30,6 +30,7 @@ function ReceiptDetails({ item, agentName }: Readonly<{ item: CashDisbursement; 
       <DetailRow label="Currency" value={item.currency || "—"} />
       <DetailRow label="Disbursed Amount" value={item.amount == null ? "—" : formatMoney(item.amount, item.currency)} />
       <DetailRow label="Reference" value={item.reference} />
+      {item.disbursedBy !== "—" && <DetailRow label="Disbursed by" value={item.disbursedBy} />}
     </div>
   );
 }
