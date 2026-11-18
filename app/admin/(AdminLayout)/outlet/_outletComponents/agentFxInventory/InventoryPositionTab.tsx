@@ -24,6 +24,7 @@ import {
   InventoryOverview,
   RECONCILED_COLOR,
   VARIANCE_COLOR,
+  type FxPeriodFilters,
 } from "./detailShared";
 
 const POSITION_HEADERS = [
@@ -66,8 +67,17 @@ function statusParam(filter: string | null): FxInventoryAgentPositionStatus | un
 
 export default function InventoryPositionTab({ agentId }: { agentId: string }) {
   const [filter, setFilter] = useState<string | null>(null);
+  const [period, setPeriod] = useState<FxPeriodFilters>({ currency: "USD" });
   const status = statusParam(filter);
-  const params = useMemo(() => (status ? { status } : undefined), [status]);
+  const params = useMemo(
+    () => ({
+      status,
+      currency: period.currency,
+      dateFrom: period.dateFrom,
+      dateTo: period.dateTo,
+    }),
+    [period, status]
+  );
   const { position, isLoading, isFetching, isError } = useFxInventoryAgentPosition(
     agentId,
     params
@@ -183,7 +193,7 @@ export default function InventoryPositionTab({ agentId }: { agentId: string }) {
 
   return (
     <div className="space-y-4">
-      <InventoryOverview agentId={agentId} />
+      <InventoryOverview agentId={agentId} onPeriodChange={setPeriod} />
       <section className="rounded-lg bg-white p-5">
         <Group justify="space-between" align="flex-start" wrap="wrap" mb="md">
           <div>

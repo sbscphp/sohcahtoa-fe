@@ -474,11 +474,18 @@ export const adminKeys = {
       limit?: number;
       search?: string;
     }) => [...adminKeys.fxInventory.all, "agents", params] as const,
-    agentOverview: (agentId: string) =>
-      [...adminKeys.fxInventory.all, "agent-overview", agentId] as const,
+    agentOverview: (
+      agentId: string,
+      params?: { currency?: string; dateFrom?: string; dateTo?: string }
+    ) => [...adminKeys.fxInventory.all, "agent-overview", agentId, params] as const,
     agentInventoryPosition: (
       agentId: string,
-      params?: { status?: string }
+      params?: {
+        status?: string;
+        currency?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      }
     ) =>
       [...adminKeys.fxInventory.all, "agent-inventory-position", agentId, params] as const,
   },
