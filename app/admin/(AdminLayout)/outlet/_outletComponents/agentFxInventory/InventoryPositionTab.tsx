@@ -87,6 +87,8 @@ export default function InventoryPositionTab({ agentId }: { agentId: string }) {
     if (isError || !position) return [];
 
     const rows = Array.isArray(position.rows) ? position.rows : [];
+    if (rows.length === 0) return [];
+
     const flaggedCount = rows.filter((row) => positionStatus(row.variance) === "Variance").length;
 
     return [
