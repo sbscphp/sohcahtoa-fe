@@ -67,7 +67,7 @@ function statusParam(filter: string | null): FxInventoryAgentPositionStatus | un
 
 export default function InventoryPositionTab({ agentId }: { agentId: string }) {
   const [filter, setFilter] = useState<string | null>(null);
-  const [period, setPeriod] = useState<FxPeriodFilters>({ currency: "USD" });
+  const [period, setPeriod] = useState<FxPeriodFilters>({});
   const status = statusParam(filter);
   const params = useMemo(
     () => ({

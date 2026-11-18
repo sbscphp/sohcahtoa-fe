@@ -23,7 +23,8 @@ export const FLAGGED_COLOR = "#B42318";
 type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 
 export type FxPeriodFilters = {
-  currency: string;
+  /** Undefined when no currency is selected (no currency filter applied). */
+  currency?: string;
   dateFrom?: string;
   dateTo?: string;
 };
@@ -95,11 +96,11 @@ export function CurrencyLabel({ code, label }: { code?: string; label: string })
 }
 
 function PeriodControls({ onChange }: { onChange: (filters: FxPeriodFilters) => void }) {
-  const [currency, setCurrency] = useState<CurrencyCode>("USD");
+  const [currency, setCurrency] = useState<CurrencyCode | null>(null);
   const [dateFrom, setDateFrom] = useState<string | undefined>();
   const [dateTo, setDateTo] = useState<string | undefined>();
 
-  const emit = (nextCurrency: string, from?: string, to?: string) => {
+  const emit = (nextCurrency?: string, from?: string, to?: string) => {
     onChange({
       currency: nextCurrency,
       dateFrom: from || undefined,
@@ -112,9 +113,15 @@ function PeriodControls({ onChange }: { onChange: (filters: FxPeriodFilters) => 
       <CurrencySelector
         mode="secondary"
         value={currency}
+        clearable
+        placeholder="Currency"
         onChange={(value) => {
           setCurrency(value);
           emit(value, dateFrom, dateTo);
+        }}
+        onClear={() => {
+          setCurrency(null);
+          emit(undefined, dateFrom, dateTo);
         }}
       />
       <div className="w-55">
@@ -124,7 +131,7 @@ function PeriodControls({ onChange }: { onChange: (filters: FxPeriodFilters) => 
             const to = endDate || undefined;
             setDateFrom(from);
             setDateTo(to);
-            emit(currency, from, to);
+            emit(currency ?? undefined, from, to);
           }}
           maxDate={new Date()}
           valueFormat="YYYY-MM-DD"
@@ -139,7 +146,7 @@ function isCurrencyCode(value?: string): value is CurrencyCode {
   return CURRENCIES.some((currency) => currency.code === value);
 }
 
-function moneyLabel(amount: number | null | undefined, currency: string, isError: boolean) {
+function moneyLabel(amount: number | null | undefined, currency: string | undefined, isError: boolean) {
   if (isError || amount === null || amount === undefined) return "—";
   return formatCurrency(amount, currency) || "—";
 }
@@ -161,7 +168,7 @@ export function InventoryOverview({
   agentId: string;
   onPeriodChange?: (filters: FxPeriodFilters) => void;
 }) {
-  const [period, setPeriod] = useState<FxPeriodFilters>({ currency: "USD" });
+  const [period, setPeriod] = useState<FxPeriodFilters>({});
   const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId, period);
   const currency = isCurrencyCode(overview?.currency) ? overview.currency : period.currency;
 
@@ -218,7 +225,7 @@ export function InventoryOverview({
 }
 
 export function TransactionOverview({ agentId }: { agentId: string }) {
-  const [period, setPeriod] = useState<FxPeriodFilters>({ currency: "USD" });
+  const [period, setPeriod] = useState<FxPeriodFilters>({});
   const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId, period);
   const currency = isCurrencyCode(overview?.currency) ? overview.currency : period.currency;
 

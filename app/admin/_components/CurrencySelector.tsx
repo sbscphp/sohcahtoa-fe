@@ -1,23 +1,36 @@
 "use client";
 
 import { Menu } from "@mantine/core";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Globe, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { CURRENCIES } from "../_lib/constants";
 import { getCurrencyFlagUrl } from "../_lib/currency";
 
-type CurrencyCode = (typeof CURRENCIES)[number]["code"];
+type Currency = (typeof CURRENCIES)[number];
+type CurrencyCode = Currency["code"];
 
 type CurrencySelectorMode = "primary" | "secondary";
 
 interface CurrencySelectorProps {
+  /**
+   * - `undefined` -> uncontrolled (legacy behaviour): starts on the first currency.
+   * - `null`      -> controlled, empty selection: no default currency is applied.
+   * - a code      -> controlled, that currency is selected.
+   */
   value?: CurrencyCode | null;
+  /** Signature intentionally unchanged so existing consumers keep type-checking. */
   onChange?: (value: CurrencyCode) => void;
   disabled?: boolean;
   readOnly?: boolean;
   currencyCodes?: CurrencyCode[];
   mode?: CurrencySelectorMode;
+  /** Shows a "Clear selection" item in the dropdown while a currency is selected. */
+  clearable?: boolean;
+  /** Called when the selection is cleared. Parents using `value` should set it to `null` here. */
+  onClear?: () => void;
+  /** Text shown in the trigger when nothing is selected. */
+  placeholder?: string;
 }
 
 const TRIGGER_BASE_CLASS =
@@ -33,6 +46,15 @@ const TRIGGER_INTERACTIVE_CLASS =
 
 const TRIGGER_READONLY_CLASS = "cursor-default";
 
+// Same 24x24 footprint as the flag, so the trigger height never shifts between states.
+const EMPTY_ICON_BASE_CLASS =
+  "flex size-6 shrink-0 items-center justify-center rounded-full";
+
+const EMPTY_ICON_MODE_CLASS: Record<CurrencySelectorMode, string> = {
+  primary: "bg-gray-100",
+  secondary: "bg-white/15",
+};
+
 export default function CurrencySelector({
   value,
   onChange,
@@ -40,6 +62,9 @@ export default function CurrencySelector({
   readOnly,
   currencyCodes,
   mode = "primary",
+  clearable = false,
+  onClear,
+  placeholder = "Currency",
 }: CurrencySelectorProps) {
   const currencies = useMemo(() => {
     if (currencyCodes && currencyCodes.length > 0) {
@@ -48,23 +73,36 @@ export default function CurrencySelector({
     return CURRENCIES;
   }, [currencyCodes]);
 
-  const [internalSelected, setInternalSelected] = useState<(typeof CURRENCIES)[number]>(
+  // `null` or a real code means the parent owns the state.
+  // `undefined` (or any other falsy value, as before) means we own it.
+  const isControlled = value === null || Boolean(value);
+
+  const [internalSelected, setInternalSelected] = useState<Currency | null>(
     currencies[0] ?? CURRENCIES[0]
   );
 
-  const selected = useMemo(() => {
+  const selected = useMemo<Currency | null>(() => {
+    if (value === null) return null;
     if (value) {
       return currencies.find((currency) => currency.code === value) ?? currencies[0] ?? CURRENCIES[0];
     }
     return internalSelected;
   }, [internalSelected, value, currencies]);
 
-  const handleSelect = (currency: (typeof CURRENCIES)[number]) => {
+  const handleSelect = (currency: Currency) => {
     if (readOnly) return;
-    if (!value) {
+    if (!isControlled) {
       setInternalSelected(currency);
     }
     onChange?.(currency.code);
+  };
+
+  const handleClear = () => {
+    if (readOnly) return;
+    if (!isControlled) {
+      setInternalSelected(null);
+    }
+    onClear?.();
   };
 
   const triggerClassName = [
@@ -86,7 +124,14 @@ export default function CurrencySelector({
           disabled={disabled}
           className={triggerClassName}
         >
-          {mode === "secondary" ? (
+          {selected === null ? (
+            <span
+              className={`${EMPTY_ICON_BASE_CLASS} ${EMPTY_ICON_MODE_CLASS[mode]}`}
+              aria-hidden
+            >
+              <Globe className="size-3.5" />
+            </span>
+          ) : mode === "secondary" ? (
             <span className="size-6 shrink-0 overflow-hidden rounded-full" aria-hidden>
               <Image
                 src={getCurrencyFlagUrl(selected.code) ?? ""}
@@ -106,16 +151,31 @@ export default function CurrencySelector({
               />
             </span>
           )}
-          <span>{selected.code}</span>
+          <span className={selected === null ? "opacity-70" : undefined}>
+            {selected ? selected.code : placeholder}
+          </span>
           {!readOnly && <ChevronDown className="size-3 shrink-0" aria-hidden />}
         </button>
       </Menu.Target>
       <Menu.Dropdown className="max-h-62.5 overflow-y-auto">
+        {clearable && selected !== null && (
+          <>
+            <Menu.Item onClick={handleClear}>
+              <div className="flex items-center gap-2">
+                <span className="flex size-6 shrink-0 items-center justify-center" aria-hidden>
+                  <X className="size-4 text-gray-500" />
+                </span>
+                <span className="min-w-0 truncate text-gray-500">Clear selection</span>
+              </div>
+            </Menu.Item>
+            <Menu.Divider />
+          </>
+        )}
         {currencies.map((currency) => (
           <Menu.Item
             key={currency.code}
             onClick={() => handleSelect(currency)}
-            className={selected.code === currency.code ? "bg-primary-25" : undefined}
+            className={selected?.code === currency.code ? "bg-primary-25" : undefined}
           >
             <div className="flex items-center gap-2">
               <span className="text-base leading-none" aria-hidden>
