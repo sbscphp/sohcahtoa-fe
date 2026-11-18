@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button, Group, Select, Skeleton, Text } from "@mantine/core";
-import { ChevronDown, Clock, Coins, ListFilter, Scale, Upload } from "lucide-react";
+import { Clock, Coins, ListFilter, Scale, Upload } from "lucide-react";
 import CurrencySelector from "@/app/admin/_components/CurrencySelector";
+import { DateRangePicker } from "@/app/admin/_components/DateRangePicker";
 import StatCard from "@/app/admin/_components/StatCard";
 import { CURRENCIES } from "@/app/admin/_lib/constants";
 import { getCurrencyFlagUrl } from "@/app/admin/_lib/currency";
@@ -20,6 +21,13 @@ export const CONFIRMED_COLOR = "#027A48";
 export const FLAGGED_COLOR = "#B42318";
 
 type CurrencyCode = (typeof CURRENCIES)[number]["code"];
+
+export type FxPeriodFilters = {
+  /** Undefined when no currency is selected (no currency filter applied). */
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
 
 function escapeCsv(value: string) {
   return `"${value.replaceAll('"', '""')}"`;
@@ -87,15 +95,49 @@ export function CurrencyLabel({ code, label }: { code?: string; label: string })
   );
 }
 
-function PeriodControls() {
-  const [currency, setCurrency] = useState<CurrencyCode>("USD");
+function PeriodControls({ onChange }: { onChange: (filters: FxPeriodFilters) => void }) {
+  const [currency, setCurrency] = useState<CurrencyCode | null>(null);
+  const [dateFrom, setDateFrom] = useState<string | undefined>();
+  const [dateTo, setDateTo] = useState<string | undefined>();
+
+  const emit = (nextCurrency?: string, from?: string, to?: string) => {
+    onChange({
+      currency: nextCurrency,
+      dateFrom: from || undefined,
+      dateTo: to || undefined,
+    });
+  };
 
   return (
     <Group gap="sm">
-      <CurrencySelector readOnly={true} mode="secondary" value={currency} onChange={setCurrency} />
-      <Button variant="default" radius="xl" rightSection={<ChevronDown size={14} />}>
-        Date: Today
-      </Button>
+      <CurrencySelector
+        mode="secondary"
+        value={currency}
+        clearable
+        placeholder="Currency"
+        onChange={(value) => {
+          setCurrency(value);
+          emit(value, dateFrom, dateTo);
+        }}
+        onClear={() => {
+          setCurrency(null);
+          emit(undefined, dateFrom, dateTo);
+        }}
+      />
+      <div className="w-55">
+        <DateRangePicker
+          onDateRangeChange={(startDate, endDate) => {
+            const from = startDate || undefined;
+            const to = endDate || undefined;
+            setDateFrom(from);
+            setDateTo(to);
+            emit(currency ?? undefined, from, to);
+          }}
+          maxDate={new Date()}
+          valueFormat="YYYY-MM-DD"
+          placeholder="Select date range"
+        />
+      </div>
     </Group>
   );
 }
@@ -104,7 +146,7 @@ function isCurrencyCode(value?: string): value is CurrencyCode {
   return CURRENCIES.some((currency) => currency.code === value);
 }
 
-function moneyLabel(amount: number | null | undefined, currency: string, isError: boolean) {
+function moneyLabel(amount: number | null | undefined, currency: string | undefined, isError: boolean) {
   if (isError || amount === null || amount === undefined) return "—";
   return formatCurrency(amount, currency) || "—";
 }
@@ -114,20 +156,32 @@ function pendingLabel(count: number | null | undefined, isError: boolean) {
   return `${count} ${count === 1 ? "Transaction" : "Transactions"}`;
 }
 
-export function InventoryOverview({ agentId }: { agentId: string }) {
-  const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId);
-  const currency = isCurrencyCode(overview?.currency) ? overview.currency : "USD";
+function countLabel(count: number | null | undefined, isError: boolean) {
+  if (isError || count === null || count === undefined) return "—";
+  return String(count);
+}
+
+export function InventoryOverview({
+  agentId,
+  onPeriodChange,
+}: {
+  agentId: string;
+  onPeriodChange?: (filters: FxPeriodFilters) => void;
+}) {
+  const [period, setPeriod] = useState<FxPeriodFilters>({});
+  const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId, period);
+  const currency = isCurrencyCode(overview?.currency) ? overview.currency : period.currency;
+
+  const handlePeriodChange = (filters: FxPeriodFilters) => {
+    setPeriod(filters);
+    onPeriodChange?.(filters);
+  };
 
   return (
     <section className="rounded-xl bg-white p-5">
       <Group justify="space-between" align="center" wrap="wrap" mb="md">
         <h2 className="text-base font-semibold">Inventory Overview</h2>
-        <Group gap="sm">
-          <CurrencySelector readOnly mode="secondary" value={currency} />
-          <Button variant="default" radius="xl" rightSection={<ChevronDown size={14} />}>
-            Date: Today
-          </Button>
-        </Group>
+        <PeriodControls onChange={handlePeriodChange} />
       </Group>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {isLoading ? (
@@ -170,32 +224,57 @@ export function InventoryOverview({ agentId }: { agentId: string }) {
   );
 }
 
-export function TransactionOverview() {
+export function TransactionOverview({
+  agentId,
+  onPeriodChange,
+}: {
+  agentId: string;
+  onPeriodChange?: (filters: FxPeriodFilters) => void;
+}) {
+  const [period, setPeriod] = useState<FxPeriodFilters>({});
+  const { overview, isLoading, isError } = useFxInventoryAgentOverview(agentId, period);
+  const currency = isCurrencyCode(overview?.currency) ? overview.currency : period.currency;
+
+  const handlePeriodChange = (filters: FxPeriodFilters) => {
+    setPeriod(filters);
+    onPeriodChange?.(filters);
+  };
+
   return (
     <section className="rounded-xl bg-white p-5">
       <Group justify="space-between" align="center" wrap="wrap" mb="md">
         <h2 className="text-base font-semibold">Transaction Overview</h2>
-        <PeriodControls />
+        <PeriodControls onChange={handlePeriodChange} />
       </Group>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard
-          title="Total FX Purchased"
-          value="$18,650"
-          icon={<Coins className="h-5 w-5 text-primary-400" />}
-          iconBg="bg-primary-00"
-        />
-        <StatCard
-          title="Total FX Sold"
-          value="$41,200"
-          icon={<Coins className="h-5 w-5 text-primary-300" />}
-          iconBg="bg-primary-00"
-        />
-        <StatCard
-          title="Total Transactions"
-          value="178"
-          icon={<Coins className="h-5 w-5 text-primary-400" />}
-          iconBg="bg-primary-00"
-        />
+        {isLoading ? (
+          <>
+            <Skeleton height={72} radius="md" />
+            <Skeleton height={72} radius="md" />
+            <Skeleton height={72} radius="md" />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Total FX Purchased"
+              value={moneyLabel(overview?.totalFxPurchased, currency, isError)}
+              icon={<Coins className="h-5 w-5 text-primary-400" />}
+              iconBg="bg-primary-00"
+            />
+            <StatCard
+              title="Total FX Sold"
+              value={moneyLabel(overview?.totalFxSold, currency, isError)}
+              icon={<Coins className="h-5 w-5 text-primary-300" />}
+              iconBg="bg-primary-00"
+            />
+            <StatCard
+              title="Total Transactions"
+              value={countLabel(overview?.totalTransactions, isError)}
+              icon={<Coins className="h-5 w-5 text-primary-400" />}
+              iconBg="bg-primary-00"
+            />
+          </>
+        )}
       </div>
     </section>
   );

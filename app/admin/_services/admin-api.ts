@@ -1369,6 +1369,12 @@ export type FxInventoryAgentsListParams = Record<
   search?: string;
 };
 
+export type FxInventoryAgentOverviewParams = {
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
 export interface FxInventoryAgentOverview {
   agentId: string;
   agentName: string;
@@ -1381,6 +1387,9 @@ export interface FxInventoryAgentOverview {
   ngnCashAvailable: number;
   pendingSettlements: number;
   cashLodgement: number;
+  totalFxPurchased: number;
+  totalFxSold: number;
+  totalTransactions: number;
 }
 
 export type FxInventoryAgentPositionStatus = "reconciled" | "variance";
@@ -1390,6 +1399,9 @@ export type FxInventoryAgentPositionParams = Record<
   string | number | boolean | null | undefined
 > & {
   status?: FxInventoryAgentPositionStatus;
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export interface FxInventoryAgentPositionRow {
@@ -1441,6 +1453,9 @@ export type FxInventoryLodgmentsListParams = Record<
   search?: string;
   status?: FxInventoryLodgmentStatus;
   agentId?: string;
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export interface FxInventoryLodgmentListItem {
@@ -1509,6 +1524,9 @@ export type FxInventoryDisbursementsListParams = Record<
   search?: string;
   status?: FxInventoryDisbursementStatus;
   agentId?: string;
+  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export interface FxInventoryDisbursementListItem {
@@ -2857,9 +2875,10 @@ export const adminApi = {
       return new Blob([response], { type: "text/csv;charset=utf-8;" });
     },
 
-    getAgentOverview: (agentId: string) =>
+    getAgentOverview: (agentId: string, params?: FxInventoryAgentOverviewParams) =>
       apiClient.get<ApiResponse<FxInventoryAgentOverview>>(
-        API_ENDPOINTS.admin.fxInventory.agentOverview(agentId)
+        API_ENDPOINTS.admin.fxInventory.agentOverview(agentId),
+        { params }
       ),
 
     getAgentInventoryPosition: (
