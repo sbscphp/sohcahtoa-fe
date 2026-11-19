@@ -5,6 +5,7 @@ import { Group, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import type { ApiError, ApiResponse } from "@/app/_lib/api/client";
 import { useGetExportData } from "@/app/_lib/api/hooks";
+import { CustomButton } from "@/app/admin/_components/CustomButton";
 import DynamicTableSection from "@/app/admin/_components/DynamicTableSection";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import {
@@ -26,6 +27,8 @@ import {
   VARIANCE_COLOR,
   type FxPeriodFilters,
 } from "./detailShared";
+import RecordPhysicalCountModal from "./RecordPhysicalCountModal";
+import { Plus } from "lucide-react";
 
 const POSITION_HEADERS = [
   { label: "Currency", key: "currency" },
@@ -45,7 +48,7 @@ type PositionViewRow =
   | { kind: "total"; row: FxInventoryAgentPositionRow; flaggedCount: number };
 
 function positionStatus(variance: number | null | undefined): PositionStatus {
-  return typeof variance === "number" ? "Variance" : "Reconciled";
+  return typeof variance === "number" && variance !== 0 ? "Variance" : "Reconciled";
 }
 
 function toAmountCell(amount: number | null | undefined, currency: string): AmountCell {
@@ -68,6 +71,7 @@ function statusParam(filter: string | null): FxInventoryAgentPositionStatus | un
 export default function InventoryPositionTab({ agentId }: { agentId: string }) {
   const [filter, setFilter] = useState<string | null>(null);
   const [period, setPeriod] = useState<FxPeriodFilters>({});
+  const [countOpen, setCountOpen] = useState(false);
   const status = statusParam(filter);
   const params = useMemo(
     () => ({
@@ -214,6 +218,12 @@ export default function InventoryPositionTab({ agentId }: { agentId: string }) {
               onClick={() => exportPosition.mutate()}
               loading={exportPosition.isPending}
             />
+            <CustomButton
+              buttonType="primary"
+              rightSection={<Plus size={16} />} 
+              onClick={() => setCountOpen(true)}>
+              Record Physical Count
+            </CustomButton>
           </Group>
         </Group>
         <DynamicTableSection
@@ -229,6 +239,11 @@ export default function InventoryPositionTab({ agentId }: { agentId: string }) {
           }
         />
       </section>
+      <RecordPhysicalCountModal
+        agentId={agentId}
+        opened={countOpen}
+        onClose={() => setCountOpen(false)}
+      />
     </div>
   );
 }

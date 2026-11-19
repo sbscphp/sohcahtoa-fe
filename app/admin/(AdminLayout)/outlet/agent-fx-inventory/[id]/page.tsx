@@ -57,7 +57,7 @@ export default function AgentFxInventoryDetailPage() {
   useSetHeaderContent(headerContent);
 
   if (isLoading) {
-    return <LoadingState />;
+    return <LoadingState className="mt-5" />;
   }
 
   if (!agentId || !agent || isNotFound) {

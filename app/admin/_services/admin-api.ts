@@ -1427,6 +1427,13 @@ export interface FxInventoryAgentPosition {
   total: FxInventoryAgentPositionRow;
 }
 
+export interface RecordFxInventoryPhysicalCountPayload {
+  currency: string;
+  countedAmount: number;
+  countDate?: string;
+  notes?: string;
+}
+
 export interface FxInventoryAgentListItem {
   agentId: string;
   name: string;
@@ -2905,6 +2912,12 @@ export const adminApi = {
 
       return new Blob([response], { type: "text/csv;charset=utf-8;" });
     },
+
+    recordPhysicalCount: (agentId: string, body: RecordFxInventoryPhysicalCountPayload) =>
+      apiClient.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.admin.fxInventory.agentPhysicalCount(agentId),
+        body
+      ),
   },
 
   // ==================== Regulatory ====================

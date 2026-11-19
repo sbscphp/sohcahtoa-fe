@@ -6,15 +6,17 @@ interface LoadingStateProps {
   title?: string;
   description?: string;
   rows?: number;
+  className?: string;
   cols?: number;
 }
 
 export default function LoadingState({
   rows = 5,
   cols = 4,
+  className,
 }: LoadingStateProps) {
   return (
-    <Card withBorder radius="md" padding="lg">
+    <Card withBorder radius="md" padding="lg" className={className}>
       <div className="space-y-4">
 
         {/* Table header skeleton */}

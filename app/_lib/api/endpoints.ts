@@ -316,6 +316,8 @@ export const API_ENDPOINTS = {
         `/api/admin/fx-inventory/agents/${agentId}/inventory-position`,
       agentInventoryPositionExport: (agentId: string) =>
         `/api/admin/fx-inventory/agents/${agentId}/inventory-position/export`,
+      agentPhysicalCount: (agentId: string) =>
+        `/api/admin/fx-inventory/agents/${agentId}/physical-count`,
     },
     regulatory: {
       compliance: {
